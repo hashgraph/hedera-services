@@ -330,5 +330,16 @@ public enum AccountProperty implements BeanProperty<HederaAccount> {
         public Function<HederaAccount, Object> getter() {
             return HederaAccount::getStakedId;
         }
-    }
+    },
+    EXPIRED_AND_PENDING_REMOVAL {
+        @Override
+        public BiConsumer<HederaAccount, Object> setter() {
+            return (a, t) -> a.setExpiredAndPendingRemoval((boolean) t);
+        }
+
+        @Override
+        public Function<HederaAccount, Object> getter() {
+            return HederaAccount::isExpiredAndPendingRemoval;
+        }
+    },
 }

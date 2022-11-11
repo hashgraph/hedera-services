@@ -38,4 +38,16 @@ public interface RemovalWork {
      * @return result for the successful removal
      */
     SystemTaskResult tryToRemoveContract(EntityNum contract);
+
+    /**
+     * Tries to mark a "detached" account as expired and pending removal. Setting this explicitly
+     * makes it cheap and easy to see when a zero-balance account is <i>truly</i> detached, and not
+     * simply in the window between its expiry and its auto-renewal. If the auto-removal of the
+     * expiring account's type is not enabled, returns {@code EntityProcessResult.NOTHING_TO_DO}
+     *
+     * @param num an expired account that also had no usable auto-renew account funds
+     * @param isContract whether this account is for a smart contract
+     * @return result for marking the account as detached
+     */
+    SystemTaskResult tryToMarkDetached(EntityNum num, boolean isContract);
 }

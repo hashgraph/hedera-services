@@ -16,12 +16,14 @@
 package com.hedera.services.state.expiry.removal;
 
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.ExpiryRecordsHelper;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
+import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,6 +36,7 @@ public class RemovalHelper implements RemovalWork {
     private final AccountGC accountGC;
     private final ExpiryRecordsHelper recordsHelper;
     private final ExpiryStats expiryStats;
+    private final ExpiryThrottle expiryThrottle;
 
     @Inject
     public RemovalHelper(
@@ -42,13 +45,27 @@ public class RemovalHelper implements RemovalWork {
             final GlobalDynamicProperties properties,
             final ContractGC contractGC,
             final AccountGC accountGC,
-            final ExpiryRecordsHelper recordsHelper) {
+            final ExpiryRecordsHelper recordsHelper,
+            final ExpiryThrottle expiryThrottle) {
         this.expiryStats = expiryStats;
         this.classifier = classifier;
         this.properties = properties;
         this.contractGC = contractGC;
         this.accountGC = accountGC;
         this.recordsHelper = recordsHelper;
+        this.expiryThrottle = expiryThrottle;
+    }
+
+    @Override
+    public SystemTaskResult tryToMarkDetached(final EntityNum num, final boolean isContract) {
+        if (nothingToDoForDetached(isContract)) {
+            return NOTHING_TO_DO;
+        }
+        if (!expiryThrottle.allowOne(ACCOUNTS_GET_FOR_MODIFY)) {
+            return NO_CAPACITY_LEFT;
+        }
+        accountGC.markDetached(num);
+        return DONE;
     }
 
     @Override
@@ -84,5 +101,10 @@ public class RemovalHelper implements RemovalWork {
         } else {
             return NO_CAPACITY_LEFT;
         }
+    }
+
+    private boolean nothingToDoForDetached(final boolean isContract) {
+        return (isContract && !properties.shouldAutoRenewContracts())
+                || !properties.shouldAutoRenewAccounts();
     }
 }

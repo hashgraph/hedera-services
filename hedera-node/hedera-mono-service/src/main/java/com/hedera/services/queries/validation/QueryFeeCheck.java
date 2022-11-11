@@ -173,7 +173,9 @@ public class QueryFeeCheck {
         } else {
             final var expiryStatus =
                     validator.expiryStatusGiven(
-                            balance, payingAccount.getExpiry(), payingAccount.isSmartContract());
+                            balance,
+                            payingAccount.isExpiredAndPendingRemoval(),
+                            payingAccount.isSmartContract());
             return (expiryStatus == OK) ? INSUFFICIENT_PAYER_BALANCE : expiryStatus;
         }
     }

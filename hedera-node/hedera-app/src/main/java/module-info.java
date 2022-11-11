@@ -1,3 +1,1 @@
-module com.hedera.services.api.implementation {
-    requires com.hedera.services.api;
-}
+module com.hedera.services.api.implementation {}

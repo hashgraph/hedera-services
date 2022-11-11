@@ -38,6 +38,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.merkle.MerkleAccount;
 import java.util.Map;
 import java.util.function.BiPredicate;

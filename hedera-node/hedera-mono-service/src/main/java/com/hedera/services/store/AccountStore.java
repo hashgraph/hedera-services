@@ -201,7 +201,7 @@ public class AccountStore {
         final var expiryStatus =
                 validator.expiryStatusGiven(
                         merkleAccount.getBalance(),
-                        merkleAccount.getExpiry(),
+                        merkleAccount.isExpiredAndPendingRemoval(),
                         merkleAccount.isSmartContract());
         validateTrue(expiryStatus == OK, expiryStatus);
     }
