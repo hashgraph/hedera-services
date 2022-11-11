@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
+    implementation(libs.swirlds.platform.core)
     implementation(testLibs.testcontainers.core)
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)

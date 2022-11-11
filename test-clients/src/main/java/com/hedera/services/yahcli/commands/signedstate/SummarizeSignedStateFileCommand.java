@@ -15,11 +15,15 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+import com.swirlds.platform.state.signed.SignedStateFileReader;
 
 @Command(
         name = "summarize",
@@ -28,9 +32,29 @@ import picocli.CommandLine.ParentCommand;
 public class SummarizeSignedStateFileCommand implements Callable<Integer> {
   @ParentCommand private SignedStateCommand signedStateCommand;
 
+  @Option(names = {"-f","--file"}, paramLabel = "INPUT-SIGNED-STATE-FILE", description = "Input signed state file")
+  Optional<Path> inputFile;
+
+  @Option(names = {"-o", "--out"}, paramLabel = "OUTPUT-SIGNED-STATE-FILE", description = "Output signed state file")
+  Optional<Path> outputFile;
+
+  @Option(names = {"-s", "--summarize"}, description = "Provide summary of what was in the input file")
+  Optional<Boolean> doSummary;
+
   @Override
   public Integer call() throws Exception {
     System.out.println("SummarizeSignedStateFile! <TBD>");
+    System.out.printf("SummarizeSignedStateFile: input file %s output file %s summarize %s%n",
+                      inputFile.isPresent() ? inputFile.get().toString() : "<NONE>",
+                      outputFile.isPresent() ? outputFile.get().toString() : "<NONE>",
+                      doSummary.isPresent() ? "YES" : "NO");
+
+    // Must have an input file (TODO: use stdin if no input file specified)
+    if (inputFile.isEmpty()) return 1;
+
+    var signedPair = SignedStateFileReader.readStateFile(inputFile.get());
+
+
     return 0;
   }
 }
