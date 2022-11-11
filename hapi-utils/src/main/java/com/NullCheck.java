@@ -15,7 +15,9 @@
  */
 package com;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class NullCheck {
 
@@ -33,10 +35,31 @@ public class NullCheck {
         System.out.println(value);
     }
 
+    @CheckForNull static String maybe() {
+        if(System.currentTimeMillis() % 2 == 0) {
+            return "ok";
+        } else {
+            return null;
+        }
+    }
+
+    @Nullable
+    static String possible() {
+        if(System.currentTimeMillis() % 2 == 0) {
+            return null;
+        } else {
+            return "ok";
+        }
+    }
+
     public static void main(String[] args) {
         getValue();
         getNullValue();
         putValue("A");
         putValue(null);
+        final String val = maybe();
+        val.length();
+        final String val2 = possible();
+        val2.length();
     }
 }
