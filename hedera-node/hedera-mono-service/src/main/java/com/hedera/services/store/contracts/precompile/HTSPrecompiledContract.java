@@ -33,7 +33,6 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
@@ -146,7 +145,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final RecordsHistorian recordsHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final InfrastructureFactory infrastructureFactory;
-    private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -168,7 +166,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final ExpiringCreations creator,
-            final ImpliedTransfersMarshal impliedTransfersMarshal,
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
@@ -180,7 +177,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.creator = creator;
         this.dynamicProperties = dynamicProperties;
-        this.impliedTransfersMarshal = impliedTransfersMarshal;
         this.feeCalculator = feeCalculator;
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
