@@ -54,6 +54,10 @@ public class NullCheck {
         }
     }
 
+    static void checkMe(@Nullable final String val) {
+        Objects.requireNonNull("" + val.length());
+    }
+
     public static void main(String[] args) {
         getValue();
         getNullValue();
