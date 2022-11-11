@@ -18,6 +18,7 @@ package com;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 public class NullCheck {
 
@@ -59,10 +60,10 @@ public class NullCheck {
         putValue("A");
         putValue(null);
         final String val1 = maybe();
-        System.err.println("" + val1.length());
+        Objects.requireNonNull("" + val1.length());
         final String val2 = possible();
-        System.err.println("" + val2.length());
+        Objects.requireNonNull("" + val2.length());
         @Nullable final String val3 = possible();
-        System.err.println("" + val3.length());
+        Objects.requireNonNull("" + val3.length());
     }
 }

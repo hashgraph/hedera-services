@@ -15,6 +15,7 @@
  */
 package com;
 
+import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -59,10 +60,10 @@ public class NullCheckJetbrains {
         putValue("A");
         putValue(null);
         final String val1 = maybe();
-        System.err.println("" + val1.length());
+        Objects.requireNonNull(val1.length());
         final String val2 = argh();
-        System.err.println("" + val2.length());
+        Objects.requireNonNull("" + val2.length());
         @Nullable final String val3 = maybe();
-        System.err.println("" + val3.length());
+        Objects.requireNonNull("" + val3.length());
     }
 }
