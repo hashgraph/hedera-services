@@ -64,6 +64,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -80,6 +81,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -338,23 +340,37 @@ class StaticEntityAccessTest {
     }
 
     @Test
-    void getKeys() {
-        token.setAdminKey(key);
-        token.setKycKey(key);
-        token.setFreezeKey(key);
-        token.setWipeKey(key);
-        token.setSupplyKey(key);
-        token.setFeeScheduleKey(key);
-        token.setPauseKey(key);
+    void getKeys() throws DecoderException {
+        token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+        token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
+        token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+        token.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asJKey());
+        token.setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey());
+        token.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKey());
+        token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
         given(tokens.get(tokenNum)).willReturn(token);
 
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.KYC_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.FEE_SCHEDULE_KEY));
-        assertEquals(key, subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_KYC_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.KYC_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_WIPE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.FEE_SCHEDULE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
     }
 
     @Test
