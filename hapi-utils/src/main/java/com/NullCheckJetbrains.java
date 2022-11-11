@@ -15,27 +15,28 @@
  */
 package com;
 
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
-public class NullCheck {
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
-    @NonNull
+public class NullCheckJetbrains {
+
+    @NotNull
     static String getNullValue() {
         return null;
     }
 
-    @NonNull
+    @NotNull
     static String getValue() {
         return "yeah!";
     }
 
-    static void putValue(@NonNull String value) {
+    static void putValue(@NotNull String value) {
         System.out.println(value);
     }
 
-    @CheckForNull
+    @TestOnly
     static String maybe() {
         if (System.currentTimeMillis() % 2 == 0) {
             return "ok";
@@ -45,11 +46,11 @@ public class NullCheck {
     }
 
     @Nullable
-    static String possible() {
+    static String argh() {
         if (System.currentTimeMillis() % 2 == 0) {
-            return null;
-        } else {
             return "ok";
+        } else {
+            return null;
         }
     }
 
@@ -60,9 +61,7 @@ public class NullCheck {
         putValue(null);
         final String val1 = maybe();
         System.out.println("" + val1.length());
-        final String val2 = possible();
-        System.out.println("" + val2.length());
-        @Nullable final String val3 = possible();
+        final String val2 = argh();
         System.out.println("" + val2.length());
     }
 }

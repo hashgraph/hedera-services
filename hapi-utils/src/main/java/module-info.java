@@ -19,4 +19,5 @@ module com.hedera.services.hapi.utils {
     requires com.google.common;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.github.spotbugs.annotations;
+    requires annotations;
 }
