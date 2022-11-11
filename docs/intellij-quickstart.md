@@ -62,10 +62,10 @@ Looking closer at _config.txt_, you can see you are running Hedera Services
 points to the JAR file you just built; and there are three nodes in your 
 network because you specified "Bob" and "Carol" as well as "Alice".
 
-Note: Currently _only_ a single node is supported to run locally. 
 
-When multiple nodes are supported to run locally Alice, Bob, 
-and Carol will all be running on your local machine; and 
+If multiple nodes Alice, Bob, and Carol are set up to run locally by
+uncommenting lines [27](../hedera-node/config.txt#L27) and [29](../hedera-node/config.txt#L29),
+they will all be running on your local machine; and 
 communicating via the loopback interface. But each still has a private 
 instance of the Platform, and keeps its own state, just as it would in a 
 true distributed network.
