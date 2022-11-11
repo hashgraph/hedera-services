@@ -277,8 +277,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            senderAddress,
-                            impliedTransfersMarshal);
+                            senderAddress);
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                             dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
@@ -291,8 +290,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            senderAddress,
-                                            impliedTransfersMarshal));
+                                            senderAddress));
                     case AbiConstants.ABI_ID_MINT_TOKEN,
                             AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                             ledgers,
@@ -600,8 +598,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId,
-                                                    impliedTransfersMarshal));
+                                                    functionId));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -618,8 +615,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId,
-                                                    impliedTransfersMarshal));
+                                                    functionId));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->
@@ -783,8 +779,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId,
-                                            impliedTransfersMarshal));
+                                            functionId));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -799,8 +794,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId,
-                                            impliedTransfersMarshal));
+                                            functionId));
                     default -> null;
                 };
         if (precompile != null) {

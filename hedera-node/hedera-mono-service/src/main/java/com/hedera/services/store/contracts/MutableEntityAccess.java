@@ -35,6 +35,7 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
@@ -71,6 +72,7 @@ public class MutableEntityAccess implements EntityAccess {
         this.worldLedgers =
                 new WorldLedgers(
                         aliasManager,
+                        new FcmCustomFeeSchedules(tokensLedger),
                         ledger.getTokenRelsLedger(),
                         ledger.getAccountsLedger(),
                         ledger.getNftsLedger(),

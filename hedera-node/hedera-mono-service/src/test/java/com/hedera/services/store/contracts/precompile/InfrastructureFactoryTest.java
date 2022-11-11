@@ -22,6 +22,8 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -104,6 +106,8 @@ class InfrastructureFactoryTest {
     @Mock private TransactionContext txnCtx;
     @Mock private AliasManager aliasManager;
     @Mock private FeeDistribution feeDistribution;
+    @Mock private FeeAssessor feeAssessor;
+    @Mock private PureTransferSemanticChecks checks;
 
     private InfrastructureFactory subject;
 
@@ -121,7 +125,9 @@ class InfrastructureFactoryTest {
                         dynamicProperties,
                         txnCtx,
                         aliasManager,
-                        feeDistribution);
+                        feeDistribution,
+                        feeAssessor,
+                        checks);
     }
 
     @Test

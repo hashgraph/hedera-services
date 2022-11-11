@@ -62,6 +62,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
+import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
@@ -78,6 +79,7 @@ public class WorldLedgers {
 
     private final ContractAliases aliases;
     private final StaticEntityAccess staticEntityAccess;
+    private final FcmCustomFeeSchedules customFeeSchedules;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
@@ -91,6 +93,7 @@ public class WorldLedgers {
 
     public WorldLedgers(
             final ContractAliases aliases,
+            final FcmCustomFeeSchedules customFeeSchedules,
             final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
@@ -101,6 +104,7 @@ public class WorldLedgers {
         this.tokensLedger = tokensLedger;
         this.nftsLedger = nftsLedger;
         this.aliases = aliases;
+        this.customFeeSchedules = customFeeSchedules;
 
         staticEntityAccess = null;
     }
@@ -111,6 +115,7 @@ public class WorldLedgers {
         accountsLedger = null;
         tokensLedger = null;
         nftsLedger = null;
+        customFeeSchedules = null;
 
         this.aliases = aliases;
         this.staticEntityAccess = staticEntityAccess;
@@ -370,8 +375,11 @@ public class WorldLedgers {
         }
         final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
 
+        final var fcmCustomFeeSchedules = new FcmCustomFeeSchedules(wrappedTokensLedger);
+
         return new WorldLedgers(
                 StackedContractAliases.wrapping(aliases),
+                fcmCustomFeeSchedules,
                 wrappedTokenRelsLedger,
                 wrappedAccountsLedger,
                 wrappedNftsLedger,
@@ -397,6 +405,10 @@ public class WorldLedgers {
 
     public TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens() {
         return tokensLedger;
+    }
+
+    public FcmCustomFeeSchedules customFeeSchedules() {
+        return customFeeSchedules;
     }
 
     // --- Internal helpers

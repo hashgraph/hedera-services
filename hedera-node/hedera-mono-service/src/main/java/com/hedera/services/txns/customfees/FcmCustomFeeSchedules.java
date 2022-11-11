@@ -16,9 +16,12 @@
 package com.hedera.services.txns.customfees;
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -30,20 +33,32 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 @Singleton
 public class FcmCustomFeeSchedules implements CustomFeeSchedules {
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;
+    private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
 
     @Inject
     public FcmCustomFeeSchedules(Supplier<MerkleMap<EntityNum, MerkleToken>> tokens) {
         this.tokens = tokens;
     }
 
+    public FcmCustomFeeSchedules(
+            TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger) {
+        this.tokens = null;
+        this.tokensLedger = tokensLedger;
+    }
+
     @Override
     public CustomFeeMeta lookupMetaFor(final Id tokenId) {
-        final var currentTokens = tokens.get();
-        final var key = EntityNum.fromModel(tokenId);
-        if (!currentTokens.containsKey(key)) {
-            return CustomFeeMeta.forMissingLookupOf(tokenId);
+        MerkleToken merkleToken;
+        if (tokens != null) {
+            final var currentTokens = tokens.get();
+            final var key = EntityNum.fromModel(tokenId);
+            if (!currentTokens.containsKey(key)) {
+                return CustomFeeMeta.forMissingLookupOf(tokenId);
+            }
+            merkleToken = currentTokens.get(key);
+        } else {
+            merkleToken = tokensLedger.getImmutableRef(tokenId.asGrpcToken());
         }
-        final var merkleToken = currentTokens.get(key);
         return new CustomFeeMeta(
                 tokenId, merkleToken.treasury().asId(), merkleToken.customFeeSchedule());
     }
