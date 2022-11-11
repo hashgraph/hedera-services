@@ -37,8 +37,6 @@ dependencies {
 
     implementation("com.github.spotbugs", "spotbugs-annotations", "4.7.3")
 
-
     testImplementation(testLibs.bundles.testing)
     itestImplementation(libs.hapi)
-
 }
