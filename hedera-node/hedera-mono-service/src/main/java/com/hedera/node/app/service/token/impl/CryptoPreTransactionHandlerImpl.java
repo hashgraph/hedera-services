@@ -16,14 +16,17 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -59,8 +62,45 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         addIfNotPayer(deleteAccountId, payer, meta);
-        addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
+        addIfNotPayerAndReceiverSigRequired(
+                transferAccountId, payer, meta, INVALID_TRANSFER_ACCOUNT_ID);
         return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+        final var op = txn.getCryptoApproveAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
+
+        for (final var allowance : op.getCryptoAllowancesList()) {
+            addIfNotPayer(allowance.getOwner(), payer, meta, failureStatus);
+        }
+        for (final var allowance : op.getTokenAllowancesList()) {
+            addIfNotPayer(allowance.getOwner(), payer, meta, failureStatus);
+        }
+        for (final var allowance : op.getNftAllowancesList()) {
+            final var ownerId = allowance.getOwner();
+            var operatorId =
+                    allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            // Since only the owner can grant approveForAll
+            if (allowance.getApprovedForAll().getValue()) {
+                operatorId = ownerId;
+            }
+            if (operatorId != ownerId) {
+                failureStatus = INVALID_DELEGATING_SPENDER;
+            }
+            addIfNotPayer(operatorId, payer, meta, failureStatus);
+        }
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+        throw new NotImplementedException();
     }
 
     @Override
@@ -77,18 +117,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
     public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
         throw new NotImplementedException();
     }
@@ -99,6 +127,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         throw new NotImplementedException();
     }
 
+    /* --------------- Helper methods --------------- */
     /**
      * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
      * for signing the transaction
@@ -114,10 +143,11 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
+        final var meta = new SigTransactionMetadata(accountStore, tx, payer);
         if (receiverSigReq && key.isPresent()) {
-            return new SigTransactionMetadata(accountStore, tx, payer, List.of(key.get()));
+            meta.addToReqKeys(key.get());
         }
-        return new SigTransactionMetadata(accountStore, tx, payer);
+        return meta;
     }
 
     /**
@@ -128,18 +158,34 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      * @param accountId given accountId
      * @param payer payer accountId
      * @param meta metadata to which accountId's key will be added, if success
+     * @param failureStatus explicit failure status to be set on metadata
      */
     private void addIfNotPayer(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (meta.failed() || payer.equals(accountId)) {
+            final AccountID accountId,
+            final AccountID payer,
+            final SigTransactionMetadata meta,
+            final ResponseCodeEnum failureStatus) {
+        if (isFailed(accountId, payer, meta)) {
             return;
         }
         var result = accountStore.getKey(accountId);
         if (result.failed()) {
-            meta.setStatus(result.failureReason());
+            meta.setStatus(failureStatus != null ? failureStatus : result.failureReason());
         } else {
             meta.addToReqKeys(result.key());
         }
+    }
+
+    /**
+     * Convenience method for having a default failure status set on metadata if there is a failure.
+     *
+     * @param accountId given accountId
+     * @param payer payer accountId
+     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
+     */
+    private void addIfNotPayer(
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
+        addIfNotPayer(accountId, payer, meta, null);
     }
 
     /**
@@ -151,17 +197,40 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      * @param accountId given accountId
      * @param payer payer accountId
      * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
+     * @param failureStatus explicit failure status to be set on metadata
      */
     private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (meta.failed() || payer.equals(accountId)) {
+            final AccountID accountId,
+            final AccountID payer,
+            final SigTransactionMetadata meta,
+            final ResponseCodeEnum failureStatus) {
+        if (isFailed(accountId, payer, meta)) {
             return;
         }
         var result = accountStore.getKeyIfReceiverSigRequired(accountId);
         if (result.failed()) {
-            meta.setStatus(result.failureReason());
+            meta.setStatus(failureStatus != null ? failureStatus : result.failureReason());
         } else if (result.key() != null) {
             meta.addToReqKeys(result.key());
         }
+    }
+
+    /**
+     * Convenience method for having a default failure status set on metadata if there is a failure.
+     *
+     * @param accountId given accountId
+     * @param payer payer accountId
+     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
+     */
+    private void addIfNotPayerAndReceiverSigRequired(
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
+        addIfNotPayerAndReceiverSigRequired(accountId, payer, meta, null);
+    }
+
+    private boolean isFailed(
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
+        return meta.failed()
+                || payer.equals(accountId)
+                || accountId.equals(AccountID.getDefaultInstance());
     }
 }
