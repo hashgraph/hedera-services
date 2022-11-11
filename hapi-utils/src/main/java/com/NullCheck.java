@@ -35,8 +35,9 @@ public class NullCheck {
         System.out.println(value);
     }
 
-    @CheckForNull static String maybe() {
-        if(System.currentTimeMillis() % 2 == 0) {
+    @CheckForNull
+    static String maybe() {
+        if (System.currentTimeMillis() % 2 == 0) {
             return "ok";
         } else {
             return null;
@@ -45,7 +46,7 @@ public class NullCheck {
 
     @Nullable
     static String possible() {
-        if(System.currentTimeMillis() % 2 == 0) {
+        if (System.currentTimeMillis() % 2 == 0) {
             return null;
         } else {
             return "ok";
