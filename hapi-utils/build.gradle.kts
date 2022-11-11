@@ -35,6 +35,10 @@ dependencies {
     implementation(libs.commons.codec)
     implementation(libs.jna)
 
+    implementation("com.github.spotbugs", "spotbugs-annotations", "4.7.3")
+
+
     testImplementation(testLibs.bundles.testing)
     itestImplementation(libs.hapi)
+
 }
