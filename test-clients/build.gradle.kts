@@ -54,6 +54,8 @@ sourceSets {
 }
 
 dependencies {
+    implementation(project(":hedera-node"))
+    implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":hapi-utils"))
     implementation(project(":hapi-fees"))
     implementation(libs.bundles.besu) {
@@ -74,6 +76,7 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
+    implementation(libs.swirlds.merkle)
     implementation(libs.swirlds.platform.core)
     implementation(testLibs.testcontainers.core)
     itestImplementation(libs.bundles.swirlds)

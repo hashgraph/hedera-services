@@ -15,8 +15,15 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
+import com.hedera.services.ServicesState;
+import com.hedera.services.state.virtual.VirtualBlobKey;
+import com.hedera.services.state.virtual.VirtualBlobKey.Type;
+import com.hedera.services.utils.EntityNum;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.platform.state.signed.SignedStateFileReader;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
@@ -32,15 +39,10 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
 
     @Option(
             names = {"-f", "--file"},
+            arity = "1",
             paramLabel = "INPUT-SIGNED-STATE-FILE",
             description = "Input signed state file")
     Optional<Path> inputFile;
-
-    @Option(
-            names = {"-o", "--out"},
-            paramLabel = "OUTPUT-SIGNED-STATE-FILE",
-            description = "Output signed state file")
-    Optional<Path> outputFile;
 
     @Option(
             names = {"-s", "--summarize"},
@@ -49,17 +51,37 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        System.out.println("SummarizeSignedStateFile! <TBD>");
         System.out.printf(
-                "SummarizeSignedStateFile: input file %s output file %s summarize %s%n",
+                "SummarizeSignedStateFile: input file %s summarize %s%n",
                 inputFile.map(Path::toString).orElse("<NONE>"),
-                outputFile.map(Path::toString).orElse("<NONE>"),
                 doSummary.isPresent() ? "YES" : "NO");
 
-        // Must have an input file (TODO: use stdin if no input file specified)
-        if (inputFile.isEmpty()) return 1;
-
+        ConstructableRegistry.getInstance().registerConstructables("*");
         var signedPair = SignedStateFileReader.readStateFile(inputFile.get());
+        var servicesState = (ServicesState) (signedPair.signedState().getState().getSwirldState());
+        var accounts = servicesState.accounts();
+        List<EntityNum> contractIds = new ArrayList<>();
+        accounts.forEach(
+                (k, v) -> {
+                    if (v.isSmartContract()) contractIds.add(k);
+                });
+
+        var fileStore = servicesState.storage();
+        int contractsFound = 0;
+        int bytesFound = 0;
+        for (var cid : contractIds) {
+            VirtualBlobKey vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid.intValue());
+            if (fileStore.containsKey(vbk)) {
+                var blob = fileStore.get(vbk); // check exists?
+                var maybeByteCodeHere = blob.getData();
+                contractsFound++;
+                bytesFound += maybeByteCodeHere.length;
+            }
+        }
+        System.out.printf(
+                "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
+                        + " (%d bytes total)",
+                contractIds.size(), contractsFound, bytesFound);
 
         return 0;
     }
