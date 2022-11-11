@@ -33,7 +33,7 @@ public class NullCheck {
     }
 
     static void putValue(@NonNull String value) {
-        System.out.println(value);
+        Objects.requireNonNull(value);
     }
 
     @CheckForNull

@@ -33,7 +33,7 @@ public class NullCheckJetbrains {
     }
 
     static void putValue(@NotNull String value) {
-        System.out.println(value);
+        Objects.requireNonNull(value);
     }
 
     @TestOnly

@@ -18,12 +18,13 @@ package com.foo;
 import edu.umd.cs.findbugs.annotations.DefaultAnnotationForMethods;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.OverrideMustInvoke;
+import java.util.UUID;
 
 @DefaultAnnotationForMethods(NonNull.class)
 public class Bar {
 
     public String yeah() {
-        return "check";
+        return UUID.randomUUID().toString();
     }
 
     public String ohNo() {
