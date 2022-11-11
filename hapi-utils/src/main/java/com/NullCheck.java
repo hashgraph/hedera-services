@@ -58,9 +58,9 @@ public class NullCheck {
         getNullValue();
         putValue("A");
         putValue(null);
-        final String val = maybe();
-        val.length();
+        final String val1 = maybe();
+        System.out.println("" + val1.length());
         final String val2 = possible();
-        val2.length();
+        System.out.println("" + val2.length());
     }
 }

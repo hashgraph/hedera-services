@@ -17,6 +17,7 @@ package com.foo;
 
 import edu.umd.cs.findbugs.annotations.DefaultAnnotationForMethods;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.OverrideMustInvoke;
 
 @DefaultAnnotationForMethods(NonNull.class)
 public class Bar {
@@ -27,5 +28,10 @@ public class Bar {
 
     public String ohNo() {
         return null;
+    }
+
+    @OverrideMustInvoke
+    public void important() {
+        System.out.println("YEAH");
     }
 }
