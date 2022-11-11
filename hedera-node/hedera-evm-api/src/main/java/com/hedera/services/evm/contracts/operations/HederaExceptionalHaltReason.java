@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operations;
 
 /*
  * -
@@ -37,7 +37,6 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import com.hedera.services.state.merkle.MerkleAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 /** Hedera adapted {@link ExceptionalHaltReason} */
@@ -50,15 +49,14 @@ public class HederaExceptionalHaltReason {
     public static final ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS =
             HederaExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
     /**
-     * Used when {@link HederaSelfDestructOperation} is used and the beneficiary is specified to be
-     * the same as the destructed account
+     * Used when HederaSelfDestructOperation is used and the beneficiary is specified to be the same
+     * as the destructed account
      */
     public static final ExceptionalHaltReason SELF_DESTRUCT_TO_SELF =
             HederaExceptionalHalt.SELF_DESTRUCT_TO_SELF;
     /**
-     * Used when there is no active signature for a given {@link
-     * com.hedera.services.state.merkle.MerkleAccount} that has {@link
-     * MerkleAccount#isReceiverSigRequired()} enabled and the account receives HBars
+     * Used when there is no active signature for a given MerkleAccount that has receiverSigRequired
+     * enabled and the account receives HBars
      */
     public static final ExceptionalHaltReason INVALID_SIGNATURE =
             HederaExceptionalHalt.INVALID_SIGNATURE;

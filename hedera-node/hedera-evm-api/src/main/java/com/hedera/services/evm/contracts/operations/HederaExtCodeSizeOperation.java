@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operations;
 
 /*
  * -
@@ -62,7 +62,7 @@ public class HederaExtCodeSizeOperation extends ExtCodeSizeOperation {
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        return HederaOperationUtil.addressCheckExecution(
+        return HederaEvmOperationsUtil.addressCheckExecution(
                 frame,
                 () -> frame.getStackItem(0),
                 () -> cost(true),
