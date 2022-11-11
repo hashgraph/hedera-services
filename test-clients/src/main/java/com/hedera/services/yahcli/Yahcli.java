@@ -26,6 +26,7 @@ import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
+import com.hedera.services.yahcli.commands.signedstate.SignedStateCommand;
 import java.util.concurrent.Callable;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
@@ -50,6 +51,7 @@ import picocli.CommandLine.Spec;
             PrepareUpgradeCommand.class,
             FreezeUpgradeCommand.class,
             TelemetryUpgradeCommand.class,
+            SignedStateCommand.class,
             VersionInfoCommand.class
         },
         description = "Performs DevOps-type actions against a Hedera Services network")
