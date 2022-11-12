@@ -27,10 +27,11 @@ import com.swirlds.virtualmap.VirtualMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 public class SignedStateHolder implements Closeable {
@@ -70,8 +71,8 @@ public class SignedStateHolder implements Closeable {
     }
 
     // returns all contracts known via Hedera accounts
-    public @NotNull List<EntityNum> getAllKnownContracts() {
-        List<EntityNum> ids = new ArrayList<>();
+    public @NotNull Set<EntityNum> getAllKnownContracts() {
+        Set<EntityNum> ids = new HashSet<>();
         getAccounts()
                 .forEach(
                         (k, v) -> {
@@ -81,7 +82,7 @@ public class SignedStateHolder implements Closeable {
     }
 
     public @NotNull Map<EntityNum, byte[]> getAllContractContents(
-            @NotNull List<EntityNum> contractIds) {
+            @NotNull Collection<EntityNum> contractIds) {
         Map<EntityNum, byte[]> codes = new HashMap<>();
         var fileStore = getFileStore();
         for (var cid : contractIds) {

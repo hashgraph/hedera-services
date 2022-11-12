@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -67,14 +68,14 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
         return 0;
     }
 
-    private ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
+    private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
             throws Exception {
         int contractsFound = 0;
         try (var signedState = new SignedStateHolder(inputFile)) {
             var contractIds = signedState.getAllKnownContracts();
             contractsFound = contractIds.size();
             var contractContents = signedState.getAllContractContents(contractIds);
-            return new ImmutablePair<>(contractContents, contractsFound);
+            return ImmutablePair.of(contractContents, contractsFound);
         }
     }
 }
