@@ -100,6 +100,7 @@ public class SignedStateHolder implements Closeable {
     @Override
     public void close() throws IOException {
         platformState = null;
+        System.gc(); // hint to JVM
     }
 
     public static class MissingSignedStateComponent extends NullPointerException {

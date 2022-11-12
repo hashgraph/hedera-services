@@ -15,10 +15,13 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
+import com.hedera.services.utils.EntityNum;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -48,19 +51,13 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
                 "SummarizeSignedStateFile: input file %s summarize %s%n",
                 inputFile.toString(), doSummary.isPresent() ? "YES" : "NO");
 
-        int contractsFound = 0;
-        int contractsWithBytecodeFound = 0;
-        int bytesFound = 0;
+        var r = getContracts(inputFile);
 
-        try (var signedState = new SignedStateHolder(inputFile)) {
-            var contractIds = signedState.getAllKnownContracts();
-            contractsFound = contractIds.size();
-            var contractContents = signedState.getAllContractContents(contractIds);
-            contractsWithBytecodeFound = contractContents.size();
-            bytesFound =
-                    contractContents.values().stream()
-                            .collect(Collectors.summingInt((a) -> a.length));
-        }
+        int contractsFound = r.right;
+        var contractContents = r.left;
+        int contractsWithBytecodeFound = contractContents.size();
+        int bytesFound =
+                contractContents.values().stream().collect(Collectors.summingInt((a) -> a.length));
 
         System.out.printf(
                 "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
@@ -68,5 +65,16 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
                 contractsFound, contractsWithBytecodeFound, bytesFound);
 
         return 0;
+    }
+
+    private ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
+            throws Exception {
+        int contractsFound = 0;
+        try (var signedState = new SignedStateHolder(inputFile)) {
+            var contractIds = signedState.getAllKnownContracts();
+            contractsFound = contractIds.size();
+            var contractContents = signedState.getAllContractContents(contractIds);
+            return new ImmutablePair<>(contractContents, contractsFound);
+        }
     }
 }
