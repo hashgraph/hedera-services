@@ -158,6 +158,14 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                     final var receiver2 = spec.registry().getAccountID(RECEIVER2);
                                     final var amountToBeSent = 50 * ONE_HBAR;
 
+                                    /*
+                                      We will be covering the following test cases
+                                      1. Simple hbar transfer between 2 parties
+                                      2. When sender does not have the required key
+                                      3. When sender's balance is too low
+                                      4. Transfer among 3 parties
+                                      5. When transfer balances do not add to 0
+                                     */
                                     allRunFor(
                                             spec,
                                             newKeyNamed(DELEGATE_KEY)
@@ -167,7 +175,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(SENDER).key(DELEGATE_KEY),
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
-                                            // transfer between 2 parties
+                                            // Simple transfer between sender and receiver for 50 * ONE_HBAR
+                                            // should succeed
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -186,7 +195,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER),
-                                            // Sender does not have key
+                                            // Simple transfer between sender2 and receiver for 50 * ONE_HBAR
+                                            // should fail because sender2 does not have the right key
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -206,7 +216,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .via(cryptoTransferRevertNoKeyTxn)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // Sender balance is too low
+                                            // Simple transfer between sender2 and receiver for 1000 * ONE_HUNDRED_HBAR
+                                            // should fail because sender does not have enough hbars
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -228,7 +239,9 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .via(cryptoTransferRevertBalanceTooLowTxn)
                                                     .gas(GAS_TO_OFFER)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // transfer among 3 parties
+                                            // Simple transfer between sender, receiver and receiver2 for 50 * ONE_HBAR
+                                            // sender sends 50, receiver get 10 and receiver2 gets 40
+                                            // should succeed
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -255,7 +268,9 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .payingWith(GENESIS)
                                                     .via(cryptoTransferMultiTxn)
                                                     .gas(GAS_TO_OFFER),
-                                            // transfer does not add up to 0
+                                            // Simple transfer between sender, receiver and receiver2 for 50 * ONE_HBAR
+                                            // sender sends 50, receiver get 5 and receiver2 gets 40
+                                            // should fail because total does not add to 0
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -702,10 +717,19 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                     final var owner = spec.registry().getAccountID(OWNER);
                                     final var receiver = spec.registry().getAccountID(RECEIVER);
 
-                                    allRunFor(
+                                /*
+                                  We will be covering the following test cases.  These test cover hbar transfers
+                                  1. Transfer more than allowance amount
+                                  2. Transfer when there is no approval
+                                  3. Transfer 1/2 the allowance amount
+                                  4. Transfer the other 1/2 of the allowance amount
+                                  5. Transfer after allowance is spent
+                                 */
+
+                                  allRunFor(
                                             spec,
-                                            // trying to transfer more than allowance should
-                                            // revert
+                                            // Try to send 1 more than the allowance amount from owner to receiver
+                                            // should fail
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -724,7 +748,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                             EMPTY_TUPLE_ARRAY)
                                                     .via(revertingTransferFromTxn)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // revert due to no approval
+                                            // Try to send allowance amount but turn off isApproval flag
+                                            // should fail as we are claiming that there is no approval
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -742,7 +767,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                             EMPTY_TUPLE_ARRAY)
                                                     .via(revertingTransferFromTxn3)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // transfer allowance/2 amount
+                                            // Try to send 1/2 of the allowance amount from owner to receiver
+                                            // should succeed as isApproval is true.
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -760,7 +786,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                             EMPTY_TUPLE_ARRAY)
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS),
-                                            // transfer the rest of the allowance
+                                            // Try to send second 1/2 of the allowance amount from owner to receiver
+                                            // should succeed as isApproval is true.
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -781,7 +808,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
                                                     .has(accountWith().noAllowances()),
-                                            // no allowance left, should fail
+                                            // Try to send 1 hbar from owner to receiver
+                                            // should fail as all allowance has been spent
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -904,10 +932,18 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                     final var owner = spec.registry().getAccountID(OWNER);
                                     final var receiver = spec.registry().getAccountID(RECEIVER);
 
+                                /*
+                                  We will be covering the following test cases.  These test cover fungible token transfers
+                                  1. Transfer more than allowance amount
+                                  2. Transfer when there is no approval
+                                  3. Transfer 1/2 the allowance amount
+                                  4. Transfer the other 1/2 of the allowance amount
+                                  5. Transfer after allowance is spent
+                                 */
                                     allRunFor(
                                             spec,
-                                            // trying to transfer more than allowance should
-                                            // revert
+                                        // Try to send 1 more than the allowance amount from owner to receiver
+                                        // should fail
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -932,7 +968,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .build()))
                                                     .via(revertingTransferFromTxnFungible)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // revert due to no approval
+                                        // Try to send allowance amount but turn off isApproval flag
+                                        // should fail as we are claiming that there is no approval
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -955,7 +992,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .build()))
                                                     .via(revertingTransferFromTxn3)
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                            // transfer allowance/2 amount
+                                        // Try to send 1/2 of the allowance amount from owner to receiver
+                                        // should succeed as isApproval is true.
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -980,7 +1018,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                             .build()))
                                                     .via(successfulTransferFromTxn)
                                                     .hasKnownStatus(SUCCESS),
-                                            // transfer the rest of the allowance
+                                        // Try to send second 1/2 of the allowance amount from owner to receiver
+                                        // should succeed as isApproval is true.
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
@@ -1008,7 +1047,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
                                                     .has(accountWith().noAllowances()),
-                                            // no allowance left, should fail
+                                        // Try to send 1 token from owner to receiver
+                                        // should fail as all allowance has been spent
                                             contractCall(
                                                             CONTRACT,
                                                             TRANSFER_MULTIPLE_TOKENS,
