@@ -15,17 +15,10 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobKey.Type;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.platform.state.signed.SignedStateFileReader;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -42,7 +35,7 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
             arity = "1",
             paramLabel = "INPUT-SIGNED-STATE-FILE",
             description = "Input signed state file")
-    Optional<Path> inputFile;
+    Path inputFile;
 
     @Option(
             names = {"-s", "--summarize"},
@@ -53,35 +46,26 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
     public Integer call() throws Exception {
         System.out.printf(
                 "SummarizeSignedStateFile: input file %s summarize %s%n",
-                inputFile.map(Path::toString).orElse("<NONE>"),
-                doSummary.isPresent() ? "YES" : "NO");
+                inputFile.toString(), doSummary.isPresent() ? "YES" : "NO");
 
-        ConstructableRegistry.getInstance().registerConstructables("*");
-        var signedPair = SignedStateFileReader.readStateFile(inputFile.get());
-        var servicesState = (ServicesState) (signedPair.signedState().getState().getSwirldState());
-        var accounts = servicesState.accounts();
-        List<EntityNum> contractIds = new ArrayList<>();
-        accounts.forEach(
-                (k, v) -> {
-                    if (v.isSmartContract()) contractIds.add(k);
-                });
-
-        var fileStore = servicesState.storage();
         int contractsFound = 0;
+        int contractsWithBytecodeFound = 0;
         int bytesFound = 0;
-        for (var cid : contractIds) {
-            VirtualBlobKey vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid.intValue());
-            if (fileStore.containsKey(vbk)) {
-                var blob = fileStore.get(vbk); // check exists?
-                var maybeByteCodeHere = blob.getData();
-                contractsFound++;
-                bytesFound += maybeByteCodeHere.length;
-            }
+
+        try (var signedState = new SignedStateHolder(inputFile)) {
+            var contractIds = signedState.getAllKnownContracts();
+            contractsFound = contractIds.size();
+            var contractContents = signedState.getAllContractContents(contractIds);
+            contractsWithBytecodeFound = contractContents.size();
+            bytesFound =
+                    contractContents.values().stream()
+                            .collect(Collectors.summingInt((a) -> a.length));
         }
+
         System.out.printf(
                 "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
                         + " (%d bytes total)",
-                contractIds.size(), contractsFound, bytesFound);
+                contractsFound, contractsWithBytecodeFound, bytesFound);
 
         return 0;
     }
