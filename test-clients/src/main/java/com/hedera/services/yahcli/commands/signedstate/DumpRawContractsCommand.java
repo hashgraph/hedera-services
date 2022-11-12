@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,12 @@
  */
 package com.hedera.services.yahcli.commands.signedstate;
 
+import static org.apache.commons.codec.binary.Hex.encodeHexString;
+
 import com.hedera.services.utils.EntityNum;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
@@ -27,10 +28,10 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(
-        name = "summarize",
+        name = "dumprawcontracts",
         subcommands = {picocli.CommandLine.HelpCommand.class},
-        description = "Summarizes contents of signed state file")
-public class SummarizeSignedStateFileCommand implements Callable<Integer> {
+        description = "Dumps contract bytecodes in hex")
+public class DumpRawContractsCommand implements Callable<Integer> {
     @ParentCommand private SignedStateCommand signedStateCommand;
 
     @Option(
@@ -41,35 +42,27 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
     Path inputFile;
 
     @Option(
-            names = {"-s", "--summarize"},
-            description = "Provide summary of what was in the input file")
-    boolean doSummary;
+            names = {"-#", "--with-ids"},
+            description = "Output contract ids too")
+    boolean withIds;
 
     @Override
     public Integer call() throws Exception {
-        System.out.printf(
-                "SummarizeSignedStateFile: input file %s summarize %s%n",
-                inputFile.toString(), doSummary ? "YES" : "NO");
-
         var r = getContracts(inputFile);
 
-        int contractsFound = r.right;
         var contractContents = r.left;
-        int contractsWithBytecodeFound = contractContents.size();
-        int bytesFound =
-                contractContents.values().stream().collect(Collectors.summingInt((a) -> a.length));
-
-        System.out.printf(
-                "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
-                        + " (%d bytes total)",
-                contractsFound, contractsWithBytecodeFound, bytesFound);
+        for (var kv : contractContents.entrySet()) {
+            var bytecode = encodeHexString(kv.getValue());
+            if (withIds) System.out.printf("%s\t%d%n", bytecode, kv.getKey().intValue());
+            else System.out.printf("%s%n", bytecode);
+        }
 
         return 0;
     }
 
     private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
             throws Exception {
-        int contractsFound = 0;
+        int contractsFound;
         try (var signedState = new SignedStateHolder(inputFile)) {
             var contractIds = signedState.getAllKnownContracts();
             contractsFound = contractIds.size();

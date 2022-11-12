@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.bundles.logging)
     implementation(testLibs.besu.internal)
     implementation(testLibs.commons.collections4)
+    implementation(libs.commons.codec)
     implementation(libs.commons.io)
     implementation(libs.guava)
     implementation(libs.hapi) {
