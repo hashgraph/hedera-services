@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -29,7 +28,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -83,7 +81,7 @@ public class FileCreateSuite extends HapiApiSuite {
                 .then(
                         fileCreate("test")
                                 .lifetime(defaultMaxLifetime + 12_345L)
-                                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                                .hasKnownStatus(INVALID_EXPIRATION_TIME));
     }
 
     private HapiApiSpec createWithMemoWorks() {
@@ -108,7 +106,7 @@ public class FileCreateSuite extends HapiApiSuite {
         final var withUnspecifiedExpiry = "withUnspecifiedExpiry";
         final var withIgnoredAutoRenewPeriod = "withIgnoredAutoRenewPeriod";
 
-        return onlyDefaultHapiSpec("CreateWithAutoRenewWorks")
+        return defaultHapiSpec("CreateWithAutoRenewWorks")
                 .given(
                         cryptoCreate(CIVILIAN),
                         // Auto-renew account must sign
@@ -121,7 +119,7 @@ public class FileCreateSuite extends HapiApiSuite {
                                 .unmodifiable()
                                 .autoRenewAccount(CIVILIAN)
                                 .noExplicitExpiry()
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME))
+                                .hasPrecheck(INVALID_EXPIRATION_TIME))
                 .when(
                         fileCreate(withIgnoredExpiry)
                                 .unmodifiable()

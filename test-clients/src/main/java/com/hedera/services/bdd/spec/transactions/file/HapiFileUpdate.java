@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes.SYS_FILE_SERDES;
 import static java.util.Collections.EMPTY_MAP;
 import static java.util.Collections.EMPTY_SET;
 
@@ -73,8 +72,6 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
 public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
-    // Temporary work-around for CI states with expired system files
-    private static final long MIN_SYS_FILE_LIFETIME = 7776000L;
     static final Logger LOG = LogManager.getLogger(HapiFileUpdate.class);
 
     /* WARNING - set to true only if you really want to replace 0.0.121/2! */
@@ -320,8 +317,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
             }
         } else if (lifetimeSecs.isPresent()) {
             nl = lifetimeSecs.get();
-        } else if (SYS_FILE_SERDES.containsKey(fid.getFileNum())) {
-            nl = MIN_SYS_FILE_LIFETIME;
         }
         final OptionalLong newLifetime = (nl == -1) ? OptionalLong.empty() : OptionalLong.of(nl);
         FileUpdateTransactionBody opBody =

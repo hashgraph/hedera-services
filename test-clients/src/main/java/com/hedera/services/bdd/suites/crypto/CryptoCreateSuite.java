@@ -65,7 +65,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private static final String defaultAssociationsLimit =
             HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
     public static final String ACCOUNT = "account";
-    public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String TRUE = "true";
@@ -266,7 +265,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 .then(
                         cryptoCreate("broken")
                                 .autoRenewSecs(1L)
-                                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE),
+                                .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE),
                         cryptoCreate("alsoBroken")
                                 .entityMemo(ZERO_BYTE_MEMO)
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
