@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import static org.apache.commons.codec.binary.Hex.encodeHexString;
 
 import com.hedera.services.utils.EntityNum;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -42,6 +44,12 @@ public class DumpRawContractsCommand implements Callable<Integer> {
     Path inputFile;
 
     @Option(
+            names = {"-p", "--prefix"},
+            description =
+                    "Prefix for each contract bytecode line (suitable for finding lines via grep")
+    String prefix = "";
+
+    @Option(
             names = {"-#", "--with-ids"},
             description = "Output contract ids too")
     boolean withIds;
@@ -51,13 +59,33 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         var r = getContracts(inputFile);
 
         var contractContents = r.left;
-        for (var kv : contractContents.entrySet()) {
-            var bytecode = encodeHexString(kv.getValue());
-            if (withIds) System.out.printf("%s\t%d%n", bytecode, kv.getKey().intValue());
-            else System.out.printf("%s%n", bytecode);
-        }
+        var formattedContracts = formatContractLines(contractContents);
+        for (var s : formattedContracts) System.out.println(s);
 
         return 0;
+    }
+
+    private @NotNull Collection<String> formatContractLines(
+            Map<EntityNum, byte[]> contractContents) {
+        Collection<String> formattedContracts = new ArrayList<>();
+        for (var kv : contractContents.entrySet()) {
+            StringBuilder sb =
+                    new StringBuilder(
+                            kv.getValue().length * 2
+                                    + prefix.length()
+                                    + 50 /*more than enuf for the rest*/);
+            if (!prefix.isEmpty()) {
+                sb.append(prefix);
+                sb.append('\t');
+            }
+            sb.append(encodeHexString(kv.getValue()));
+            if (withIds) {
+                sb.append('\t');
+                sb.append(kv.getKey().intValue());
+            }
+            formattedContracts.add(sb.toString());
+        }
+        return formattedContracts;
     }
 
     private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
