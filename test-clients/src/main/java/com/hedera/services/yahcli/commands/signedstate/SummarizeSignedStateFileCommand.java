@@ -40,16 +40,10 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
             description = "Input signed state file")
     Path inputFile;
 
-    @Option(
-            names = {"-s", "--summarize"},
-            description = "Provide summary of what was in the input file")
-    boolean doSummary;
-
     @Override
     public Integer call() throws Exception {
         System.out.printf(
-                "SummarizeSignedStateFile: input file %s summarize %s%n",
-                inputFile.toString(), doSummary ? "YES" : "NO");
+                "SummarizeSignedStateFile: input file %s summarize %s%n", inputFile.toString());
 
         var r = getContracts(inputFile);
 
