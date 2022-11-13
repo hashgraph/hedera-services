@@ -17,8 +17,6 @@ package com.hedera.services.txns.file;
 
 import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.designatesAccountRemoval;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
@@ -37,10 +35,10 @@ import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.ExpiryMeta;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -64,6 +62,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
     private final HederaFs hfs;
     private final EntityNumbers entityNums;
     private final OptionValidator validator;
+    private final ExpiryValidator expiryValidator;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
     private final Supplier<MerkleNetworkContext> networkCtx;
@@ -73,6 +72,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
             final HederaFs hfs,
             final EntityNumbers entityNums,
             final OptionValidator validator,
+            final ExpiryValidator expiryValidator,
             final SigImpactHistorian sigImpactHistorian,
             final TransactionContext txnCtx,
             final Supplier<MerkleNetworkContext> networkCtx) {
@@ -81,6 +81,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         this.txnCtx = txnCtx;
         this.validator = validator;
         this.networkCtx = networkCtx;
+        this.expiryValidator = expiryValidator;
         this.sigImpactHistorian = sigImpactHistorian;
     }
 
@@ -101,13 +102,13 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
                 txnCtx.setStatus(FILE_DELETED);
                 return;
             }
-            if (updatesAutoRenewAccountButNotPeriod(op)) {
-                // Now any existing auto-renew period in state must be valid, since we
-                // are certainly going to have an auto-renew account now
-                if (!validator.isValidAutoRenewPeriod(attr.getTypedAutoRenewPeriod())) {
-                    txnCtx.setStatus(AUTORENEW_DURATION_NOT_IN_RANGE);
-                    return;
-                }
+
+            final var currentMeta = ExpiryMeta.fromExtantFileMeta(attr);
+            final var requestedMeta = ExpiryMeta.fromFileUpdateOp(op);
+            final var summarizedMeta = expiryValidator.summarizeUpdateAttempt(currentMeta, requestedMeta);
+            if (!summarizedMeta.isValid()) {
+                txnCtx.setStatus(summarizedMeta.status());
+                return;
             }
 
             if (!isAuthorizedToProcessFile(op, attr, target)) {
@@ -118,11 +119,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
             if (!op.getContents().isEmpty()) {
                 replaceResult = Optional.of(hfs.overwrite(target, op.getContents().toByteArray()));
             }
-            attr.setExpiry(max(op.getExpirationTime().getSeconds(), attr.getExpiry()));
-
             Optional<HederaFs.UpdateResult> changeResult = Optional.empty();
             if (replaceResult.map(HederaFs.UpdateResult::fileReplaced).orElse(TRUE)) {
-                updateAttrBased(attr, op);
+                updateAttrBased(attr, summarizedMeta.meta(), op);
                 changeResult = Optional.of(hfs.setattr(target, attr));
             }
 
@@ -145,13 +144,10 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private boolean updatesAutoRenewAccountButNotPeriod(final FileUpdateTransactionBody op) {
-        return op.hasAutoRenewAccount()
-                && !designatesAccountRemoval(op.getAutoRenewAccount())
-                && !op.hasAutoRenewPeriod();
-    }
-
-    private void updateAttrBased(final HFileMeta attr, final FileUpdateTransactionBody op) {
+    private void updateAttrBased(
+            final HFileMeta attr,
+            final ExpiryMeta validMeta,
+            final FileUpdateTransactionBody op) {
         // All fields have already been validated at this point
         if (op.hasKeys()) {
             attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));
@@ -159,16 +155,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
         if (op.hasMemo()) {
             attr.setMemo(op.getMemo().getValue());
         }
-        if (op.hasAutoRenewAccount()) {
-            if (designatesAccountRemoval(op.getAutoRenewAccount())) {
-                attr.removeAutoRenewId();
-            } else {
-                attr.setAutoRenewId(EntityId.fromGrpcAccountId(op.getAutoRenewAccount()));
-            }
-        }
-        if (op.hasAutoRenewPeriod()) {
-            attr.setAutoRenewPeriod(op.getAutoRenewPeriod().getSeconds());
-        }
+        validMeta.updateFileMeta(attr);
     }
 
     private boolean isAuthorizedToProcessFile(
@@ -218,12 +205,6 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
             return BAD_ENCODING;
         }
 
-        if (op.hasAutoRenewPeriod()) {
-            return validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())
-                    ? OK
-                    : AUTORENEW_DURATION_NOT_IN_RANGE;
-        }
-
         return OK;
     }
 
@@ -238,29 +219,9 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
     }
 
     private ResponseCodeEnum validate(final TransactionBody fileUpdateTxn) {
-        var op = fileUpdateTxn.getFileUpdate();
+        final var op = fileUpdateTxn.getFileUpdate();
 
-        final var memoValidity = !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
-        if (memoValidity != OK) {
-            return memoValidity;
-        }
-
-        if (op.hasExpirationTime()) {
-            final var effectiveDuration =
-                    Duration.newBuilder()
-                            .setSeconds(
-                                    op.getExpirationTime().getSeconds()
-                                            - fileUpdateTxn
-                                                    .getTransactionID()
-                                                    .getTransactionValidStart()
-                                                    .getSeconds())
-                            .build();
-            if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
-                return AUTORENEW_DURATION_NOT_IN_RANGE;
-            }
-        }
-
-        return OK;
+        return !op.hasMemo() ? OK : validator.memoCheck(op.getMemo().getValue());
     }
 
     static Key wrapped(final KeyList wacl) {

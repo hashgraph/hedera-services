@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.doCallRealMethod;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.NodeInfo;
@@ -65,6 +66,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
@@ -172,6 +174,19 @@ class ContextOptionValidatorTest {
         view = mock(StateView.class);
 
         subject = new ContextOptionValidator(nodeInfo, properties, txnCtx, dynamicProperties);
+    }
+
+    @Test
+    void defaultMethodsDelegate() {
+        final var mockSubject = mock(OptionValidator.class);
+        doCallRealMethod().when(mockSubject).isValidExpiry(1L);
+        doCallRealMethod().when(mockSubject).isValidAutoRenewPeriod(2L);
+
+        mockSubject.isValidExpiry(1L);
+        mockSubject.isValidAutoRenewPeriod(2L);
+
+        verify(mockSubject).isValidExpiry(MiscUtils.asSecondsTimestamp(1L));
+        verify(mockSubject).isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(2L).build());
     }
 
     private FileGetInfoResponse.FileInfo asMinimalInfo(HFileMeta meta) throws Exception {

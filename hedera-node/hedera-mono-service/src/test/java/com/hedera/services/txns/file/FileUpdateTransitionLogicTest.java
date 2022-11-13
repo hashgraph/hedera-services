@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
@@ -54,6 +55,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -116,6 +118,7 @@ class FileUpdateTransitionLogicTest {
     EntityNumbers number = new MockEntityNumbers();
     TransactionContext txnCtx;
     SigImpactHistorian sigImpactHistorian;
+    ExpiryValidator expiryValidator;
 
     FileUpdateTransitionLogic subject;
 
@@ -153,9 +156,11 @@ class FileUpdateTransitionLogicTest {
 
         sigImpactHistorian = mock(SigImpactHistorian.class);
 
+        expiryValidator = new ExpiryValidator(validator);
+
         subject =
                 new FileUpdateTransitionLogic(
-                        hfs, number, validator, sigImpactHistorian, txnCtx, () -> networkCtx);
+                        hfs, number, validator, expiryValidator, sigImpactHistorian, txnCtx, () -> networkCtx);
     }
 
     @Test
@@ -168,6 +173,7 @@ class FileUpdateTransitionLogicTest {
         // and:
         given(hfs.getattr(nonSysFileTarget)).willReturn(new HFileMeta(false, oldWacl, oldExpiry));
         given(hfs.setattr(any(), any())).willReturn(res);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -273,6 +279,7 @@ class FileUpdateTransitionLogicTest {
         // and:
         given(hfs.setattr(any(), any())).willReturn(new SimpleUpdateResult(true, false, SUCCESS));
         given(hfs.getattr(nonSysFileTarget)).willReturn(immutableAttr);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -310,6 +317,8 @@ class FileUpdateTransitionLogicTest {
         given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
         given(hfs.overwrite(any(), any()))
                 .willReturn(new SimpleUpdateResult(false, false, AUTHORIZATION_FAILED));
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -329,6 +338,8 @@ class FileUpdateTransitionLogicTest {
         given(hfs.overwrite(any(), any())).willReturn(new SimpleUpdateResult(false, true, SUCCESS));
         given(hfs.setattr(any(), any())).willReturn(new SimpleUpdateResult(true, false, SUCCESS));
         given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -355,6 +366,7 @@ class FileUpdateTransitionLogicTest {
         // and:
         given(hfs.setattr(any(), any())).willReturn(new SimpleUpdateResult(true, false, SUCCESS));
         given(hfs.getattr(nonSysFileTarget)).willReturn(oldAttr);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -541,20 +553,6 @@ class FileUpdateTransitionLogicTest {
     }
 
     @Test
-    void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
-        givenTxnCtxUpdating(EnumSet.of(UpdateTarget.EXPIRY));
-        given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
-
-        // when:
-        var syntaxCheck = subject.semanticCheck();
-        var status = syntaxCheck.apply(fileUpdateTxn);
-
-        // expect:
-        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, status);
-        verify(validator).isValidAutoRenewPeriod(expectedDuration);
-    }
-
-    @Test
     void hasCorrectApplicability() {
         givenTxnCtxUpdating(EnumSet.noneOf(UpdateTarget.class));
 
@@ -592,7 +590,6 @@ class FileUpdateTransitionLogicTest {
         if (targets.contains(UpdateTarget.AUTO_RENEW_PERIOD)) {
             final var duration = Duration.newBuilder().setSeconds(newAutoRenewPeriod).build();
             op.setAutoRenewPeriod(duration);
-            given(validator.isValidAutoRenewPeriod(duration)).willReturn(true);
         }
 
         txnId =

@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -29,6 +30,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
@@ -41,6 +43,8 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
+
+import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -97,23 +101,54 @@ public class FileCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec createWithAutoRenewWorks() {
-        return defaultHapiSpec("CreateWithAutoRenewWorks")
+        final var explicitExpiry = Instant.now()
+                .plusSeconds(2 * ONE_MONTHS_IN_SECONDS)
+                .getEpochSecond();
+        final var someAutoRenewPeriod = THREE_MONTHS_IN_SECONDS + 1;
+
+        final var withIgnoredExpiry = "withIgnoredExpiry";
+        final var withUnspecifiedExpiry = "withUnspecifiedExpiry";
+        final var withIgnoredAutoRenewPeriod = "withIgnoredAutoRenewPeriod";
+
+        return onlyDefaultHapiSpec("CreateWithAutoRenewWorks")
                 .given(
                         cryptoCreate(CIVILIAN),
-                        fileCreate("ntb")
+                        // Auto-renew account must sign
+                        fileCreate("missingAutoRenewSig")
                                 .unmodifiable()
                                 .autoRenewAccount(CIVILIAN)
                                 .signedBy(DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_SIGNATURE))
-                .when(
-                        fileCreate("ok")
+                                .hasKnownStatus(INVALID_SIGNATURE),
+                        fileCreate("missingExpiryAndNoAutoRenewPeriod")
                                 .unmodifiable()
-                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
-                                .autoRenewAccount(CIVILIAN))
+                                .autoRenewAccount(CIVILIAN)
+                                .noExplicitExpiry()
+                                .hasKnownStatus(INVALID_EXPIRATION_TIME))
+                .when(
+                        fileCreate(withIgnoredExpiry)
+                                .unmodifiable()
+                                .expiry(explicitExpiry)
+                                .autoRenewPeriod(someAutoRenewPeriod)
+                                .autoRenewAccount(CIVILIAN),
+                        fileCreate(withUnspecifiedExpiry)
+                                .unmodifiable()
+                                .noExplicitExpiry()
+                                .autoRenewPeriod(someAutoRenewPeriod)
+                                .autoRenewAccount(CIVILIAN),
+                        fileCreate(withIgnoredAutoRenewPeriod)
+                                .unmodifiable()
+                                .expiry(explicitExpiry)
+                                .autoRenewPeriod(someAutoRenewPeriod))
                 .then(
-                        getFileInfo("ok")
-                                .hasAutoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
-                                .hasAutoRenewAccount(CIVILIAN));
+                        getFileInfo(withIgnoredExpiry)
+                                .hasAutoRenewPeriod(someAutoRenewPeriod)
+                                .hasAutoRenewAccount(CIVILIAN),
+                        getFileInfo(withUnspecifiedExpiry)
+                                .hasAutoRenewPeriod(someAutoRenewPeriod)
+                                .hasAutoRenewAccount(CIVILIAN),
+                        getFileInfo(withIgnoredAutoRenewPeriod)
+                                .hasAutoRenewPeriod(someAutoRenewPeriod)
+                                .hasExpiry(() -> explicitExpiry));
     }
 
     private HapiApiSpec updateWithAutoRenewWorks() {

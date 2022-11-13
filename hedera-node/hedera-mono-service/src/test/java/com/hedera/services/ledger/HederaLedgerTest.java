@@ -17,6 +17,7 @@ package com.hedera.services.ledger;
 
 import static com.hedera.services.exceptions.InsufficientFundsException.messageFor;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -34,6 +35,7 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,6 +55,7 @@ import com.hedera.services.exceptions.InsufficientFundsException;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;
@@ -299,6 +302,20 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
         subject.autoRenewPeriod(genesis);
 
         verify(accountsLedger).get(genesis, AUTO_RENEW_PERIOD);
+    }
+
+    @Test
+    void delegatesToCorrectAutoRenewId() {
+        given(accountsLedger.get(genesis, AUTO_RENEW_ACCOUNT_ID)).willReturn(new EntityId(0, 0, 666));
+
+        final var ans = subject.autoRenewNum(genesis);
+
+        assertEquals(666L, ans.longValue());
+    }
+
+    @Test
+    void relaysNullAutoRenewId() {
+        assertNull(subject.autoRenewNum(genesis));
     }
 
     @Test

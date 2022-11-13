@@ -67,6 +67,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -137,7 +138,8 @@ class CryptoUpdateTransitionLogicTest {
                         txnCtx,
                         dynamicProperties,
                         () -> AccountStorageAdapter.fromInMemory(accounts),
-                        nodeInfo);
+                        nodeInfo,
+                        new ExpiryValidator(validator));
     }
 
     @Test
@@ -334,6 +336,7 @@ class CryptoUpdateTransitionLogicTest {
     void updatesExpiryIfPresent() {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenTxnCtx(EnumSet.of(EXPIRY));
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -444,6 +447,7 @@ class CryptoUpdateTransitionLogicTest {
     void updatesAutoRenewIfPresent() {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         givenTxnCtx(EnumSet.of(AccountCustomizer.Option.AUTO_RENEW_PERIOD));
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -493,15 +497,6 @@ class CryptoUpdateTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidAutoRenewPeriod() {
-        givenTxnCtx();
-        given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
-
-        assertEquals(
-                AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoUpdateTxn));
-    }
-
-    @Test
     void acceptsValidTxn() {
         givenTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
@@ -535,6 +530,7 @@ class CryptoUpdateTransitionLogicTest {
     void permitsDetachedIfOnlyExtendingExpiry() {
         givenTxnCtx(EnumSet.of(EXPIRY));
         given(ledger.isDetached(TARGET)).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -579,6 +575,8 @@ class CryptoUpdateTransitionLogicTest {
         givenTxnCtx();
         willThrow(MissingEntityException.class).given(ledger).customize(any(), any());
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -590,6 +588,8 @@ class CryptoUpdateTransitionLogicTest {
         givenTxnCtx();
         willThrow(DeletedAccountException.class).given(ledger).customize(any(), any());
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 

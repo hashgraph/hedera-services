@@ -18,6 +18,7 @@ package com.hedera.services.ledger;
 import static com.hedera.services.ledger.TransferLogic.dropTokenChanges;
 import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -55,11 +56,13 @@ import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MutableEntityAccess;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -381,6 +384,11 @@ public class HederaLedger {
 
     public long autoRenewPeriod(AccountID id) {
         return (long) accountsLedger.get(id, AUTO_RENEW_PERIOD);
+    }
+
+    public EntityNum autoRenewNum(final AccountID id) {
+        final var autoRenewId = (EntityId) accountsLedger.get(id, AUTO_RENEW_ACCOUNT_ID);
+        return autoRenewId == null ? null : autoRenewId.asNum();
     }
 
     public boolean isSmartContract(AccountID id) {

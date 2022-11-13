@@ -18,7 +18,6 @@ package com.hedera.services.txns.file;
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.mapToStatus;
 import static com.hedera.services.txns.file.FileUpdateTransitionLogic.wrapped;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
@@ -31,12 +30,11 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.ExpiryMeta;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,6 +42,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,6 +55,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
     private final OptionValidator validator;
     private final SigImpactHistorian sigImpactHistorian;
     private final TransactionContext txnCtx;
+    private final ExpiryValidator expiryValidator;
 
     @Inject
     public FileCreateTransitionLogic(
@@ -63,17 +63,20 @@ public class FileCreateTransitionLogic implements TransitionLogic {
             final UsageLimits usageLimits,
             final OptionValidator validator,
             final SigImpactHistorian sigImpactHistorian,
-            final TransactionContext txnCtx) {
+            final TransactionContext txnCtx,
+            final ExpiryValidator expiryValidator) {
         this.hfs = hfs;
         this.validator = validator;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
+        this.expiryValidator = expiryValidator;
         this.sigImpactHistorian = sigImpactHistorian;
     }
 
     @Override
     public void doStateTransition() {
-        var op = txnCtx.accessor().getTxn().getFileCreate();
+        final var accessor = txnCtx.accessor();
+        var op = accessor.getTxn().getFileCreate();
 
         try {
             var validity = assessedValidity(op);
@@ -82,7 +85,19 @@ public class FileCreateTransitionLogic implements TransitionLogic {
                 return;
             }
 
-            var attr = asAttr(op);
+            final var txnId = accessor.getTxnId();
+            final var expiryMeta = ExpiryMeta.fromFileCreateOp(op);
+            final var summarizedMeta =
+                    expiryValidator.summarizeCreationAttempt(
+                            txnId.getTransactionValidStart().getSeconds(),
+                            false,
+                            expiryMeta);
+            if (!summarizedMeta.isValid()) {
+                txnCtx.setStatus(summarizedMeta.status());
+                return;
+            }
+
+            var attr = asAttr(op, summarizedMeta.meta());
             var sponsor = txnCtx.activePayer();
             var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
@@ -122,21 +137,17 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         return OK;
     }
 
-    private HFileMeta asAttr(FileCreateTransactionBody op) {
-        JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
-
-        if (op.hasAutoRenewAccount()) {
-            final var autoRenewId = EntityId.fromGrpcAccountId(op.getAutoRenewAccount());
-            return new HFileMeta(
-                    false,
-                    wacl,
-                    op.getExpirationTime().getSeconds(),
-                    op.getMemo(),
-                    autoRenewId,
-                    op.getAutoRenewPeriod().getSeconds());
-        } else {
-            return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
-        }
+    private HFileMeta asAttr(
+            final FileCreateTransactionBody op,
+            final ExpiryMeta validExpiryMeta) {
+        final var wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
+        return new HFileMeta(
+                false,
+                wacl,
+                validExpiryMeta.expiry(),
+                op.getMemo(),
+                validExpiryMeta.autoRenewId(),
+                validExpiryMeta.readableAutoRenewPeriod());
     }
 
     private ResponseCodeEnum validate(final TransactionBody fileCreateTxn) {
@@ -147,21 +158,9 @@ public class FileCreateTransitionLogic implements TransitionLogic {
             return memoValidity;
         }
 
-        if (!op.hasExpirationTime()) {
+        final var configuresAutoRenew = op.hasAutoRenewAccount() && op.hasAutoRenewPeriod();
+        if (!op.hasExpirationTime() && !configuresAutoRenew) {
             return INVALID_EXPIRATION_TIME;
-        }
-
-        var effectiveDuration =
-                Duration.newBuilder()
-                        .setSeconds(
-                                op.getExpirationTime().getSeconds()
-                                        - fileCreateTxn
-                                                .getTransactionID()
-                                                .getTransactionValidStart()
-                                                .getSeconds())
-                        .build();
-        if (!validator.isValidAutoRenewPeriod(effectiveDuration)) {
-            return AUTORENEW_DURATION_NOT_IN_RANGE;
         }
 
         return OK;

@@ -21,7 +21,6 @@ import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -55,6 +54,8 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.ExpiryMeta;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -90,6 +91,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
     private final AliasManager aliasManager;
+    private final ExpiryValidator expiryValidator;
 
     @Inject
     public CryptoCreateTransitionLogic(
@@ -101,7 +103,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final GlobalDynamicProperties dynamicProperties,
             final Supplier<AccountStorageAdapter> accounts,
             final NodeInfo nodeInfo,
-            final AliasManager aliasManager) {
+            final AliasManager aliasManager,
+            final ExpiryValidator expiryValidator) {
         this.ledger = ledger;
         this.txnCtx = txnCtx;
         this.usageLimits = usageLimits;
@@ -111,6 +114,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
         this.aliasManager = aliasManager;
+        this.expiryValidator = expiryValidator;
     }
 
     @Override
@@ -120,12 +124,23 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             return;
         }
         try {
-            TransactionBody cryptoCreateTxn = txnCtx.accessor().getTxn();
+            final var txn = txnCtx.accessor().getTxn();
+            final var op = txn.getCryptoCreateAccount();
+            final var now = txnCtx.consensusTime().getEpochSecond();
+
+            final var summarizedMeta = expiryValidator.summarizeCreationAttempt(
+                    now,
+                    true,
+                    ExpiryMeta.fromCryptoCreateOp(op));
+            if (!summarizedMeta.isValid()) {
+                txnCtx.setStatus(summarizedMeta.status());
+                return;
+            }
+
             AccountID sponsor = txnCtx.activePayer();
 
-            CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
             long balance = op.getInitialBalance();
-            final var customizer = asCustomizer(op);
+            final var customizer = asCustomizer(op, summarizedMeta.knownValidMeta());
             final var created = ledger.create(sponsor, balance, customizer);
             sigImpactHistorian.markEntityChanged(created.getAccountNum());
 
@@ -157,19 +172,18 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private HederaAccountCustomizer asCustomizer(CryptoCreateTransactionBody op) {
-        long autoRenewPeriod = op.getAutoRenewPeriod().getSeconds();
-        long consensusTime = txnCtx.consensusTime().getEpochSecond();
-        long expiry = consensusTime + autoRenewPeriod;
-
+    private HederaAccountCustomizer asCustomizer(final CryptoCreateTransactionBody op, final ExpiryMeta validMeta) {
         var customizer = new HederaAccountCustomizer();
         customizer
                 .memo(op.getMemo())
-                .expiry(expiry)
-                .autoRenewPeriod(autoRenewPeriod)
+                .expiry(validMeta.expiry())
+                .autoRenewPeriod(validMeta.autoRenewPeriod())
                 .isReceiverSigRequired(op.getReceiverSigRequired())
                 .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
                 .isDeclinedReward(op.getDeclineReward());
+        if (validMeta.hasAutoRenewNum()) {
+            customizer.autoRenewAccount(validMeta.autoRenewId());
+        }
 
         var emptyAlias = op.getAlias().isEmpty();
         if (!emptyAlias && !op.hasKey()) {
@@ -257,9 +271,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
         if (!op.hasAutoRenewPeriod()) {
             return INVALID_RENEWAL_PERIOD;
-        }
-        if (!validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-            return AUTORENEW_DURATION_NOT_IN_RANGE;
         }
         if (op.getSendRecordThreshold() < 0L) {
             return INVALID_SEND_RECORD_THRESHOLD;

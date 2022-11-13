@@ -62,6 +62,7 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
     private final String fileName;
     private boolean immutable = false;
     private boolean advertiseCreation = false;
+    private boolean omitExpirationTime = false;
     private long autoRenewPeriod = -1;
     OptionalLong expiry = OptionalLong.empty();
     OptionalLong lifetime = OptionalLong.empty();
@@ -86,6 +87,11 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
 
     public HapiFileCreate advertisingCreation() {
         advertiseCreation = true;
+        return this;
+    }
+
+    public HapiFileCreate noExplicitExpiry() {
+        omitExpirationTime = true;
         return this;
     }
 
@@ -217,16 +223,20 @@ public class HapiFileCreate extends HapiTxnOp<HapiFileCreate> {
                                     memo.ifPresent(builder::setMemo);
                                     contents.ifPresent(
                                             b -> builder.setContents(ByteString.copyFrom(b)));
-                                    lifetime.ifPresent(
-                                            s ->
-                                                    builder.setExpirationTime(
-                                                            TxnFactory.expiryGiven(s)));
-                                    expiry.ifPresent(
-                                            t ->
-                                                    builder.setExpirationTime(
-                                                            Timestamp.newBuilder()
-                                                                    .setSeconds(t)
-                                                                    .build()));
+                                    if (!omitExpirationTime) {
+                                        lifetime.ifPresent(
+                                                s ->
+                                                        builder.setExpirationTime(
+                                                                TxnFactory.expiryGiven(s)));
+                                        expiry.ifPresent(
+                                                t ->
+                                                        builder.setExpirationTime(
+                                                                Timestamp.newBuilder()
+                                                                        .setSeconds(t)
+                                                                        .build()));
+                                    } else {
+                                        builder.clearExpirationTime();
+                                    }
                                 });
         return b -> {
             expiryUsed.set(opBody.getExpirationTime());

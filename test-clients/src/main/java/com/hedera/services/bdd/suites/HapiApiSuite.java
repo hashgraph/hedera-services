@@ -68,6 +68,7 @@ public abstract class HapiApiSuite {
     public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
+    public static final long ONE_MONTHS_IN_SECONDS = THREE_MONTHS_IN_SECONDS / 3;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
     public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";

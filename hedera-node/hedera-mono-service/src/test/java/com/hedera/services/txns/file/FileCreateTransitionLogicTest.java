@@ -30,12 +30,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
+import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
@@ -48,6 +50,7 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -67,6 +70,7 @@ import java.util.EnumSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
+
 
 class FileCreateTransitionLogicTest {
     private UsageLimits usageLimits;
@@ -104,6 +108,7 @@ class FileCreateTransitionLogicTest {
     OptionValidator validator;
     SigImpactHistorian sigImpactHistorian;
     TransactionContext txnCtx;
+    ExpiryValidator expiryValidator;
 
     FileCreateTransitionLogic subject;
 
@@ -123,9 +128,11 @@ class FileCreateTransitionLogicTest {
         given(validator.hasGoodEncoding(wacl)).willReturn(true);
         given(validator.memoCheck(any())).willReturn(OK);
 
+        expiryValidator = new ExpiryValidator(validator);
+
         subject =
                 new FileCreateTransitionLogic(
-                        hfs, usageLimits, validator, sigImpactHistorian, txnCtx);
+                        hfs, usageLimits, validator, sigImpactHistorian, txnCtx, expiryValidator);
     }
 
     @Test
@@ -144,6 +151,8 @@ class FileCreateTransitionLogicTest {
         given(usageLimits.areCreatableFiles(1)).willReturn(true);
 
         givenTxnCtxCreating(EnumSet.complementOf(EnumSet.of(AUTO_RENEW_PERIOD)));
+        given(accessor.getTxnId()).willReturn(txnId);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
         // and:
         given(hfs.create(any(), any(), any())).willReturn(created);
 
@@ -182,20 +191,6 @@ class FileCreateTransitionLogicTest {
     }
 
     @Test
-    void syntaxCheckTestsExpiryAsAutoRenewPeriod() {
-        givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
-        given(validator.isValidAutoRenewPeriod(expectedDuration)).willReturn(false);
-
-        // when:
-        var syntaxCheck = subject.semanticCheck();
-        var status = syntaxCheck.apply(fileCreateTxn);
-
-        // expect:
-        assertEquals(AUTORENEW_DURATION_NOT_IN_RANGE, status);
-        verify(validator).isValidAutoRenewPeriod(expectedDuration);
-    }
-
-    @Test
     void syntaxCheckRejectsMissingExpiry() {
         givenTxnCtxCreating(EnumSet.of(CONTENTS, KEY));
 
@@ -211,6 +206,8 @@ class FileCreateTransitionLogicTest {
     void handleAllowsImmutable() {
         givenTxnCtxCreating(EnumSet.of(CONTENTS, EXPIRY));
         given(usageLimits.areCreatableFiles(1)).willReturn(true);
+        given(accessor.getTxnId()).willReturn(txnId);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
 
         // when:
         subject.doStateTransition();
@@ -257,6 +254,7 @@ class FileCreateTransitionLogicTest {
     void handleRejectsAlreadyExpired() {
         givenTxnCtxCreating(EnumSet.allOf(ValidProperty.class));
         given(usageLimits.areCreatableFiles(1)).willReturn(true);
+        given(accessor.getTxnId()).willReturn(txnId);
         willThrow(
                         new IllegalArgumentException(
                                 TieredHederaFs.IllegalArgumentType.FILE_WOULD_BE_EXPIRED

@@ -130,6 +130,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
         return this;
     }
 
+    public HapiCryptoUpdate explicitKey(Key key) {
+        updKey = Optional.of(key);
+        return this;
+    }
+
     public HapiCryptoUpdate receiverSigRequired(boolean isRequired) {
         updSigRequired = Optional.of(isRequired);
         return this;
@@ -176,10 +181,12 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     @Override
     @SuppressWarnings("java:S106")
     protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        try {
-            updKey = updKeyName.map(spec.registry()::getKey);
-        } catch (Exception missingKey) {
-            log.warn("No such key {}", updKey);
+        if (updKey.isEmpty()) {
+            try {
+                updKey = updKeyName.map(spec.registry()::getKey);
+            } catch (Exception missingKey) {
+                log.warn("No such key {}", updKey);
+            }
         }
         AccountID id;
 

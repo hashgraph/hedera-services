@@ -24,6 +24,7 @@ import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -44,6 +45,9 @@ import java.time.Instant;
 public interface OptionValidator {
     boolean hasGoodEncoding(Key key);
 
+    default boolean isValidExpiry(final long then) {
+        return isValidExpiry(MiscUtils.asSecondsTimestamp(then));
+    }
     boolean isValidExpiry(Timestamp expiry);
 
     boolean isThisNodeAccount(AccountID id);
@@ -52,6 +56,9 @@ public interface OptionValidator {
 
     boolean isAfterConsensusSecond(long now);
 
+    default boolean isValidAutoRenewPeriod(final long len) {
+        return isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(len).build());
+    }
     boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 
     boolean isAcceptableTransfersLength(TransferList accountAmounts);

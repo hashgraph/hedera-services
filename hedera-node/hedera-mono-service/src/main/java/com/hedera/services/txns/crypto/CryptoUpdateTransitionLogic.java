@@ -47,17 +47,21 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.TransitionLogic;
+import com.hedera.services.txns.validation.ExpiryMeta;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
 import java.util.EnumSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,6 +85,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
     private final GlobalDynamicProperties dynamicProperties;
     private final Supplier<AccountStorageAdapter> accounts;
     private final NodeInfo nodeInfo;
+    private final ExpiryValidator expiryValidator;
 
     @Inject
     public CryptoUpdateTransitionLogic(
@@ -90,7 +95,8 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             final TransactionContext txnCtx,
             final GlobalDynamicProperties dynamicProperties,
             final Supplier<AccountStorageAdapter> accounts,
-            final NodeInfo nodeInfo) {
+            final NodeInfo nodeInfo,
+            final ExpiryValidator expiryValidator) {
         this.ledger = ledger;
         this.validator = validator;
         this.txnCtx = txnCtx;
@@ -98,6 +104,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
         this.dynamicProperties = dynamicProperties;
         this.accounts = accounts;
         this.nodeInfo = nodeInfo;
+        this.expiryValidator = expiryValidator;
     }
 
     @Override
@@ -105,15 +112,23 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
         try {
             final var op = txnCtx.accessor().getTxn().getCryptoUpdateAccount();
             final var target = op.getAccountIDToUpdate();
-            final var customizer = asCustomizer(op);
 
-            if (op.hasExpirationTime() && !validator.isValidExpiry(op.getExpirationTime())) {
-                txnCtx.setStatus(INVALID_EXPIRATION_TIME);
-                return;
-            }
+            final var customizer = asCustomizer(op);
             final var validity = sanityCheck(target, customizer);
             if (validity != OK) {
                 txnCtx.setStatus(validity);
+                return;
+            }
+
+            final var currentMeta = new ExpiryMeta(
+                    ledger.expiry(target),
+                    ledger.autoRenewPeriod(target),
+                    ledger.autoRenewNum(target));
+            final var requestedMeta = ExpiryMeta.fromCryptoUpdateOp(op);
+            final var summarizedMeta =
+                    expiryValidator.summarizeUpdateAttempt(currentMeta, requestedMeta);
+            if (!summarizedMeta.isValid()) {
+                txnCtx.setStatus(summarizedMeta.status());
                 return;
             }
             if (ledger.isDetached(target)) {
@@ -147,13 +162,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
 
         if (ledger.isDetached(target) && !keyChanges.equals(EXPIRY_ONLY)) {
             return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
-        }
-
-        if (keyChanges.contains(AccountProperty.EXPIRY)) {
-            final long newExpiry = (long) changes.get(AccountProperty.EXPIRY);
-            if (newExpiry < ledger.expiry(target)) {
-                return EXPIRATION_REDUCTION_NOT_ALLOWED;
-            }
         }
 
         if (keyChanges.contains(AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS)) {
@@ -235,9 +243,6 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
             }
         }
 
-        if (op.hasAutoRenewPeriod() && !validator.isValidAutoRenewPeriod(op.getAutoRenewPeriod())) {
-            return AUTORENEW_DURATION_NOT_IN_RANGE;
-        }
         if (op.hasProxyAccountID()
                 && !op.getProxyAccountID().equals(AccountID.getDefaultInstance())) {
             return PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;

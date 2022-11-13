@@ -77,6 +77,7 @@ import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.validation.ExpiryValidator;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -167,7 +168,8 @@ class CryptoCreateTransitionLogicTest {
                         dynamicProperties,
                         () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo,
-                        aliasManager);
+                        aliasManager,
+                        new ExpiryValidator(validator));
     }
 
     @Test
@@ -434,14 +436,19 @@ class CryptoCreateTransitionLogicTest {
                 unhex("03af80b11d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
         final var invalidEcdsaKey =
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(invalidEcdsaBytes)).build();
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(invalidEcdsaKey);
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder())
+                .setKey(invalidEcdsaKey);
+        cryptoCreateTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(opBuilder).build();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
 
@@ -488,15 +495,6 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
-    void rejectsInvalidAutoRenewPeriod() {
-        givenValidTxnCtx();
-        given(validator.isValidAutoRenewPeriod(any())).willReturn(false);
-
-        assertEquals(
-                AUTORENEW_DURATION_NOT_IN_RANGE, subject.semanticCheck().apply(cryptoCreateTxn));
-    }
-
-    @Test
     void acceptsValidTxn() {
         givenValidTxnCtx();
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
@@ -535,6 +533,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -561,6 +561,7 @@ class CryptoCreateTransitionLogicTest {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
                         .setMemo(MEMO)
                         .setReceiverSigRequired(false)
                         .setDeclineReward(false)
@@ -577,6 +578,8 @@ class CryptoCreateTransitionLogicTest {
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -604,6 +607,7 @@ class CryptoCreateTransitionLogicTest {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
                         .setMemo(MEMO)
+                        .setAutoRenewPeriod(Duration.newBuilder())
                         .setReceiverSigRequired(false)
                         .setDeclineReward(false)
                         .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
@@ -618,6 +622,8 @@ class CryptoCreateTransitionLogicTest {
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
         subject.doStateTransition();
@@ -646,6 +652,7 @@ class CryptoCreateTransitionLogicTest {
 
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
                         .setMemo(MEMO)
                         .setReceiverSigRequired(false)
                         .setDeclineReward(false)
@@ -659,6 +666,8 @@ class CryptoCreateTransitionLogicTest {
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
         subject.doStateTransition();
@@ -687,6 +696,7 @@ class CryptoCreateTransitionLogicTest {
 
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
                         .setMemo(MEMO)
                         .setReceiverSigRequired(false)
                         .setDeclineReward(false)
@@ -702,6 +712,8 @@ class CryptoCreateTransitionLogicTest {
                 .willReturn(MISSING_NUM);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -733,6 +745,7 @@ class CryptoCreateTransitionLogicTest {
 
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
                         .setMemo(MEMO)
                         .setReceiverSigRequired(false)
                         .setDeclineReward(false)
@@ -747,6 +760,8 @@ class CryptoCreateTransitionLogicTest {
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
 
         subject.doStateTransition();
@@ -773,7 +788,9 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathECKey() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder())
+                .setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -784,6 +801,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.getAccountsLedger()).willReturn(accountsLedger);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
@@ -813,7 +832,9 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathECKeyAndCreateWithAliasAndLazyCreateDisabled() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(ECDSA_KEY);
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder())
+                .setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -828,6 +849,8 @@ class CryptoCreateTransitionLogicTest {
         given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
         given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -852,8 +875,11 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathEDKey() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder().setKey(aPrimitiveEDKey);
-        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(Duration.newBuilder())
+                .setKey(aPrimitiveEDKey);
+        cryptoCreateTxn = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
@@ -865,6 +891,9 @@ class CryptoCreateTransitionLogicTest {
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -901,6 +930,8 @@ class CryptoCreateTransitionLogicTest {
         givenValidTxnCtx();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(ledger.create(any(), anyLong(), any())).willThrow(InsufficientFundsException.class);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
 
         subject.doStateTransition();
 
@@ -911,6 +942,8 @@ class CryptoCreateTransitionLogicTest {
     void translatesUnknownException() {
         givenValidTxnCtx();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+        given(validator.isValidExpiry(anyLong())).willReturn(true);
+        given(validator.isValidAutoRenewPeriod(anyLong())).willReturn(true);
         cryptoCreateTxn =
                 cryptoCreateTxn.toBuilder()
                         .setCryptoCreateAccount(
