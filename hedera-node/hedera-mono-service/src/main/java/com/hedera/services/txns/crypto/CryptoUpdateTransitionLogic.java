@@ -132,6 +132,7 @@ public class CryptoUpdateTransitionLogic implements TransitionLogic {
                 customizer.isExpiredAndPendingRemoval(false);
             }
 
+            summarizedMeta.knownValidMeta().updateCustomizer(customizer);
             ledger.customize(target, customizer);
             sigImpactHistorian.markEntityChanged(target.getAccountNum());
             txnCtx.setStatus(SUCCESS);

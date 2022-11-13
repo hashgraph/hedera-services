@@ -69,6 +69,7 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
     private Optional<Long> newStakedNodeId = Optional.empty();
     private Optional<Boolean> isDeclinedReward = Optional.empty();
     @Nullable private String autoRenewAccount;
+    private boolean removeAutoRenewAccount = false;
 
     private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
@@ -87,6 +88,11 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
 
     public HapiCryptoUpdate autoRenewAccount(final String autoRenewAccount) {
         this.autoRenewAccount = autoRenewAccount;
+        return this;
+    }
+
+    public HapiCryptoUpdate removingAutoRenewAccount() {
+        this.removeAutoRenewAccount = true;
         return this;
     }
 
@@ -221,7 +227,9 @@ public class HapiCryptoUpdate extends HapiTxnOp<HapiCryptoUpdate> {
                                     } else {
                                         updKey.ifPresent(builder::setKey);
                                     }
-                                    if (autoRenewAccount != null) {
+                                    if (removeAutoRenewAccount) {
+                                        builder.setAutoRenewAccount(AUTO_RENEW_REMOVE_SENTINEL_ID);
+                                    } else if (autoRenewAccount != null) {
                                         builder.setAutoRenewAccount(asId(autoRenewAccount, spec));
                                     }
                                     newAutoRenewPeriod.ifPresent(

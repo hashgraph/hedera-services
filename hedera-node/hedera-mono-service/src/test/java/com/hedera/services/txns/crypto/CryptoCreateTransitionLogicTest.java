@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
 import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
@@ -30,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIAL_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
@@ -107,6 +109,8 @@ class CryptoCreateTransitionLogicTest {
     private static final int MAX_AUTO_ASSOCIATIONS = 1234;
     private static final int MAX_TOKEN_ASSOCIATIONS = 2345;
     private static final AccountID PROXY = AccountID.newBuilder().setAccountNum(4_321L).build();
+    private static final AccountID AUTO_RENEW =
+            AccountID.newBuilder().setAccountNum(666_666L).build();
     private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(1_234L).build();
     private static final AccountID CREATED = AccountID.newBuilder().setAccountNum(9_999L).build();
     private static final AccountID STAKED_ACCOUNT_ID =
@@ -543,16 +547,31 @@ class CryptoCreateTransitionLogicTest {
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
-        assertEquals(8, changes.size());
+        assertEquals(9, changes.size());
         assertEquals(CUSTOM_AUTO_RENEW_PERIOD, (long) changes.get(AUTO_RENEW_PERIOD));
         assertEquals(expiry, (long) changes.get(EXPIRY));
         assertEquals(KEY, JKey.mapJKey((JKey) changes.get(AccountProperty.KEY)));
+        assertEquals(EntityId.fromGrpcAccountId(AUTO_RENEW), changes.get(AUTO_RENEW_ACCOUNT_ID));
         assertEquals(true, changes.get(IS_RECEIVER_SIG_REQUIRED));
         assertNull(changes.get(AccountProperty.PROXY));
         assertEquals(EntityId.fromGrpcAccountId(STAKED_ACCOUNT_ID).num(), changes.get(STAKED_ID));
         assertEquals(false, changes.get(DECLINE_REWARD));
         assertEquals(MEMO, changes.get(AccountProperty.MEMO));
         assertEquals(MAX_AUTO_ASSOCIATIONS, changes.get(MAX_AUTOMATIC_ASSOCIATIONS));
+    }
+
+    @Test
+    void rejectsInvalidExpiryUpdate() throws Throwable {
+        final var expiry = consensusTime.getEpochSecond() + CUSTOM_AUTO_RENEW_PERIOD;
+        final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
+        givenValidTxnCtx();
+        given(ledger.create(any(), anyLong(), any())).willReturn(CREATED);
+        given(validator.isValidStakedId(any(), any(), anyLong(), any(), any())).willReturn(true);
+        given(usageLimits.areCreatableAccounts(1)).willReturn(true);
+
+        subject.doStateTransition();
+
+        verify(txnCtx).setStatus(INVALID_EXPIRATION_TIME);
     }
 
     @Test
@@ -1139,6 +1158,7 @@ class CryptoCreateTransitionLogicTest {
                         .setReceiverSigRequired(true)
                         .setAutoRenewPeriod(
                                 Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+                        .setAutoRenewAccount(AUTO_RENEW)
                         .setReceiveRecordThreshold(CUSTOM_RECEIVE_THRESHOLD)
                         .setSendRecordThreshold(CUSTOM_SEND_THRESHOLD)
                         .setKey(toUse)

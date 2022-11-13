@@ -40,6 +40,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import java.util.EnumMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 
 /**
  * Implements a fluent builder for defining a set of standard customizations relevant to any account
@@ -164,10 +165,9 @@ public abstract class AccountCustomizer<
         return self();
     }
 
-    public T autoRenewAccount(final EntityId option) {
-        if (option != null) {
-            changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
-        }
+    public T autoRenewAccount(@Nullable final EntityId option) {
+        // If null, denotes removal of the auto-renew account
+        changeManager.update(changes, optionProperties.get(AUTO_RENEW_ACCOUNT_ID), option);
         return self();
     }
 

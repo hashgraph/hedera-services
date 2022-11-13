@@ -470,6 +470,9 @@ public class StateView {
                         .setOwnedNfts(account.getNftsOwned())
                         .setMaxAutomaticTokenAssociations(account.getMaxAutomaticAssociations())
                         .setEthereumNonce(account.getEthereumNonce());
+        Optional.ofNullable(account.getAutoRenewAccount())
+                .map(EntityId::toGrpcAccountId)
+                .ifPresent(info::setAutoRenewAccount);
         Optional.ofNullable(account.getProxy())
                 .map(EntityId::toGrpcAccountId)
                 .ifPresent(info::setProxyAccountID);

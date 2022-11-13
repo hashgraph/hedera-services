@@ -16,6 +16,7 @@
 package com.hedera.services.txns.validation;
 
 import com.hedera.services.files.HFileMeta;
+import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -112,19 +113,33 @@ public record ExpiryMeta(long expiry, long autoRenewPeriod, @Nullable EntityNum 
     }
 
     public void updateFileMeta(final HFileMeta meta) {
+        assertSuitableForUpdate();
+        meta.setExpiry(expiry);
+        meta.setAutoRenewPeriod(autoRenewPeriod);
+        meta.setAutoRenewId(effectiveAutoRenewId());
+    }
+
+    public void updateCustomizer(final HederaAccountCustomizer customizer) {
+        assertSuitableForUpdate();
+        customizer.expiry(expiry);
+        customizer.autoRenewPeriod(autoRenewPeriod);
+        customizer.autoRenewAccount(effectiveAutoRenewId());
+    }
+
+    private EntityId effectiveAutoRenewId() {
+        // 0.0.0 is a sentinel value used to remove an auto-renew account
+        return autoRenewNum == null || autoRenewNum.longValue() == 0
+                ? null
+                : autoRenewNum.toEntityId();
+    }
+
+    private void assertSuitableForUpdate() {
         if (expiry == UNUSED_FIELD_SENTINEL) {
             throw new IllegalStateException("No usable expiry is set");
         }
         if (autoRenewPeriod == UNUSED_FIELD_SENTINEL) {
             throw new IllegalStateException("No usable auto-renew period is set");
         }
-        meta.setExpiry(expiry);
-        meta.setAutoRenewPeriod(autoRenewPeriod);
-        // 0.0.0 is a sentinel value used to remove an auto-renew account
-        meta.setAutoRenewId(
-                autoRenewNum == null || autoRenewNum.longValue() == 0
-                        ? null
-                        : autoRenewNum.toEntityId());
     }
 
     @Nullable
@@ -132,7 +147,7 @@ public record ExpiryMeta(long expiry, long autoRenewPeriod, @Nullable EntityNum 
         return autoRenewNum == null ? null : autoRenewNum.toEntityId();
     }
 
-    public long readableAutoRenewPeriod() {
+    public long usableAutoRenewPeriod() {
         return autoRenewPeriod == UNUSED_FIELD_SENTINEL ? 0 : autoRenewPeriod;
     }
 

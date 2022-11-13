@@ -50,6 +50,7 @@ import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.stats.QueryObs;
 import com.hedera.services.bdd.spec.stats.TxnObs;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -78,6 +79,8 @@ import org.apache.tuweni.bytes.Bytes;
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
+    public static final AccountID AUTO_RENEW_REMOVE_SENTINEL_ID =
+            AccountID.newBuilder().setShardNum(0L).setRealmNum(0L).setAccountNum(0L).build();
     private static final Response UNKNOWN_RESPONSE =
             Response.newBuilder()
                     .setTransactionGetReceipt(

@@ -260,6 +260,7 @@ class StateViewTest {
         tokenAccount.setNumPositiveBalances(0);
         tokenAccount.setStakedId(10L);
         tokenAccount.setDeclineReward(true);
+        tokenAccount.setAutoRenewAccount(autoRenewId);
         contract =
                 MerkleAccountFactory.newAccount()
                         .alias(create2Address)
@@ -752,6 +753,7 @@ class StateViewTest {
                         .setMemo(tokenAccount.getMemo())
                         .setAutoRenewPeriod(
                                 Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setAutoRenewAccount(autoRenewId.toGrpcAccountId())
                         .setBalance(tokenAccount.getBalance())
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
@@ -833,6 +835,7 @@ class StateViewTest {
                         .setMemo(tokenAccount.getMemo())
                         .setAutoRenewPeriod(
                                 Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setAutoRenewAccount(autoRenewId.toGrpcAccountId())
                         .setBalance(tokenAccount.getBalance())
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
@@ -917,6 +920,7 @@ class StateViewTest {
                         .setMemo(tokenAccount.getMemo())
                         .setAutoRenewPeriod(
                                 Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setAutoRenewAccount(autoRenewId.toGrpcAccountId())
                         .setBalance(tokenAccount.getBalance())
                         .setExpirationTime(
                                 Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))

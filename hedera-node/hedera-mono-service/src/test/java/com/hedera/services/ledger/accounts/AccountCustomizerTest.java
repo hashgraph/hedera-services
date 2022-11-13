@@ -47,6 +47,7 @@ import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.submerkle.EntityId;
 import java.util.EnumMap;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class AccountCustomizerTest {
@@ -166,7 +167,6 @@ class AccountCustomizerTest {
         setupWithMockChangeManager();
 
         subject.proxy(null);
-        subject.autoRenewAccount(null);
 
         verifyNoInteractions(changeManager);
     }
@@ -185,6 +185,21 @@ class AccountCustomizerTest {
                                 TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)
                                         ::equals),
                         argThat(autoRenewId::equals));
+    }
+
+    @Test
+    void changesExpectedAutoRenewAccountPropertyIfNull() {
+        setupWithMockChangeManager();
+
+        subject.autoRenewAccount(null);
+
+        verify(changeManager)
+                .update(
+                        any(EnumMap.class),
+                        argThat(
+                                TestAccountCustomizer.OPTION_PROPERTIES.get(AUTO_RENEW_ACCOUNT_ID)
+                                        ::equals),
+                        argThat(Objects::isNull));
     }
 
     @Test

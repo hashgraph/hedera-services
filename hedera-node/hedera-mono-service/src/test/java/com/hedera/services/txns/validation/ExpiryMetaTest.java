@@ -23,6 +23,8 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import org.junit.jupiter.api.Test;
@@ -101,6 +103,34 @@ class ExpiryMetaTest {
     }
 
     @Test
+    void getsAutoRenewAccountFromCryptoCreate() {
+        final var op =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewAccount(anAutoRenewNum.toGrpcAccountId())
+                        .build();
+
+        final var expected =
+                new ExpiryMeta(UNUSED_FIELD_SENTINEL, UNUSED_FIELD_SENTINEL, anAutoRenewNum);
+        final var actual = ExpiryMeta.fromCryptoCreateOp(op);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void getsAutoRenewAccountFromCryptoUpdate() {
+        final var op =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAutoRenewAccount(anAutoRenewNum.toGrpcAccountId())
+                        .build();
+
+        final var expected =
+                new ExpiryMeta(UNUSED_FIELD_SENTINEL, UNUSED_FIELD_SENTINEL, anAutoRenewNum);
+        final var actual = ExpiryMeta.fromCryptoUpdateOp(op);
+
+        assertEquals(expected, actual);
+    }
+
+    @Test
     void setsAutoRenewNumIfPresent() {
         final var op =
                 FileCreateTransactionBody.newBuilder()
@@ -112,6 +142,12 @@ class ExpiryMetaTest {
         final var actual = ExpiryMeta.fromFileCreateOp(op);
 
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void readableAutoRenewPeriodIsZeroIfUnset() {
+        final var noAutoRenew = ExpiryMeta.withExplicitExpiry(aTime);
+        assertEquals(0, noAutoRenew.usableAutoRenewPeriod());
     }
 
     private static final long aTime = 666_666_666L;

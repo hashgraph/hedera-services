@@ -143,7 +143,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
                 validExpiryMeta.expiry(),
                 op.getMemo(),
                 validExpiryMeta.autoRenewId(),
-                validExpiryMeta.readableAutoRenewPeriod());
+                validExpiryMeta.usableAutoRenewPeriod());
     }
 
     private ResponseCodeEnum validate(final TransactionBody fileCreateTxn) {

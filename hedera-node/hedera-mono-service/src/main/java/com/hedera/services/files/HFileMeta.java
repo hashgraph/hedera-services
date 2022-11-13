@@ -21,7 +21,6 @@ import com.google.common.base.MoreObjects;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.Duration;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -114,16 +113,8 @@ public class HFileMeta {
         this.autoRenewId = autoRenewId;
     }
 
-    public void removeAutoRenewId() {
-        this.autoRenewId = null;
-    }
-
     public long getAutoRenewPeriod() {
         return autoRenewPeriod;
-    }
-
-    public Duration getTypedAutoRenewPeriod() {
-        return Duration.newBuilder().setSeconds(autoRenewPeriod).build();
     }
 
     public void setAutoRenewPeriod(long autoRenewPeriod) {

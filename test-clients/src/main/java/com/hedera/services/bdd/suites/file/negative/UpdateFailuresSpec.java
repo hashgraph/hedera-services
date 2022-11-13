@@ -22,17 +22,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
@@ -63,7 +61,6 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                 precheckAllowsDeleted(),
                 precheckRejectsPrematureExpiry(),
                 precheckAllowsBadEncoding(),
-                handleIgnoresEarlierExpiry(),
                 precheckRejectsUnauthorized(),
                 confusedUpdateCantExtendExpiry());
     }
@@ -143,7 +140,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                         fileUpdate("file")
                                 .fee(A_LOT)
                                 .extendingExpiryBy(-now)
-                                .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                                .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED));
     }
 
     private HapiApiSpec precheckAllowsBadEncoding() {
@@ -157,36 +154,6 @@ public class UpdateFailuresSpec extends HapiApiSuite {
                                 .useBadWacl()
                                 .hasPrecheck(OK)
                                 .hasKnownStatus(INVALID_SIGNATURE));
-    }
-
-    @SuppressWarnings("java:S5960")
-    private HapiApiSpec handleIgnoresEarlierExpiry() {
-        var initialExpiry = new AtomicLong();
-
-        return defaultHapiSpec("HandleIgnoresEarlierExpiry")
-                .given(
-                        fileCreate("file"),
-                        withOpContext(
-                                (spec, opLog) ->
-                                        initialExpiry.set(
-                                                spec.registry().getTimestamp("file").getSeconds())))
-                .when(fileUpdate("file").extendingExpiryBy(-1_000))
-                .then(
-                        UtilVerbs.assertionsHold(
-                                (spec, opLog) -> {
-                                    var infoOp = QueryVerbs.getFileInfo("file");
-                                    CustomSpecAssert.allRunFor(spec, infoOp);
-                                    var currExpiry =
-                                            infoOp.getResponse()
-                                                    .getFileGetInfo()
-                                                    .getFileInfo()
-                                                    .getExpirationTime()
-                                                    .getSeconds();
-                                    assertEquals(
-                                            initialExpiry.get(),
-                                            currExpiry,
-                                            "Expiry changed unexpectedly!");
-                                }));
     }
 
     @Override

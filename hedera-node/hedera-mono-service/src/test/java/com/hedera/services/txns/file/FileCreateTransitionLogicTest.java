@@ -15,10 +15,12 @@
  */
 package com.hedera.services.txns.file;
 
+import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.AUTO_RENEW_ID;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.AUTO_RENEW_PERIOD;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.CONTENTS;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.EXPIRY;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.KEY;
+import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
@@ -190,6 +192,45 @@ class FileCreateTransitionLogicTest {
     @Test
     void syntaxCheckRejectsMissingExpiry() {
         givenTxnCtxCreating(EnumSet.of(CONTENTS, KEY));
+
+        // when:
+        var syntaxCheck = subject.semanticCheck();
+        var status = syntaxCheck.apply(fileCreateTxn);
+
+        // expect:
+        assertEquals(INVALID_EXPIRATION_TIME, status);
+    }
+
+    @Test
+    void syntaxCheckAllowsExplicitExpiry() {
+        givenTxnCtxCreating(EnumSet.of(MEMO, EXPIRY));
+        given(validator.memoCheck(memo)).willReturn(OK);
+
+        // when:
+        var syntaxCheck = subject.semanticCheck();
+        var status = syntaxCheck.apply(fileCreateTxn);
+
+        // expect:
+        assertEquals(OK, status);
+    }
+
+    @Test
+    void syntaxCheckAllowsPeriodPlusRenewAccount() {
+        givenTxnCtxCreating(EnumSet.of(MEMO, AUTO_RENEW_PERIOD, AUTO_RENEW_ID));
+        given(validator.memoCheck(memo)).willReturn(OK);
+
+        // when:
+        var syntaxCheck = subject.semanticCheck();
+        var status = syntaxCheck.apply(fileCreateTxn);
+
+        // expect:
+        assertEquals(OK, status);
+    }
+
+    @Test
+    void syntaxCheckDoesNotAllowJustPeriod() {
+        givenTxnCtxCreating(EnumSet.of(MEMO, AUTO_RENEW_PERIOD));
+        given(validator.memoCheck(memo)).willReturn(OK);
 
         // when:
         var syntaxCheck = subject.semanticCheck();

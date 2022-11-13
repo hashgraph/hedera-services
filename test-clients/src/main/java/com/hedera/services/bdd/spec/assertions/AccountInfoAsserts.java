@@ -92,6 +92,25 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
         return this;
     }
 
+    public AccountInfoAsserts autoRenewAccountId(String account) {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(
+                                spec.registry().getAccountID(account),
+                                ((AccountInfo) o).getAutoRenewAccount(),
+                                "Bad auto-renew account"));
+        return this;
+    }
+
+    public AccountInfoAsserts noAutoRenewAccountId() {
+        registerProvider(
+                (spec, o) ->
+                        assertFalse(
+                                ((AccountInfo) o).hasAutoRenewAccount(),
+                                "Expected no auto-renew account"));
+        return this;
+    }
+
     public AccountInfoAsserts stakedAccountId(String idLiteral) {
         registerProvider(
                 (spec, o) ->

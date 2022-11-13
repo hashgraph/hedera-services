@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -32,6 +33,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -106,7 +108,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 createAnAccountWithEVMAddressAliasAndECKey(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
-                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled());
+                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+                canCreateAndUpdateAutoRenewAccount());
     }
 
     private HapiApiSpec createAnAccountWithStakingFields() {
@@ -165,6 +168,24 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                 .declinedReward(false)
                                 .stakedNodeId(-1L)
                                 .hasPrecheck(INVALID_STAKING_ID));
+    }
+
+    private HapiApiSpec canCreateAndUpdateAutoRenewAccount() {
+        final var autoRenew = "autoRenew";
+        final var replAutoRenew = "replAutoRenew";
+        return defaultHapiSpec("CanCreateAndUpdateAutoRenewAccount")
+                .given(
+                        cryptoCreate(autoRenew),
+                        cryptoCreate(replAutoRenew),
+                        cryptoCreate(CIVILIAN).autoRenewAccount(autoRenew),
+                        getAccountInfo(CIVILIAN).has(accountWith().autoRenewAccountId(autoRenew)))
+                .when(
+                        cryptoUpdate(CIVILIAN).autoRenewAccount(replAutoRenew),
+                        getAccountInfo(CIVILIAN)
+                                .has(accountWith().autoRenewAccountId(replAutoRenew)))
+                .then(
+                        cryptoUpdate(CIVILIAN).removingAutoRenewAccount(),
+                        getAccountInfo(CIVILIAN).has(accountWith().noAutoRenewAccountId()));
     }
 
     private HapiApiSpec maxAutoAssociationSpec() {
