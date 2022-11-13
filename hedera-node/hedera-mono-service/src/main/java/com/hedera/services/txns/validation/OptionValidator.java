@@ -48,6 +48,7 @@ public interface OptionValidator {
     default boolean isValidExpiry(final long then) {
         return isValidExpiry(MiscUtils.asSecondsTimestamp(then));
     }
+
     boolean isValidExpiry(Timestamp expiry);
 
     boolean isThisNodeAccount(AccountID id);
@@ -59,6 +60,7 @@ public interface OptionValidator {
     default boolean isValidAutoRenewPeriod(final long len) {
         return isValidAutoRenewPeriod(Duration.newBuilder().setSeconds(len).build());
     }
+
     boolean isValidAutoRenewPeriod(Duration autoRenewPeriod);
 
     boolean isAcceptableTransfersLength(TransferList accountAmounts);

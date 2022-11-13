@@ -306,7 +306,8 @@ class HederaLedgerTest extends BaseHederaLedgerTestHelper {
 
     @Test
     void delegatesToCorrectAutoRenewId() {
-        given(accountsLedger.get(genesis, AUTO_RENEW_ACCOUNT_ID)).willReturn(new EntityId(0, 0, 666));
+        given(accountsLedger.get(genesis, AUTO_RENEW_ACCOUNT_ID))
+                .willReturn(new EntityId(0, 0, 666));
 
         final var ans = subject.autoRenewNum(genesis);
 

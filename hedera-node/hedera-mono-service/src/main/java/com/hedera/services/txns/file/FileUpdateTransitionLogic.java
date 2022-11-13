@@ -26,7 +26,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PREPARED_UPDAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.lang.Boolean.TRUE;
-import static java.lang.Math.max;
 
 import com.hedera.services.config.EntityNumbers;
 import com.hedera.services.context.TransactionContext;
@@ -105,7 +104,8 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
 
             final var currentMeta = ExpiryMeta.fromExtantFileMeta(attr);
             final var requestedMeta = ExpiryMeta.fromFileUpdateOp(op);
-            final var summarizedMeta = expiryValidator.summarizeUpdateAttempt(currentMeta, requestedMeta);
+            final var summarizedMeta =
+                    expiryValidator.summarizeUpdateAttempt(currentMeta, requestedMeta);
             if (!summarizedMeta.isValid()) {
                 txnCtx.setStatus(summarizedMeta.status());
                 return;
@@ -145,9 +145,7 @@ public class FileUpdateTransitionLogic implements TransitionLogic {
     }
 
     private void updateAttrBased(
-            final HFileMeta attr,
-            final ExpiryMeta validMeta,
-            final FileUpdateTransactionBody op) {
+            final HFileMeta attr, final ExpiryMeta validMeta, final FileUpdateTransactionBody op) {
         // All fields have already been validated at this point
         if (op.hasKeys()) {
             attr.setWacl(asFcKeyUnchecked(wrapped(op.getKeys())));

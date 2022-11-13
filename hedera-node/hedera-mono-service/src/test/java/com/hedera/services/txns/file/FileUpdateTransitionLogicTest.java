@@ -160,7 +160,13 @@ class FileUpdateTransitionLogicTest {
 
         subject =
                 new FileUpdateTransitionLogic(
-                        hfs, number, validator, expiryValidator, sigImpactHistorian, txnCtx, () -> networkCtx);
+                        hfs,
+                        number,
+                        validator,
+                        expiryValidator,
+                        sigImpactHistorian,
+                        txnCtx,
+                        () -> networkCtx);
     }
 
     @Test

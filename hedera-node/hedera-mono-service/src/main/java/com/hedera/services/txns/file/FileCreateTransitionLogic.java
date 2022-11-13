@@ -42,7 +42,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,9 +88,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
             final var expiryMeta = ExpiryMeta.fromFileCreateOp(op);
             final var summarizedMeta =
                     expiryValidator.summarizeCreationAttempt(
-                            txnId.getTransactionValidStart().getSeconds(),
-                            false,
-                            expiryMeta);
+                            txnId.getTransactionValidStart().getSeconds(), false, expiryMeta);
             if (!summarizedMeta.isValid()) {
                 txnCtx.setStatus(summarizedMeta.status());
                 return;
@@ -137,10 +134,9 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         return OK;
     }
 
-    private HFileMeta asAttr(
-            final FileCreateTransactionBody op,
-            final ExpiryMeta validExpiryMeta) {
-        final var wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
+    private HFileMeta asAttr(final FileCreateTransactionBody op, final ExpiryMeta validExpiryMeta) {
+        final var wacl =
+                op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : StateView.EMPTY_WACL;
         return new HFileMeta(
                 false,
                 wacl,

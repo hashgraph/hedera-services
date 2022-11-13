@@ -19,7 +19,6 @@ import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidP
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.CONTENTS;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.EXPIRY;
 import static com.hedera.services.txns.file.FileCreateTransitionLogicTest.ValidProperty.KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_WACL;
@@ -37,7 +36,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
-import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
@@ -70,7 +68,6 @@ import java.util.EnumSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-
 
 class FileCreateTransitionLogicTest {
     private UsageLimits usageLimits;

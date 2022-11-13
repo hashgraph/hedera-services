@@ -128,10 +128,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             final var op = txn.getCryptoCreateAccount();
             final var now = txnCtx.consensusTime().getEpochSecond();
 
-            final var summarizedMeta = expiryValidator.summarizeCreationAttempt(
-                    now,
-                    true,
-                    ExpiryMeta.fromCryptoCreateOp(op));
+            final var summarizedMeta =
+                    expiryValidator.summarizeCreationAttempt(
+                            now, true, ExpiryMeta.fromCryptoCreateOp(op));
             if (!summarizedMeta.isValid()) {
                 txnCtx.setStatus(summarizedMeta.status());
                 return;
@@ -172,7 +171,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
     }
 
-    private HederaAccountCustomizer asCustomizer(final CryptoCreateTransactionBody op, final ExpiryMeta validMeta) {
+    private HederaAccountCustomizer asCustomizer(
+            final CryptoCreateTransactionBody op, final ExpiryMeta validMeta) {
         var customizer = new HederaAccountCustomizer();
         customizer
                 .memo(op.getMemo())

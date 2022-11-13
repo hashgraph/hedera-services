@@ -1,34 +1,43 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.txns.validation;
 
 import com.hedera.services.files.HFileMeta;
-import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-
-import javax.annotation.Nullable;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-public record ExpiryMeta(
-        long expiry,
-        long autoRenewPeriod,
-        @Nullable EntityNum autoRenewNum) {
+public record ExpiryMeta(long expiry, long autoRenewPeriod, @Nullable EntityNum autoRenewNum) {
     public static final long UNUSED_FIELD_SENTINEL = Long.MIN_VALUE;
-    public static final ExpiryMeta INVALID_EXPIRY_META = new ExpiryMeta(
-            UNUSED_FIELD_SENTINEL,
-            UNUSED_FIELD_SENTINEL,
-            null);
+    public static final ExpiryMeta INVALID_EXPIRY_META =
+            new ExpiryMeta(UNUSED_FIELD_SENTINEL, UNUSED_FIELD_SENTINEL, null);
 
     public static ExpiryMeta withExplicitExpiry(final long expiry) {
         return new ExpiryMeta(expiry, UNUSED_FIELD_SENTINEL, null);
     }
 
-    public static ExpiryMeta withAutoRenewSpecNotSelfFunding(final long autoRenewPeriod, final EntityNum autoRenewNum) {
+    public static ExpiryMeta withAutoRenewSpecNotSelfFunding(
+            final long autoRenewPeriod, final EntityNum autoRenewNum) {
         return new ExpiryMeta(UNUSED_FIELD_SENTINEL, autoRenewPeriod, autoRenewNum);
     }
 
@@ -84,14 +93,13 @@ public record ExpiryMeta(
             final LongSupplier autoRenewPeriodFn,
             final Predicate<T> autoRenewNumTest,
             final Supplier<EntityNum> autoRenewNumFn) {
-        final var expiry = expiryTest.test(op)
-                ? expiryFn.getAsLong() : UNUSED_FIELD_SENTINEL;
-        final var autoRenewPeriod = autoRenewPeriodTest.test(op)
-                ? autoRenewPeriodFn.getAsLong() : UNUSED_FIELD_SENTINEL;
+        final var expiry = expiryTest.test(op) ? expiryFn.getAsLong() : UNUSED_FIELD_SENTINEL;
+        final var autoRenewPeriod =
+                autoRenewPeriodTest.test(op)
+                        ? autoRenewPeriodFn.getAsLong()
+                        : UNUSED_FIELD_SENTINEL;
         // FUTURE WORK - support aliases here
-        final var autoRenewNum = autoRenewNumTest.test(op)
-                ? autoRenewNumFn.get()
-                : null;
+        final var autoRenewNum = autoRenewNumTest.test(op) ? autoRenewNumFn.get() : null;
         return new ExpiryMeta(expiry, autoRenewPeriod, autoRenewNum);
     }
 
@@ -113,7 +121,10 @@ public record ExpiryMeta(
         meta.setExpiry(expiry);
         meta.setAutoRenewPeriod(autoRenewPeriod);
         // 0.0.0 is a sentinel value used to remove an auto-renew account
-        meta.setAutoRenewId(autoRenewNum == null || autoRenewNum.longValue() == 0 ? null : autoRenewNum.toEntityId());
+        meta.setAutoRenewId(
+                autoRenewNum == null || autoRenewNum.longValue() == 0
+                        ? null
+                        : autoRenewNum.toEntityId());
     }
 
     @Nullable

@@ -43,7 +43,6 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
-
 import java.time.Instant;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -101,9 +100,8 @@ public class FileCreateSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec createWithAutoRenewWorks() {
-        final var explicitExpiry = Instant.now()
-                .plusSeconds(2 * ONE_MONTHS_IN_SECONDS)
-                .getEpochSecond();
+        final var explicitExpiry =
+                Instant.now().plusSeconds(2 * ONE_MONTHS_IN_SECONDS).getEpochSecond();
         final var someAutoRenewPeriod = THREE_MONTHS_IN_SECONDS + 1;
 
         final var withIgnoredExpiry = "withIgnoredExpiry";

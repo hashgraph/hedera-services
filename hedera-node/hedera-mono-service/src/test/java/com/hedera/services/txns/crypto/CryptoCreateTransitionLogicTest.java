@@ -25,7 +25,6 @@ import static com.hedera.services.legacy.core.jproto.JEd25519Key.ED25519_BYTE_LE
 import static com.hedera.services.txns.crypto.CryptoCreateTransitionLogic.MAX_CHARGEABLE_AUTO_ASSOCIATIONS;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -436,11 +435,11 @@ class CryptoCreateTransitionLogicTest {
                 unhex("03af80b11d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d");
         final var invalidEcdsaKey =
                 Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(invalidEcdsaBytes)).build();
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(Duration.newBuilder())
-                .setKey(invalidEcdsaKey);
-        cryptoCreateTxn = TransactionBody.newBuilder()
-                .setCryptoCreateAccount(opBuilder).build();
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
+                        .setKey(invalidEcdsaKey);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(usageLimits.areCreatableAccounts(1)).willReturn(true);
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -788,9 +787,10 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathECKey() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(Duration.newBuilder())
-                .setKey(ECDSA_KEY);
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
+                        .setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -832,9 +832,10 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathECKeyAndCreateWithAliasAndLazyCreateDisabled() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(Duration.newBuilder())
-                .setKey(ECDSA_KEY);
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
+                        .setKey(ECDSA_KEY);
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -875,11 +876,11 @@ class CryptoCreateTransitionLogicTest {
     void followsHappyPathEDKey() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
 
-        final var opBuilder = CryptoCreateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(Duration.newBuilder())
-                .setKey(aPrimitiveEDKey);
-        cryptoCreateTxn = TransactionBody.newBuilder()
-                .setCryptoCreateAccount(opBuilder).build();
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(Duration.newBuilder())
+                        .setKey(aPrimitiveEDKey);
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
         given(txnCtx.accessor()).willReturn(accessor);
