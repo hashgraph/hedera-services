@@ -182,7 +182,6 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 .maxAutomaticAssociations(op.getMaxAutomaticTokenAssociations())
                 .isDeclinedReward(op.getDeclineReward());
         if (validMeta.hasAutoRenewNum()) {
-            System.out.println("BOOP");
             customizer.autoRenewAccount(validMeta.autoRenewId());
         }
 
