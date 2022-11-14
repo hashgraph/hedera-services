@@ -146,6 +146,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayerAndReceiverSigRequired(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-       accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta);
+        accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta);
     }
 }

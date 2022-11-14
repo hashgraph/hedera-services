@@ -234,7 +234,8 @@ class AccountStoreTest {
         assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
 
         given(account.isReceiverSigRequired()).willReturn(true);
-        assertThrows(IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
     }
 
     @Test
