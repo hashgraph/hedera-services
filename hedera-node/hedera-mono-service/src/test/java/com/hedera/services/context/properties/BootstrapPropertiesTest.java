@@ -221,7 +221,7 @@ class BootstrapPropertiesTest {
                     entry(RATES_MIDNIGHT_CHECK_INTERVAL, 1L),
                     entry(SCHEDULING_LONG_TERM_ENABLED, true),
                     entry(SCHEDULING_MAX_TXN_PER_SEC, 100L),
-                    entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5356800L),
+                    entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5184000L),
                     entry(
                             SCHEDULING_WHITE_LIST,
                             Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),

@@ -26,6 +26,7 @@ import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.services.sysfiles.validation.ExpectedCustomThrottles;
 import com.hederahashgraph.builder.RequestBuilder;
 import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
+import com.hederahashgraph.fee.FeeUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,7 +48,8 @@ class UtilsConstructorTest {
                             ErrorCodeUtils.class,
                             ExpectedCustomThrottles.class,
                             RequestBuilder.class,
-                            ConsensusServiceFeeBuilder.class));
+                            ConsensusServiceFeeBuilder.class,
+                            FeeUtils.class));
 
     @Test
     void throwsInConstructor() {

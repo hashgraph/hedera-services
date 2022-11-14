@@ -39,6 +39,7 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
+    private static final FeeObject NO_SECONDARY_FEES = new FeeObject(0, 0, 0);
     private final ScheduleOpsUsage scheduleOpsUsage;
     private final GlobalDynamicProperties dynamicProperties;
 
@@ -109,7 +110,7 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
             return new FeeObject(0, 0, additionalServiceFee);
         }
-        return new FeeObject(0, 0, 0);
+        return NO_SECONDARY_FEES;
     }
 
     private long calculateLifeTimeSecs(final TransactionBody txn) {
