@@ -67,6 +67,6 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void namedelegatesTokenAccountTest() {
         final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
-        assertFalse(abstractLedgerEvmWorldUpdater.isTokenAddress(someAddress));
+        assertFalse(hederaEvmStackedWorldStateUpdater.isTokenAddress(someAddress));
     }
 }
