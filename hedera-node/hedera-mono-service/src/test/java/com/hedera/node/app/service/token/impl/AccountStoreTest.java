@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -230,18 +231,10 @@ class AccountStoreTest {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
         given(account.getAccountKey()).willReturn(null);
 
-        var result = subject.getKey(payer);
-
-        assertTrue(result.failed());
-        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
-        assertNull(result.key());
+        assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
 
         given(account.isReceiverSigRequired()).willReturn(true);
-        result = subject.getKeyIfReceiverSigRequired(payer);
-
-        assertTrue(result.failed());
-        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
-        assertNull(result.key());
+        assertThrows(IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
     }
 
     @Test

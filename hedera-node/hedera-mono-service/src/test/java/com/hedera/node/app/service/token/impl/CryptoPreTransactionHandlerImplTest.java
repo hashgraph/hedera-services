@@ -223,6 +223,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(accounts.get(payerNum)).willReturn(Optional.empty());
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
         given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
 
         var meta = subject.preHandleCryptoDelete(txn);

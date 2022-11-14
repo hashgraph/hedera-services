@@ -131,15 +131,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayer(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (meta.failed() || payer.equals(accountId)) {
-            return;
-        }
-        var result = accountStore.getKey(accountId);
-        if (result.failed()) {
-            meta.setStatus(result.failureReason());
-        } else {
-            meta.addToReqKeys(result.key());
-        }
+        accountStore.getNonPayerKey(accountId, payer).incorporateTo(meta);
     }
 
     /**
@@ -154,14 +146,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayerAndReceiverSigRequired(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (meta.failed() || payer.equals(accountId)) {
-            return;
-        }
-        var result = accountStore.getKeyIfReceiverSigRequired(accountId);
-        if (result.failed()) {
-            meta.setStatus(result.failureReason());
-        } else if (result.key() != null) {
-            meta.addToReqKeys(result.key());
-        }
+       accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta);
     }
 }
