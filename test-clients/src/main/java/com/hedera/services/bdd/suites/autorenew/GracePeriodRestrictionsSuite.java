@@ -56,7 +56,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -183,7 +182,7 @@ public class GracePeriodRestrictionsSuite extends HapiApiSuite {
                         cryptoUpdate(detachedAccount)
                                 .memo("Can't update with past expiry")
                                 .expiring(certainlyPast)
-                                .hasKnownStatus(INVALID_EXPIRATION_TIME),
+                                .hasKnownStatus(EXPIRATION_REDUCTION_NOT_ALLOWED),
                         cryptoUpdate(detachedAccount)
                                 .memo("CAN extend expiry")
                                 .expiring(certainlyDistant))
