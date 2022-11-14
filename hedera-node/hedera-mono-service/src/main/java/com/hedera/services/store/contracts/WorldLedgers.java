@@ -62,7 +62,6 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.txns.customfees.LedgerCustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

@@ -435,7 +435,6 @@ class WorldLedgersTest {
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
         assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokens());
         assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
-        assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
         assertSame(liveAliases, stackedAliases.wrappedAliases());
 
@@ -505,7 +504,6 @@ class WorldLedgersTest {
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
         assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokens());
         assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
-        assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
         assertSame(liveAliases, stackedAliases.wrappedAliases());
     }
