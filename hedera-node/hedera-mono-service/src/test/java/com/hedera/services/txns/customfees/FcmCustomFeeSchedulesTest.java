@@ -19,15 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.BackingTokens;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,8 +35,6 @@ class FcmCustomFeeSchedulesTest {
     private FcmCustomFeeSchedules subject;
 
     MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-    TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-
     private final EntityId aTreasury = new EntityId(0, 0, 12);
     private final EntityId bTreasury = new EntityId(0, 0, 13);
     private final EntityId tokenA = new EntityId(0, 0, 1);
@@ -86,13 +79,7 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void validateLookUpScheduleForUsingLedger() {
-        tokensLedger =
-                new TransactionalLedger<>(
-                        TokenProperty.class,
-                        MerkleToken::new,
-                        new BackingTokens(() -> tokens),
-                        new ChangeSummaryManager<>());
-        subject = new FcmCustomFeeSchedules(tokensLedger);
+        subject = new FcmCustomFeeSchedules(() -> tokens);
         // then:
         final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
         final var tokenBFees = subject.lookupMetaFor(tokenB.asId());

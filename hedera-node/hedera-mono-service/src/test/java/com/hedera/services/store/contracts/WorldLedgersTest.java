@@ -70,7 +70,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
+import com.hedera.services.txns.customfees.LedgerCustomFeeSchedules;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -402,7 +402,7 @@ class WorldLedgersTest {
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 
-        final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
+        final var liveFeeSchedules = new LedgerCustomFeeSchedules(liveTokens);
         final var source =
                 new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
         assertTrue(source.areMutable());
@@ -433,7 +433,7 @@ class WorldLedgersTest {
         assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
         assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
-        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokensLedger());
+        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokens());
         assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
         assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
@@ -474,7 +474,7 @@ class WorldLedgersTest {
         final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
         final var liveAliases = new AliasManager(() -> aliases);
 
-        final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
+        final var liveFeeSchedules = new LedgerCustomFeeSchedules(liveTokens);
         final var source =
                 new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
         assertTrue(source.areMutable());
@@ -503,7 +503,7 @@ class WorldLedgersTest {
         assertSame(liveAccounts, wrappedSource.accounts().getEntitiesLedger());
         assertSame(liveNfts, wrappedSource.nfts().getEntitiesLedger());
         assertSame(liveTokens, wrappedSource.tokens().getEntitiesLedger());
-        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokensLedger());
+        assertSame(wrappedSource.tokens(), wrappedSource.customFeeSchedules().getTokens());
         assertNotSame(liveFeeSchedules, wrappedSource.customFeeSchedules());
         assertNull(liveFeeSchedules.getTokens());
         final var stackedAliases = (StackedContractAliases) wrappedSource.aliases();
