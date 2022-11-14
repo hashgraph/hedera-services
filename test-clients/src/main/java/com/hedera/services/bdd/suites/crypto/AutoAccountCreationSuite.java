@@ -142,6 +142,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
     public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
+    public static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteSync();
@@ -1313,7 +1314,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .given(
                         overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed("anotherSecp256k1Alias").shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ANOTHER_SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
@@ -1352,7 +1353,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
                                     final var secondECDSAKey =
                                             spec.registry()
-                                                    .getKey("anotherSecp256k1Alias")
+                                                    .getKey(ANOTHER_SECP_256K1_SOURCE_KEY)
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var secondEVMAddress =
@@ -1379,7 +1380,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                     .getAccountID();
                                     spec.registry()
                                             .saveAccountId(
-                                                    "anotherSecp256k1Alias", anotherNewAccountID);
+                                                    ANOTHER_SECP_256K1_SOURCE_KEY,
+                                                    anotherNewAccountID);
 
                                     final var op3 =
                                             cryptoTransfer(
@@ -1402,10 +1404,10 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                                                     LAZY_CREATE_SPONSOR,
                                                                     CRYPTO_TRANSFER_RECEIVER,
                                                                     ONE_HUNDRED_HBARS))
-                                                    .payingWith("anotherSecp256k1Alias")
+                                                    .payingWith(ANOTHER_SECP_256K1_SOURCE_KEY)
                                                     .sigMapPrefixes(
                                                             uniqueWithFullPrefixesFor(
-                                                                    "anotherSecp256k1Alias"))
+                                                                    ANOTHER_SECP_256K1_SOURCE_KEY))
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN + "4");
 
@@ -1425,7 +1427,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
 
                                     final var secondECDSAKey =
                                             spec.registry()
-                                                    .getKey("anotherSecp256k1Alias")
+                                                    .getKey(ANOTHER_SECP_256K1_SOURCE_KEY)
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
                                     final var secondEVMAddress =
