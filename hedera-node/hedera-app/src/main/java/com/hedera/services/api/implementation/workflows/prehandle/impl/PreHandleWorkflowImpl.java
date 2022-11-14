@@ -18,17 +18,23 @@ package com.hedera.services.api.implementation.workflows.prehandle.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.CryptoQueryHandler;
+import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.services.api.implementation.ServicesAccessor;
 import com.hedera.services.api.implementation.SessionContext;
-import com.hedera.services.api.implementation.TransactionMetadataImpl;
+import com.hedera.services.api.implementation.state.HederaState;
+import com.hedera.services.api.implementation.state.StateService;
 import com.hedera.services.api.implementation.workflows.ingest.IngestChecker;
 import com.hedera.services.api.implementation.workflows.ingest.PreCheckException;
 import com.hedera.services.api.implementation.workflows.prehandle.PreHandleDispatcher;
 import com.hedera.services.api.implementation.workflows.prehandle.PreHandleWorkflow;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
 
 /** Default implementation of {@link PreHandleWorkflow} */
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
@@ -48,47 +54,73 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                                     TransactionBody.parser()));
 
     private final ExecutorService exe;
-    private final Supplier<CryptoQueryHandler> query;
+    private final StateService stateService;
+    private final ServicesAccessor servicesAccessor;
     private final IngestChecker checker;
-    private final PreHandleDispatcher dispatcher;
+
+    private HederaState lastUsedState;
+    private PreHandleDispatcher dispatcher;
+    private CryptoQueryHandler cryptoQueryHandler;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param query a {@link Supplier} of {@link CryptoQueryHandler} used to request account data
+     * @param stateService the {@link StateService} used to request the latest immutable state from
+     * @param servicesAccessor the {@link ServicesAccessor} with references to all {@link
+     *     com.hedera.node.app.spi.Service}-implementations
      * @param ingestChecker an {@link IngestChecker} that contains all validators
-     * @param dispatcher a {@link PreHandleDispatcher} that handles the actual request
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
-            ExecutorService exe,
-            Supplier<CryptoQueryHandler> query,
-            IngestChecker ingestChecker,
-            PreHandleDispatcher dispatcher) {
+            final ExecutorService exe,
+            final StateService stateService,
+            final ServicesAccessor servicesAccessor,
+            final IngestChecker ingestChecker) {
         this.exe = requireNonNull(exe);
-        this.query = requireNonNull(query);
+        this.stateService = requireNonNull(stateService);
+        this.servicesAccessor = requireNonNull(servicesAccessor);
         this.checker = requireNonNull(ingestChecker);
-        this.dispatcher = requireNonNull(dispatcher);
     }
 
     @Override
-    public void start(Event event) {
+    public void start(final Event event) {
         requireNonNull(event);
+
+        // If the latest immutable state has changed, we need to adjust the dispatcher and the
+        // query-handler.
+        final var hederaState = stateService.getLatestImmutableState();
+        if (!Objects.equals(hederaState, lastUsedState)) {
+            dispatcher = new PreHandleDispatcherImpl(hederaState, servicesAccessor);
+            final var cryptoState = hederaState.getServiceStates(CryptoService.class);
+            cryptoQueryHandler = servicesAccessor.cryptoService().createQueryHandler(cryptoState);
+            lastUsedState = hederaState;
+        }
+
         // Each transaction in the event will go through pre-handle using a background thread
         // from the executor service. The Future representing that work is stored on the
         // platform transaction. The HandleTransactionWorkflow will pull this future back
         // out and use it to block until the pre handle work is done, if needed.
         final var itr = event.transactionIterator();
+        final List<CompletableFuture<?>> futures = new ArrayList<>();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
-            final var future = exe.submit(() -> preHandle(platformTx));
+            final var future =
+                    CompletableFuture.supplyAsync(
+                            () -> preHandle(dispatcher, cryptoQueryHandler, platformTx), exe);
             platformTx.setMetadata(future);
+            futures.add(future);
         }
+
+        // Once all pre-handle transactions are done, we can release our handle on the state.
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .whenComplete((x, y) -> hederaState.close());
     }
 
     private TransactionMetadata preHandle(
-            com.swirlds.common.system.transaction.Transaction platformTx) {
+            final PreHandleDispatcher dispatcher,
+            final CryptoQueryHandler query,
+            final com.swirlds.common.system.transaction.Transaction platformTx) {
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -103,8 +135,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Parse and validate the TransactionBody.
             final var txBody = ctx.txBodyParser().parseFrom(signedTransaction.getBodyBytes());
-            final var accountOpt =
-                    query.get().getAccountById(txBody.getTransactionID().getAccountID());
+            final var accountOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
             if (accountOpt.isEmpty()) {
                 // This is an error condition. No account!
                 throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID, "Account missing");
@@ -126,13 +157,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // Now that all the standard "ingest" checks are done, delegate to the appropriate
             // service module to do any service-specific pre-checks.
-            dispatcher.dispatch(txBody);
+            return dispatcher.dispatch(txBody);
 
-            // Looks like we've done all we can and still haven't encountered any kind of problem,
-            // so we can go ahead and create and return the transaction metadata.
-            // TODO Need to provide a way for service modules to do their own preloading and save it
-            //      in the md
-            return new TransactionMetadataImpl(txBody);
         } catch (PreCheckException preCheckException) {
             // TODO Actually we should have a more specific kind of metadata here maybe? And
             //      definitely don't log.

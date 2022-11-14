@@ -26,8 +26,18 @@ public interface Service {
     /**
      * Creates and returns a new {@link PreTransactionHandler}
      *
+     * @param states the {@link States} the handler should use
      * @return A new {@link PreTransactionHandler}
      */
     @Nonnull
     PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+
+    /**
+     * Creates and returns a new {@link QueryHandler}
+     *
+     * @param states the {@link States} the handler should use
+     * @return a new {@code QueryHandler}
+     */
+    @Nonnull
+    QueryHandler createQueryHandler(@Nonnull States states);
 }

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.api.implementation.workflows.prehandle;
 
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -30,5 +31,5 @@ public interface PreHandleDispatcher {
      * @param transactionBody the {@link TransactionBody} of the request
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    void dispatch(TransactionBody transactionBody);
+    TransactionMetadata dispatch(TransactionBody transactionBody);
 }

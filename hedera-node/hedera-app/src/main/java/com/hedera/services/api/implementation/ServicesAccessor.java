@@ -27,6 +27,4 @@ import com.hedera.node.app.service.token.TokenService;
  * @param tokenService a {@link TokenService}
  */
 public record ServicesAccessor(
-        ServicesContext<CryptoService> cryptoService,
-        ServicesContext<FileService> fileService,
-        ServicesContext<TokenService> tokenService) {}
+        CryptoService cryptoService, FileService fileService, TokenService tokenService) {}

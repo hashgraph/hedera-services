@@ -15,94 +15,96 @@
  */
 package com.hedera.services.api.implementation.workflows.prehandle.impl;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.service.token.CryptoQueryHandler;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.services.api.implementation.ServicesAccessor;
+import com.hedera.services.api.implementation.state.HederaState;
+import com.hedera.services.api.implementation.state.StateService;
 import com.hedera.services.api.implementation.workflows.ingest.IngestChecker;
-import com.hedera.services.api.implementation.workflows.prehandle.PreHandleDispatcher;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Supplier;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
 
-    @SuppressWarnings("unchecked")
+    @Mock private ExecutorService executorService;
+    @Mock private StateService stateService;
+    @Mock private CryptoService cryptoService;
+    @Mock private FileService fileService;
+    @Mock private TokenService tokenService;
+    @Mock private IngestChecker ingestChecker;
+    private ServicesAccessor servicesAccessor;
+
+    private PreHandleWorkflowImpl workflow;
+
+    @BeforeEach
+    void setup() {
+        servicesAccessor = new ServicesAccessor(cryptoService, fileService, tokenService);
+        workflow =
+                new PreHandleWorkflowImpl(
+                        executorService, stateService, servicesAccessor, ingestChecker);
+    }
+
     @Test
     void testConstructorWithIllegalParameters() {
-        // given
-        final ExecutorService exe = mock(ExecutorService.class);
-        final Supplier<CryptoQueryHandler> query = mock(Supplier.class);
-        final IngestChecker ingestChecker = mock(IngestChecker.class);
-        final PreHandleDispatcher dispatcher = mock(PreHandleDispatcher.class);
-
-        // then
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, query, ingestChecker, dispatcher))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        null, stateService, servicesAccessor, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(exe, null, ingestChecker, dispatcher))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, null, servicesAccessor, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(exe, query, null, dispatcher))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, stateService, null, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(exe, query, ingestChecker, null))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, stateService, servicesAccessor, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testStartWithIllegalParameters() {
-        // given
-        final ExecutorService exe = mock(ExecutorService.class);
-        final Supplier<CryptoQueryHandler> query = mock(Supplier.class);
-        final IngestChecker ingestChecker = mock(IngestChecker.class);
-        final PreHandleDispatcher dispatcher = mock(PreHandleDispatcher.class);
-        final PreHandleWorkflowImpl workflow =
-                new PreHandleWorkflowImpl(exe, query, ingestChecker, dispatcher);
-
-        // then
         assertThatThrownBy(() -> workflow.start(null)).isInstanceOf(NullPointerException.class);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testStartEventWithNoTransactions() {
         // given
-        final ExecutorService exe = mock(ExecutorService.class);
-        final Supplier<CryptoQueryHandler> query = mock(Supplier.class);
-        final IngestChecker ingestChecker = mock(IngestChecker.class);
-        final PreHandleDispatcher dispatcher = mock(PreHandleDispatcher.class);
-        final PreHandleWorkflowImpl workflow =
-                new PreHandleWorkflowImpl(exe, query, ingestChecker, dispatcher);
         final Event event = mock(Event.class);
         when(event.transactionIterator()).thenReturn(Collections.emptyIterator());
 
         // when
-        workflow.start(event);
-
-        // then
-        verify(exe, never()).submit(any(Callable.class));
+        assertThatCode(() -> workflow.start(event)).doesNotThrowAnyException();
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     void testStartEventWithTwoTransactions() {
         // given
-        final ExecutorService exe = mock(ExecutorService.class);
-        final Supplier<CryptoQueryHandler> query = mock(Supplier.class);
-        final IngestChecker ingestChecker = mock(IngestChecker.class);
-        final PreHandleDispatcher dispatcher = mock(PreHandleDispatcher.class);
-        final PreHandleWorkflowImpl workflow =
-                new PreHandleWorkflowImpl(exe, query, ingestChecker, dispatcher);
         final Event event = mock(Event.class);
-
-        final Transaction transaction1 = new SwirldTransaction();
-        final Transaction transaction2 = new SwirldTransaction();
+        final Transaction transaction1 = mock(SwirldTransaction.class);
+        final Transaction transaction2 = mock(SwirldTransaction.class);
         final Iterator<Transaction> iterator = List.of(transaction1, transaction2).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
@@ -110,6 +112,46 @@ class PreHandleWorkflowImplTest {
         workflow.start(event);
 
         // then
-        verify(exe, times(2)).submit(any(Callable.class));
+        verify(transaction1).setMetadata(any());
+        verify(transaction2).setMetadata(any());
+    }
+
+    @Test
+    void testUnchangedStateDoesNotRegenerateHandlers() {
+        // given
+        var hederaState = mock(HederaState.class);
+        when(stateService.getLatestImmutableState()).thenReturn(hederaState);
+        final Event event = mock(Event.class);
+        final Transaction transaction = mock(SwirldTransaction.class);
+        final Iterator<Transaction> iterator = List.of(transaction).iterator();
+        when(event.transactionIterator()).thenReturn(iterator);
+
+        // when
+        workflow.start(event);
+        workflow.start(event);
+
+        // then
+        verify(cryptoService, times(1)).createQueryHandler(any());
+    }
+
+    @Test
+    void testChangedStateDoesRegenerateHandlers() {
+        // given
+        var hederaState1 = mock(HederaState.class);
+        var hederaState2 = mock(HederaState.class);
+        when(stateService.getLatestImmutableState())
+                .thenReturn(hederaState1)
+                .thenReturn(hederaState2);
+        final Event event = mock(Event.class);
+        final Transaction transaction = mock(SwirldTransaction.class);
+        final Iterator<Transaction> iterator = List.of(transaction).iterator();
+        when(event.transactionIterator()).thenReturn(iterator);
+
+        // when
+        workflow.start(event);
+        workflow.start(event);
+
+        // then
+        verify(cryptoService, times(2)).createQueryHandler(any());
     }
 }
