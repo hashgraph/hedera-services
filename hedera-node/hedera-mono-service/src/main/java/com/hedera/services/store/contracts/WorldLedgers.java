@@ -79,7 +79,6 @@ public class WorldLedgers {
 
     private final ContractAliases aliases;
     private final StaticEntityAccess staticEntityAccess;
-    private final FcmCustomFeeSchedules customFeeSchedules;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     private final TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
@@ -93,7 +92,6 @@ public class WorldLedgers {
 
     public WorldLedgers(
             final ContractAliases aliases,
-            final FcmCustomFeeSchedules customFeeSchedules,
             final TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
                     tokenRelsLedger,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger,
@@ -104,7 +102,6 @@ public class WorldLedgers {
         this.tokensLedger = tokensLedger;
         this.nftsLedger = nftsLedger;
         this.aliases = aliases;
-        this.customFeeSchedules = customFeeSchedules;
 
         staticEntityAccess = null;
     }
@@ -115,7 +112,6 @@ public class WorldLedgers {
         accountsLedger = null;
         tokensLedger = null;
         nftsLedger = null;
-        customFeeSchedules = null;
 
         this.aliases = aliases;
         this.staticEntityAccess = staticEntityAccess;
@@ -375,11 +371,8 @@ public class WorldLedgers {
         }
         final var wrappedTokenRelsLedger = activeLedgerWrapping(tokenRelsLedger);
 
-        final var fcmCustomFeeSchedules = new FcmCustomFeeSchedules(wrappedTokensLedger);
-
         return new WorldLedgers(
                 StackedContractAliases.wrapping(aliases),
-                fcmCustomFeeSchedules,
                 wrappedTokenRelsLedger,
                 wrappedAccountsLedger,
                 wrappedNftsLedger,
@@ -408,7 +401,7 @@ public class WorldLedgers {
     }
 
     public FcmCustomFeeSchedules customFeeSchedules() {
-        return customFeeSchedules;
+        return new FcmCustomFeeSchedules(tokensLedger);
     }
 
     // --- Internal helpers

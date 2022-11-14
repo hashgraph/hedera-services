@@ -129,7 +129,6 @@ class WorldLedgersTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
-    @Mock private FcmCustomFeeSchedules customFeeSchedules;
     @Mock private SigImpactHistorian sigImpactHistorian;
     @Mock private ContractAliases aliases;
     @Mock private StaticEntityAccess staticEntityAccess;
@@ -141,12 +140,7 @@ class WorldLedgersTest {
     void setUp() {
         subject =
                 new WorldLedgers(
-                        aliases,
-                        customFeeSchedules,
-                        tokenRelsLedger,
-                        accountsLedger,
-                        nftsLedger,
-                        tokensLedger);
+                        aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
     }
 
     @Test
@@ -410,31 +404,16 @@ class WorldLedgersTest {
 
         final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
         final var source =
-                new WorldLedgers(
-                        liveAliases,
-                        liveFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        liveNfts,
-                        liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
         assertTrue(source.areMutable());
         final var nullTokenRels =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
+                new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
         final var nullAccounts =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
         final var nullNfts =
-                new WorldLedgers(
-                        liveAliases,
-                        liveFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        null,
-                        liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
         final var nullTokens =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, liveTokenRels, liveAccounts, liveNfts, null);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
         assertFalse(nullTokenRels.areMutable());
         assertFalse(nullAccounts.areMutable());
         assertFalse(nullNfts.areMutable());
@@ -497,31 +476,16 @@ class WorldLedgersTest {
 
         final var liveFeeSchedules = new FcmCustomFeeSchedules(liveTokens);
         final var source =
-                new WorldLedgers(
-                        liveAliases,
-                        liveFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        liveNfts,
-                        liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, liveTokens);
         assertTrue(source.areMutable());
         final var nullTokenRels =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, null, liveAccounts, liveNfts, liveTokens);
+                new WorldLedgers(liveAliases, null, liveAccounts, liveNfts, liveTokens);
         final var nullAccounts =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, liveTokenRels, null, liveNfts, liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, null, liveNfts, liveTokens);
         final var nullNfts =
-                new WorldLedgers(
-                        liveAliases,
-                        liveFeeSchedules,
-                        liveTokenRels,
-                        liveAccounts,
-                        null,
-                        liveTokens);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, null, liveTokens);
         final var nullTokens =
-                new WorldLedgers(
-                        liveAliases, liveFeeSchedules, liveTokenRels, liveAccounts, liveNfts, null);
+                new WorldLedgers(liveAliases, liveTokenRels, liveAccounts, liveNfts, null);
         assertFalse(nullTokenRels.areMutable());
         assertFalse(nullAccounts.areMutable());
         assertFalse(nullNfts.areMutable());

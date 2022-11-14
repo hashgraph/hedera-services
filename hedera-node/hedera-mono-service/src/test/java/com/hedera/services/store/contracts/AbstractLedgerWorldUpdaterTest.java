@@ -68,7 +68,6 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
@@ -594,12 +593,7 @@ class AbstractLedgerWorldUpdaterTest {
 
         ledgers =
                 new WorldLedgers(
-                        aliases,
-                        new FcmCustomFeeSchedules(tokensLedger),
-                        tokenRelsLedger,
-                        accountsLedger,
-                        nftsLedger,
-                        tokensLedger);
+                        aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
     }
 
     private void setupWellKnownAccounts() {

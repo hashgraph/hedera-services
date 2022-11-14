@@ -46,7 +46,6 @@ import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
@@ -272,12 +271,7 @@ class AbstractStackedLedgerUpdaterTest {
 
         ledgers =
                 new WorldLedgers(
-                        aliases,
-                        new FcmCustomFeeSchedules(tokensLedger),
-                        tokenRelsLedger,
-                        accountsLedger,
-                        nftsLedger,
-                        tokensLedger);
+                        aliases, tokenRelsLedger, accountsLedger, nftsLedger, tokensLedger);
     }
 
     private static final AccountID aAccount = IdUtils.asAccount("0.0.12345");
