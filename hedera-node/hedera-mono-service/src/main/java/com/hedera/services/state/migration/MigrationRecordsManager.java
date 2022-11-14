@@ -213,8 +213,9 @@ public class MigrationRecordsManager {
                         balance);
         final var synthRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, tracker, recordMemo);
-        // show the balance of treasury account for mirror node reconciliation.
-        if (num.longValue() == 2L) {
+        // show the balance of any accounts whose balance is not zero for mirror node
+        // reconciliation.
+        if (balance != 0) {
             synthRecord.setHbarAdjustments(
                     CurrencyAdjustments.fromChanges(
                             new long[] {balance}, new long[] {num.longValue()}));
