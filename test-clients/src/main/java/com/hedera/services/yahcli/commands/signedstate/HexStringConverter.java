@@ -50,7 +50,7 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
     }
 
     @Contract(pure = true)
-    private @NotNull short[] toUnsignedBuffer(byte @NotNull [] signedBuffer) {
+    private @NotNull short[] toUnsignedBuffer(@NotNull byte[] signedBuffer) {
         // In Java, `byte[]` is a buffer of _signed_ bytes.  In the real world (and every other
         // common programming language) a byte array is a buffer of _unsigned_ bytes the way network
         // programmers and device I/O programmers and crypto programmers and bytecode interpreter

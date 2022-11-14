@@ -18,6 +18,7 @@ package com.hedera.services.yahcli.commands.signedstate;
 import static java.lang.Integer.min;
 import static java.util.Arrays.copyOf;
 
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Opcodes;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import org.jetbrains.annotations.Contract;
@@ -58,6 +59,17 @@ public class DecompileContractCommand implements Callable<Integer> {
 
         System.out.printf("DecompileContract: contract id %d%n", theContractId.orElse(-1L));
         System.out.printf("   first bytes of contract: %s%n", toHex(displayContract));
+        System.out.printf("   BTW, have %d opcodes defined%n", Opcodes.byOpcode.size());
+        for (var ds : Opcodes.byOpcode) {
+            System.out.printf(
+                    "      %02X: %s%s%s%n",
+                    ds.opcode(),
+                    ds.name(),
+                    ds.extraBytes() > 0
+                            ? (" (" + Integer.toString(ds.extraBytes()) + " extra)")
+                            : "",
+                    ds.valid() ? "" : " (INVALID)");
+        }
         return 0;
     }
 
