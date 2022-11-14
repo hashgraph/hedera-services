@@ -15,19 +15,9 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
-
-import javax.annotation.Nonnull;
-import java.util.Optional;
-
 import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
 import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
@@ -35,6 +25,15 @@ import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.States;
+import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -75,13 +74,15 @@ public final class AccountStore {
     }
 
     /**
-     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look up
-     * the keys for given account.
+     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look up the keys
+     * for given account.
+     *
      * @param accountId given accountId
      * @param payerId given payerId
      * @return key or failure reason if account is not same as payer
      */
-    public KeyOrLookupFailureReason getNonPayerKey(final AccountID accountId, final AccountID payerId){
+    public KeyOrLookupFailureReason getNonPayerKey(
+            final AccountID accountId, final AccountID payerId) {
         if (accountId.equals(payerId)) {
             return PRESENT_BUT_NOT_REQUIRED;
         }
@@ -113,13 +114,15 @@ public final class AccountStore {
     }
 
     /**
-     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look
-     * up the keys for given account.
+     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look up the keys
+     * for given account.
+     *
      * @param accountId given accountId
      * @param payerId given payerId
      * @return key or failure reason if account is not same as payer
      */
-    public KeyOrLookupFailureReason getNonPayerKeyIfReceiverSigRequired(final AccountID accountId, final AccountID payerId){
+    public KeyOrLookupFailureReason getNonPayerKeyIfReceiverSigRequired(
+            final AccountID accountId, final AccountID payerId) {
         if (accountId.equals(payerId)) {
             return PRESENT_BUT_NOT_REQUIRED;
         }

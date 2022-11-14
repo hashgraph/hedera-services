@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
@@ -161,7 +160,9 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      * @param meta metadata to which accountId's key will be added, if success
      */
     private void addIfNotPayer(
-            final AccountID accountId, final AccountID payer, final ResponseCodeEnum failureStatus,
+            final AccountID accountId,
+            final AccountID payer,
+            final ResponseCodeEnum failureStatus,
             final SigTransactionMetadata meta) {
         accountStore.getNonPayerKey(accountId, payer).incorporateTo(meta, failureStatus);
     }
@@ -175,10 +176,10 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      */
     private void addIfNotPayer(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if(accountId.equals(AccountID.getDefaultInstance())){
+        if (accountId.equals(AccountID.getDefaultInstance())) {
             return;
         }
-        addIfNotPayer(accountId, payer,  null, meta);
+        addIfNotPayer(accountId, payer, null, meta);
     }
 
     /**
@@ -192,10 +193,15 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
      */
     private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId, final AccountID payer, final ResponseCodeEnum failureStatus, final SigTransactionMetadata meta) {
-       if(accountId.equals(AccountID.getDefaultInstance())){
-           return;
-       }
-        accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta, failureStatus);
+            final AccountID accountId,
+            final AccountID payer,
+            final ResponseCodeEnum failureStatus,
+            final SigTransactionMetadata meta) {
+        if (accountId.equals(AccountID.getDefaultInstance())) {
+            return;
+        }
+        accountStore
+                .getNonPayerKeyIfReceiverSigRequired(accountId, payer)
+                .incorporateTo(meta, failureStatus);
     }
 }
