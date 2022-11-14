@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.annotation.Nullable;
@@ -42,19 +41,5 @@ public record KeyOrLookupFailureReason(
 
     public static KeyOrLookupFailureReason withKey(final HederaKey key) {
         return new KeyOrLookupFailureReason(key, null);
-    }
-
-    public void incorporateTo(
-            final SigTransactionMetadata meta, final ResponseCodeEnum givenStatus) {
-        // If we've already failed in computing earlier sig reqs, do nothing
-        if (meta.failed()) {
-            return;
-        }
-        if (failureReason != null) {
-            meta.setStatus(givenStatus != null ? givenStatus : failureReason);
-        } else if (key != null) {
-            meta.addToReqKeys(key);
-        }
-        // If neither condition above is met, we are PRESENT_BUT_NOT_REQUIRED
     }
 }

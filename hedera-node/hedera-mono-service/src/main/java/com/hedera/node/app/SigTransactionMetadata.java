@@ -41,6 +41,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
     protected TransactionBody txn;
     protected AccountStore store;
+    protected AccountID payer;
 
     protected ResponseCodeEnum status = OK;
 
@@ -51,6 +52,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
             final List<HederaKey> otherKeys) {
         this.store = store;
         this.txn = txn;
+        this.payer = payer;
         requiredKeys.addAll(otherKeys);
         addPayerKey(payer);
     }
@@ -58,15 +60,6 @@ public class SigTransactionMetadata implements TransactionMetadata {
     public SigTransactionMetadata(
             final AccountStore store, final TransactionBody txn, final AccountID payer) {
         this(store, txn, payer, Collections.emptyList());
-    }
-
-    private void addPayerKey(final AccountID payer) {
-        final var result = store.getKey(payer);
-        if (result.failed()) {
-            this.status = INVALID_PAYER_ACCOUNT_ID;
-        } else {
-            requiredKeys.add(result.key());
-        }
     }
 
     @Override
@@ -84,8 +77,47 @@ public class SigTransactionMetadata implements TransactionMetadata {
         return status;
     }
 
+    /* ---------- Modifying helper methods ---------- */
     @Override
     public void setStatus(final ResponseCodeEnum status) {
         this.status = status;
+    }
+
+    private void addPayerKey(final AccountID payer) {
+        final var result = store.getKey(payer);
+        if (result.failed()) {
+            this.status = INVALID_PAYER_ACCOUNT_ID;
+        } else {
+            requiredKeys.add(result.key());
+        }
+    }
+
+    public void addNonPayerKey(final AccountID id) {
+        addNonPayerKey(id, null);
+    }
+
+    public void addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
+        if (id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK) {
+            return;
+        }
+        final var result = store.getKey(payer);
+        if (result.failed()) {
+            this.status = failureStatus != null ? failureStatus : result.failureReason();
+        } else {
+            requiredKeys.add(result.key());
+        }
+    }
+
+    public void addNonPayerKeyIfReceiverSigRequired(
+            final AccountID id, final ResponseCodeEnum failureStatus) {
+        if (id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK) {
+            return;
+        }
+        final var result = store.getKeyIfReceiverSigRequired(payer);
+        if (result.failed()) {
+            this.status = failureStatus != null ? failureStatus : result.failureReason();
+        } else {
+            requiredKeys.add(result.key());
+        }
     }
 }

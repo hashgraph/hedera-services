@@ -25,7 +25,6 @@ import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,9 +60,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        addIfNotPayer(deleteAccountId, payer, meta);
-        addIfNotPayerAndReceiverSigRequired(
-                transferAccountId, payer, INVALID_TRANSFER_ACCOUNT_ID, meta);
+        meta.addNonPayerKey(deleteAccountId);
+        meta.addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
         return meta;
     }
 
@@ -76,10 +74,10 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.getCryptoAllowancesList()) {
-            addIfNotPayer(allowance.getOwner(), payer, failureStatus, meta);
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
         }
         for (final var allowance : op.getTokenAllowancesList()) {
-            addIfNotPayer(allowance.getOwner(), payer, failureStatus, meta);
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
         }
         for (final var allowance : op.getNftAllowancesList()) {
             final var ownerId = allowance.getOwner();
@@ -92,7 +90,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             if (operatorId != ownerId) {
                 failureStatus = INVALID_DELEGATING_SPENDER;
             }
-            addIfNotPayer(operatorId, payer, failureStatus, meta);
+            meta.addNonPayerKey(operatorId, failureStatus);
         }
         return meta;
     }
@@ -148,60 +146,5 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             meta.addToReqKeys(key.get());
         }
         return meta;
-    }
-
-    /**
-     * Fetches given accountId's key and add it to the metadata only if the accountId is not same as
-     * payer. If the accountId could not be fetched successfully, sets the failure status on the
-     * metadata.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added, if success
-     */
-    private void addIfNotPayer(
-            final AccountID accountId,
-            final AccountID payer,
-            final ResponseCodeEnum failureStatus,
-            final SigTransactionMetadata meta) {
-        accountStore.getNonPayerKey(accountId, payer).incorporateTo(meta, failureStatus);
-    }
-
-    /**
-     * Convenience method for having a default failure status set on metadata if there is a failure.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
-     */
-    private void addIfNotPayer(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        if (accountId.equals(AccountID.getDefaultInstance())) {
-            return;
-        }
-        addIfNotPayer(accountId, payer, null, meta);
-    }
-
-    /**
-     * Fetches given accountId's key and add it to the metadata requiredKeys list only if the
-     * accountId is not same as payer and the account has receiverSigRequired flag set to true. If
-     * the accountId have receiverSigRequired flag set false, the key will not be added metadata. If
-     * the accountId could not be fetched successfully, sets the failure status on the metadata.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
-     */
-    private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId,
-            final AccountID payer,
-            final ResponseCodeEnum failureStatus,
-            final SigTransactionMetadata meta) {
-        if (accountId.equals(AccountID.getDefaultInstance())) {
-            return;
-        }
-        accountStore
-                .getNonPayerKeyIfReceiverSigRequired(accountId, payer)
-                .incorporateTo(meta, failureStatus);
     }
 }
