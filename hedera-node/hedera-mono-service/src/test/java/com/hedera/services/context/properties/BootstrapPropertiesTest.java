@@ -221,10 +221,12 @@ class BootstrapPropertiesTest {
                     entry(RATES_MIDNIGHT_CHECK_INTERVAL, 1L),
                     entry(SCHEDULING_LONG_TERM_ENABLED, true),
                     entry(SCHEDULING_MAX_TXN_PER_SEC, 100L),
-                    entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5356800L),
+                    entry(SCHEDULING_MAX_EXPIRATION_FUTURE_SECS, 5184000L),
                     entry(
                             SCHEDULING_WHITE_LIST,
                             Set.of(CryptoTransfer, TokenMint, TokenBurn, ConsensusSubmitMessage)),
+                    entry(SCHEDULE_TX_SECONDARY_FEE_BYTES_PER_MONTH, 128),
+                    entry(SCHEDULE_TX_SECONDARY_FEE, 20000000L),
                     entry(SIGS_EXPAND_FROM_IMMUTABLE_STATE, true),
                     entry(
                             STATS_CONS_THROTTLES_TO_SAMPLE,

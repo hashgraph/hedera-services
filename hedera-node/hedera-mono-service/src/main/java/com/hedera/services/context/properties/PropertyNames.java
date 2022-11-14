@@ -180,6 +180,9 @@ public class PropertyNames {
     public static final String SCHEDULING_MAX_NUM = "scheduling.maxNumber";
     public static final String SCHEDULING_MAX_EXPIRATION_FUTURE_SECS =
             "scheduling.maxExpirationFutureSeconds";
+    public static final String SCHEDULE_TX_SECONDARY_FEE = "schedule.secondaryFee";
+    public static final String SCHEDULE_TX_SECONDARY_FEE_BYTES_PER_MONTH =
+            "schedule.secondaryFeeBytesPerMonth";
     public static final String SCHEDULING_WHITE_LIST = "scheduling.whitelist";
     public static final String SIGS_EXPAND_FROM_IMMUTABLE_STATE = "sigs.expandFromImmutableState";
     public static final String STAKING_FEES_NODE_REWARD_PERCENT =

@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObjectWithSecondary;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.primitives.StateView;
@@ -239,13 +240,20 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
             try {
-                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage, view);
+                final var txn = accessor.getTxn();
+                final var usage = usageEstimator.usageGiven(txn, sigUsage, view);
                 final var applicablePrices = prices.get(usage.getSubType());
-                return getFeeObject(
-                        applicablePrices,
-                        usage,
-                        rate,
-                        feeMultiplierSource.currentMultiplier(accessor));
+                final var multiplier = feeMultiplierSource.currentMultiplier(accessor);
+                if (usageEstimator.hasSecondaryFees()) {
+                    return getFeeObjectWithSecondary(
+                            applicablePrices,
+                            usage,
+                            usageEstimator.secondaryFeesFor(txn),
+                            rate,
+                            multiplier);
+                } else {
+                    return getFeeObject(applicablePrices, usage, rate, multiplier);
+                }
             } catch (InvalidTxBodyException e) {
                 log.warn(
                         "Argument accessor={} malformed for implied estimator {}!",

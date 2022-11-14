@@ -60,7 +60,6 @@ class ExtantScheduleContextTest {
                         + BASIC_RICH_INSTANT_SIZE
                         + memo.getBytes().length
                         + getAccountKeyStorageSize(adminKey)
-                        + scheduledTxn.getSerializedSize()
                         + numSigners * KEY_SIZE;
 
         // then:
@@ -82,7 +81,6 @@ class ExtantScheduleContextTest {
                 ExtantScheduleContext.METADATA_SIZE
                         + BASIC_RICH_INSTANT_SIZE
                         + memo.getBytes().length
-                        + scheduledTxn.getSerializedSize()
                         + ctx.numSigners() * KEY_SIZE;
 
         // then:

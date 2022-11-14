@@ -42,6 +42,7 @@ import javax.inject.Singleton;
 public class ScheduleOpsUsage {
     /* Scheduled transaction ids have the scheduled=true flag set */
     private static final long SCHEDULED_TXN_ID_SIZE = (1L * BASIC_TX_ID_SIZE) + BOOL_SIZE;
+    public static final int ONE_MONTH_IN_SECS = 2592000;
 
     @VisibleForTesting EstimatorFactory txnEstimateFactory = TxnUsageEstimator::new;
     @VisibleForTesting Function<ResponseType, QueryUsage> queryEstimateFactory = QueryUsage::new;
@@ -57,16 +58,21 @@ public class ScheduleOpsUsage {
         var estimate = queryEstimateFactory.apply(op.getHeader().getResponseType());
         estimate.addTb(BASIC_ENTITY_ID_SIZE);
         estimate.addRb(ctx.nonBaseRb());
+        estimate.addRb(ctx.scheduledTxn().getSerializedSize());
 
         return estimate.get();
     }
 
     public FeeData scheduleCreateUsage(
-            TransactionBody scheduleCreate, SigUsage sigUsage, long lifetimeSecs) {
+            final TransactionBody scheduleCreate,
+            final SigUsage sigUsage,
+            final long lifetimeSecs,
+            final long defaultLifeTimeSecs) {
         var op = scheduleCreate.getScheduleCreate();
 
         var scheduledTxn = op.getScheduledTransactionBody();
-        long msgBytesUsed = (long) scheduledTxn.getSerializedSize() + op.getMemoBytes().size();
+        final var serializedSize = scheduledTxn.getSerializedSize();
+        long msgBytesUsed = (long) serializedSize + op.getMemoBytes().size();
         if (op.hasPayerAccountID()) {
             msgBytesUsed += BASIC_ENTITY_ID_SIZE;
         }
@@ -88,6 +94,13 @@ public class ScheduleOpsUsage {
         var estimate = txnEstimateFactory.get(sigUsage, scheduleCreate, ESTIMATOR_UTILS);
         estimate.addBpt(msgBytesUsed);
         estimate.addRbs(creationCtx.build().nonBaseRb() * lifetimeSecs);
+
+        /* If the lifetime is less than default lifeTime scheduledTxn serialized size cost is
+          included in Rbs.If it is greater than defaultLifeTime cost is added in secondaryFees.
+        */
+        if (lifetimeSecs <= defaultLifeTimeSecs) {
+            estimate.addRbs(serializedSize * lifetimeSecs);
+        }
 
         /* The receipt of a schedule create includes both the id of the created schedule
         and the transaction id to use for querying the record of the scheduled txn. */

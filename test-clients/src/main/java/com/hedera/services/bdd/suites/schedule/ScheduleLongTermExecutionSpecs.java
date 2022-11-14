@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
@@ -50,6 +51,7 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.ORI
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs.transferListCheck;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
@@ -66,6 +68,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,7 +167,226 @@ public class ScheduleLongTermExecutionSpecs extends HapiApiSuite {
                 expiryIgnoredWhenLongTermDisabled(),
                 waitForExpiryIgnoredWhenLongTermDisabledThenEnabled(),
                 expiryIgnoredWhenLongTermDisabledThenEnabled(),
+                feesChargedForLongTermTransactionsAsExpected(),
+                feesChargedForLongTermTransactionsWithContractCallAsExpected(),
+                schedulesWithDecreasingExpiryWorks(),
                 setLongTermScheduledTransactionsToDefault());
+    }
+
+    private HapiApiSpec schedulesWithDecreasingExpiryWorks() {
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
+        var contract = "Multipurpose";
+        final var largeFee = ONE_HUNDRED_HBARS;
+
+        final var defaultPeriodCallTx = "defaultPeriodCallTx";
+        final var oneMonthCallTx = "oneMonthCallTx";
+
+        return defaultHapiSpec("schedulesWithDecreasingExpiryWorks")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "ContractCall"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(PAYING_ACCOUNT)
+                                .balance(1000000000000L)
+                                .via(PAYING_ACCOUNT_TXN),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .fee(10 * ONE_HBAR)
+                                .via(oneMonthCallTx),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 1800)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via(defaultPeriodCallTx))
+                .when()
+                .then();
+    }
+
+    private HapiApiSpec feesChargedForLongTermTransactionsWithContractCallAsExpected() {
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
+        var contract = "Multipurpose";
+        final var largeFee = ONE_HUNDRED_HBARS;
+
+        final var baseCallTx = "baseCallTx";
+        final var defaultPeriodCallTx = "defaultPeriodCallTx";
+        final var oneMonthCallTx = "oneMonthCallTx";
+        final var tenMonthCallTx = "tenMonthCallTx";
+
+        return defaultHapiSpec("feesChargedForLongTermTransactionsWithContractCallAsExpected")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "ContractCall"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(PAYING_ACCOUNT)
+                                .balance(1000000000000L)
+                                .via(PAYING_ACCOUNT_TXN),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .via(baseCallTx),
+                        getTxnRecord(baseCallTx).logged(),
+                        validateChargedUsdWithin(baseCallTx, 0.1001326836, 0.1),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 1800)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via(defaultPeriodCallTx),
+                        getTxnRecord(defaultPeriodCallTx).logged(),
+                        validateChargedUsdWithin(defaultPeriodCallTx, 0.1021326024, 0.1))
+                .when(
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .fee(ONE_HBAR)
+                                .recordingScheduledTxn()
+                                .via(oneMonthCallTx),
+                        getTxnRecord(oneMonthCallTx).logged(),
+                        validateChargedUsdWithin(oneMonthCallTx, 0.1022811948, 0.1))
+                .then(
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        contractCall(contract)
+                                                .fee(largeFee)
+                                                .sending(ONE_HBAR)
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(PAYING_ACCOUNT_TXN, 10L * ONE_MONTH_IN_SECS)
+                                .designatingPayer(PAYING_ACCOUNT)
+                                .alsoSigningWith(PAYING_ACCOUNT)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .fee(10 * ONE_HBAR)
+                                .via(tenMonthCallTx),
+                        getTxnRecord(tenMonthCallTx).logged(),
+                        validateChargedUsdWithin(tenMonthCallTx, 0.3, 0.1));
+    }
+
+    private HapiApiSpec feesChargedForLongTermTransactionsAsExpected() {
+        final long transferAmount = 1L;
+        final var validBytes = new byte[100];
+        Arrays.fill(validBytes, (byte) 'ф');
+        final var longMemo = new String(validBytes, StandardCharsets.UTF_8);
+
+        final var basicTxnCreate = "basicTxnCreate";
+        final var basicXferCreate = "basicXferCreate";
+        final var oneMonthCreate = "oneMonthCreate";
+        final var tenMonthsCreate = "tenMonthsCreate";
+
+        return defaultHapiSpec("feesChargedForLongTermTransactionsAsExpected")
+                .given(
+                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer"),
+                        overriding("scheduling.maxExpirationFutureSeconds", "25920000"),
+                        cryptoCreate(SENDER).via(SENDER_TXN),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(PAYING_ACCOUNT).via(PAYER_TXN),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .blankMemo())
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .blankMemo()
+                                .fee(ONE_HBAR)
+                                .via(basicTxnCreate),
+                        getTxnRecord(basicTxnCreate).logged(),
+                        validateChargedUsdWithin(basicTxnCreate, 0.0094925808, 0.1),
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .blankMemo())
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, 1800)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .blankMemo()
+                                .fee(ONE_HBAR)
+                                .via(basicXferCreate),
+                        getTxnRecord(basicXferCreate).logged(),
+                        validateChargedUsdWithin(basicXferCreate, 0.01149258, 0.1))
+                .when(
+                        scheduleCreate(
+                                        BASIC_XFER,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, ONE_MONTH_IN_SECS)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .blankMemo()
+                                .fee(ONE_HBAR)
+                                .via(oneMonthCreate),
+                        getTxnRecord(oneMonthCreate).logged(),
+                        validateChargedUsdWithin(oneMonthCreate, 0.0115274711, 0.1))
+                .then(
+                        scheduleCreate(
+                                        CREATE_TX,
+                                        cryptoTransfer(
+                                                        tinyBarsFromTo(
+                                                                SENDER, RECEIVER, transferAmount))
+                                                .memo(longMemo))
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, 10L * ONE_MONTH_IN_SECS)
+                                .payingWith(PAYING_ACCOUNT)
+                                .recordingScheduledTxn()
+                                .memo("testing base transaction")
+                                .fee(ONE_HBAR)
+                                .via(tenMonthsCreate),
+                        getTxnRecord(tenMonthsCreate).logged(),
+                        validateChargedUsdWithin(tenMonthsCreate, 0.0296596128, 0.1));
     }
 
     @SuppressWarnings("java:S5960")

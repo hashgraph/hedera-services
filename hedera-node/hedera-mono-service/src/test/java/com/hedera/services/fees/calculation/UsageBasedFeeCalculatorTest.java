@@ -40,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
+import static com.hederahashgraph.fee.FeeBuilder.getFeeObjectWithSecondary;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -669,6 +670,46 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(fees.getNodeFee(), expectedFees.getNodeFee());
         assertEquals(fees.getNetworkFee(), expectedFees.getNetworkFee());
         assertEquals(fees.getServiceFee(), expectedFees.getServiceFee());
+    }
+
+    @Test
+    void usesSecondaryFeesWhenAppropos() throws Exception {
+        // setup:
+        SigValueObj expectedSigUsage =
+                new SigValueObj(
+                        FeeBuilder.getSignatureCount(signedTxn),
+                        9,
+                        FeeBuilder.getSignatureSize(signedTxn));
+
+        final var secondaryFees = new FeeObject(1, 2, 3);
+        FeeObject expectedFees =
+                getFeeObjectWithSecondary(
+                        DEFAULT_RESOURCE_PRICES.get(SubType.DEFAULT),
+                        resourceUsage,
+                        secondaryFees,
+                        currentRate,
+                        1L);
+
+        given(txnUsageEstimators.get(CryptoCreate)).willReturn(List.of(correctOpEstimator));
+        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+        given(correctOpEstimator.hasSecondaryFees()).willReturn(true);
+        given(correctOpEstimator.secondaryFeesFor(accessor.getTxn())).willReturn(secondaryFees);
+        given(
+                        correctOpEstimator.usageGiven(
+                                argThat(accessor.getTxn()::equals),
+                                argThat(factory.apply(expectedSigUsage)),
+                                argThat(view::equals)))
+                .willReturn(resourceUsage);
+        given(exchange.rate(at)).willReturn(currentRate);
+        given(usagePrices.pricesGiven(CryptoCreate, at)).willReturn(DEFAULT_RESOURCE_PRICES);
+
+        // when:
+        FeeObject fees = subject.estimateFee(accessor, payerKey, view, at);
+
+        // then:
+        assertEquals(expectedFees.getNodeFee(), fees.getNodeFee());
+        assertEquals(expectedFees.getNetworkFee(), fees.getNetworkFee());
+        assertEquals(expectedFees.getServiceFee(), fees.getServiceFee());
     }
 
     private final Function<SigValueObj, ArgumentMatcher<SigValueObj>> factory =

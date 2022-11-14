@@ -19,6 +19,7 @@ import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.exception.InvalidTxBodyException;
+import com.hederahashgraph.fee.FeeObject;
 import com.hederahashgraph.fee.SigValueObj;
 
 /**
@@ -47,4 +48,18 @@ public interface TxnResourceUsageEstimator {
      */
     FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage, StateView view)
             throws InvalidTxBodyException;
+
+    /**
+     * Returns whether this estimator can directly compute USD-denominated fees to add to the
+     * resource-derived {@link com.hederahashgraph.fee.FeeObject}.
+     *
+     * @return if this usage estimator can compute secondary fees
+     */
+    default boolean hasSecondaryFees() {
+        return false;
+    }
+
+    default FeeObject secondaryFeesFor(final TransactionBody txn) {
+        throw new UnsupportedOperationException();
+    }
 }

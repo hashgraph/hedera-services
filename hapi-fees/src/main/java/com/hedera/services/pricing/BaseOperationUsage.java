@@ -157,6 +157,7 @@ public class BaseOperationUsage {
     private static final String A_TOKEN_NAME = "012345678912";
     private static final String A_TOKEN_SYMBOL = "ABCD";
     private static final String BLANK_MEMO = "";
+    private static final int DEFAULT_SCHEDULE_LIFETIME = 1800;
 
     private static final TokenOpsUsage TOKEN_OPS_USAGE = new TokenOpsUsage();
     private static final ConsensusOpsUsage CONSENSUS_OPS_USAGE = new ConsensusOpsUsage();
@@ -812,7 +813,9 @@ public class BaseOperationUsage {
                                                         .setTransactionFee(100_000_000L)
                                                         .build()))
                         .build();
-        var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, DUAL_SIG_USAGE, 1800);
+        var feeData =
+                SCHEDULE_OPS_USAGE.scheduleCreateUsage(
+                        txn, DUAL_SIG_USAGE, DEFAULT_SCHEDULE_LIFETIME, DEFAULT_SCHEDULE_LIFETIME);
         return UsageAccumulator.fromGrpc(feeData);
     }
 
@@ -888,7 +891,12 @@ public class BaseOperationUsage {
                                                         .setTransactionFee(100_000_000L)
                                                         .build()))
                         .build();
-        var feeData = SCHEDULE_OPS_USAGE.scheduleCreateUsage(txn, SINGLE_SIG_USAGE, 1800);
+        var feeData =
+                SCHEDULE_OPS_USAGE.scheduleCreateUsage(
+                        txn,
+                        SINGLE_SIG_USAGE,
+                        DEFAULT_SCHEDULE_LIFETIME,
+                        DEFAULT_SCHEDULE_LIFETIME);
         return UsageAccumulator.fromGrpc(feeData);
     }
 }

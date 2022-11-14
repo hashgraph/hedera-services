@@ -57,7 +57,7 @@ import org.apache.logging.log4j.Logger;
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
-    private static final int defaultScheduleTxnExpiry =
+    private final int defaultScheduleTxnExpiry =
             HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
 
     private boolean advertiseCreation = false;
@@ -145,11 +145,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     public HapiScheduleCreate<T> waitForExpiry() {
         this.waitForExpiry = Optional.of(true);
-        return this;
-    }
-
-    public HapiScheduleCreate<T> waitForExpiry(boolean value) {
-        this.waitForExpiry = Optional.of(value);
         return this;
     }
 
@@ -253,7 +248,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
         FeeCalculator.ActivityMetrics metricsCalc =
                 (_txn, svo) ->
                         scheduleOpsUsage.scheduleCreateUsage(
-                                _txn, suFrom(svo), defaultScheduleTxnExpiry);
+                                _txn,
+                                suFrom(svo),
+                                defaultScheduleTxnExpiry,
+                                defaultScheduleTxnExpiry);
 
         return spec.fees()
                 .forActivityBasedOp(

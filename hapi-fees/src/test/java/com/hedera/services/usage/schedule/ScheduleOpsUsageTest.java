@@ -17,6 +17,7 @@ package com.hedera.services.usage.schedule;
 
 import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
 import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hedera.services.usage.schedule.ScheduleOpsUsage.ONE_MONTH_IN_SECS;
 import static com.hedera.services.usage.schedule.entities.ScheduleEntitySizes.SCHEDULE_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hederahashgraph.api.proto.java.SubType.SCHEDULE_CREATE_CONTRACT_CALL;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.test.IdUtils;
@@ -160,13 +162,15 @@ class ScheduleOpsUsageTest {
 
         // when:
         var estimate =
-                subject.scheduleCreateUsage(creationTxn(scheduledTxn), sigUsage, lifetimeSecs);
+                subject.scheduleCreateUsage(
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
         // and:
         verify(base).addBpt(expectedTxBytes);
         verify(base).addRbs(expectedRamBytes * lifetimeSecs);
+        verify(base).addRbs(scheduledTxn.getSerializedSize() * lifetimeSecs);
         verify(base)
                 .addNetworkRbs(
                         (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
@@ -195,13 +199,90 @@ class ScheduleOpsUsageTest {
         // when:
         var estimate =
                 subject.scheduleCreateUsage(
-                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs);
+                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs, 1800);
 
         // then:
         assertSame(A_USAGES_MATRIX, estimate);
         // and:
         verify(base).addBpt(expectedTxBytes);
         verify(base).addRbs(expectedRamBytes * lifetimeSecs);
+        verify(base).addRbs(scheduledTxnWithContractCall.getSerializedSize() * lifetimeSecs);
+        verify(base)
+                .addNetworkRbs(
+                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
+                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+    }
+
+    @Test
+    void estimatesCreateAsExpectedForLifeTimeSecsGreaterThanDefault() {
+        long lifetimeSecs = ONE_MONTH_IN_SECS;
+        // given:
+        var createdCtx =
+                ExtantScheduleContext.newBuilder()
+                        .setAdminKey(adminKey)
+                        .setMemo(memo)
+                        .setScheduledTxn(scheduledTxn)
+                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                        .setResolved(false)
+                        .build();
+        var expectedRamBytes = createdCtx.nonBaseRb();
+        // and:
+        var expectedTxBytes =
+                scheduledTxn.getSerializedSize()
+                        + getAccountKeyStorageSize(adminKey)
+                        + memo.length()
+                        + BASIC_ENTITY_ID_SIZE;
+
+        // when:
+        var estimate =
+                subject.scheduleCreateUsage(
+                        creationTxn(scheduledTxn), sigUsage, lifetimeSecs, 1800);
+
+        // then:
+        assertSame(A_USAGES_MATRIX, estimate);
+        // and:
+        verify(base).addBpt(expectedTxBytes);
+        verify(base).addRbs(expectedRamBytes * lifetimeSecs);
+        verify(base, never()).addRbs(scheduledTxn.getSerializedSize() * lifetimeSecs);
+        verify(base)
+                .addNetworkRbs(
+                        (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
+                                * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+    }
+
+    @Test
+    void estimatesCreateWithContractCallAsExpectedForLifeTimeSecsGreaterThanDefault() {
+        long lifetimeSecs = ONE_MONTH_IN_SECS;
+
+        // given:
+        var createdCtx =
+                ExtantScheduleContext.newBuilder()
+                        .setAdminKey(adminKey)
+                        .setMemo(memo)
+                        .setScheduledTxn(scheduledTxnWithContractCall)
+                        .setNumSigners(SCHEDULE_ENTITY_SIZES.estimatedScheduleSigs(sigUsage))
+                        .setResolved(false)
+                        .build();
+        var expectedRamBytes = createdCtx.nonBaseRb();
+        // and:
+        var expectedTxBytes =
+                scheduledTxnWithContractCall.getSerializedSize()
+                        + getAccountKeyStorageSize(adminKey)
+                        + memo.length()
+                        + BASIC_ENTITY_ID_SIZE;
+
+        // when:
+        var estimate =
+                subject.scheduleCreateUsage(
+                        creationTxn(scheduledTxnWithContractCall), sigUsage, lifetimeSecs, 1800);
+
+        // then:
+        assertSame(A_USAGES_MATRIX, estimate);
+        // and:
+        verify(base).addBpt(expectedTxBytes);
+        verify(base).addRbs(expectedRamBytes * lifetimeSecs);
+        verify(base, never())
+                .addRbs(scheduledTxnWithContractCall.getSerializedSize() * lifetimeSecs);
         verify(base)
                 .addNetworkRbs(
                         (BASIC_ENTITY_ID_SIZE + scheduledTxnIdSize)
