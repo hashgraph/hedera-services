@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.services.evm.contracts.operations;
 
 /*
  * -
@@ -37,31 +37,27 @@ package com.hedera.services.contracts.operation;
  *
  */
 
-import java.util.Optional;
-import java.util.OptionalLong;
+import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
+
 import java.util.function.BiPredicate;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.FixedStack;
-import org.hyperledger.besu.evm.internal.Words;
-import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
+import org.hyperledger.besu.evm.operation.ExtCodeCopyOperation;
 
 /**
- * Hedera adapted version of the {@link ExtCodeHashOperation}.
+ * Hedera adapted version of the {@link ExtCodeCopyOperation}.
  *
  * <p>Performs an existence check on the requested {@link Address} Halts the execution of the EVM
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
  * not exist or it is deleted.
  */
-public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
+public class HederaExtCodeCopyOperation extends ExtCodeCopyOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    public HederaExtCodeHashOperation(
+    public HederaExtCodeCopyOperation(
             GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
@@ -69,33 +65,14 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
     @Override
     public OperationResult execute(MessageFrame frame, EVM evm) {
-        try {
-            final Address address = Words.toAddress(frame.popStackItem());
-            if (!addressValidator.test(address, frame)) {
-                return new OperationResult(
-                        OptionalLong.of(cost(true)),
-                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-            }
-            final var account = frame.getWorldUpdater().get(address);
-            boolean accountIsWarm =
-                    frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
-            OptionalLong optionalCost = OptionalLong.of(this.cost(accountIsWarm));
-            if (frame.getRemainingGas() < optionalCost.getAsLong()) {
-                return new OperationResult(
-                        optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
-            } else {
-                if (!account.isEmpty()) {
-                    frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
-                } else {
-                    frame.pushStackItem(UInt256.ZERO);
-                }
+        final long memOffset = clampedToLong(frame.getStackItem(1));
+        final long numBytes = clampedToLong(frame.getStackItem(3));
 
-                return new OperationResult(optionalCost, Optional.empty());
-            }
-        } catch (final FixedStack.UnderflowException ufe) {
-            return new OperationResult(
-                    OptionalLong.of(cost(true)),
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
-        }
+        return HederaEvmOperationsUtil.addressCheckExecution(
+                frame,
+                () -> frame.getStackItem(0),
+                () -> cost(frame, memOffset, numBytes, true),
+                () -> super.execute(frame, evm),
+                addressValidator);
     }
 }

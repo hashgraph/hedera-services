@@ -16,13 +16,13 @@
 package com.hedera.node.app;
 
 import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
@@ -32,7 +32,6 @@ import com.hedera.services.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +44,7 @@ class SigTransactionMetadataTest {
     private Key key = KeyUtils.A_COMPLEX_KEY;
     private AccountID payer = asAccount("0.0.3");
     private Long payerNum = 3L;
+    private HederaKey payerKey = asHederaKey(key).get();
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -65,11 +65,10 @@ class SigTransactionMetadataTest {
     }
 
     @Test
-    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() throws DecoderException {
+    void gettersWorkAsExpectedWhenOnlyPayerKeyExist() {
         final var txn = createAccountTransaction();
-        final var payerKey = mapKey(key);
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(payerKey);
+        given(account.getAccountKey()).willReturn((JKey) payerKey);
 
         subject = new SigTransactionMetadata(store, txn, payer, List.of());
 
@@ -79,12 +78,10 @@ class SigTransactionMetadataTest {
     }
 
     @Test
-    void gettersWorkAsExpectedWhenOtherSigsExist() throws DecoderException {
+    void gettersWorkAsExpectedWhenOtherSigsExist() {
         final var txn = createAccountTransaction();
-        final var payerKey = mapKey(key);
-
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn(payerKey);
+        given(account.getAccountKey()).willReturn((JKey) payerKey);
 
         subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
 
@@ -96,8 +93,6 @@ class SigTransactionMetadataTest {
     @Test
     void failsWhenPayerKeyDoesntExist() {
         final var txn = createAccountTransaction();
-        final var payerKey = (JKey) asHederaKey(key).get();
-
         given(accounts.get(payerNum)).willReturn(Optional.empty());
 
         subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
@@ -107,6 +102,23 @@ class SigTransactionMetadataTest {
 
         assertEquals(txn, subject.getTxn());
         assertEquals(List.of(payerKey), subject.getReqKeys());
+    }
+
+    @Test
+    void addsToReqKeysCorrectly() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerKey);
+
+        final var anotherKey = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
+
+        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+
+        assertEquals(1, subject.getReqKeys().size());
+        assertTrue(subject.getReqKeys().contains(payerKey));
+
+        subject.addToReqKeys(anotherKey);
+        assertEquals(2, subject.getReqKeys().size());
+        assertTrue(subject.getReqKeys().contains(anotherKey));
     }
 
     private TransactionBody createAccountTransaction() {

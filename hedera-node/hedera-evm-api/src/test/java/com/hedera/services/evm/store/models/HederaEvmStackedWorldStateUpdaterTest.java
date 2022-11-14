@@ -19,7 +19,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+import com.hedera.services.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import java.util.Collections;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -29,22 +29,23 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AbstractLedgerEvmWorldUpdaterTest {
+class HederaEvmStackedWorldStateUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
-    AbstractLedgerEvmWorldUpdater abstractLedgerEvmWorldUpdater =
-            new AbstractLedgerEvmWorldUpdater(accountAccessor);
+    HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
+            new HederaEvmStackedWorldStateUpdater(accountAccessor);
 
     @Test
     void accountTests() {
-        assertNull(abstractLedgerEvmWorldUpdater.createAccount(address, 1, Wei.ONE));
-        assertNull(abstractLedgerEvmWorldUpdater.getAccount(address));
-        assertEquals(Collections.emptyList(), abstractLedgerEvmWorldUpdater.getTouchedAccounts());
-        abstractLedgerEvmWorldUpdater.commit();
+        assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
+        assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
+        assertEquals(
+                Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
+        hederaEvmStackedWorldStateUpdater.commit();
         assertEquals(
                 Collections.emptyList(),
-                abstractLedgerEvmWorldUpdater.getDeletedAccountAddresses());
+                hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
     }
 
     @Test
@@ -53,13 +54,14 @@ class AbstractLedgerEvmWorldUpdaterTest {
 
         assertEquals(
                 updatedHederaEvmAccount.getAddress(),
-                abstractLedgerEvmWorldUpdater.get(address).getAddress());
+                hederaEvmStackedWorldStateUpdater.get(address).getAddress());
     }
 
     @Test
     void updaterTest() {
-        assertEquals(Optional.empty(), abstractLedgerEvmWorldUpdater.parentUpdater());
-        assertNull(abstractLedgerEvmWorldUpdater.updater());
+        assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
+        assertEquals(
+                hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
     }
 
     @Test
