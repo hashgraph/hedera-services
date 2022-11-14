@@ -16,10 +16,10 @@
 package com.hedera.services.yahcli.commands.signedstate;
 
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.yahcli.commands.signedstate.SignedStateHolder.SignedStateDehydrationException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
@@ -50,8 +50,7 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
         int contractsFound = r.right;
         var contractContents = r.left;
         int contractsWithBytecodeFound = contractContents.size();
-        int bytesFound =
-                contractContents.values().stream().collect(Collectors.summingInt((a) -> a.length));
+        int bytesFound = contractContents.values().stream().mapToInt((a) -> a.length).sum();
 
         System.out.printf(
                 "SummarizeSignedStateFile: %d contractIDs found %d contracts found in file store"
@@ -62,13 +61,12 @@ public class SummarizeSignedStateFileCommand implements Callable<Integer> {
     }
 
     private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
-            throws Exception {
+            throws SignedStateDehydrationException {
         int contractsFound = 0;
-        try (var signedState = new SignedStateHolder(inputFile)) {
-            var contractIds = signedState.getAllKnownContracts();
-            contractsFound = contractIds.size();
-            var contractContents = signedState.getAllContractContents(contractIds);
-            return ImmutablePair.of(contractContents, contractsFound);
-        }
+        var signedState = new SignedStateHolder(inputFile);
+        var contractIds = signedState.getAllKnownContracts();
+        contractsFound = contractIds.size();
+        var contractContents = signedState.getAllContractContents(contractIds);
+        return ImmutablePair.of(contractContents, contractsFound);
     }
 }

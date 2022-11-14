@@ -90,13 +90,13 @@ public class DumpRawContractsCommand implements Callable<Integer> {
 
     @Contract(pure = true)
     private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(
-            @NotNull Path inputFile) throws Exception {
-        int contractsFound;
-        try (final var signedState = new SignedStateHolder(inputFile)) {
-            final var contractIds = signedState.getAllKnownContracts();
-            contractsFound = contractIds.size();
-            final var contractContents = signedState.getAllContractContents(contractIds);
-            return ImmutablePair.of(contractContents, contractsFound);
-        }
+            @NotNull Path inputFile) throws SignedStateHolder.SignedStateDehydrationException {
+
+        final var signedState = new SignedStateHolder(inputFile);
+        final var contractIds = signedState.getAllKnownContracts();
+        final var contractsFound = contractIds.size();
+        final var contractContents = signedState.getAllContractContents(contractIds);
+
+        return ImmutablePair.of(contractContents, contractsFound);
     }
 }

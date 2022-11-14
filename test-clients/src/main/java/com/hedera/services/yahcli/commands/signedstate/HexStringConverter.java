@@ -16,8 +16,9 @@
 package com.hedera.services.yahcli.commands.signedstate;
 
 import static java.lang.Byte.toUnsignedInt;
-import static org.apache.commons.codec.binary.Hex.decodeHex;
+// import static org.apache.commons.codec.binary.Hex.decodeHex;
 
+import java.util.HexFormat;
 import java.util.regex.Pattern;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -33,10 +34,10 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
     // need overrides for `equals`/`hashcode`/`toString`, and at that point, why bother?
     // See https://stackoverflow.com/a/74207195/751579.
     public static class Bytes {
-        final short[] bytes;
+        final short[] contents;
 
         public Bytes(short[] b) {
-            bytes = b;
+            contents = b;
         }
     }
 
@@ -46,11 +47,11 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
             throw new TypeConversionException("-b bytecode must have even number of hexits");
         if (!Pattern.compile("[0-9a-fA-F]+").matcher(value).matches())
             throw new TypeConversionException("-b bytecode has invalid characters (not hexits)");
-        return new Bytes(toUnsignedBuffer(decodeHex(value)));
+        return new Bytes(toUnsignedBuffer(HexFormat.of().parseHex(value)));
     }
 
     @Contract(pure = true)
-    private @NotNull short[] toUnsignedBuffer(@NotNull byte[] signedBuffer) {
+    private short @NotNull [] toUnsignedBuffer(byte @NotNull [] signedBuffer) {
         // In Java, `byte[]` is a buffer of _signed_ bytes.  In the real world (and every other
         // common programming language) a byte array is a buffer of _unsigned_ bytes the way network
         // programmers and device I/O programmers and crypto programmers and bytecode interpreter

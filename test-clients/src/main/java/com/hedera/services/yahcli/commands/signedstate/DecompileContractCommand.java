@@ -53,9 +53,9 @@ public class DecompileContractCommand implements Callable<Integer> {
     public Integer call() throws Exception {
 
         final int DISPLAY_LENGTH = 100;
-        int contractLength = theContract.bytes.length;
+        int contractLength = theContract.contents.length;
         int displayLength = min(DISPLAY_LENGTH, contractLength);
-        short[] displayContract = copyOf(theContract.bytes, displayLength);
+        short[] displayContract = copyOf(theContract.contents, displayLength);
 
         System.out.printf("DecompileContract: contract id %d%n", theContractId.orElse(-1L));
         System.out.printf("   first bytes of contract: %s%n", toHex(displayContract));
@@ -64,11 +64,9 @@ public class DecompileContractCommand implements Callable<Integer> {
             System.out.printf(
                     "      %02X: %s%s%s%n",
                     ds.opcode(),
-                    ds.name(),
-                    ds.extraBytes() > 0
-                            ? (" (" + Integer.toString(ds.extraBytes()) + " extra)")
-                            : "",
-                    ds.valid() ? "" : " (INVALID)");
+                    ds.mnemonic(),
+                    ds.extraBytes() > 0 ? String.format(" (%d extra)", ds.extraBytes()) : "",
+                    ds.assigned() ? "" : " (INVALID)");
         }
         return 0;
     }
@@ -76,7 +74,7 @@ public class DecompileContractCommand implements Callable<Integer> {
     @Contract(pure = true)
     private @NotNull String toHex(short @NotNull [] byteBuffer) {
         final String hexits = "0123456789abcdef";
-        StringBuffer sb = new StringBuffer(2 * byteBuffer.length);
+        var sb = new StringBuilder(2 * byteBuffer.length);
         for (short byt : byteBuffer) {
             sb.append(hexits.charAt(byt >> 4));
             sb.append(hexits.charAt(byt & 0xf));

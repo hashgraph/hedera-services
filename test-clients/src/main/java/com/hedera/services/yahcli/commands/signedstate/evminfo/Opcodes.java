@@ -18,36 +18,46 @@ package com.hedera.services.yahcli.commands.signedstate.evminfo;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.NotNull;
 
 public class Opcodes {
 
-    public record Descr(int opcode, int extraBytes, String name, boolean valid) {
+    // Describes an EVM opcode
+    // - extraBytes is the # of bytes in the codestream, following the opcode, which are
+    //   part of this instruction (the `PUSHnn` instructions only)
+    // - assigned is true for all _assigned_ opcodes (including 0xFE `INVALID`)
+    public record Descr(int opcode, int extraBytes, String mnemonic, boolean assigned) {
 
-        public Descr(int opcode, String name) {
-            this(opcode, 0, name, true);
+        public Descr(int opcode, String mnemonic) {
+            this(opcode, 0, mnemonic, true);
         }
 
-        public Descr(int opcode, String name, boolean valid) {
-            this(opcode, 0, name, valid);
+        public Descr(int opcode, String mnemonic, boolean assigned) {
+            this(opcode, 0, mnemonic, assigned);
         }
 
-        public Descr(int opcode, int extraBytes, String name) {
-            this(opcode, extraBytes, name, true);
+        public Descr(int opcode, int extraBytes, String mnemonic) {
+            this(opcode, extraBytes, mnemonic, true);
         }
     }
 
-    public static final List<Descr> byOpcode;
-    public static final SortedMap<String, Descr> byMnemonic;
+    // Table of opcodes indexed by opcode
+    public static final ImmutableList<Descr> byOpcode;
+
+    // Table of opcodes indexed by mnemonic
+    public static final ImmutableSortedMap<String, Descr> byMnemonic;
 
     static {
+        // Create the opcode tables ...
+
         List<Descr> descrs = new ArrayList<>(256);
 
         // Start with all of the unique/ordinary opcodes
@@ -129,7 +139,7 @@ public class Opcodes {
           """
                 .lines()
                 .forEach(
-                        (line) -> {
+                        line -> {
                             var no = line.split(" ");
                             var op = Integer.parseUnsignedInt(no[0], 16);
                             descrs.add(new Descr(op, no[1]));
@@ -159,7 +169,7 @@ public class Opcodes {
                         intRange(0xF6, 0xF9),
                         intRange(0xFB, 0xFC))
                 .forEach(
-                        (i) -> {
+                        i -> {
                             var n = String.format("%02X", i);
                             descrs.add(new Descr(i, "UNASSIGNED-" + n, false));
                         });
@@ -169,13 +179,15 @@ public class Opcodes {
         if (256 != allOpcodes.size()) {
             throw new IllegalStateException(
                     String.format(
-                            "EVM opcode table incomplete, only %s elements", allOpcodes.size()));
+                            "EVM opcode table incomplete, only %s opcodes present",
+                            allOpcodes.size()));
         }
 
         descrs.sort(Comparator.comparingInt(Descr::opcode));
-        byOpcode = descrs;
+        byOpcode = ImmutableList.copyOf(descrs);
         byMnemonic =
-                new TreeMap<>(descrs.stream().collect(toMap(Descr::name, Function.identity())));
+                ImmutableSortedMap.copyOf(
+                        descrs.stream().collect(toMap(Descr::mnemonic, Function.identity())));
     }
 
     // Returns a Stream<Integer> of a range of integers, inclusive
@@ -184,7 +196,8 @@ public class Opcodes {
     }
 
     // Varadic Stream concatenation (why isn't this part of Java Streams class?)
-    private static Stream<Integer> concatStreams(Stream<Integer>... sis) {
+    @SafeVarargs
+    private static @NotNull Stream<Integer> concatStreams(Stream<Integer>... sis) {
         Stream<Integer> s = Stream.empty();
         for (var str : sis) s = Stream.concat(s, str);
         return s;
