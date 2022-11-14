@@ -117,14 +117,22 @@ class LedgerCustomFeeSchedulesTest {
     void testObjectContract() {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
-        MerkleToken token = new MerkleToken();
+        final var token = new MerkleToken();
         final var missingFees =
                 List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
-        final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
-        final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
+
+        final var secondTokensLedger =
+                new TransactionalLedger<>(
+                        TokenProperty.class,
+                        MerkleToken::new,
+                        new BackingTokens(() -> secondMerkleMap),
+                        new ChangeSummaryManager<>());
+
+        final var fees1 = new LedgerCustomFeeSchedules(tokensLedger);
+        final var fees2 = new LedgerCustomFeeSchedules(secondTokensLedger);
 
         // expect:
         assertNotEquals(fees1, fees2);
