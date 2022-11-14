@@ -47,6 +47,16 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
+    TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY {
+        @Override
+        public PlatformTxnAccessor platformTxn() throws Throwable {
+            return PlatformTxnAccessor.from(
+                    from(
+                            newSignedCryptoTransfer()
+                                    .changingOwner(ROYALTY_TOKEN_NFT, NO_RECEIVER_SIG, MISC_ACCOUNT)
+                                    .get()));
+        }
+    },
     CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
