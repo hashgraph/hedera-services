@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,7 +55,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
         this.txn = txn;
         this.payer = payer;
         requiredKeys.addAll(otherKeys);
-        addPayerKey(payer);
+        addPayerKey();
     }
 
     public SigTransactionMetadata(
@@ -77,46 +78,93 @@ public class SigTransactionMetadata implements TransactionMetadata {
         return status;
     }
 
-    /* ---------- Modifying helper methods ---------- */
+    /* ---------- Mutating methods ---------- */
     @Override
     public void setStatus(final ResponseCodeEnum status) {
         this.status = status;
     }
 
-    private void addPayerKey(final AccountID payer) {
-        final var result = store.getKey(payer);
-        if (result.failed()) {
-            this.status = INVALID_PAYER_ACCOUNT_ID;
-        } else {
-            requiredKeys.add(result.key());
-        }
-    }
-
+    /**
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
+     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
+     * keys for account. If the lookup fails, sets the default failureReason given in the result.
+     *
+     * @param id given accountId
+     */
     public void addNonPayerKey(final AccountID id) {
         addNonPayerKey(id, null);
     }
 
+    /**
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
+     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
+     * keys for account. If the lookup fails, sets the given failure reason on the metadata. If the
+     * failureReason is null, sets the default failureReason given in the result.
+     *
+     * @param id given accountId
+     * @param failureStatus given failure status
+     */
     public void addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
-        if (id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK) {
+        if (isNotNeeded(id)) {
             return;
         }
-        final var result = store.getKey(payer);
-        if (result.failed()) {
-            this.status = failureStatus != null ? failureStatus : result.failureReason();
-        } else {
-            requiredKeys.add(result.key());
-        }
+        final var result = store.getKey(id);
+        failOrAddToKeys(result, failureStatus);
     }
 
+    /**
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
+     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
+     * keys for account if receiverSigRequired is true on the account. If the lookup fails, sets the
+     * given failure reason on the metadata. If the failureReason is null, sets the default
+     * failureReason given in the result.
+     *
+     * @param id given accountId
+     * @param failureStatus given failure status
+     */
     public void addNonPayerKeyIfReceiverSigRequired(
             final AccountID id, final ResponseCodeEnum failureStatus) {
-        if (id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK) {
+        if (isNotNeeded(id)) {
             return;
         }
-        final var result = store.getKeyIfReceiverSigRequired(payer);
+        final var result = store.getKeyIfReceiverSigRequired(id);
+        failOrAddToKeys(result, failureStatus);
+    }
+
+    /* ---------- Helper methods ---------- */
+
+    /**
+     * Look up the keys for payer account and add payer key to the required keys list. If the lookup
+     * fails adds failure status {@code INVALID_PAYER_ACCOUNT_ID} to the metadata.
+     */
+    private void addPayerKey() {
+        final var result = store.getKey(payer);
+        failOrAddToKeys(result, INVALID_PAYER_ACCOUNT_ID);
+    }
+
+    /**
+     * Checks if the account given is same as payer or if the metadata is already failed. In either
+     * case, no need to lookup tha account's key.
+     *
+     * @param id given account
+     * @return true if the lookup is not needed, false otherwise
+     */
+    private boolean isNotNeeded(final AccountID id) {
+        return id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK;
+    }
+
+    /**
+     * Based on the key lookup result, adds the kleys to required keys list if the result is
+     * successful. Else adds failureReason for the status.
+     *
+     * @param result key lookup result
+     * @param failureStatus failure reason for the lookup
+     */
+    private void failOrAddToKeys(
+            final KeyOrLookupFailureReason result, final ResponseCodeEnum failureStatus) {
         if (result.failed()) {
             this.status = failureStatus != null ? failureStatus : result.failureReason();
-        } else {
+        } else if (result.key() != null) {
             requiredKeys.add(result.key());
         }
     }
