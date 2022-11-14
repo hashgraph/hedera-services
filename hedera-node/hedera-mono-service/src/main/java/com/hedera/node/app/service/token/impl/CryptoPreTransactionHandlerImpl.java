@@ -165,7 +165,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final AccountID payer,
             final SigTransactionMetadata meta,
             final ResponseCodeEnum failureStatus) {
-        if (isFailed(accountId, payer, meta)) {
+        if (isInvalidMetaOrAccount(accountId, payer, meta)) {
             return;
         }
         var result = accountStore.getKey(accountId);
@@ -204,7 +204,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final AccountID payer,
             final SigTransactionMetadata meta,
             final ResponseCodeEnum failureStatus) {
-        if (isFailed(accountId, payer, meta)) {
+        if (isInvalidMetaOrAccount(accountId, payer, meta)) {
             return;
         }
         var result = accountStore.getKeyIfReceiverSigRequired(accountId);
@@ -215,19 +215,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         }
     }
 
-    /**
-     * Convenience method for having a default failure status set on metadata if there is a failure.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
-     */
-    private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        addIfNotPayerAndReceiverSigRequired(accountId, payer, meta, null);
-    }
-
-    private boolean isFailed(
+    private boolean isInvalidMetaOrAccount(
             final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
         return meta.failed()
                 || payer.equals(accountId)

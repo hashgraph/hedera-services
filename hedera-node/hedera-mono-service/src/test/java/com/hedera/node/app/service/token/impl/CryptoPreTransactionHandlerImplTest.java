@@ -216,6 +216,22 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
+    void doesntExecuteIfTransferAccountIdIsDefaultInstance() {
+        final var keyUsed = (JKey) payerKey;
+
+        given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
+        given(deleteAccount.getAccountKey()).willReturn(keyUsed);
+
+        final var txn = deleteAccountTransaction(deleteAccountId, AccountID.getDefaultInstance());
+
+        final var meta = subject.preHandleCryptoDelete(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetaAssertions(meta, 2, false, OK);
+        assertIterableEquals(List.of(payerKey, keyUsed), meta.getReqKeys());
+    }
+
+    @Test
     void doesntAddDeleteKeyIfAccountSameAsPayerForCryptoDelete() {
         final var keyUsed = (JKey) payerKey;
 
