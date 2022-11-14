@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public class SignedStateHolder implements Closeable {
@@ -54,23 +55,29 @@ public class SignedStateHolder implements Closeable {
         AssertSignedStateComponentExists(platformState, "platform state (Swirlds)");
     }
 
+    @Contract(pure = true)
     public @NotNull ServicesState getPlatformState() {
         return platformState;
     }
 
+    @Contract(pure = true)
     public @NotNull AccountStorageAdapter getAccounts() {
-        var accounts = platformState.accounts();
+        final var accounts = platformState.accounts();
         AssertSignedStateComponentExists(accounts, "accounts");
         return accounts;
     }
 
+
+    @Contract(pure = true)
     public @NotNull VirtualMap<VirtualBlobKey, VirtualBlobValue> getFileStore() {
-        var fileStore = platformState.storage();
+        final var fileStore = platformState.storage();
         AssertSignedStateComponentExists(fileStore, "fileStore");
         return fileStore;
     }
 
     // returns all contracts known via Hedera accounts
+
+    @Contract(pure = true)
     public @NotNull Set<EntityNum> getAllKnownContracts() {
         Set<EntityNum> ids = new HashSet<>();
         getAccounts()
@@ -81,12 +88,14 @@ public class SignedStateHolder implements Closeable {
         return ids;
     }
 
+
+    @Contract(pure = true)
     public @NotNull Map<EntityNum, byte[]> getAllContractContents(
             @NotNull Collection<EntityNum> contractIds) {
         Map<EntityNum, byte[]> codes = new HashMap<>();
-        var fileStore = getFileStore();
+        final var fileStore = getFileStore();
         for (var cid : contractIds) {
-            VirtualBlobKey vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid.intValue());
+            final VirtualBlobKey vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid.intValue());
             if (fileStore.containsKey(vbk)) {
                 var blob = fileStore.get(vbk);
                 if (null != blob) codes.put(cid, blob.getData());
@@ -113,6 +122,8 @@ public class SignedStateHolder implements Closeable {
         }
     }
 
+
+    @Contract(pure = true)
     private void AssertSignedStateComponentExists(Object component, @NotNull String componentName) {
         if (null == component) throw new MissingSignedStateComponent(componentName, swh);
     }

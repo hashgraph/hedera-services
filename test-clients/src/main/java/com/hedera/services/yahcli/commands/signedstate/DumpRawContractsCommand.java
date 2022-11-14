@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -56,17 +57,16 @@ public class DumpRawContractsCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        var r = getContracts(inputFile);
-
-        var contractContents = r.left;
-        var formattedContracts = formatContractLines(contractContents);
+        final var contractContents = getContracts(inputFile).left;
+        final var formattedContracts = formatContractLines(contractContents);
         for (var s : formattedContracts) System.out.println(s);
 
         return 0;
     }
 
+    @Contract(pure = true)
     private @NotNull Collection<String> formatContractLines(
-            Map<EntityNum, byte[]> contractContents) {
+            @NotNull Map<EntityNum, byte[]> contractContents) {
         Collection<String> formattedContracts = new ArrayList<>();
         for (var kv : contractContents.entrySet()) {
             StringBuilder sb =
@@ -88,13 +88,14 @@ public class DumpRawContractsCommand implements Callable<Integer> {
         return formattedContracts;
     }
 
-    private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(Path inputFile)
+    @Contract(pure = true)
+    private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(@NotNull Path inputFile)
             throws Exception {
         int contractsFound;
-        try (var signedState = new SignedStateHolder(inputFile)) {
-            var contractIds = signedState.getAllKnownContracts();
+        try (final var signedState = new SignedStateHolder(inputFile)) {
+            final var contractIds = signedState.getAllKnownContracts();
             contractsFound = contractIds.size();
-            var contractContents = signedState.getAllContractContents(contractIds);
+            final var contractContents = signedState.getAllContractContents(contractIds);
             return ImmutablePair.of(contractContents, contractsFound);
         }
     }
