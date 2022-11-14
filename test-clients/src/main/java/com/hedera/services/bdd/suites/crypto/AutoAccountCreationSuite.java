@@ -181,6 +181,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 hollowAccountCompletionWithContractCreate(),
                 hollowAccountCompletionWithContractCall(),
                 hollowAccountCompletionWithTokenAssociation(),
+                completedHollowAccountsTransfer(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
@@ -1305,6 +1306,149 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 }),
                         resetToDefault(LAZY_CREATE_FEATURE_FLAG),
                         resetToDefault(CONTRACTS_CHAIN_ID));
+    }
+
+    private HapiApiSpec completedHollowAccountsTransfer() {
+        return defaultHapiSpec("CompletedHollowAccountsTransfer")
+                .given(
+                        overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed("anotherSecp256k1Alias").shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(CRYPTO_TRANSFER_RECEIVER).balance(INITIAL_BALANCE * ONE_HBAR))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var firstECDSAKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var firstEVMAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(firstECDSAKey));
+                                    final var op =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    firstEVMAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+
+                                    final HapiGetTxnRecord hapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN)
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, op, hapiGetTxnRecord);
+
+                                    final AccountID newAccountID =
+                                            hapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
+
+                                    final var secondECDSAKey =
+                                            spec.registry()
+                                                    .getKey("anotherSecp256k1Alias")
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var secondEVMAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(secondECDSAKey));
+                                    final var op2 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    secondEVMAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+                                    final HapiGetTxnRecord secondHapiGetTxnRecord =
+                                            getTxnRecord(TRANSFER_TXN_2)
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    allRunFor(spec, op2, secondHapiGetTxnRecord);
+
+                                    final AccountID anotherNewAccountID =
+                                            secondHapiGetTxnRecord
+                                                    .getChildRecord(0)
+                                                    .getReceipt()
+                                                    .getAccountID();
+                                    spec.registry()
+                                            .saveAccountId(
+                                                    "anotherSecp256k1Alias", anotherNewAccountID);
+
+                                    final var op3 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    CRYPTO_TRANSFER_RECEIVER,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    SECP_256K1_SOURCE_KEY))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN + "3");
+
+                                    allRunFor(spec, op3);
+
+                                    final var op4 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    LAZY_CREATE_SPONSOR,
+                                                                    CRYPTO_TRANSFER_RECEIVER,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith("anotherSecp256k1Alias")
+                                                    .sigMapPrefixes(
+                                                            uniqueWithFullPrefixesFor(
+                                                                    "anotherSecp256k1Alias"))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN + "4");
+
+                                    allRunFor(spec, op4);
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var firstECDSAKey =
+                                            spec.registry()
+                                                    .getKey(SECP_256K1_SOURCE_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var firstEVMAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(firstECDSAKey));
+
+                                    final var secondECDSAKey =
+                                            spec.registry()
+                                                    .getKey("anotherSecp256k1Alias")
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray();
+                                    final var secondEVMAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(secondECDSAKey));
+
+                                    var op5 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    firstEVMAddress,
+                                                                    secondEVMAddress,
+                                                                    FIVE_HBARS))
+                                                    .payingWith(SECP_256K1_SOURCE_KEY)
+                                                    .via(TRANSFER_TXN + "5");
+
+                                    var op6 =
+                                            getTxnRecord(TRANSFER_TXN + "5")
+                                                    .andAllChildRecords()
+                                                    .logged();
+
+                                    allRunFor(spec, op5, op6);
+                                }),
+                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
     }
 
     private HapiApiSpec canGetBalanceAndInfoViaAlias() {
