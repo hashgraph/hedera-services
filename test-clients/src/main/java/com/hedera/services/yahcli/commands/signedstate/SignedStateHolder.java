@@ -67,7 +67,6 @@ public class SignedStateHolder implements Closeable {
         return accounts;
     }
 
-
     @Contract(pure = true)
     public @NotNull VirtualMap<VirtualBlobKey, VirtualBlobValue> getFileStore() {
         final var fileStore = platformState.storage();
@@ -87,7 +86,6 @@ public class SignedStateHolder implements Closeable {
                         });
         return ids;
     }
-
 
     @Contract(pure = true)
     public @NotNull Map<EntityNum, byte[]> getAllContractContents(
@@ -121,7 +119,6 @@ public class SignedStateHolder implements Closeable {
                             component, swh.toString()));
         }
     }
-
 
     @Contract(pure = true)
     private void AssertSignedStateComponentExists(Object component, @NotNull String componentName) {

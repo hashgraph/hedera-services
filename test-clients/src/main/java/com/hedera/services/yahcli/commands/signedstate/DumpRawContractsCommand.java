@@ -89,8 +89,8 @@ public class DumpRawContractsCommand implements Callable<Integer> {
     }
 
     @Contract(pure = true)
-    private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(@NotNull Path inputFile)
-            throws Exception {
+    private @NotNull ImmutablePair<Map<EntityNum, byte[]>, Integer> getContracts(
+            @NotNull Path inputFile) throws Exception {
         int contractsFound;
         try (final var signedState = new SignedStateHolder(inputFile)) {
             final var contractIds = signedState.getAllKnownContracts();
