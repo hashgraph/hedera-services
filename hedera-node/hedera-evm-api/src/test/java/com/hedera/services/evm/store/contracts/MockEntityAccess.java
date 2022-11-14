@@ -19,26 +19,40 @@ import com.google.protobuf.ByteString;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface HederaEvmEntityAccess {
+public class MockEntityAccess implements HederaEvmEntityAccess {
 
-    boolean isUsable(Address address);
+    @Override
+    public boolean isUsable(Address address) {
+        return false;
+    }
 
-    long getBalance(Address address);
+    @Override
+    public long getBalance(Address address) {
+        return 0;
+    }
 
-    boolean isTokenAccount(Address address);
+    @Override
+    public boolean isTokenAccount(Address address) {
+        return false;
+    }
 
-    ByteString alias(Address address);
+    @Override
+    public ByteString alias(Address address) {
+        return null;
+    }
 
-    boolean isExtant(Address address);
+    @Override
+    public boolean isExtant(Address address) {
+        return false;
+    }
 
-    Bytes getStorage(Address address, Bytes key);
+    @Override
+    public Bytes getStorage(Address address, Bytes key) {
+        return Bytes.EMPTY;
+    }
 
-    /**
-     * Returns the bytecode for the contract with the given account id; or null if there is no byte
-     * present for this contract.
-     *
-     * @param address the account's address of the target contract
-     * @return the target contract's bytecode, or null if it is not present
-     */
-    Bytes fetchCodeIfPresent(Address address);
+    @Override
+    public Bytes fetchCodeIfPresent(Address address) {
+        return null;
+    }
 }
