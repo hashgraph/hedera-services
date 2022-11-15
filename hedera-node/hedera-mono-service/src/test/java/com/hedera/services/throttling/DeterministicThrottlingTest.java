@@ -400,6 +400,42 @@ class DeterministicThrottlingTest {
     }
 
     @ParameterizedTest
+    @CsvSource({
+        "HAPI,true,true",
+        "HAPI,true,false",
+        "CONSENSUS,true,true",
+        "CONSENSUS,true,false",
+        "HAPI,false,true",
+        "CONSENSUS,false,true",
+    })
+    void doesntUseCryptoCreateThrottleForNonCryptoTransfer(
+            final DeterministicThrottlingMode mode,
+            final boolean autoCreationEnabled,
+            final boolean lazyCreationEnabled)
+            throws IOException {
+        given(dynamicProperties.schedulingLongTermEnabled()).willReturn(false);
+        subject.setMode(mode);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
+        final var scheduledTxn =
+                SchedulableTransactionBody.newBuilder()
+                        .setConsensusSubmitMessage(
+                                ConsensusSubmitMessageTransactionBody.getDefaultInstance())
+                        .build();
+        var defs = SerdeUtils.pojoDefs("bootstrap/schedule-create-throttles.json");
+        subject.rebuildFor(defs);
+
+        final var accessor = scheduleCreate(scheduledTxn);
+        final var ans = subject.shouldThrottleTxn(accessor, consensusNow);
+
+        final var throttlesNow = subject.activeThrottlesFor(ScheduleCreate);
+        final var aNow = throttlesNow.get(0);
+
+        assertFalse(ans);
+        assertEquals(BucketThrottle.capacityUnitsPerTxn(), aNow.used());
+    }
+
+    @ParameterizedTest
     @CsvSource({"HAPI,true", "HAPI,false", "CONSENSUS,true", "CONSENSUS,false"})
     void usesCryptoCreateThrottleForCryptoTransferWithAutoCreationInScheduleCreate(
             final DeterministicThrottlingMode mode, final boolean longTermEnabled)
