@@ -1,5 +1,27 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.grpc;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -8,14 +30,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import utils.TestUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class NoopMarshallerTest {
     private final NoopMarshaller marshaller = new NoopMarshaller();
@@ -65,7 +79,7 @@ class NoopMarshallerTest {
         buf.position(50);
 
         try (final var stream1 = marshaller.stream(buf);
-             final var stream2 = marshaller.stream(buf)) {
+                final var stream2 = marshaller.stream(buf)) {
 
             assertEquals(stream1.available(), stream2.available());
             assertNotEquals(-1, stream1.read());
@@ -89,7 +103,7 @@ class NoopMarshallerTest {
     }
 
     @ParameterizedTest(name = "With {0} bytes")
-    @ValueSource(ints = { 1024 * 6 + 1, 1024 * 1024 })
+    @ValueSource(ints = {1024 * 6 + 1, 1024 * 1024})
     void parseStreamThatIsTooBig(int numBytes) {
         final var arr = TestUtils.randomBytes(numBytes);
         final var stream = new ByteArrayInputStream(arr);
@@ -101,13 +115,15 @@ class NoopMarshallerTest {
         final var arr = TestUtils.randomBytes(100);
         try (final var stream = Mockito.mock(InputStream.class)) {
             Mockito.when(stream.read(Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
-                    .thenAnswer(invocation -> {
-                        byte[] data = invocation.getArgument(0);
-                        int offset = invocation.getArgument(1);
-                        // Don't quite read everything
-                        System.arraycopy(arr, 0, data, offset, 99);
-                        return 99;
-                    }).thenThrow(new IOException("Stream Terminated unexpectedly"));
+                    .thenAnswer(
+                            invocation -> {
+                                byte[] data = invocation.getArgument(0);
+                                int offset = invocation.getArgument(1);
+                                // Don't quite read everything
+                                System.arraycopy(arr, 0, data, offset, 99);
+                                return 99;
+                            })
+                    .thenThrow(new IOException("Stream Terminated unexpectedly"));
 
             assertThrows(RuntimeException.class, () -> marshaller.parse(stream));
         }
@@ -118,20 +134,22 @@ class NoopMarshallerTest {
         final var arr = TestUtils.randomBytes(100);
         try (final var stream = Mockito.mock(InputStream.class)) {
             Mockito.when(stream.read(Mockito.any(), Mockito.anyInt(), Mockito.anyInt()))
-                    .thenAnswer(invocation -> {
-                        byte[] data = invocation.getArgument(0);
-                        int offset = invocation.getArgument(1);
-                        // Don't quite read everything
-                        System.arraycopy(arr, 0, data, offset, 50);
-                        return 50;
-                    })
-                    .thenAnswer(invocation -> {
-                        byte[] data = invocation.getArgument(0);
-                        int offset = invocation.getArgument(1);
-                        // Read the rest
-                        System.arraycopy(arr, 50, data, offset, 50);
-                        return 50;
-                    })
+                    .thenAnswer(
+                            invocation -> {
+                                byte[] data = invocation.getArgument(0);
+                                int offset = invocation.getArgument(1);
+                                // Don't quite read everything
+                                System.arraycopy(arr, 0, data, offset, 50);
+                                return 50;
+                            })
+                    .thenAnswer(
+                            invocation -> {
+                                byte[] data = invocation.getArgument(0);
+                                int offset = invocation.getArgument(1);
+                                // Read the rest
+                                System.arraycopy(arr, 50, data, offset, 50);
+                                return 50;
+                            })
                     .thenReturn(-1);
 
             final var buf = marshaller.parse(stream);
@@ -141,5 +159,4 @@ class NoopMarshallerTest {
             }
         }
     }
-
 }

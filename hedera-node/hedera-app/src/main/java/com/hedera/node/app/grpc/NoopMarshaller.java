@@ -1,18 +1,32 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.grpc;
 
 import io.grpc.MethodDescriptor;
-
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * An implementation of a gRPC marshaller which does nothing but pass through byte arrays.
- * A single implementation of this class is designed to be used by multiple threads, including
- * by multiple app instances within a single JVM!
+ * An implementation of a gRPC marshaller which does nothing but pass through byte arrays. A single
+ * implementation of this class is designed to be used by multiple threads, including by multiple
+ * app instances within a single JVM!
  */
 @ThreadSafe
 final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
@@ -27,7 +41,7 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
     private static final ThreadLocal<ByteBuffer> BUFFER_THREAD_LOCAL =
             ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAX_MESSAGE_SIZE + 1));
 
-    NoopMarshaller() { }
+    NoopMarshaller() {}
 
     @Override
     public InputStream stream(@Nonnull final ByteBuffer buffer) {
@@ -44,13 +58,16 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
             final var buffer = BUFFER_THREAD_LOCAL.get();
             buffer.clear();
             int numBytesRead;
-            while ((numBytesRead = stream.read(buffer.array(), buffer.position(), buffer.remaining())) != -1) {
+            while ((numBytesRead =
+                            stream.read(buffer.array(), buffer.position(), buffer.remaining()))
+                    != -1) {
                 buffer.position(buffer.position() + numBytesRead);
                 if (buffer.remaining() == 0) {
                     // We sized the buffer to be 1 byte larger than the MAX_MESSAGE_SIZE.
                     // If we have filled the buffer, it means the message had too many bytes,
                     // and we will therefore reject it.
-                    throw new RuntimeException("More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
+                    throw new RuntimeException(
+                            "More than MAX_MESSAGE_SIZE (" + MAX_MESSAGE_SIZE + ") bytes read");
                 }
             }
             buffer.flip(); // Prepare for reading

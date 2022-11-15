@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.grpc;
 
 import com.hedera.node.app.SessionContext;
@@ -5,15 +20,14 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
-
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A single
- * instance of this class is used by all query threads in the node.
+ * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
+ * single instance of this class is used by all query threads in the node.
  */
 @ThreadSafe
 final class QueryMethod extends MethodBase {
@@ -46,8 +60,10 @@ final class QueryMethod extends MethodBase {
         super(serviceName, methodName, metrics);
         this.workflow = Objects.requireNonNull(workflow);
 
-        this.queriesAnsweredCounter = counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
-        this.queriesAnsweredSpeedometer = speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
+        this.queriesAnsweredCounter =
+                counter(metrics, COUNTER_ANSWERED_NAME_TPL, COUNTER_ANSWERED_DESC_TPL);
+        this.queriesAnsweredSpeedometer =
+                speedometer(metrics, SPEEDOMETER_ANSWERED_NAME_TPL, SPEEDOMETER_ANSWERED_DESC_TPL);
     }
 
     @Override
