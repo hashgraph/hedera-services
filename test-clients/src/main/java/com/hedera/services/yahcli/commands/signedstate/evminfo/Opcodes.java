@@ -55,12 +55,20 @@ public class Opcodes {
     // Table of opcodes indexed by mnemonic
     public static final ImmutableSortedMap<String, Descr> byMnemonic;
 
+    public static @NotNull Descr getDescrFor(@NotNull String mnemonic) {
+        final var descr = Opcodes.byMnemonic.get(mnemonic);
+        if (null == descr)
+            throw new IllegalArgumentException(
+                    String.format("opcode '%s' not found in table", mnemonic));
+        return descr;
+    }
+
     static {
         // Create the opcode tables ...
 
         List<Descr> descrs = new ArrayList<>(256);
 
-        // Start with all of the unique/ordinary opcodes
+        // Start with all the unique/ordinary opcodes
         """
           00 STOP
           01 ADD
@@ -145,7 +153,7 @@ public class Opcodes {
                             descrs.add(new Descr(op, no[1]));
                         });
 
-        // Add all of the "multiple" opcodes
+        // Add all the "multiple" opcodes
         for (int i = 1; i <= 32; i++) {
             descrs.add(new Descr(0x60 + i - 1, i, "PUSH" + Integer.toString(i)));
         }
@@ -158,7 +166,7 @@ public class Opcodes {
         for (int i = 0; i <= 4; i++) {
             descrs.add(new Descr(0xA0 + i, "LOG" + Integer.toString(i)));
         }
-        // Add all of the unassigned (thus invalid) opcodes
+        // Add all the unassigned (thus invalid) opcodes
         concatStreams(
                         intRange(0x0C, 0x0F),
                         intRange(0x1E, 0x1F),
@@ -168,6 +176,10 @@ public class Opcodes {
                         intRange(0xA5, 0xEF),
                         intRange(0xF6, 0xF9),
                         intRange(0xFB, 0xFC))
+                // say, you'd think Guava's `RangeSet` would be perfect for this ... except you
+                // can't
+                // iterate it.  A set which you can't iterate over its members ... it's a good idea,
+                // because ... I dunno ...
                 .forEach(
                         i -> {
                             var n = String.format("%02X", i);
@@ -195,11 +207,15 @@ public class Opcodes {
         return IntStream.rangeClosed(low, high).boxed();
     }
 
-    // Varadic Stream concatenation (why isn't this part of Java Streams class?)
+    // Variadic Stream concatenation (why isn't this part of Java Streams class?)
     @SafeVarargs
     private static @NotNull Stream<Integer> concatStreams(Stream<Integer>... sis) {
         Stream<Integer> s = Stream.empty();
         for (var str : sis) s = Stream.concat(s, str);
         return s;
+    }
+
+    private Opcodes() {
+        throw new UnsupportedOperationException("Utility class");
     }
 }

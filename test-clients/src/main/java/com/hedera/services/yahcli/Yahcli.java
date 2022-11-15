@@ -27,6 +27,8 @@ import com.hedera.services.yahcli.commands.system.PrepareUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.TelemetryUpgradeCommand;
 import com.hedera.services.yahcli.commands.system.VersionInfoCommand;
 import com.hedera.services.yahcli.commands.validation.ValidationCommand;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.Callable;
 import org.apache.logging.log4j.Level;
 import picocli.CommandLine;
@@ -55,7 +57,7 @@ import picocli.CommandLine.Spec;
             VersionInfoCommand.class
         },
         description = "Performs DevOps-type actions against a Hedera Services network")
-public class Yahcli implements Callable<Integer> {
+public class Yahcli implements Callable<Integer>, CommandLine.IExecutionExceptionHandler {
     public static final long NO_FIXED_FEE = Long.MIN_VALUE;
     public static final String DEFAULT_LOG_LEVEL = "WARN";
 
@@ -106,8 +108,33 @@ public class Yahcli implements Callable<Integer> {
     }
 
     public static void main(String... args) {
-        int rc = new CommandLine(new Yahcli()).execute(args);
+        var yahcli = new Yahcli();
+        int rc = new CommandLine(yahcli).setExecutionExceptionHandler(yahcli).execute(args);
         System.exit(rc);
+    }
+
+    /**
+     * Handle exceptions thrown by any Yahcli subcommands.
+     *
+     * <p>TODO: Should log; currently just prints stacktrace to stdout
+     *
+     * @param ex the Exception thrown by the {@code Runnable}, {@code Callable} or {@code Method}
+     *     user object of the command
+     * @param commandLine the CommandLine representing the command or subcommand where the exception
+     *     occurred
+     * @param parseResult the result of parsing the command line arguments
+     * @return value returned from subcommand execution, to be returned as process exit code
+     * @throws Exception
+     */
+    @Override
+    public int handleExecutionException(
+            Exception ex, CommandLine commandLine, CommandLine.ParseResult parseResult)
+            throws Exception {
+        var out = new StringWriter();
+        ex.printStackTrace(new PrintWriter(out));
+        var trace = out.toString();
+        System.out.print(trace);
+        return commandLine.getExecutionResult();
     }
 
     public String getNet() {

@@ -18,7 +18,14 @@ package com.hedera.services.yahcli.commands.signedstate;
 import static java.lang.Integer.min;
 import static java.util.Arrays.copyOf;
 
-import com.hedera.services.yahcli.commands.signedstate.evminfo.Opcodes;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Assembly;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Assembly.Line;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Assembly.Options;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.CommentLine;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.DirectiveLine;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.LabelLine;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Utility;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import org.jetbrains.annotations.Contract;
@@ -44,41 +51,68 @@ public class DecompileContractCommand implements Callable<Integer> {
     HexStringConverter.Bytes theContract;
 
     @Option(
+            names = {"-p", "--prefix"},
+            description = "Prefix for each assembly line")
+    String prefix = "";
+
+    @Option(
             names = {"-i", "--id"},
             paramLabel = "CONTRACT_ID",
             description = "Contract Id (decimal, optional)")
     Optional<Long> theContractId;
 
+    @Option(
+            names = "--limit",
+            paramLabel = "TRUNCATE_CONTRACT_BYTES",
+            description = "Truncate contract to this limit (for testing)")
+    Optional<Integer> truncationLimit;
+
+    @Option(names = "--with-code-offset", description = "Display code offsets")
+    boolean withCodeOffset;
+
+    @Option(names = "--with-opcode", description = "Display opcode (in hex")
+    boolean withOpcode;
+
     @Override
     public Integer call() throws Exception {
-
-        final int DISPLAY_LENGTH = 100;
-        int contractLength = theContract.contents.length;
-        int displayLength = min(DISPLAY_LENGTH, contractLength);
-        short[] displayContract = copyOf(theContract.contents, displayLength);
-
-        System.out.printf("DecompileContract: contract id %d%n", theContractId.orElse(-1L));
-        System.out.printf("   first bytes of contract: %s%n", toHex(displayContract));
-        System.out.printf("   BTW, have %d opcodes defined%n", Opcodes.byOpcode.size());
-        for (var ds : Opcodes.byOpcode) {
-            System.out.printf(
-                    "      %02X: %s%s%s%n",
-                    ds.opcode(),
-                    ds.mnemonic(),
-                    ds.extraBytes() > 0 ? String.format(" (%d extra)", ds.extraBytes()) : "",
-                    ds.assigned() ? "" : " (INVALID)");
-        }
+        disassembleContract();
         return 0;
     }
 
     @Contract(pure = true)
-    private @NotNull String toHex(short @NotNull [] byteBuffer) {
-        final String hexits = "0123456789abcdef";
-        var sb = new StringBuilder(2 * byteBuffer.length);
-        for (short byt : byteBuffer) {
-            sb.append(hexits.charAt(byt >> 4));
-            sb.append(hexits.charAt(byt & 0xf));
-        }
-        return sb.toString();
+    void disassembleContract() {
+
+        var options = new ArrayList<Assembly.Options>();
+        if (withCodeOffset) options.add(Options.DISPLAY_CODE_OFFSET);
+        if (withOpcode) options.add(Options.DISPLAY_OPCODE_HEX);
+
+        final var asm = new Assembly(options.toArray(new Assembly.Options[0]));
+
+        final int[] contract = truncatedContract();
+        var prefixLines = new ArrayList<Line>();
+
+        prefixLines.add(
+                new CommentLine(
+                        (truncationLimit.isPresent() ? "(truncated) " : "")
+                                + "contract: "
+                                + Utility.toHex(contract)));
+        theContractId.ifPresentOrElse(
+                aLong ->
+                        prefixLines.add(
+                                new DirectiveLine(
+                                        "BEGIN", "", String.format("contract id: %d", aLong))),
+                () -> prefixLines.add(new DirectiveLine("BEGIN")));
+        prefixLines.add(new LabelLine("ENTRY"));
+
+        final var lines = asm.getInstructions(prefixLines, contract, true);
+
+        for (var line : lines) System.out.printf("%s%s%n", prefix, line.formatLine());
+    }
+
+    @Contract(pure = true)
+    int @NotNull [] truncatedContract() {
+        int limit = theContract.contents.length;
+        if (truncationLimit.isPresent()) limit = min(limit, truncationLimit.get());
+        return copyOf(theContract.contents, limit);
     }
 }

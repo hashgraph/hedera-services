@@ -16,7 +16,6 @@
 package com.hedera.services.yahcli.commands.signedstate;
 
 import static java.lang.Byte.toUnsignedInt;
-// import static org.apache.commons.codec.binary.Hex.decodeHex;
 
 import java.util.HexFormat;
 import java.util.regex.Pattern;
@@ -34,13 +33,14 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
     // need overrides for `equals`/`hashcode`/`toString`, and at that point, why bother?
     // See https://stackoverflow.com/a/74207195/751579.
     public static class Bytes {
-        final short[] contents;
+        final int[] contents;
 
-        public Bytes(short[] b) {
+        public Bytes(int[] b) {
             contents = b;
         }
     }
 
+    @Contract(pure = true)
     @Override
     public @NotNull Bytes convert(String value) throws Exception {
         if (0 != value.length() % 2)
@@ -51,7 +51,7 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
     }
 
     @Contract(pure = true)
-    private short @NotNull [] toUnsignedBuffer(byte @NotNull [] signedBuffer) {
+    private int @NotNull [] toUnsignedBuffer(byte @NotNull [] signedBuffer) {
         // In Java, `byte[]` is a buffer of _signed_ bytes.  In the real world (and every other
         // common programming language) a byte array is a buffer of _unsigned_ bytes the way network
         // programmers and device I/O programmers and crypto programmers and bytecode interpreter
@@ -61,15 +61,11 @@ public class HexStringConverter implements ITypeConverter<HexStringConverter.Byt
         // unnecessary cognitive effort by all programmers trying to understand this app.) (Oh, and
         // it also means the compiler/JITer won't know that the array elements are restricted to
         // 0..255, oh well.)
-        short[] r = new short[signedBuffer.length];
+        // **UPDATE:** I give up.  Just suck it up and use `int[]`.  4x space.  Too much trouble
+        // otherwise.
+        var r = new int[signedBuffer.length];
         int i = 0;
-        for (byte b : signedBuffer) r[i++] = (short) toUnsignedInt(b);
+        for (byte b : signedBuffer) r[i++] = toUnsignedInt(b);
         return r;
-
-        // Q: Why doesn't `Arrays` have a `static void SetAll(byte[] array, IntToShortFunction
-        // generator)`?
-        // A: Because `short` is the bastard stepchild of Java's framework libraries.  P.S., there's
-        // no `IntToShortFunction` interface either ... or `ShortStream` class,  or
-        // `Streams::toArray` overload that'll give you a `short[]`, etc. etc. etc.
     }
 }
