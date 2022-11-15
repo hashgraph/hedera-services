@@ -64,12 +64,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -78,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
@@ -251,6 +254,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("AutoCreationFailsWithMirrorAddress")
                 .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -285,7 +289,8 @@ public class ContractCreateSuite extends HapiApiSuite {
                         childRecordsCheck(
                                 creationAttempt,
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(INVALID_ALIAS_KEY)));
+                                recordWith().status(INVALID_ALIAS_KEY)),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     HapiApiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
@@ -297,6 +302,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("RevertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
                 .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -326,12 +332,11 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .via(creationAttempt)
                                                 .gas(10_000_000)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                                                .hasKnownStatus(SUCCESS)))
                 .then(
                         childRecordsCheck(
-                                creationAttempt,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(REVERTED_SUCCESS)));
+                                creationAttempt, SUCCESS, recordWith().status(REVERTED_SUCCESS)),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     HapiApiSpec hollowAccountSigningReqsStillEnforced() {
@@ -344,6 +349,7 @@ public class ContractCreateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("HollowAccountSigningReqsStillEnforced")
                 .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
                         contractCreate(AUTO_CREATION_MODES),
@@ -390,8 +396,16 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                         false)
                                                 .via(creationReversal)
                                                 .gas(10_000_000)
-                                                // FIXME - Should fail with INVALID_SIGNATURE!
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                        sourcing(
+                                () ->
+                                        childRecordsCheck(
+                                                creationReversal,
+                                                CONTRACT_REVERT_EXECUTED,
+                                                recordWith()
+                                                        .status(
+                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     private Address headlongFromHexed(final String addr) {
