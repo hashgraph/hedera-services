@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -343,7 +342,7 @@ public class ContractCreateSuite extends HapiApiSuite {
         final AtomicLong civilianId = new AtomicLong();
         final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
 
-        return onlyDefaultHapiSpec("HollowAccountSigningReqsStillEnforced")
+        return defaultHapiSpec("HollowAccountSigningReqsStillEnforced")
                 .given(
                         newKeyNamed(nftKey),
                         uploadInitCode(AUTO_CREATION_MODES),
