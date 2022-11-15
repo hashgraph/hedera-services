@@ -16,8 +16,11 @@
 package com.hedera.node.app.service.schedule;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
 import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nonnull;
 
 /**
  * Implements the HAPI <a
@@ -33,5 +36,5 @@ public interface ScheduleService extends Service {
      */
     @NotNull
     @Override
-    SchedulePreTransactionHandler createPreTransactionHandler(@NotNull States states);
+    SchedulePreTransactionHandler createPreTransactionHandler(@NotNull States states, @Nonnull final StaticContext context);
 }

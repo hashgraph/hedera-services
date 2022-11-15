@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.States;
@@ -39,19 +40,8 @@ import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,6 +104,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
     @Mock private MerkleAccount ownerAccount;
+    @Mock private StaticContext context;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -124,7 +115,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         store = new AccountStore(states);
 
-        subject = new CryptoPreTransactionHandlerImpl(store);
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
     }
 
     @Test
@@ -413,6 +404,24 @@ class CryptoPreTransactionHandlerImplTest {
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoApproveAllowance(allowanceTxnBody)
+                .build();
+    }
+
+    private TransactionBody cryptoUpdateTransaction(final AccountID payerId, final AccountID accountToUpdate) {
+        if (payerId.equals(payer)) {
+            setUpPayer();
+        }
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAccountIDToUpdate(accountToUpdate)
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoUpdateAccount(updateTxnBody)
                 .build();
     }
 

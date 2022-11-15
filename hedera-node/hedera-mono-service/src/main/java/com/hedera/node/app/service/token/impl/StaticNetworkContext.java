@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.service.token.StaticContext;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.services.sigs.order.SignatureWaivers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;

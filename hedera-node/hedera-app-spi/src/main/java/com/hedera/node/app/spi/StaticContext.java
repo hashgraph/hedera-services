@@ -1,4 +1,4 @@
-/*
+package com.hedera.node.app.spi;/*
  * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
- * A Placeholder implementation that will provide access to {@link com.hedera.services.txns.auth.SystemOpPolicies}
- * and {@link com.hedera.services.sigs.order.SignatureWaivers} to check which accounts
- * are waived from signing the transaction.
+ * A Placeholder implementation that will provide access to SystemOpPolicies
+ * and SignatureWaivers to check which accounts are waived from signing the transaction.
  * This will be deleted when both the above classes are implemented.
  */
 public interface StaticContext {

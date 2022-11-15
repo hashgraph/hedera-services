@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
 import java.util.Objects;
 import javax.annotation.Nonnull;
@@ -26,9 +27,9 @@ import org.jetbrains.annotations.NotNull;
 public final class CryptoServiceImpl implements CryptoService {
     @NotNull
     @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {
+    public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states, @Nonnull final StaticContext context) {
         Objects.requireNonNull(states);
         final var store = new AccountStore(states);
-        return new CryptoPreTransactionHandlerImpl(store);
+        return new CryptoPreTransactionHandlerImpl(store, context);
     }
 }

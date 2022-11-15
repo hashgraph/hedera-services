@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
 import javax.annotation.Nonnull;
 
@@ -33,5 +34,5 @@ public interface ConsensusService extends Service {
      */
     @Override
     @Nonnull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states, @Nonnull final StaticContext context);
 }

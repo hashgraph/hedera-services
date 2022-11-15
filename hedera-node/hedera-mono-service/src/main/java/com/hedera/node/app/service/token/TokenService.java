@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
 import javax.annotation.Nonnull;
 
@@ -33,5 +34,5 @@ public interface TokenService extends Service {
      */
     @Override
     @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states, @Nonnull final StaticContext context);
 }

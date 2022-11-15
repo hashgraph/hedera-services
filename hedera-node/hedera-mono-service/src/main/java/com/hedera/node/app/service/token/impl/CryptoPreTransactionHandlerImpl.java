@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSF
 
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.service.token.StaticContext;
+import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
