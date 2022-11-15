@@ -16,7 +16,10 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -27,6 +30,7 @@ import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -48,6 +52,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -65,12 +71,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
@@ -78,6 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -85,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -99,6 +109,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -122,6 +133,11 @@ public class ContractCreateSuite extends HapiApiSuite {
     private static final String defaultMaxGas =
             HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
+    public static final String AUTO_CREATION_MODES = "AutoCreationModes";
+    public static final String NFT_KEY = "nftKey";
+    public static final String CREATION_ATTEMPT = "creationAttempt";
+    public static final String ONE_TIME = "ONE TIME";
+    public static final String CREATE_DIRECTLY = "createDirectly";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteSync();
@@ -155,7 +171,10 @@ public class ContractCreateSuite extends HapiApiSuite {
                     contractWithAutoRenewNeedSignatures(),
                     autoAssociationSlotsAppearsInInfo(),
                     getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                    createContractWithStakingFields()
+                    createContractWithStakingFields(),
+                    autoCreationFailsWithMirrorAddress(),
+                    revertedAutoCreationRollsBackEvenIfTopLevelSucceeds(),
+                    hollowAccountSigningReqsStillEnforced(),
                     //						canCallPendingContractSafely(),
                 });
     }
@@ -222,6 +241,174 @@ public class ContractCreateSuite extends HapiApiSuite {
                                 .declinedReward(false)
                                 .stakedNodeId(-1L)
                                 .hasPrecheck(INVALID_STAKING_ID));
+    }
+
+    HapiApiSpec autoCreationFailsWithMirrorAddress() {
+        final var nft = "nft";
+        final var nftKey = NFT_KEY;
+        final var creationAttempt = CREATION_ATTEMPT;
+        final AtomicLong civilianId = new AtomicLong();
+        final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("AutoCreationFailsWithMirrorAddress")
+                .given(
+                        newKeyNamed(nftKey),
+                        uploadInitCode(AUTO_CREATION_MODES),
+                        contractCreate(AUTO_CREATION_MODES),
+                        cryptoCreate(CIVILIAN)
+                                .keyShape(ED25519)
+                                .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                        tokenCreate(nft)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(nftKey)
+                                .initialSupply(0)
+                                .treasury(CIVILIAN)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                nftMirrorAddr.set(
+                                                        asHexedSolidityAddress(asToken(idLit)))),
+                        mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        AUTO_CREATION_MODES,
+                                                        CREATE_DIRECTLY,
+                                                        headlongFromHexed(nftMirrorAddr.get()),
+                                                        mirrorAddrWith(civilianId.get()),
+                                                        mirrorAddrWith(civilianId.get() + 1),
+                                                        1L,
+                                                        false)
+                                                .via(creationAttempt)
+                                                .gas(10_000_000)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        childRecordsCheck(
+                                creationAttempt,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ALIAS_KEY)));
+    }
+
+    HapiApiSpec revertedAutoCreationRollsBackEvenIfTopLevelSucceeds() {
+        final var nft = "nft";
+        final var nftKey = NFT_KEY;
+        final var creationAttempt = CREATION_ATTEMPT;
+        final AtomicLong civilianId = new AtomicLong();
+        final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("RevertedAutoCreationRollsBackEvenIfTopLevelSucceeds")
+                .given(
+                        newKeyNamed(nftKey),
+                        uploadInitCode(AUTO_CREATION_MODES),
+                        contractCreate(AUTO_CREATION_MODES),
+                        cryptoCreate(CIVILIAN)
+                                .keyShape(ED25519)
+                                .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                        tokenCreate(nft)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(nftKey)
+                                .initialSupply(0)
+                                .treasury(CIVILIAN)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                nftMirrorAddr.set(
+                                                        asHexedSolidityAddress(asToken(idLit)))),
+                        mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        AUTO_CREATION_MODES,
+                                                        "createIndirectlyRevertingAndRecover",
+                                                        headlongFromHexed(nftMirrorAddr.get()),
+                                                        mirrorAddrWith(civilianId.get()),
+                                                        nonMirrorAddrWith(civilianId.get() + 1),
+                                                        1L)
+                                                .via(creationAttempt)
+                                                .gas(10_000_000)
+                                                .alsoSigningWithFullPrefix(CIVILIAN)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        childRecordsCheck(
+                                creationAttempt,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(REVERTED_SUCCESS)));
+    }
+
+    HapiApiSpec hollowAccountSigningReqsStillEnforced() {
+        final var nft = "nft";
+        final var nftKey = NFT_KEY;
+        final var creationAttempt = CREATION_ATTEMPT;
+        final var creationReversal = "creationReversal";
+        final AtomicLong civilianId = new AtomicLong();
+        final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
+
+        return onlyDefaultHapiSpec("HollowAccountSigningReqsStillEnforced")
+                .given(
+                        newKeyNamed(nftKey),
+                        uploadInitCode(AUTO_CREATION_MODES),
+                        contractCreate(AUTO_CREATION_MODES),
+                        cryptoCreate(CIVILIAN)
+                                .keyShape(ED25519)
+                                .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                        tokenCreate(nft)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(nftKey)
+                                .initialSupply(0)
+                                .treasury(CIVILIAN)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                nftMirrorAddr.set(
+                                                        asHexedSolidityAddress(asToken(idLit)))),
+                        mintToken(nft, List.of(ByteString.copyFromUtf8(ONE_TIME))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        AUTO_CREATION_MODES,
+                                                        CREATE_DIRECTLY,
+                                                        headlongFromHexed(nftMirrorAddr.get()),
+                                                        mirrorAddrWith(civilianId.get()),
+                                                        nonMirrorAddrWith(civilianId.get() + 1),
+                                                        1L,
+                                                        false)
+                                                .via(creationAttempt)
+                                                .gas(10_000_000)
+                                                .alsoSigningWithFullPrefix(CIVILIAN)))
+                .then(
+                        getTxnRecord(creationAttempt).andAllChildRecords().logged(),
+                        sourcing(() -> getAccountInfo("0.0." + (civilianId.get() + 2)).logged()),
+                        // Now try to reverse the transfer and take the hollow account's NFT
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        AUTO_CREATION_MODES,
+                                                        CREATE_DIRECTLY,
+                                                        headlongFromHexed(nftMirrorAddr.get()),
+                                                        nonMirrorAddrWith(civilianId.get() + 1),
+                                                        mirrorAddrWith(civilianId.get()),
+                                                        1L,
+                                                        false)
+                                                .via(creationReversal)
+                                                .gas(10_000_000)
+                                                // FIXME - Should fail with INVALID_SIGNATURE!
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+    }
+
+    private Address headlongFromHexed(final String addr) {
+        return Address.wrap(Address.toChecksumAddress("0x" + addr));
+    }
+
+    private Address mirrorAddrWith(final long num) {
+        return Address.wrap(
+                Address.toChecksumAddress(
+                        new BigInteger(1, HapiPropertySource.asSolidityAddress(0, 0, num))));
+    }
+
+    private Address nonMirrorAddrWith(final long num) {
+        return Address.wrap(
+                Address.toChecksumAddress(
+                        new BigInteger(1, HapiPropertySource.asSolidityAddress(666, 666, num))));
     }
 
     private HapiApiSpec autoAssociationSlotsAppearsInInfo() {
