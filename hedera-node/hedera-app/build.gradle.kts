@@ -26,6 +26,8 @@ dependencies {
     implementation(libs.bundles.helidon)
     implementation(libs.bundles.swirlds)
     itestImplementation(libs.hapi)
+    itestImplementation(libs.bundles.helidon)
+    itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.helidon.grpc.client)
     testImplementation(testLibs.bundles.mockito)
     testImplementation(testLibs.bundles.junit5)

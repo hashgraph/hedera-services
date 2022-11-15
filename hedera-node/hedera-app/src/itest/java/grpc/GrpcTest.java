@@ -18,23 +18,71 @@ package grpc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.grpc.GrpcServiceBuilder;
+import com.hedera.node.app.workflows.ingest.IngestWorkflow;
+import com.hedera.node.app.workflows.ingest.IngestWorkflowImpl;
+import com.hedera.node.app.workflows.query.QueryWorkflow;
+import com.hedera.node.app.workflows.query.QueryWorkflowImpl;
 import com.hederahashgraph.api.proto.java.*;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc;
+import com.swirlds.common.metrics.platform.DefaultMetrics;
+import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import io.grpc.ManagedChannelBuilder;
 import io.helidon.grpc.client.ClientServiceDescriptor;
 import io.helidon.grpc.client.GrpcServiceClient;
+import io.helidon.grpc.server.GrpcRouting;
+import io.helidon.grpc.server.GrpcServer;
+import io.helidon.grpc.server.GrpcServerConfiguration;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.Executors;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class GrpcTest {
+
+    private GrpcServer grpcServer;
+    private IngestWorkflow ingestWorkflow = new IngestWorkflowImpl();
+    private QueryWorkflow queryWorkflow = new QueryWorkflowImpl();
+
+    @BeforeEach
+    void setUp() {
+        final var metrics =
+                new DefaultMetrics(
+                        Executors.newSingleThreadScheduledExecutor(), new DefaultMetricsFactory());
+
+        grpcServer =
+                GrpcServer.create(
+                        GrpcServerConfiguration.builder().port(0).build(),
+                        GrpcRouting.builder()
+                                .register(
+                                        new GrpcServiceBuilder(
+                                                        "proto.ConsensusService",
+                                                        ingestWorkflow,
+                                                        queryWorkflow)
+                                                .transaction("createTopic")
+                                                .transaction("updateTopic")
+                                                .transaction("deleteTopic")
+                                                .query("getTopicInfo")
+                                                .transaction("submitMessage")
+                                                .build(metrics))
+                                .build());
+
+        grpcServer.start();
+    }
+
     @Test
-    void sendTransaction() {
+    void sendTransaction() throws UnknownHostException {
         final var desc =
                 ClientServiceDescriptor.builder(ConsensusServiceGrpc.getServiceDescriptor())
                         .build();
 
         final var channel =
-                ManagedChannelBuilder.forAddress("192.168.86.20", 8080).usePlaintext().build();
+                ManagedChannelBuilder.forAddress(
+                                InetAddress.getLocalHost().getHostName(), grpcServer.port())
+                        .usePlaintext()
+                        .build();
 
         final var client = GrpcServiceClient.create(channel, desc);
 
