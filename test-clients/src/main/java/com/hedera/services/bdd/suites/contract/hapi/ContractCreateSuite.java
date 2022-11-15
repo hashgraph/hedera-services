@@ -73,6 +73,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
+import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -335,7 +336,15 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
                         childRecordsCheck(
-                                creationAttempt, SUCCESS, recordWith().status(REVERTED_SUCCESS)),
+                                creationAttempt,
+                                SUCCESS,
+                                recordWith()
+                                        .status(REVERTED_SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS)))),
                         resetToDefault(LAZY_CREATION_ENABLED));
     }
 
