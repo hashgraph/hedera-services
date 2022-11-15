@@ -22,14 +22,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSF
 
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.service.token.StaticContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -37,9 +38,11 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
+    private final StaticContext context;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(@NotNull final AccountStore accountStore, @NotNull final StaticContext context) {
         this.accountStore = Objects.requireNonNull(accountStore);
+        this.context = Objects.requireNonNull(context);
     }
 
     @Override
@@ -104,7 +107,21 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
-        throw new NotImplementedException();
+        final var op = txn.getCryptoUpdateAccount();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var updateAccountId = op.getAccountIDToUpdate();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+
+        final var newAccountKeyMustSign = !context.isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign = !context.isTargetAccountSignatureWaived(txn, payer);
+        if (targetAccountKeyMustSign) {
+            meta.addNonPayerKey(updateAccountId);
+        }
+        if (newAccountKeyMustSign && op.hasKey()) {
+            var candidate = asHederaKey(op.getKey());
+            candidate.ifPresent(meta::addToReqKeys);
+        }
+        return meta;
     }
 
     @Override
