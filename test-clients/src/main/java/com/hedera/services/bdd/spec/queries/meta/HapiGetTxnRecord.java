@@ -132,6 +132,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private boolean noPseudoRandomData = false;
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
+    private int numStakingRewardsPaid = -1;
 
     private Consumer<List<?>> eventDataObserver;
     private String eventName;
@@ -234,6 +235,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord hasPaidStakingRewards(List<Pair<String, Long>> rewards) {
         paidStakingRewards = rewards;
+        return this;
+    }
+
+    public HapiGetTxnRecord hasPaidStakingRewardsCount(final int n) {
+        numStakingRewardsPaid = n;
         return this;
     }
 
@@ -600,6 +606,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                             childRecord.getAlias().toStringUtf8());
                 }
             }
+        }
+        if (numStakingRewardsPaid != -1) {
+            assertEquals(
+                    numStakingRewardsPaid,
+                    actualRecord.getPaidStakingRewardsCount(),
+                    "Wrong # of staking rewards paid");
         }
         if (!paidStakingRewards.isEmpty()) {
             if (actualRecord.getPaidStakingRewardsList().isEmpty()) {

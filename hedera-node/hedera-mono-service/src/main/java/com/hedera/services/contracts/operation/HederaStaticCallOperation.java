@@ -38,6 +38,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
