@@ -74,6 +74,7 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferToken;
 import static com.hedera.services.store.contracts.precompile.impl.TransferPrecompile.decodeTransferTokens;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -1493,6 +1494,16 @@ class TransferPrecompilesTest {
                         creator.createUnsuccessfulSyntheticRecord(
                                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED))
                 .willReturn(mockRecordBuilder);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(
+                        aliases.isMirror(
+                                Address.wrap(
+                                        Bytes.of(
+                                                balanceChangesForLazyCreateFailing
+                                                        .get(0)
+                                                        .getNonEmptyAliasIfPresent()
+                                                        .toByteArray()))))
+                .willReturn(false);
 
         // when:
         subject.prepareFields(frame);
@@ -1511,6 +1522,100 @@ class TransferPrecompilesTest {
                         balanceChangesForLazyCreateFailing.get(0),
                         accounts,
                         balanceChangesForLazyCreateFailing);
+        verify(autoCreationLogic, never())
+                .create(
+                        balanceChangesForLazyCreateFailing.get(1),
+                        accounts,
+                        balanceChangesForLazyCreateFailing);
+        verify(worldUpdater, never()).manageInProgressPrecedingRecord(any(), any(), any());
+        verify(frame, never()).decrementRemainingGas(anyLong());
+        verify(transferLogic, never()).doZeroSum(any());
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater)
+                .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
+    }
+
+    @Test
+    void transferToLazyCreateFailsWhenNonExistingAddressIsMirrorAddress()
+            throws InvalidProtocolBufferException {
+        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getRemainingGas()).willReturn(300L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        givenLedgers();
+        givenPricingUtilsContext();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(
+                        syntheticTxnFactory.createCryptoTransfer(
+                                Collections.singletonList(nftsTransferListAliasReceiver)))
+                .willReturn(mockSynthBodyBuilder);
+        given(mockSynthBodyBuilder.getCryptoTransfer()).willReturn(cryptoTransferTransactionBody);
+        transferPrecompile
+                .when(() -> decodeCryptoTransferV2(eq(pretendArguments), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+        given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
+                .willReturn(OK);
+        given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
+                .willReturn(hederaTokenStore);
+        given(
+                        infrastructureFactory.newTransferLogic(
+                                hederaTokenStore, sideEffects, nfts, accounts, tokenRels))
+                .willReturn(transferLogic);
+        given(
+                        feeCalculator.estimatedGasPriceInTinybars(
+                                HederaFunctionality.ContractCall, timestamp))
+                .willReturn(1L);
+        given(mockSynthBodyBuilder.build())
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(cryptoTransferTransactionBody)
+                                .build());
+        given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
+                .willReturn(mockSynthBodyBuilder);
+        given(feeCalculator.computeFee(any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(mockFeeObject.getServiceFee()).willReturn(1L);
+        given(
+                        impliedTransfersMarshal.assessCustomFeesAndValidate(
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
+                .willReturn(impliedTransfers);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(balanceChangesForLazyCreateFailing);
+        given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
+        given(impliedTransfersMeta.code()).willReturn(OK);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        when(accessorFactory.uncheckedSpecializedAccessor(any())).thenCallRealMethod();
+        when(accessorFactory.constructSpecializedAccessor(any())).thenCallRealMethod();
+        given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+        given(creator.createUnsuccessfulSyntheticRecord(ResponseCodeEnum.INVALID_ALIAS_KEY))
+                .willReturn(mockRecordBuilder);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(
+                        aliases.isMirror(
+                                Address.wrap(
+                                        Bytes.of(
+                                                balanceChangesForLazyCreateFailing
+                                                        .get(0)
+                                                        .getNonEmptyAliasIfPresent()
+                                                        .toByteArray()))))
+                .willReturn(true);
+
+        // when:
+        subject.prepareFields(frame);
+        subject.prepareComputation(pretendArguments, a -> a);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final var result = subject.computeInternal(frame);
+
+        // then:
+        assertEquals(UInt256.valueOf(INVALID_ALIAS_KEY.getNumber()), result);
+        // and:
+        verify(frame, never()).getGasPrice();
+        verify(autoCreationLogic, never()).create(any(), any(), any());
         verify(autoCreationLogic, never())
                 .create(
                         balanceChangesForLazyCreateFailing.get(1),

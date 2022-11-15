@@ -17,6 +17,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_FUNGIBLE_TRANSFERS;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.NO_NFT_EXCHANGES;
@@ -31,6 +32,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.generateAccountIDWithAliasCalculatedFrom;
 import static com.hedera.services.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -303,6 +305,9 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final MessageFrame frame,
             final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
+        validateTrueOrRevert(
+                !updater.aliases().isMirror(Address.wrap(Bytes.of(receiverAlias.toByteArray()))),
+                INVALID_ALIAS_KEY);
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
