@@ -28,6 +28,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -149,19 +151,36 @@ public class SigTransactionMetadata implements TransactionMetadata {
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
      */
-    private boolean isNotNeeded(final AccountID id) {
-        return id.equals(payer) || id.equals(AccountID.getDefaultInstance()) || status != OK;
+    private boolean isNotNeeded(@NotNull final AccountID id) {
+        return id.equals(payer)
+                || id.equals(AccountID.getDefaultInstance())
+                || designatesAccountRemoval(id)
+                || status != OK;
     }
 
     /**
-     * Based on the key lookup result, adds the kleys to required keys list if the result is
-     * successful. Else adds failureReason for the status.
+     * Checks if the accountId is a sentinel id 0.0.0
+     *
+     * @param id given accountId
+     * @return true if the given accountID is
+     */
+    private boolean designatesAccountRemoval(@NotNull AccountID id) {
+        return id.getShardNum() == 0
+                && id.getRealmNum() == 0
+                && id.getAccountNum() == 0
+                && id.getAlias().isEmpty();
+    }
+
+    /**
+     * Given a successful key lookup, adds its key to the required signers. Given a failed key
+     * lookup, sets this SigTransactionMetadata's status to either the failure reason of the lookup;
+     * or (if it is non-null), the requested failureStatus parameter.
      *
      * @param result key lookup result
      * @param failureStatus failure reason for the lookup
      */
     private void failOrAddToKeys(
-            final KeyOrLookupFailureReason result, final ResponseCodeEnum failureStatus) {
+            final KeyOrLookupFailureReason result, @Nullable final ResponseCodeEnum failureStatus) {
         if (result.failed()) {
             this.status = failureStatus != null ? failureStatus : result.failureReason();
         } else if (result.key() != null) {

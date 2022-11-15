@@ -453,7 +453,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
 
-    private boolean shouldRememberStakeStartFor(
+    @VisibleForTesting
+    boolean shouldRememberStakeStartFor(
             @Nullable final HederaAccount account, final long curStakedId, final long reward) {
         if (account == null || curStakedId >= 0 || account.isDeclinedReward()) {
             // Alice cannot receive a reward for today, so nothing to remember here
@@ -468,6 +469,25 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // current value to reward her correctly for today no matter what happens later on
             return true;
         } else {
+            // At this point, Alice is an account staking to a node, accepting rewards, and in
+            // a reward situation---who nonetheless received zero rewards. There are essentially
+            // four scenarios:
+            //   1. Alice's stakePeriodStart is before the first non-rewardable period, but
+            //   she was either staking zero whole hbars during those periods (or the reward rate
+            //   was zero).
+            //   2. Alice's stakePeriodStart is the first non-rewardable period because she
+            //   was already rewarded earlier today.
+            //   3. Alice's stakePeriodStart is the first non-rewardable period, but she was not
+            //   rewarded today.
+            //   4. Alice's stakePeriodStart is the current period.
+            // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
+            // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
+            // preserve an already-recorded memory of her stake at the beginning of this period;
+            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            if (account.getStakePeriodStart()
+                    < stakePeriodManager.firstNonRewardableStakePeriod()) {
+                return true;
+            }
             if (account.totalStakeAtStartOfLastRewardedPeriod()
                     != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
                 // Alice was in a reward situation, but did not earn anything because she already

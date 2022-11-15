@@ -152,12 +152,28 @@ class SigTransactionMetadataTest {
         subject.addNonPayerKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID);
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
+    }
+
+    @Test
+    void returnsIfGivenKeyIsInvalidAccountId() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerKey);
+
+        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        assertIterableEquals(List.of(payerKey), subject.getReqKeys());
 
         subject.addNonPayerKey(AccountID.getDefaultInstance());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
 
         subject.addNonPayerKeyIfReceiverSigRequired(
                 AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
+        assertIterableEquals(List.of(payerKey), subject.getReqKeys());
+        assertEquals(OK, subject.status());
+
+        subject.addNonPayerKey(asAccount("0.0.0"));
+        assertIterableEquals(List.of(payerKey), subject.getReqKeys());
+
+        subject.addNonPayerKeyIfReceiverSigRequired(asAccount("0.0.0"), INVALID_ACCOUNT_ID);
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
     }
