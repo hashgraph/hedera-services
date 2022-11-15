@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -67,7 +68,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import java.time.Instant;
 import java.util.List;
 
@@ -200,13 +200,7 @@ public final class RequestBuilder {
         body.setCryptoUpdateAccount(cryptoUpdate);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     private static TransactionBody.Builder getTransactionBody(
@@ -476,13 +470,7 @@ public final class RequestBuilder {
         body.setFileCreate(fileCreateTransactionBody);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     /**
@@ -536,13 +524,7 @@ public final class RequestBuilder {
         body.setFileAppend(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     /**
@@ -604,13 +586,7 @@ public final class RequestBuilder {
         body.setFileUpdate(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     /**
@@ -661,13 +637,7 @@ public final class RequestBuilder {
         body.setFileDelete(fileDeleteTransaction);
         final var bodyBytesArr = body.build().toByteArray();
         final var bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static Query getFileGetContentBuilder(
@@ -781,12 +751,7 @@ public final class RequestBuilder {
         body.setContractCreateInstance(contractCreateInstance);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static Transaction getCryptoTransferRequest(
@@ -966,13 +931,7 @@ public final class RequestBuilder {
         body.setCryptoTransfer(cryptoTransferTransaction);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static Transaction getTokenTransferRequest(
@@ -1009,7 +968,7 @@ public final class RequestBuilder {
         body.setCryptoTransfer(cryptoTransferTransaction);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static TransactionGetReceiptQuery getTransactionGetReceiptQuery(
@@ -1077,13 +1036,7 @@ public final class RequestBuilder {
         body.setContractCall(contractCall);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static Query getContractCallLocalQuery(
@@ -1232,12 +1185,7 @@ public final class RequestBuilder {
         body.setContractUpdateInstance(contractUpdateBld);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setSignedTransactionBytes(
-                SignedTransaction.newBuilder()
-                        .setBodyBytes(bodyBytes)
-                        .build()
-                        .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static Query getBySolidityIDQuery(
@@ -1300,13 +1248,7 @@ public final class RequestBuilder {
         body.setCryptoCreateAccount(createAccount);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder()
-                .setSignedTransactionBytes(
-                        SignedTransaction.newBuilder()
-                                .setBodyBytes(bodyBytes)
-                                .build()
-                                .toByteString())
-                .build();
+        return getAsTransaction(bodyBytes);
     }
 
     public static ExchangeRate getExchangeRateBuilder(
@@ -1335,6 +1277,16 @@ public final class RequestBuilder {
                 .setNextRate(
                         getExchangeRateBuilder(
                                 nextHbarEquivalent, nextCentEquivalent, nextExpirationSeconds))
+                .build();
+    }
+
+    private static Transaction getAsTransaction(ByteString bodyBytes) {
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
                 .build();
     }
 }

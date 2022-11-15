@@ -32,12 +32,12 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -489,7 +489,7 @@ class RequestBuilderTest {
                         receiverSign,
                         autoRenew);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -547,7 +547,7 @@ class RequestBuilderTest {
                         memo,
                         autoRenew);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -584,7 +584,7 @@ class RequestBuilderTest {
                         fileExpiration,
                         keyList);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -621,7 +621,7 @@ class RequestBuilderTest {
                         hash,
                         fileID);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -661,7 +661,7 @@ class RequestBuilderTest {
                         fileID,
                         keyList);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -706,7 +706,7 @@ class RequestBuilderTest {
                         receiverAccountNum,
                         amountReceived);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
         assertEquals(memo, tb.getMemo());
         assertEquals(generateRecord, tb.getGenerateRecord());
         assertEquals(transactionFee, tb.getTransactionFee());
@@ -760,7 +760,7 @@ class RequestBuilderTest {
                         hash,
                         value);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
 
         assertEquals(nodeId.getAccountNum(), tb.getNodeAccountID().getAccountNum());
         assertEquals(nodeId.getRealmNum(), tb.getNodeAccountID().getRealmNum());
@@ -798,7 +798,7 @@ class RequestBuilderTest {
                         expirationTime,
                         contractMemo);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
 
         assertEquals(nodeId, tb.getNodeAccountID());
         assertEquals(proxyAccountID, tb.getContractUpdateInstance().getProxyAccountID());
@@ -839,7 +839,7 @@ class RequestBuilderTest {
                         contractMemo,
                         validED25519Key);
 
-        var tb =  buildSignedTransactionBody(transaction);
+        var tb = buildSignedTransactionBody(transaction);
 
         assertEquals(nodeId.getAccountNum(), tb.getNodeAccountID().getAccountNum());
         assertEquals(nodeId.getRealmNum(), tb.getNodeAccountID().getRealmNum());
@@ -929,7 +929,8 @@ class RequestBuilderTest {
                         70000l));
     }
 
-    private TransactionBody buildSignedTransactionBody(Transaction transaction) throws InvalidProtocolBufferException {
+    private TransactionBody buildSignedTransactionBody(Transaction transaction)
+            throws InvalidProtocolBufferException {
         var signedTxn = SignedTransaction.parseFrom(transaction.getSignedTransactionBytes());
         var transactionBody = TransactionBody.parseFrom(signedTxn.getBodyBytes());
         return transactionBody;
