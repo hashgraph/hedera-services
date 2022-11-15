@@ -324,6 +324,21 @@ class CryptoCreateTransitionLogicTest {
     }
 
     @Test
+    void acceptsTxnWithEvmAddressAliasWhenBothFlagsAreEnabled() {
+        final var opBuilder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(CUSTOM_AUTO_RENEW_PERIOD))
+                        .setAlias(ByteStringUtils.wrapUnsafely(EVM_ADDRESS_BYTES));
+        cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
+        given(aliasManager.lookupIdBy(any())).willReturn(MISSING_NUM);
+        given(dynamicProperties.isCryptoCreateWithAliasEnabled()).willReturn(true);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
+
+        assertEquals(OK, subject.semanticCheck().apply(cryptoCreateTxn));
+    }
+
+    @Test
     void rejectsWhenEmptyKeyAndEVMAddressAlias() {
         final var opBuilder =
                 CryptoCreateTransactionBody.newBuilder()
