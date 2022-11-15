@@ -1268,6 +1268,27 @@ public class UtilVerbs {
                                 Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
     }
 
+    public static Tuple[] wrapIntoTupleArray(Tuple tuple) {
+        return new Tuple[] {tuple};
+    }
+
+    public static TransferListBuilder transferList() {
+        return new TransferListBuilder();
+    }
+
+    public static class TransferListBuilder {
+        private Tuple transferList;
+
+        public TransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.transferList = Tuple.singleton(accountAmounts);
+            return this;
+        }
+
+        public Tuple build() {
+            return transferList;
+        }
+    }
+
     public static TokenTransferListBuilder tokenTransferList() {
         return new TokenTransferListBuilder();
     }
@@ -1317,6 +1338,11 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
+    public static Tuple accountAmount(
+            final AccountID account, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
+    }
+
     public static Tuple accountAmountAlias(final byte[] alias, final Long amount) {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(alias), amount);
     }
@@ -1336,6 +1362,18 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(alias),
                 serialNumber);
+    }
+
+    public static Tuple nftTransfer(
+            final AccountID sender,
+            final AccountID receiver,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber,
+                isApproval);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(
