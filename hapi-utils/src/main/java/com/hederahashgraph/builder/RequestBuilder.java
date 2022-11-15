@@ -17,56 +17,8 @@ package com.hederahashgraph.builder;
 
 import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
-import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
-import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
-import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
-import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
-import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
-import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.LiveHash;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ResponseHeader;
-import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -199,7 +151,13 @@ public final class RequestBuilder {
         body.setCryptoUpdateAccount(cryptoUpdate);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     private static TransactionBody.Builder getTransactionBody(
@@ -469,7 +427,13 @@ public final class RequestBuilder {
         body.setFileCreate(fileCreateTransactionBody);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     /**
@@ -523,7 +487,13 @@ public final class RequestBuilder {
         body.setFileAppend(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     /**
@@ -585,7 +555,13 @@ public final class RequestBuilder {
         body.setFileUpdate(builder);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     /**
@@ -636,7 +612,13 @@ public final class RequestBuilder {
         body.setFileDelete(fileDeleteTransaction);
         final var bodyBytesArr = body.build().toByteArray();
         final var bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     public static Query getFileGetContentBuilder(
@@ -750,7 +732,12 @@ public final class RequestBuilder {
         body.setContractCreateInstance(contractCreateInstance);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder().setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     public static Transaction getCryptoTransferRequest(
@@ -930,7 +917,13 @@ public final class RequestBuilder {
         body.setCryptoTransfer(cryptoTransferTransaction);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     public static Transaction getTokenTransferRequest(
@@ -1035,7 +1028,13 @@ public final class RequestBuilder {
         body.setContractCall(contractCall);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     public static Query getContractCallLocalQuery(
@@ -1184,7 +1183,12 @@ public final class RequestBuilder {
         body.setContractUpdateInstance(contractUpdateBld);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder().setSignedTransactionBytes(
+                SignedTransaction.newBuilder()
+                        .setBodyBytes(bodyBytes)
+                        .build()
+                        .toByteString())
+                .build();
     }
 
     public static Query getBySolidityIDQuery(
@@ -1247,7 +1251,13 @@ public final class RequestBuilder {
         body.setCryptoCreateAccount(createAccount);
         byte[] bodyBytesArr = body.build().toByteArray();
         ByteString bodyBytes = ByteString.copyFrom(bodyBytesArr);
-        return Transaction.newBuilder().setBodyBytes(bodyBytes).build();
+        return Transaction.newBuilder()
+                .setSignedTransactionBytes(
+                        SignedTransaction.newBuilder()
+                                .setBodyBytes(bodyBytes)
+                                .build()
+                                .toByteString())
+                .build();
     }
 
     public static ExchangeRate getExchangeRateBuilder(

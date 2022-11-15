@@ -466,7 +466,9 @@ class SignedTxnAccessorTest {
                         -70000l,
                         5679l,
                         70000l);
-        final var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
+        var signedTxn = SignedTransaction.parseFrom(xferWithTopLevelBodyBytes.getSignedTransactionBytes());
+        final var body = TransactionBody.parseFrom(signedTxn.getBodyBytes());
+
         final var confusedTxn = Transaction.parseFrom(body.toByteArray());
 
         final var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
