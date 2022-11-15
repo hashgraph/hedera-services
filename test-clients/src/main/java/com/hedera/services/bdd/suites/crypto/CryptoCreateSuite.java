@@ -744,7 +744,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private HapiApiSpec createAnAccountWithEVMAddressAliasAndECKey() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "false"),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
