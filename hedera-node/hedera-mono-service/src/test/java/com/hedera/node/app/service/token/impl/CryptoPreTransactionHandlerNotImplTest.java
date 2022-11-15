@@ -39,7 +39,6 @@ class CryptoPreTransactionHandlerNotImplTest {
     void notImplementedStuffIsntImplemented() {
         assertThrows(NotImplementedException.class, () -> subject.preHandleUpdateAccount(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteAllowances(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null));
     }

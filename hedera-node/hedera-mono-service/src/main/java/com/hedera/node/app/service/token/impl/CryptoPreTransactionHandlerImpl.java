@@ -98,7 +98,14 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
+        final var op = txn.getCryptoDeleteAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+
+        for (final var allowance : op.getNftAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
+        }
+        return meta;
     }
 
     @Override
