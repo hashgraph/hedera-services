@@ -81,9 +81,13 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         }
         for (final var allowance : op.getNftAllowancesList()) {
             final var ownerId = allowance.getOwner();
+            // If a spender who is granted approveForAll from owner and is granting
+            // allowance for a serial to another spender, need signature from the approveForAll
+            // spender
             var operatorId =
                     allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
-            // Since only the owner can grant approveForAll
+            // If approveForAll is set to true, need signature from owner
+            // since only the owner can grant approveForAll
             if (allowance.getApprovedForAll().getValue()) {
                 operatorId = ownerId;
             }
@@ -101,7 +105,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var op = txn.getCryptoDeleteAllowance();
         final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-
+        // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.getNftAllowancesList()) {
             meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
         }
