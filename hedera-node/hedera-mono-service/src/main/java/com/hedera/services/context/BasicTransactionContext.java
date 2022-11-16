@@ -273,7 +273,7 @@ public class BasicTransactionContext implements TransactionContext {
 
     @Override
     public void setAlias(final ByteString alias) {
-        recordConfig = record -> record.setAlias(alias);
+        recordConfig = expiringRecord -> expiringRecord.setAlias(alias);
     }
 
     @Override
