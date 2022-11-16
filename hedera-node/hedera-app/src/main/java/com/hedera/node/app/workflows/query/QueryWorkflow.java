@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.accounts;
+package com.hedera.node.app.workflows.query;
 
-import org.hyperledger.besu.datatypes.Address;
+import com.hedera.node.app.SessionContext;
+import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 
-public interface AccountAccessor {
-
-    Address canonicalAddress(final Address addressOrAlias);
-
-    boolean isTokenAddress(final Address address);
+/** A workflow for processing queries. */
+public interface QueryWorkflow {
+    void handleQuery(
+            @Nonnull SessionContext session,
+            @Nonnull ByteBuffer requestBuffer,
+            @Nonnull ByteBuffer responseBuffer);
 }

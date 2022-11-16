@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.store.models;
+package com.hedera.node.app.workflows.ingest;
 
-import com.hedera.services.evm.accounts.AccountAccessor;
-import org.hyperledger.besu.datatypes.Address;
+import com.hedera.node.app.SessionContext;
+import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 
-public class MockAccountAccessor implements AccountAccessor {
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
-
+/**
+ * Dummy implementation. To be implemented by <a
+ * href="https://github.com/hashgraph/hedera-services/issues/4209">#4209</a>.
+ */
+public final class IngestWorkflowImpl implements IngestWorkflow {
     @Override
-    public Address canonicalAddress(Address addressOrAlias) {
-        return address;
-    }
-
-    @Override
-    public boolean isTokenAddress(Address address) {
-        return false;
+    public void handleTransaction(
+            @Nonnull final SessionContext session,
+            @Nonnull final ByteBuffer requestBuffer,
+            @Nonnull final ByteBuffer responseBuffer) {
+        // Implementation to be completed by Issue #4209
     }
 }

@@ -13,13 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.evm.accounts;
+package com.hedera.node.app;
 
-import org.hyperledger.besu.datatypes.Address;
-
-public interface AccountAccessor {
-
-    Address canonicalAddress(final Address addressOrAlias);
-
-    boolean isTokenAddress(final Address address);
-}
+// FUTURE: Put the per-thread stuff here like parsers
+public record SessionContext() {}
