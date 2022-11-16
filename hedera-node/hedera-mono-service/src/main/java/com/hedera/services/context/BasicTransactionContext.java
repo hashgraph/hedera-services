@@ -19,6 +19,7 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
@@ -268,6 +269,11 @@ public class BasicTransactionContext implements TransactionContext {
     @Override
     public void setCreated(final AccountID id) {
         receiptConfig = receipt -> receipt.setAccountId(EntityId.fromGrpcAccountId(id));
+    }
+
+    @Override
+    public void setAlias(final ByteString alias) {
+        recordConfig = record -> record.setAlias(alias);
     }
 
     @Override

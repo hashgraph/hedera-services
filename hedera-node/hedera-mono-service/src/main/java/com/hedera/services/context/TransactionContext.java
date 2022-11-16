@@ -15,6 +15,7 @@
  */
 package com.hedera.services.context;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
@@ -160,6 +161,13 @@ public interface TransactionContext {
      * @param id the created account.
      */
     void setCreated(AccountID id);
+
+    /**
+     * Record the alias of the account created by the current transaction. .
+     *
+     * @param alias the alias of the created account.
+     */
+    void setAlias(ByteString alias);
 
     /**
      * Record that the current transaction targeted a smart contract.

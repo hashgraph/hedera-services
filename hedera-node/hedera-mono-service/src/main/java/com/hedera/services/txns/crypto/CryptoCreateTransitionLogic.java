@@ -138,6 +138,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                     final var key = asPrimitiveKeyUnchecked(op.getAlias());
                     final var jKey = asFcKeyUnchecked(key);
                     aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
+                    // externalize public key alias in the txn record for mirror node
+                    txnCtx.setAlias(op.getAlias());
                 }
             } else {
                 if (op.hasKey()
