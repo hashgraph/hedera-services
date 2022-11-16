@@ -125,6 +125,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             Optional.empty();
     private OptionalInt childRecordsCount = OptionalInt.empty();
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
+    private Optional<ByteString> alias = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
@@ -223,6 +224,16 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     public HapiGetTxnRecord hasChildRecordCount(int count) {
         requestChildRecords = true;
         childRecordsCount = OptionalInt.of(count);
+        return this;
+    }
+
+    public HapiGetTxnRecord hasAlias(ByteString alias) {
+        this.alias = Optional.of(alias);
+        return this;
+    }
+
+    public HapiGetTxnRecord hasNoAlias() {
+        this.alias = Optional.of(ByteString.EMPTY);
         return this;
     }
 
@@ -662,6 +673,10 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             final var actualRandomNum = actualRecord.getPrngNumber();
             assertTrue(actualByteString.isEmpty());
             assertTrue(actualRandomNum >= 0 && actualRandomNum < pseudorandomNumberRange.get());
+        }
+
+        if (alias.isPresent()) {
+            assertEquals(alias.get(), actualRecord.getAlias());
         }
     }
 
