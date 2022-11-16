@@ -42,7 +42,6 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;

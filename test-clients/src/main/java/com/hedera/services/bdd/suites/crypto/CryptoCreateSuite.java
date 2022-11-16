@@ -46,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
@@ -71,7 +70,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String TRUE = "true";
     public static final String FALSE = "false";
-    private static final String CREATE_TXN = "createTxn" ;
+    private static final String CREATE_TXN = "createTxn";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
@@ -503,7 +502,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -520,9 +519,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasAlias(ecdsaKey.toByteString())
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN)
+                                                    .hasAlias(ecdsaKey.toByteString())
+                                                    .logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -624,7 +624,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             cryptoCreate(ACCOUNT)
                                                     .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(evmAddressBytes)
@@ -646,9 +646,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasNoAlias()
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN).hasNoAlias().logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -670,7 +669,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ed25519Key.toByteString())
                                                     .balance(1000 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ed25519Key.toByteString())
@@ -687,9 +686,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
 
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasAlias(ed25519Key.toByteString())
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN)
+                                                    .hasAlias(ed25519Key.toByteString())
+                                                    .logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -712,7 +712,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
                                     assert addressBytes != null;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    final var op = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).via(CREATE_TXN);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -738,9 +741,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes));
 
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasNoAlias()
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN).hasNoAlias().logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -781,7 +783,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .key(SECP_256K1_SOURCE_KEY)
                                                     .alias(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -815,9 +817,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasNoAlias()
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN).hasNoAlias().logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -840,7 +841,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .key(ED_25519_KEY)
                                                     .alias(ed25519Key.toByteString())
                                                     .balance(1000 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ed25519Key.toByteString())
@@ -856,9 +857,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasAlias(ed25519Key.toByteString())
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN)
+                                                    .hasAlias(ed25519Key.toByteString())
+                                                    .logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
@@ -887,7 +889,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .key(SECP_256K1_SOURCE_KEY)
                                                     .alias(ecdsaKey.toByteString())
                                                     .balance(100 * ONE_HBAR)
-                                                .via(CREATE_TXN);
+                                                    .via(CREATE_TXN);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
@@ -914,9 +916,10 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    final var verifyAliasInRecord = getTxnRecord(CREATE_TXN)
-                                        .hasAlias(ecdsaKey.toByteString())
-                                        .logged();
+                                    final var verifyAliasInRecord =
+                                            getTxnRecord(CREATE_TXN)
+                                                    .hasAlias(ecdsaKey.toByteString())
+                                                    .logged();
                                     allRunFor(spec, hapiGetAccountInfo, verifyAliasInRecord);
                                 }))
                 .then(
