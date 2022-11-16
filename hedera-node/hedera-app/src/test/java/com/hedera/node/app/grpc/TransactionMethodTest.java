@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import utils.TestUtils;
 
@@ -78,5 +79,17 @@ class TransactionMethodTest {
         final var method = new TransactionMethod("testService", "testMethod", w, metrics);
         method.invoke(requestBuffer, streamObserver);
         assertTrue(called.get());
+    }
+
+    @Test
+    void unexpectedExceptionFromHandler(@Mock final StreamObserver<ByteBuffer> streamObserver) {
+        final var requestBuffer = ByteBuffer.allocate(100);
+        final IngestWorkflow w =
+                (s, r1, r2) -> {
+                    throw new RuntimeException("Unexpected!");
+                };
+        final var method = new TransactionMethod("testService", "testMethod", w, metrics);
+        method.invoke(requestBuffer, streamObserver);
+        Mockito.verify(streamObserver).onError(Mockito.any());
     }
 }
