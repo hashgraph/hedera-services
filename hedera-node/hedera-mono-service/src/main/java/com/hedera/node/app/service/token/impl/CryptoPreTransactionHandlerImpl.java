@@ -44,12 +44,12 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
-        final var op = tx.getCryptoCreateAccount();
+    public TransactionMetadata preHandleCryptoCreate(final TransactionBody txn) {
+        final var op = txn.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
-        final var payer = tx.getTransactionID().getAccountID();
-        return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
+        final var payer = txn.getTransactionID().getAccountID();
+        return createAccountSigningMetadata(txn, key, receiverSigReq, payer);
     }
 
     @Override
@@ -121,7 +121,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
-        throw new NotImplementedException();
+        final var payer = txn.getTransactionID().getAccountID();
+        return new SigTransactionMetadata(accountStore, txn, payer);
     }
 
     @Override
@@ -141,18 +142,18 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
      * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
      * for signing the transaction
      *
-     * @param tx given transaction body
+     * @param txn given transaction body
      * @param key key provided in the transaction body
      * @param receiverSigReq flag for receiverSigReq on the given transaction body
      * @param payer payer for the transaction
      * @return transaction's metadata needed to validate signatures
      */
     private TransactionMetadata createAccountSigningMetadata(
-            final TransactionBody tx,
+            final TransactionBody txn,
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
-        final var meta = new SigTransactionMetadata(accountStore, tx, payer);
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         if (receiverSigReq && key.isPresent()) {
             meta.addToReqKeys(key.get());
         }
