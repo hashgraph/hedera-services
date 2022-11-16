@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,15 @@
  */
 package com.hedera.node.app.service.util.impl;
 
+import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.TestUtils.basicMetaAssertions;
+import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
@@ -25,28 +34,17 @@ import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.node.app.service.TestUtils.basicMetaAssertions;
-import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 public class UtilPreTransactionHandlerImplTest {
-    @Mock
-    private RebuiltStateImpl aliases;
+    @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock private States states;
     @Mock private MerkleAccount payerAccount;
@@ -102,10 +100,7 @@ public class UtilPreTransactionHandlerImplTest {
                 TransactionID.newBuilder()
                         .setAccountID(payer)
                         .setTransactionValidStart(consensusTimestamp);
-        final var prngTxnBody =
-                UtilPrngTransactionBody.newBuilder()
-                        .setRange(10)
-                        .build();
+        final var prngTxnBody = UtilPrngTransactionBody.newBuilder().setRange(10).build();
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)

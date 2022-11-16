@@ -15,6 +15,15 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.TestUtils.basicMetaAssertions;
+import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -24,23 +33,13 @@ import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.node.app.service.TestUtils.basicMetaAssertions;
-import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {

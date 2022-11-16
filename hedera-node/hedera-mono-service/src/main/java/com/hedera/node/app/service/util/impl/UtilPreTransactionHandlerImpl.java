@@ -20,9 +20,8 @@ import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import javax.annotation.Nonnull;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * A {@code UtilPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -39,6 +38,6 @@ public class UtilPreTransactionHandlerImpl implements UtilPreTransactionHandler 
     /** {@inheritDoc} */
     public TransactionMetadata preHandlePrng(TransactionBody tx) {
         final var payer = tx.getTransactionID().getAccountID();
-        return new SigTransactionMetadata(accountStore, tx,payer);
+        return new SigTransactionMetadata(accountStore, tx, payer);
     }
 }
