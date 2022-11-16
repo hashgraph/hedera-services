@@ -678,7 +678,7 @@ class CryptoCreateTransitionLogicTest {
                 .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx, never()).setAlias(any());
+        verify(txnCtx).setAlias(ECDSA_KEY.toByteString());
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
@@ -720,7 +720,7 @@ class CryptoCreateTransitionLogicTest {
                 .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx).setAlias(ECDSA_KEY.toByteString());
+        verify(txnCtx).setAlias(aPrimitiveEDKey.toByteString());
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
@@ -767,7 +767,7 @@ class CryptoCreateTransitionLogicTest {
                 .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx).setAlias(aPrimitiveEDKey.toByteString());
+        verify(txnCtx).setAlias(ECDSA_KEY.toByteString());
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
@@ -810,7 +810,7 @@ class CryptoCreateTransitionLogicTest {
                 .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx).setAlias(ECDSA_KEY.toByteString());
+        verify(txnCtx).setAlias(aPrimitiveEDKey.toByteString());
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
@@ -851,7 +851,7 @@ class CryptoCreateTransitionLogicTest {
                 .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
-        verify(txnCtx).setAlias(aPrimitiveEDKey.toByteString());
+        verify(txnCtx, never()).setAlias(any());
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
 
         final var changes = captor.getValue().getChanges();
