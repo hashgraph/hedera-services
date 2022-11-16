@@ -42,12 +42,14 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -409,6 +411,21 @@ class BasicTransactionContextTest {
         record = subject.recordSoFar().build();
 
         assertSame(result, record.getContractCreateResult());
+    }
+
+    @Test
+    void configuresAliasRecord() {
+        given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+        given(accessor.getTxnId()).willReturn(txnId);
+        given(accessor.getTxn()).willReturn(txn);
+
+        // when:
+        setUpBuildingExpirableTxnRecord();
+        final var alias = ByteStringUtils.wrapUnsafely("justAliasingHere".getBytes());
+        subject.setAlias(alias);
+        record = subject.recordSoFar().build();
+
+        assertSame(alias, record.getAlias());
     }
 
     @Test
