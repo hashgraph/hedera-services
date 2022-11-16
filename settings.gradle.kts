@@ -62,7 +62,7 @@ dependencyResolutionManagement {
             version("hapi-version", "0.32.0-SNAPSHOT")
             version("headlong-version", "6.1.1")
             version("helidon-version", "3.0.2")
-            version("jackson-version", "2.12.6.1")
+            version("jackson-version", "2.13.3")
             version("javax-annotation-version", "1.3.2")
             version("javax-inject-version", "1")
             version("jetbrains-annotation-version", "16.0.2")

@@ -16,6 +16,9 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
@@ -23,7 +26,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
@@ -58,8 +60,55 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        addIfNotPayer(deleteAccountId, payer, meta);
-        addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
+        meta.addNonPayerKey(deleteAccountId);
+        meta.addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+        final var op = txn.getCryptoApproveAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
+
+        for (final var allowance : op.getCryptoAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+        }
+        for (final var allowance : op.getTokenAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), failureStatus);
+        }
+        for (final var allowance : op.getNftAllowancesList()) {
+            final var ownerId = allowance.getOwner();
+            // If a spender who is granted approveForAll from owner and is granting
+            // allowance for a serial to another spender, need signature from the approveForAll
+            // spender
+            var operatorId =
+                    allowance.hasDelegatingSpender() ? allowance.getDelegatingSpender() : ownerId;
+            // If approveForAll is set to true, need signature from owner
+            // since only the owner can grant approveForAll
+            if (allowance.getApprovedForAll().getValue()) {
+                operatorId = ownerId;
+            }
+            if (operatorId != ownerId) {
+                failureStatus = INVALID_DELEGATING_SPENDER;
+            }
+            meta.addNonPayerKey(operatorId, failureStatus);
+        }
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
+    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+        final var op = txn.getCryptoDeleteAllowance();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        // Every owner whose allowances are being removed should sign, if the owner is not payer
+        for (final var allowance : op.getNftAllowancesList()) {
+            meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
+        }
         return meta;
     }
 
@@ -77,18 +126,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
     public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
         throw new NotImplementedException();
     }
@@ -99,6 +136,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         throw new NotImplementedException();
     }
 
+    /* --------------- Helper methods --------------- */
     /**
      * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
      * for signing the transaction
@@ -114,38 +152,10 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
+        final var meta = new SigTransactionMetadata(accountStore, tx, payer);
         if (receiverSigReq && key.isPresent()) {
-            return new SigTransactionMetadata(accountStore, tx, payer, List.of(key.get()));
+            meta.addToReqKeys(key.get());
         }
-        return new SigTransactionMetadata(accountStore, tx, payer);
-    }
-
-    /**
-     * Fetches given accountId's key and add it to the metadata only if the accountId is not same as
-     * payer. If the accountId could not be fetched successfully, sets the failure status on the
-     * metadata.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added, if success
-     */
-    private void addIfNotPayer(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        accountStore.getNonPayerKey(accountId, payer).incorporateTo(meta);
-    }
-
-    /**
-     * Fetches given accountId's key and add it to the metadata requiredKeys list only if the
-     * accountId is not same as payer and the account has receiverSigRequired flag set to true. If
-     * the accountId have receiverSigRequired flag set false, the key will not be added metadata. If
-     * the accountId could not be fetched successfully, sets the failure status on the metadata.
-     *
-     * @param accountId given accountId
-     * @param payer payer accountId
-     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
-     */
-    private void addIfNotPayerAndReceiverSigRequired(
-            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
-        accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta);
+        return meta;
     }
 }
