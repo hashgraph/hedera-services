@@ -15,18 +15,28 @@
  */
 package com.hedera.services.api.implementation.workflows.ingest;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.List;
 
 /**
  * Encapsulates the workflow related to transaction ingestion. Given a Transaction, parses,
  * validates, and submits to the platform.
  */
 public interface IngestChecker {
+
+    /**
+     * Validates a {@link Transaction}
+     *
+     * @param tx the {@code Transaction}
+     * @throws PreCheckException if validation fails
+     * @throws NullPointerException if {@code tx} is {@code null}
+     */
+    void checkTransaction(Transaction tx) throws PreCheckException;
 
     /**
      * Validates a {@link SignedTransaction}
@@ -50,21 +60,15 @@ public interface IngestChecker {
     /**
      * Validates a signature.
      *
-     * @param signedTransactionBytes the signed bytes to check
+     * @param platformTx the signed bytes to check
      * @param signatureMap the {@link SignatureMap} with all signatures
-     * @param key the {@link JKey} of the paying {@link Account}
+     * @param reqKeys a list of required {@link HederaKey}s
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    void checkSignatures(ByteString signedTransactionBytes, SignatureMap signatureMap, JKey key)
+    void verifySignatures(
+            com.swirlds.common.system.transaction.Transaction platformTx,
+            SignatureMap signatureMap,
+            List<? extends HederaKey> reqKeys)
             throws PreCheckException;
-
-    /**
-     * Check the throttle for a {@link TransactionBody.DataCase}
-     *
-     * @param type the type which throttle needs to be checked
-     * @throws ThrottleException if the throttle is exceeded
-     * @throws NullPointerException if {@code type} is {@code null}
-     */
-    void checkThrottles(TransactionBody.DataCase type) throws ThrottleException;
 }

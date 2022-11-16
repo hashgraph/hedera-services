@@ -125,15 +125,16 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
 
-            // 0. Parse the transaction object from the txBytes (protobuf)
+            // 1. Parse the transaction object from the txBytes (protobuf)
             final var tx = ctx.txParser().parseFrom(txBytes);
+            checker.checkTransaction(tx);
 
-            // 1. Parse and validate the signed transaction
+            // 2. Parse and validate the signed transaction
             final var signedTransaction =
                     ctx.signedParser().parseFrom(tx.getSignedTransactionBytes());
             checker.checkSignedTransaction(signedTransaction);
 
-            // 2. Parse and validate the TransactionBody.
+            // 3. Parse and validate the TransactionBody.
             final var txBody = ctx.txBodyParser().parseFrom(signedTransaction.getBodyBytes());
             final var accountOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
             if (accountOpt.isEmpty()) {
@@ -143,21 +144,15 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final var account = accountOpt.get();
             checker.checkTransactionBody(txBody, account);
 
-            // 3. Validate signature
-            final var key = account.getKey();
-            checker.checkSignatures(
-                    tx.getSignedTransactionBytes(), signedTransaction.getSigMap(), key);
+            // 4. Call PreTransactionHandler to do transaction-specific checks, get list of required
+            // keys, and prefetch required data
+            final var metadata = dispatcher.dispatch(txBody);
 
-            // 4. If signatures all check out, then check the throttles. Ya, I'd like to check
-            //    throttles way back on step 1, but we need to verify whether the account is
-            //    a privileged account (less than 0.0.100) and if so skip throttles. Without
-            //    a way to authenticate the payload any earlier than step 3, we have to do it now.
-            final var kind = txBody.getDataCase();
-            checker.checkThrottles(kind);
+            // 5. Check signatures
+            checker.verifySignatures(
+                    platformTx, signedTransaction.getSigMap(), metadata.getReqKeys());
 
-            // Now that all the standard "ingest" checks are done, delegate to the appropriate
-            // service module to do any service-specific pre-checks.
-            return dispatcher.dispatch(txBody);
+            return metadata;
 
         } catch (PreCheckException preCheckException) {
             // TODO Actually we should have a more specific kind of metadata here maybe? And
