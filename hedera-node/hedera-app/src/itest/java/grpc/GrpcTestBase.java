@@ -23,9 +23,6 @@ import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
 import io.helidon.grpc.server.GrpcRouting;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.grpc.server.GrpcServerConfiguration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
@@ -33,9 +30,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 abstract class GrpcTestBase {
-    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService METRIC_EXECUTOR =
+            Executors.newSingleThreadScheduledExecutor();
 
     private GrpcServer grpcServer;
 
@@ -70,26 +70,24 @@ abstract class GrpcTestBase {
     protected abstract void configureRouting(GrpcRouting.Builder rb);
 
     protected Transaction createSubmitMessageTransaction(int topicId, String msg) {
-        final var data = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
-                .setMessage(ByteString.copyFrom(msg, StandardCharsets.UTF_8))
-                .build();
+        final var data =
+                ConsensusSubmitMessageTransactionBody.newBuilder()
+                        .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
+                        .setMessage(ByteString.copyFrom(msg, StandardCharsets.UTF_8))
+                        .build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setConsensusSubmitMessage(data));
     }
 
     protected Transaction createCreateTopicTransaction(String memo) {
-        final var data = ConsensusCreateTopicTransactionBody.newBuilder()
-                .setMemo(memo)
-                .build();
+        final var data = ConsensusCreateTopicTransactionBody.newBuilder().setMemo(memo).build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setConsensusCreateTopic(data));
     }
 
     protected Transaction createUncheckedSubmitTransaction() {
-        final var data = UncheckedSubmitBody.newBuilder()
-                .setTransactionBytes(ByteString.EMPTY)
-                .build();
+        final var data =
+                UncheckedSubmitBody.newBuilder().setTransactionBytes(ByteString.EMPTY).build();
 
         return createTransaction(bodyBuilder -> bodyBuilder.setUncheckedSubmit(data));
     }
@@ -117,23 +115,22 @@ abstract class GrpcTestBase {
     }
 
     protected Query createGetTopicInfoQuery(int topicId) {
-        final var data = ConsensusGetTopicInfoQuery.newBuilder()
-                .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
-                .build();
+        final var data =
+                ConsensusGetTopicInfoQuery.newBuilder()
+                        .setTopicID(TopicID.newBuilder().setTopicNum(topicId).build())
+                        .build();
 
         return Query.newBuilder().setConsensusGetTopicInfo(data).build();
     }
 
     protected Query createGetExecutionTimeQuery() {
-        final var data = NetworkGetExecutionTimeQuery.newBuilder()
-                .build();
+        final var data = NetworkGetExecutionTimeQuery.newBuilder().build();
 
         return Query.newBuilder().setNetworkGetExecutionTime(data).build();
     }
 
     protected Query createGetLiveHashQuery() {
-        final var data = CryptoGetLiveHashQuery.newBuilder()
-                .build();
+        final var data = CryptoGetLiveHashQuery.newBuilder().build();
 
         return Query.newBuilder().setCryptoGetLiveHash(data).build();
     }
