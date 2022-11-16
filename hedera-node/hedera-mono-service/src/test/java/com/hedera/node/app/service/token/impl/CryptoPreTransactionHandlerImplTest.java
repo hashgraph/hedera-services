@@ -43,9 +43,11 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
@@ -342,6 +344,43 @@ class CryptoPreTransactionHandlerImplTest {
         assertIterableEquals(List.of(payerKey, ownerKey, ownerKey), meta.getReqKeys());
     }
 
+    @Test
+    void cryptoDeleteAllowanceVanilla() {
+        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
+
+        final var txn = cryptoDeleteAllowanceTransaction(payer);
+        final var meta = subject.preHandleDeleteAllowances(txn);
+        basicMetaAssertions(meta, 2, false, OK);
+        assertIterableEquals(List.of(payerKey, ownerKey), meta.getReqKeys());
+    }
+
+    @Test
+    void cryptoDeleteAllowanceDoesntAddIfOwnerSameAsPayer() {
+        given(accounts.get(owner.getAccountNum())).willReturn(Optional.of(ownerAccount));
+        given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
+
+        final var txn = cryptoDeleteAllowanceTransaction(owner);
+        final var meta = subject.preHandleDeleteAllowances(txn);
+        basicMetaAssertions(meta, 1, false, OK);
+        assertIterableEquals(List.of(ownerKey), meta.getReqKeys());
+    }
+
+    @Test
+    void cryptoDeleteAllowanceFailsIfPayerOrOwnerNotExist() {
+        var txn = cryptoDeleteAllowanceTransaction(owner);
+        given(accounts.get(owner.getAccountNum())).willReturn(Optional.empty());
+
+        var meta = subject.preHandleDeleteAllowances(txn);
+        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertIterableEquals(List.of(), meta.getReqKeys());
+
+        txn = cryptoDeleteAllowanceTransaction(payer);
+        meta = subject.preHandleDeleteAllowances(txn);
+        basicMetaAssertions(meta, 1, true, INVALID_ALLOWANCE_OWNER_ID);
+        assertIterableEquals(List.of(payerKey), meta.getReqKeys());
+    }
+
     private void basicMetaAssertions(
             final TransactionMetadata meta,
             final int keysSize,
@@ -413,6 +452,29 @@ class CryptoPreTransactionHandlerImplTest {
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoApproveAllowance(allowanceTxnBody)
+                .build();
+    }
+
+    private TransactionBody cryptoDeleteAllowanceTransaction(final AccountID id) {
+        if (id.equals(payer)) {
+            setUpPayer();
+        }
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(id)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var allowanceTxnBody =
+                CryptoDeleteAllowanceTransactionBody.newBuilder()
+                        .addNftAllowances(
+                                NftRemoveAllowance.newBuilder()
+                                        .setOwner(owner)
+                                        .setTokenId(nft)
+                                        .addAllSerialNumbers(List.of(1L, 2L, 3L))
+                                        .build())
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoDeleteAllowance(allowanceTxnBody)
                 .build();
     }
 
