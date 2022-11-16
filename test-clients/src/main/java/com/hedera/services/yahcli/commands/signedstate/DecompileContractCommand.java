@@ -73,6 +73,9 @@ public class DecompileContractCommand implements Callable<Integer> {
     @Option(names = "--with-opcode", description = "Display opcode (in hex")
     boolean withOpcode;
 
+    @Option(names = "--dump-partial", description = "Dump partial disassembly in case of exception")
+    boolean dumpPartial;
+
     @Override
     public Integer call() throws Exception {
         disassembleContract();
@@ -104,7 +107,7 @@ public class DecompileContractCommand implements Callable<Integer> {
                 () -> prefixLines.add(new DirectiveLine("BEGIN")));
         prefixLines.add(new LabelLine("ENTRY"));
 
-        final var lines = asm.getInstructions(prefixLines, contract, true);
+        final var lines = asm.getInstructions(prefixLines, contract, true, dumpPartial);
 
         for (var line : lines) System.out.printf("%s%s%n", prefix, line.formatLine());
     }

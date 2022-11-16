@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -105,13 +106,19 @@ public class SignedStateHolder {
         Map<EntityNum, byte[]> codes = new HashMap<>();
         final var fileStore = getFileStore();
         for (var cid : contractIds) {
-            final VirtualBlobKey vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, cid.intValue());
-            if (fileStore.containsKey(vbk)) {
-                var blob = fileStore.get(vbk);
-                if (null != blob) codes.put(cid, blob.getData());
-            }
+            var blob = getContractById(fileStore, cid);
+            blob.ifPresent(bytes -> codes.put(cid, bytes));
         }
         return codes;
+    }
+
+    public Optional<byte []> getContractById(@NotNull VirtualMap<VirtualBlobKey,VirtualBlobValue> fileStore,  @NotNull EntityNum contractId) {
+        final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, contractId.intValue());
+        if (fileStore.containsKey(vbk)) {
+            var blob = fileStore.get(vbk);
+            if (null != blob) return Optional.ofNullable(blob.getData());
+        }
+        return Optional.empty();
     }
 
     public static class MissingSignedStateComponent extends NullPointerException {

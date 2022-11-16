@@ -154,20 +154,29 @@ public class Assembly {
     public ImmutableList<Line> getInstructions(
             @NotNull List<Line> prefixLines,
             int @NotNull [] bytecode,
-            boolean solidityDataIsAfterInvalidOp) {
+            boolean solidityDataIsAfterInvalidOp,
+            boolean dumpPartial) {
         var lines = new ImmutableList.Builder<Line>().addAll(prefixLines);
 
         int currentOffset = 0;
         ImmutablePair<Line, Integer> p;
-        while (null != (p = getNextInstruction(bytecode, currentOffset))) {
-            lines.add(p.left);
-            currentOffset = p.right;
+        try {
+            while (null != (p = getNextInstruction(bytecode, currentOffset))) {
+                lines.add(p.left);
+                currentOffset = p.right;
 
-            if (solidityDataIsAfterInvalidOp && p.left.thisLineIsA(INVALID_OPCODE)) {
-                final var data = getRemainingBytecodesAsData(bytecode, currentOffset);
-                lines.add(data);
-                break;
+                if (solidityDataIsAfterInvalidOp && p.left.thisLineIsA(INVALID_OPCODE)) {
+                    final var data = getRemainingBytecodesAsData(bytecode, currentOffset);
+                    lines.add(data);
+                    break;
+                }
             }
+        } catch (IndexOutOfBoundsException ex) {
+            if (dumpPartial && ex.getMessage().contains("overruns bytecode")) {
+                System.out.printf("***** %s\n", ex.getMessage());
+                return lines.build();
+            }
+            throw ex;
         }
 
         return lines.build();
