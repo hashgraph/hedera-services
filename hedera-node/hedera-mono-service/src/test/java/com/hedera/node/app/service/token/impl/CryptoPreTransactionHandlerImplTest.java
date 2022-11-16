@@ -15,50 +15,32 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
-import java.util.Optional;
+import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.TestUtils.basicMetaAssertions;
+import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
@@ -340,16 +322,6 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleApproveAllowances(txn);
         basicMetaAssertions(meta, 3, true, INVALID_DELEGATING_SPENDER);
         assertIterableEquals(List.of(payerKey, ownerKey, ownerKey), meta.getReqKeys());
-    }
-
-    private void basicMetaAssertions(
-            final TransactionMetadata meta,
-            final int keysSize,
-            final boolean failed,
-            final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.getReqKeys().size());
-        assertTrue(failed ? meta.failed() : !meta.failed());
-        assertEquals(failureStatus, meta.status());
     }
 
     private TransactionBody createAccountTransaction(final boolean receiverSigReq) {
