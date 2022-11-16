@@ -169,7 +169,7 @@ class StaticEntityAccessTest {
         given(
                         validator.expiryStatusGiven(
                                 someNonContractAccount.getBalance(),
-                                someNonContractAccount.getExpiry(),
+                                someNonContractAccount.isExpiredAndPendingRemoval(),
                                 someNonContractAccount.isSmartContract()))
                 .willReturn(OK);
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);

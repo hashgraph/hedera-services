@@ -18,6 +18,7 @@ package com.hedera.services.state.virtual.entities;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.test.utils.SeededPropertySource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -27,7 +28,8 @@ class OnDiskAccountMigrationTest {
     @ParameterizedTest
     @SuppressWarnings("java:S5961")
     void allFieldsAreSet(final int testCaseNo) {
-        final var source = SeededPropertySource.forSerdeTest(14, testCaseNo);
+        final var source =
+                SeededPropertySource.forSerdeTest(MerkleAccountState.CURRENT_VERSION, testCaseNo);
         final var inMemoryAccount = source.nextAccountState();
         final var onDiskAccount = OnDiskAccount.from(inMemoryAccount);
 
@@ -47,6 +49,9 @@ class OnDiskAccountMigrationTest {
         assertEquals(inMemoryAccount.isDeclineReward(), onDiskAccount.isDeclineReward());
         assertEquals(
                 inMemoryAccount.isReceiverSigRequired(), onDiskAccount.isReceiverSigRequired());
+        assertEquals(
+                inMemoryAccount.isExpiredAndPendingRemoval(),
+                onDiskAccount.isExpiredAndPendingRemoval());
         // Ints
         assertEquals(
                 inMemoryAccount.getNumContractKvPairs(), onDiskAccount.getNumContractKvPairs());

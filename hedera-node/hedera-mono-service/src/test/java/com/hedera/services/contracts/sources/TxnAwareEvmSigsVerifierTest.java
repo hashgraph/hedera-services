@@ -71,6 +71,7 @@ import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -316,6 +317,20 @@ class TxnAwareEvmSigsVerifierTest {
     @Test
     void testsNullCryptoKey() {
         final var verdict = subject.cryptoKeyIsActive(null);
+
+        assertFalse(verdict);
+    }
+
+    @Test
+    void testsEmptyKeyList() {
+        JKeyList emptyKeyList = new JKeyList();
+
+        given(ledgers.accounts()).willReturn(accountsLedger);
+        given(accountsLedger.exists(account)).willReturn(true);
+        given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(emptyKeyList);
+
+        final var verdict =
+                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
 
         assertFalse(verdict);
     }

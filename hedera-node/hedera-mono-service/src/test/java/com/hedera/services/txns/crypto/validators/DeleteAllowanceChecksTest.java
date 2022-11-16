@@ -278,7 +278,7 @@ class DeleteAllowanceChecksTest {
     void happyPath() {
         setUpForTest();
         getValidTxnCtx();
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(dynamicProperties.maxAllowanceLimitPerTransaction()).willReturn(20);
