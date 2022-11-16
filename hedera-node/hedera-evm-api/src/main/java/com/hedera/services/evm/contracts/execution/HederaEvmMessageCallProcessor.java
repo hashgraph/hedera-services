@@ -78,12 +78,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        if (output == null || output.isEmpty()) {
+        if (!"HTS".equals(contract.getName())) {
             output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-        }
-        if (gasRequirement == 0L) {
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
+
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
         if (frame.getState() == REVERT) {
             return;
