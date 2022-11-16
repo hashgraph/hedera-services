@@ -15,4 +15,5 @@
  */
 package com.hedera.node.app.spi;
 
+/** Sub-types define methods for handling transactions. */
 public interface TransactionHandler {}

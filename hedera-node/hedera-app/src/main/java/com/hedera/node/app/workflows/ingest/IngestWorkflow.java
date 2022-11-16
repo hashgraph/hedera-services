@@ -16,13 +16,17 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.nio.ByteBuffer;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of the ingestion pipeline. An implementation of this interface is threadsafe, a
- * single instance of it can be used to execute concurrent transaction ingestion.
+ * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
+ * a client (currently always through gRPC). This workflow takes the transaction, checks it,
+ * verifies the payer exists, signed the transaction, and has sufficient balance, checks the
+ * throttles, and performs any other required tasks, and then submits the transaction to the
+ * hashgraph platform for consensus.
  */
 public interface IngestWorkflow {
     /**

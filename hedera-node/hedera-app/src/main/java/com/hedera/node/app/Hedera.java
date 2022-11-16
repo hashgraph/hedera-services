@@ -29,6 +29,7 @@ import io.helidon.grpc.server.GrpcServerConfiguration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
+/** Main class for the Hedera Consensus Node. */
 public final class Hedera {
     public static void main(String[] args) throws InterruptedException {
         final var shutdownLatch = new CountDownLatch(1);

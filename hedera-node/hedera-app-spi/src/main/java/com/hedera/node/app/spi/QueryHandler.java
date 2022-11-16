@@ -15,4 +15,8 @@
  */
 package com.hedera.node.app.spi;
 
+/**
+ * Marks a type able to handle queries. Each {@link Service} may implement a {@link QueryHandler},
+ * exposing endpoints that may be invoked by clients.
+ */
 public interface QueryHandler {}
