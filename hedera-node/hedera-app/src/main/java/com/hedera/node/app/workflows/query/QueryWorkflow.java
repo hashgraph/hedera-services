@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.node.app.workflows.query;
 
-description = "Hedera Application - SPI"
+import com.hedera.node.app.SessionContext;
+import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 
-dependencies {
-    implementation(libs.hapi)
-    implementation(libs.jsr305.annotation)
-}
-
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+/** A workflow for processing queries. */
+public interface QueryWorkflow {
+    void handleQuery(
+            @Nonnull SessionContext session,
+            @Nonnull ByteBuffer requestBuffer,
+            @Nonnull ByteBuffer responseBuffer);
 }
