@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ import org.jetbrains.annotations.NotNull;
 public final class CryptoServiceImpl implements CryptoService {
     @NotNull
     @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states, @Nonnull final StaticContext context) {
+    public CryptoPreTransactionHandler createPreTransactionHandler(
+            @Nonnull final States states, @Nonnull final StaticContext context) {
         Objects.requireNonNull(states);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store, context);

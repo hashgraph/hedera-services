@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,5 +34,6 @@ public interface ConsensusService extends Service {
      */
     @Override
     @Nonnull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states, @Nonnull final StaticContext context);
+    ConsensusPreTransactionHandler createPreTransactionHandler(
+            @Nonnull States states, @Nonnull final StaticContext context);
 }

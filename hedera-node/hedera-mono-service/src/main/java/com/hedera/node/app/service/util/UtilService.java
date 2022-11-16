@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@ package com.hedera.node.app.service.util;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
-import org.jetbrains.annotations.NotNull;
-
 import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Implements the HAPI <a
@@ -36,5 +35,6 @@ public interface UtilService extends Service {
      */
     @NotNull
     @Override
-    UtilPreTransactionHandler createPreTransactionHandler(@NotNull States states, @Nonnull final StaticContext context);
+    UtilPreTransactionHandler createPreTransactionHandler(
+            @NotNull States states, @Nonnull final StaticContext context);
 }

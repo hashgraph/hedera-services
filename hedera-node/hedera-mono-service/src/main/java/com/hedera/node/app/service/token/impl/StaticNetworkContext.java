@@ -21,24 +21,27 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
- * Placeholder implementation for giving access to {@link com.hedera.services.txns.auth.SystemOpPolicies}
- * and {@link com.hedera.services.sigs.order.SignatureWaivers} until they are refactored.
- * This will be deleted/refactored when both the above classes are implemented
+ * Placeholder implementation for giving access to {@link
+ * com.hedera.services.txns.auth.SystemOpPolicies} and {@link
+ * com.hedera.services.sigs.order.SignatureWaivers} until they are refactored. This will be
+ * deleted/refactored when both the above classes are implemented
  */
 public class StaticNetworkContext implements StaticContext {
     private final SignatureWaivers signatureWaivers;
 
-    public StaticNetworkContext(final SignatureWaivers signatureWaivers){
+    public StaticNetworkContext(final SignatureWaivers signatureWaivers) {
         this.signatureWaivers = signatureWaivers;
     }
 
     @Override
-    public boolean isTargetAccountSignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isTargetAccountSignatureWaived(
+            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         return signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn, payer);
     }
 
     @Override
-    public boolean isNewKeySignatureWaived(final TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isNewKeySignatureWaived(
+            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         return signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn, payer);
     }
 }
