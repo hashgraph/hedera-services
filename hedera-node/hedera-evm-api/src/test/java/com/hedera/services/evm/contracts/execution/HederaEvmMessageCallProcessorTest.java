@@ -53,11 +53,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class HederaEvmMessageCallProcessorTest {
 
     private static final String HEDERA_PRECOMPILE_ADDRESS_STRING = "0x1337";
-    private static final String HTS_PRECOMPILE_ADDRESS_STRING = "0x167";
     private static final Address HEDERA_PRECOMPILE_ADDRESS =
             Address.fromHexString(HEDERA_PRECOMPILE_ADDRESS_STRING);
-    private static final Address HTS_PRECOMPILE_ADDRESS =
-            Address.fromHexString(HTS_PRECOMPILE_ADDRESS_STRING);
     private static final Address RECIPIENT_ADDRESS = Address.fromHexString("0xcafecafe01");
     private static final Address SENDER_ADDRESS = Address.fromHexString("0xcafecafe02");
     private static final PrecompiledContract.PrecompileContractResult NO_RESULT =
@@ -69,7 +66,6 @@ class HederaEvmMessageCallProcessorTest {
     private static final long GAS_ONE = 1L;
     private static final long GAS_ONE_K = 1_000L;
     private static final long GAS_ONE_M = 1_000_000L;
-    private final Bytes output = Bytes.of("output".getBytes());
     HederaEvmMessageCallProcessor subject;
     @Mock private EVM evm;
     @Mock private PrecompileContractRegistry precompiles;
@@ -104,7 +100,6 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
         verify(frame).getState();
-        verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
 
     @Test
@@ -144,17 +139,30 @@ class HederaEvmMessageCallProcessorTest {
 
     @Test
     void callsPrecompileWithLoadedEmptyOutputAndGasRequirementWorks() {
-        subject.setGasRequirement(123);
-        subject.setOutput(Bytes.fromHexString("0x00"));
         given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
         final var precompile = Address.fromHexString("0x0000000000000000000000000000000000001337");
+        given(nonHtsPrecompile.gasRequirement(any())).willReturn(GAS_ONE);
+        given(nonHtsPrecompile.computePrecompile(any(), eq(frame))).willReturn(RESULT);
         given(frame.getContractAddress()).willReturn(precompile);
 
         subject.start(frame, hederaEvmOperationTracer);
 
         verify(hederaEvmOperationTracer)
-                .tracePrecompileCall(frame, 123, Bytes.fromHexString("0x00"));
+                .tracePrecompileCall(frame, 1L, Bytes.fromHexString("0x01"));
         verify(frame).setState(State.COMPLETED_SUCCESS);
+    }
+
+    @Test
+    void callingHtsPrecompileHalts() {
+        given(frame.getRemainingGas()).willReturn(GAS_ONE_K);
+        final var precompile = Address.fromHexString("0x0000000000000000000000000000000000001337");
+        given(nonHtsPrecompile.getName()).willReturn("HTS");
+        given(frame.getContractAddress()).willReturn(precompile);
+
+        subject.start(frame, hederaEvmOperationTracer);
+
+        verify(hederaEvmOperationTracer).tracePrecompileCall(frame, 0L, null);
+        verify(frame).setState(State.EXCEPTIONAL_HALT);
     }
 
     @Test
@@ -189,7 +197,6 @@ class HederaEvmMessageCallProcessorTest {
         verify(frame).decrementRemainingGas(GAS_ONE_K);
         verify(nonHtsPrecompile).computePrecompile(Bytes.EMPTY, frame);
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE_M, null);
-        verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
 
     @Test
@@ -204,7 +211,6 @@ class HederaEvmMessageCallProcessorTest {
 
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
-        verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
 
     @Test
@@ -217,6 +223,5 @@ class HederaEvmMessageCallProcessorTest {
         subject.executeHederaPrecompile(nonHtsPrecompile, frame, hederaEvmOperationTracer);
 
         verify(hederaEvmOperationTracer).tracePrecompileCall(frame, GAS_ONE, null);
-        verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaEvmOperationTracer);
     }
 }
