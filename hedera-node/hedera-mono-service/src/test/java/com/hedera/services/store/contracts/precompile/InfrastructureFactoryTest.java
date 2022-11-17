@@ -22,6 +22,9 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -50,6 +53,7 @@ import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
@@ -104,6 +108,9 @@ class InfrastructureFactoryTest {
     @Mock private TransactionContext txnCtx;
     @Mock private AliasManager aliasManager;
     @Mock private FeeDistribution feeDistribution;
+    @Mock private FeeAssessor feeAssessor;
+    @Mock private PureTransferSemanticChecks checks;
+    @Mock private CustomFeeSchedules customFeeSchedules;
 
     private InfrastructureFactory subject;
 
@@ -121,12 +128,21 @@ class InfrastructureFactoryTest {
                         dynamicProperties,
                         txnCtx,
                         aliasManager,
-                        feeDistribution);
+                        feeDistribution,
+                        feeAssessor,
+                        checks);
     }
 
     @Test
     void canCreateSideEffects() {
         assertInstanceOf(SideEffectsTracker.class, subject.newSideEffects());
+    }
+
+    @Test
+    void canCreateImpliedTransfersMarshal() {
+        assertInstanceOf(
+                ImpliedTransfersMarshal.class,
+                subject.newImpliedTransfersMarshal(customFeeSchedules));
     }
 
     @Test

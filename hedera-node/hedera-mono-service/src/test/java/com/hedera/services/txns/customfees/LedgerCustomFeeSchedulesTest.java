@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,10 +36,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FcmCustomFeeSchedulesTest {
-    private FcmCustomFeeSchedules subject;
+class LedgerCustomFeeSchedulesTest {
+
+    private LedgerCustomFeeSchedules subject;
 
     MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+    TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+
     private final EntityId aTreasury = new EntityId(0, 0, 12);
     private final EntityId bTreasury = new EntityId(0, 0, 13);
     private final EntityId tokenA = new EntityId(0, 0, 1);
@@ -58,7 +66,14 @@ class FcmCustomFeeSchedulesTest {
 
         tokens.put(EntityNum.fromLong(tokenA.num()), aToken);
         tokens.put(EntityNum.fromLong(tokenB.num()), bToken);
-        subject = new FcmCustomFeeSchedules(() -> tokens);
+
+        tokensLedger =
+                new TransactionalLedger<>(
+                        TokenProperty.class,
+                        MerkleToken::new,
+                        new BackingTokens(() -> tokens),
+                        new ChangeSummaryManager<>());
+        subject = new LedgerCustomFeeSchedules(tokensLedger);
     }
 
     @Test
@@ -79,7 +94,6 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void validateLookUpScheduleForUsingLedger() {
-        subject = new FcmCustomFeeSchedules(() -> tokens);
         // then:
         final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
         final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
@@ -96,21 +110,29 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void getterWorks() {
-        assertEquals(tokens, subject.getTokens().get());
+        assertEquals(tokensLedger, subject.getTokens());
     }
 
     @Test
     void testObjectContract() {
         // given:
         MerkleMap<EntityNum, MerkleToken> secondMerkleMap = new MerkleMap<>();
-        MerkleToken token = new MerkleToken();
+        final var token = new MerkleToken();
         final var missingFees =
                 List.of(FcCustomFee.fixedFee(50L, missingToken, feeCollector, false).asGrpc());
 
         token.setFeeScheduleFrom(missingFees);
         secondMerkleMap.put(EntityNum.fromLong(missingToken.num()), new MerkleToken());
-        final var fees1 = new FcmCustomFeeSchedules(() -> tokens);
-        final var fees2 = new FcmCustomFeeSchedules(() -> secondMerkleMap);
+
+        final var secondTokensLedger =
+                new TransactionalLedger<>(
+                        TokenProperty.class,
+                        MerkleToken::new,
+                        new BackingTokens(() -> secondMerkleMap),
+                        new ChangeSummaryManager<>());
+
+        final var fees1 = new LedgerCustomFeeSchedules(tokensLedger);
+        final var fees2 = new LedgerCustomFeeSchedules(secondTokensLedger);
 
         // expect:
         assertNotEquals(fees1, fees2);
