@@ -32,7 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
-import com.hedera.node.app.spi.StaticContext;
+import com.hedera.node.app.service.token.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.States;
@@ -103,7 +103,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
     @Mock private MerkleAccount ownerAccount;
-    @Mock private StaticContext context;
+    private PreHandleContext context;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -114,7 +114,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         store = new AccountStore(states);
 
-        subject = new CryptoPreTransactionHandlerImpl(store, context);
+        subject = new CryptoPreTransactionHandlerImpl(store);
     }
 
     @Test

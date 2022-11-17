@@ -124,7 +124,7 @@ class PolicyBasedSigWaiversTest {
         final var txn = cryptoUpdateTxn(entityNumbers.accounts().systemAdmin());
 
         // expect:
-        assertTrue(subject.isTargetAccountKeyWaived(txn, treasury));
+        assertTrue(subject.isTargetAccountSignatureWaived(txn, treasury));
     }
 
     @Test
@@ -133,7 +133,7 @@ class PolicyBasedSigWaiversTest {
         final var txn = cryptoUpdateTxn(entityNumbers.accounts().systemAdmin());
 
         // expect:
-        assertTrue(subject.isNewAccountKeyWaived(txn, treasury));
+        assertTrue(subject.isNewKeySignatureWaived(txn, treasury));
     }
 
     @Test
@@ -142,7 +142,7 @@ class PolicyBasedSigWaiversTest {
         final var txn = cryptoUpdateTxn(entityNumbers.accounts().treasury());
 
         // expect:
-        assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
+        assertFalse(subject.isNewKeySignatureWaived(txn, treasury));
     }
 
     @Test
@@ -151,7 +151,7 @@ class PolicyBasedSigWaiversTest {
         final var txn = cryptoUpdateTxn(1234L);
 
         // expect:
-        assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
+        assertFalse(subject.isNewKeySignatureWaived(txn, treasury));
     }
 
     @Test
@@ -160,7 +160,7 @@ class PolicyBasedSigWaiversTest {
         final var txn = cryptoUpdateTxn(1234L);
 
         // expect:
-        assertFalse(subject.isNewAccountKeyWaived(txn, treasury));
+        assertFalse(subject.isNewKeySignatureWaived(txn, treasury));
     }
 
     @Test
@@ -170,9 +170,9 @@ class PolicyBasedSigWaiversTest {
         assertThrows(
                 IllegalArgumentException.class, () -> subject.isAppendFileWaclWaived(txn, null));
         assertThrows(
-                IllegalArgumentException.class, () -> subject.isTargetAccountKeyWaived(txn, null));
+                IllegalArgumentException.class, () -> subject.isTargetAccountSignatureWaived(txn, null));
         assertThrows(
-                IllegalArgumentException.class, () -> subject.isNewAccountKeyWaived(txn, null));
+                IllegalArgumentException.class, () -> subject.isNewKeySignatureWaived(txn, null));
         assertThrows(
                 IllegalArgumentException.class, () -> subject.isTargetFileWaclWaived(txn, null));
         assertThrows(IllegalArgumentException.class, () -> subject.isNewFileWaclWaived(txn, null));

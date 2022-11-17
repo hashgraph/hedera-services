@@ -70,14 +70,14 @@ public class PolicyBasedSigWaivers implements SignatureWaivers {
     }
 
     @Override
-    public boolean isTargetAccountKeyWaived(
+    public boolean isTargetAccountSignatureWaived(
             TransactionBody cryptoUpdateTxn, final AccountID payer) {
         assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
         return opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;
     }
 
     @Override
-    public boolean isNewAccountKeyWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
+    public boolean isNewKeySignatureWaived(TransactionBody cryptoUpdateTxn, final AccountID payer) {
         assertTypeExpectation(cryptoUpdateTxn.hasCryptoUpdateAccount());
         final var isAuthorized =
                 opPolicies.checkKnownTxn(cryptoUpdateTxn, CryptoUpdate, payer) == AUTHORIZED;

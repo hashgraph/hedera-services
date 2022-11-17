@@ -648,9 +648,9 @@ public class SigRequirements {
             final @Nullable LinkedRefs linkedRefs) {
         List<JKey> required = EMPTY_LIST;
         final var newAccountKeyMustSign =
-                !signatureWaivers.isNewAccountKeyWaived(cryptoUpdateTxn, payer);
+                !signatureWaivers.isNewKeySignatureWaived(cryptoUpdateTxn, payer);
         final var targetAccountKeyMustSign =
-                !signatureWaivers.isTargetAccountKeyWaived(cryptoUpdateTxn, payer);
+                !signatureWaivers.isTargetAccountSignatureWaived(cryptoUpdateTxn, payer);
         final var op = cryptoUpdateTxn.getCryptoUpdateAccount();
         var target = op.getAccountIDToUpdate();
         var result = sigMetaLookup.accountSigningMetaFor(target, linkedRefs);

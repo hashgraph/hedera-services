@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.util;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,6 +33,5 @@ public interface UtilService extends Service {
      */
     @NotNull
     @Override
-    UtilPreTransactionHandler createPreTransactionHandler(
-            @NotNull States states, @Nonnull final StaticContext context);
+    UtilPreTransactionHandler createPreTransactionHandler(@NotNull States states);
 }

@@ -16,9 +16,7 @@
 package com.hedera.node.app.service.freeze;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.StaticContext;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -35,6 +33,5 @@ public interface FreezeService extends Service {
      */
     @NotNull
     @Override
-    FreezePreTransactionHandler createPreTransactionHandler(
-            @NotNull States states, @Nonnull final StaticContext context);
+    FreezePreTransactionHandler createPreTransactionHandler(@NotNull States states);
 }

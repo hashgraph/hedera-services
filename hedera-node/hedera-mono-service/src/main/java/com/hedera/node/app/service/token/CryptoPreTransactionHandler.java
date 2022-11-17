@@ -45,7 +45,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody}
      * @return the metadata for the account update
      */
-    TransactionMetadata preHandleUpdateAccount(TransactionBody txn);
+    TransactionMetadata preHandleUpdateAccount(PreHandleContext ctx, TransactionBody txn);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}
