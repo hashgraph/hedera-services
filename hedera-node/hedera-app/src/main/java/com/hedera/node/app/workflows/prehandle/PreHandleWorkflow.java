@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-    id("com.hedera.hashgraph.conventions")
-}
+package com.hedera.node.app.workflows.prehandle;
 
-description = "Hedera Application - SPI"
+import com.swirlds.common.system.events.Event;
 
-dependencies {
-    api(libs.swirlds.common)
-    api(libs.swirlds.jasperdb)
-    api(libs.swirlds.virtualmap)
+/** Start the prehandle-workflow of an {@link Event} */
+public interface PreHandleWorkflow {
 
-    implementation(libs.hapi)
-    implementation(libs.jsr305.annotation)
-}
-
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+    /**
+     * Starts the prehandle-workflow of the {@link Event}
+     *
+     * @param event the {@code Event} for which the prehandle-workflow should be started
+     * @throws NullPointerException if {@code event} is {@code null}
+     */
+    void start(Event event);
 }

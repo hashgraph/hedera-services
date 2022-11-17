@@ -42,4 +42,14 @@ public interface CryptoService extends Service {
     @Override
     @Nonnull
     CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+
+    /**
+     * Creates the crypto service query-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding crypto service query-handler
+     */
+    @Override
+    @Nonnull
+    CryptoQueryHandler createQueryHandler(@Nonnull States states);
 }

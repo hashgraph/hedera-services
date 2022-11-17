@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,5 +15,22 @@
  */
 package com.hedera.node.app;
 
-// FUTURE: Put the per-thread stuff here like parsers
-public record SessionContext() {}
+import com.google.protobuf.Parser;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+
+/**
+ * This record keeps a list of everything that is used per-thread
+ *
+ * @param queryParser a parser for {@link Query}
+ * @param txParser a parser for {@link Transaction}
+ * @param signedParser a parser for {@link SignedTransaction}
+ * @param txBodyParser a parser for {@link TransactionBody}
+ */
+public record SessionContext(
+        Parser<Query> queryParser,
+        Parser<Transaction> txParser,
+        Parser<SignedTransaction> signedParser,
+        Parser<TransactionBody> txBodyParser) {}
