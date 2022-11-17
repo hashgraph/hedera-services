@@ -18,7 +18,9 @@ package com.hedera.node.app.service.token;
 import com.hedera.services.sigs.order.SignatureWaivers;
 
 /**
- * This class should be moved to spi once all modules are seperated
+ * FUTURE: This class should be moved to spi once all modules are seperated and {@link
+ * SignatureWaivers} is refactored. Keeping it here since {@link SignatureWaivers} can't be accessed
+ * from spi.
  *
  * @param signatureWaivers
  */
