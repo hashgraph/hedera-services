@@ -37,7 +37,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -103,7 +102,6 @@ class DeleteTokenPrecompileTest {
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfers;
     @Mock private FeeCalculator feeCalculator;
     @Mock private ExchangeRate exchangeRate;
     @Mock private StateView stateView;
@@ -162,7 +160,6 @@ class DeleteTokenPrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfers,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
