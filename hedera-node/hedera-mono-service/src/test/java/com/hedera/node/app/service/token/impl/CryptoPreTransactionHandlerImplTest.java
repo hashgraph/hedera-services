@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
+import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -41,6 +42,7 @@ import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;
+
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,10 +56,13 @@ class CryptoPreTransactionHandlerImplTest {
     private Key key = A_COMPLEX_KEY;
     private HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     private HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
+
+    private HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private AccountID payer = asAccount("0.0.3");
     private AccountID deleteAccountId = asAccount("0.0.3213");
     private AccountID transferAccountId = asAccount("0.0.32134");
+    private AccountID updateAccountId = asAccount("0.0.32132");
     private AccountID spender = asAccount("0.0.12345");
     private AccountID delegatingSpender = asAccount("0.0.1234567");
     private AccountID owner = asAccount("0.0.123456");
@@ -102,7 +107,9 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
+    @Mock private MerkleAccount updateAccount;
     @Mock private MerkleAccount ownerAccount;
+    @Mock private CryptoSignatureWaivers waivers;
     private PreHandleContext context;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
@@ -113,6 +120,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(states.get(ALIASES)).willReturn(aliases);
 
         store = new AccountStore(states);
+        context = new PreHandleContext(waivers);
 
         subject = new CryptoPreTransactionHandlerImpl(store);
     }
@@ -367,6 +375,18 @@ class CryptoPreTransactionHandlerImplTest {
         meta = subject.preHandleDeleteAllowances(txn);
         basicMetaAssertions(meta, 1, true, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(payerKey), meta.getReqKeys());
+    }
+
+    @Test
+    void cryptoUpdateVanilla() {
+        var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+
+        var meta = subject.preHandleUpdateAccount(context, txn);
+        basicMetaAssertions(meta, 2, true, OK);
+        assertIterableEquals(List.of(payerKey, updateAccountKey), meta.getReqKeys());
     }
 
     private void basicMetaAssertions(

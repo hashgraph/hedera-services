@@ -31,7 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.NotNull;
+
+import javax.annotation.Nonnull;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -40,7 +41,7 @@ import org.jetbrains.annotations.NotNull;
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
 
-    public CryptoPreTransactionHandlerImpl(@NotNull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
