@@ -74,22 +74,6 @@ public final class AccountStore {
     }
 
     /**
-     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look up the keys
-     * for given account.
-     *
-     * @param accountId given accountId
-     * @param payerId given payerId
-     * @return key or failure reason if account is not same as payer
-     */
-    public KeyOrLookupFailureReason getNonPayerKey(
-            final AccountID accountId, final AccountID payerId) {
-        if (accountId.equals(payerId)) {
-            return PRESENT_BUT_NOT_REQUIRED;
-        }
-        return getKey(accountId);
-    }
-
-    /**
      * Fetches the account's key from given accountID and returns the keys if the account has
      * receiverSigRequired flag set to true.
      *
@@ -111,22 +95,6 @@ public final class AccountStore {
             return PRESENT_BUT_NOT_REQUIRED;
         }
         return validateKey(account.get().getAccountKey());
-    }
-
-    /**
-     * Checks if the accountId is same as payer. If it is same as payerId, doesn't look up the keys
-     * for given account.
-     *
-     * @param accountId given accountId
-     * @param payerId given payerId
-     * @return key or failure reason if account is not same as payer
-     */
-    public KeyOrLookupFailureReason getNonPayerKeyIfReceiverSigRequired(
-            final AccountID accountId, final AccountID payerId) {
-        if (accountId.equals(payerId)) {
-            return PRESENT_BUT_NOT_REQUIRED;
-        }
-        return getKeyIfReceiverSigRequired(accountId);
     }
 
     /**

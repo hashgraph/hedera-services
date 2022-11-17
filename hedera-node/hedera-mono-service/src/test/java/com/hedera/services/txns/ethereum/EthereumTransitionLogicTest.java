@@ -281,6 +281,17 @@ class EthereumTransitionLogicTest {
         assertDoesNotThrow(() -> subject.preFetch(accessor));
     }
 
+    @Test
+    void dealsWithRecoveryEdgeCase() {
+        given(spanMapAccessor.getEthTxExpansion(accessor))
+                .willReturn(null)
+                .willReturn(notOkExpansion);
+
+        assertFailsWith(() -> subject.validatedCallerOf(accessor), INVALID_ETHEREUM_TRANSACTION);
+
+        verify(spanMapManager).rationalizeEthereumSpan(accessor);
+    }
+
     private void givenReasonableSemantics() {
         given(spanMapAccessor.getEthTxDataMeta(accessor)).willReturn(ethTxData);
         given(dynamicProperties.chainIdBytes()).willReturn(chainIdBytes);
