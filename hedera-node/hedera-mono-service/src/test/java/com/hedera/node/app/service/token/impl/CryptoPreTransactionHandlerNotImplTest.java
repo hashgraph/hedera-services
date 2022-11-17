@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.token.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleContext;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

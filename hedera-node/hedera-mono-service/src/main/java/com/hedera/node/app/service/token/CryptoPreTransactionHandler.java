@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;

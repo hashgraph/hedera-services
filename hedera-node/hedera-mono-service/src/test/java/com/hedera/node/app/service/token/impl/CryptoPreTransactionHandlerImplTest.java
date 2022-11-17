@@ -32,7 +32,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
-import com.hedera.node.app.service.token.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.state.States;

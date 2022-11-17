@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token;
+package com.hedera.node.app.spi;
 
-import com.hedera.services.sigs.order.SignatureWaivers;
 
 /**
- * FUTURE: This class should be moved to spi once all modules are seperated and {@link
- * SignatureWaivers} is refactored. Keeping it here since {@link SignatureWaivers} can't be accessed
- * from spi.
- *
+ * Contextual information needed to perform pre-handle. Currently, provides extra information needed
+ * for signing requirements using {@link SigWaivers} to validate if any account's signature can be waived it contains
  * @param signatureWaivers
  */
-public record PreHandleContext(SignatureWaivers signatureWaivers) {}
+public record PreHandleContext(SigWaivers signatureWaivers) {}
