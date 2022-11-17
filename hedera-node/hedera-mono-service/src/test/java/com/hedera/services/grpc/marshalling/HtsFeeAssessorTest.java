@@ -45,7 +45,8 @@ class HtsFeeAssessorTest {
     void updatesExistingChangesIfPresent() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(
+                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
         // and:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
         expectedPayerChange.setCodeForInsufficientBalance(
@@ -68,7 +69,8 @@ class HtsFeeAssessorTest {
     void addsNewChangesIfNotPresent() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(
+                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
@@ -91,7 +93,8 @@ class HtsFeeAssessorTest {
     void addsExemptNewChangesForSelfDenominatedFee() {
         // setup:
         final var expectedAssess =
-                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(
+                        htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
@@ -124,5 +127,6 @@ class HtsFeeAssessorTest {
     private final CustomFeeMeta denomFeeMeta = new CustomFeeMeta(denom, treasury, List.of());
     private final CustomFeeMeta nonDenomFeeMeta =
             new CustomFeeMeta(nonSelfDenominatedChargingToken, treasury, List.of());
-    private final AccountID[] effPayerNums = new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
+    private final AccountID[] effPayerNums =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
 }

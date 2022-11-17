@@ -76,9 +76,8 @@ class ImpliedTransfersTest {
                     + " customFees=[]]], areAllowancesEnabled=true},"
                     + " changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7,"
                     + " expectedDecimals=-1}], tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123,"
-                    + " treasuryId=2.3.4, customFees=[]]],"
-                    + " assessedCustomFees=[fixme], resolvedAliases={}, numAutoCreations=0,"
-                    + " numLazyCreations=0}";
+                    + " treasuryId=2.3.4, customFees=[]]], assessedCustomFees=[fixme],"
+                    + " resolvedAliases={}, numAutoCreations=0, numLazyCreations=0}";
 
         // expect:
         assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -199,6 +198,9 @@ class ImpliedTransfersTest {
                     List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector, false)));
     private final List<AssessedCustomFeeWrapper> assessedCustomFees =
             List.of(
-                    new AssessedCustomFeeWrapper(customFeeToken,
-                            customFeeCollector,  123L, new AccountID[]{AccountID.newBuilder().setAccountNum(123L).build()}));
+                    new AssessedCustomFeeWrapper(
+                            customFeeToken,
+                            customFeeCollector,
+                            123L,
+                            new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()}));
 }

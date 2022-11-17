@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
@@ -96,7 +95,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -115,11 +113,9 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -409,13 +405,21 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
-                        withOpContext((spec, opLog) -> {
-                            final var txnRecord = getTxnRecord(creationAttempt).andAllChildRecords();
-                            allRunFor(spec, txnRecord);
-                            final var newAccountID = txnRecord.getChildRecord(0).getReceipt().getAccountID();
-                            final var effPayerInFee = txnRecord.getChildRecord(1).getAssessedCustomFeesList().get(0).getEffectivePayerAccountId(0);
-                            assertEquals(newAccountID, effPayerInFee);
-                        }),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var txnRecord =
+                                            getTxnRecord(creationAttempt).andAllChildRecords();
+                                    allRunFor(spec, txnRecord);
+                                    final var newAccountID =
+                                            txnRecord.getChildRecord(0).getReceipt().getAccountID();
+                                    final var effPayerInFee =
+                                            txnRecord
+                                                    .getChildRecord(1)
+                                                    .getAssessedCustomFeesList()
+                                                    .get(0)
+                                                    .getEffectivePayerAccountId(0);
+                                    assertEquals(newAccountID, effPayerInFee);
+                                }),
                         resetToDefault(LAZY_CREATION_ENABLED));
     }
 

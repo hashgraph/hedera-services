@@ -414,7 +414,11 @@ class FractionalFeeAssessorTest {
     private final Id payer = new Id(0, 0, 2);
     private final Id firstReclaimedAcount = new Id(0, 0, 8);
     private final Id secondReclaimedAcount = new Id(0, 0, 9);
-    private final AccountID[] effPayerAccountNums = new AccountID[] {AccountID.newBuilder().setAccountNum(8L).build(), AccountID.newBuilder().setAccountNum(9L).build()};
+    private final AccountID[] effPayerAccountNums =
+            new AccountID[] {
+                AccountID.newBuilder().setAccountNum(8L).build(),
+                AccountID.newBuilder().setAccountNum(9L).build()
+            };
     private final long vanillaTriggerAmount = 5000L;
     private final long firstCreditAmount = 4000L;
     private final long secondCreditAmount = 1000L;

@@ -130,18 +130,19 @@ public class ImpliedTransfers {
     }
 
     public List<FcAssessedCustomFee> getAssessedCustomFees() {
-            final Map<ByteString, AccountID> aliasToId = new HashMap<>();
-            for (final var change: changes) {
-                final var aliasToNewId = change.getAliasToNewId();
-                if (aliasToNewId != null) {
-                    aliasToId.put(aliasToNewId.getKey(), aliasToNewId.getValue());
-                }
+        final Map<ByteString, AccountID> aliasToId = new HashMap<>();
+        for (final var change : changes) {
+            final var aliasToNewId = change.getAliasToNewId();
+            if (aliasToNewId != null) {
+                aliasToId.put(aliasToNewId.getKey(), aliasToNewId.getValue());
             }
-            List<FcAssessedCustomFee> fcAssessedCustomFeeList = new ArrayList<>(assessedCustomFeesWrapper.size());
-            for (final var assessedFee: assessedCustomFeesWrapper) {
-                fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
-            }
-            return fcAssessedCustomFeeList;
+        }
+        List<FcAssessedCustomFee> fcAssessedCustomFeeList =
+                new ArrayList<>(assessedCustomFeesWrapper.size());
+        for (final var assessedFee : assessedCustomFeesWrapper) {
+            fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
+        }
+        return fcAssessedCustomFeeList;
     }
 
     @Override

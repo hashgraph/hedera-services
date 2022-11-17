@@ -136,7 +136,8 @@ public class RoyaltyFeeAssessor {
             final var collectorId = collector.asEntityId();
             final var assessed =
                     exchange.isForHbar()
-                            ? new AssessedCustomFeeWrapper(collectorId, royaltyFee, effPayerAccountNum)
+                            ? new AssessedCustomFeeWrapper(
+                                    collectorId, royaltyFee, effPayerAccountNum)
                             : new AssessedCustomFeeWrapper(
                                     collectorId,
                                     denom.asEntityId(),

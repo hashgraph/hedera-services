@@ -186,7 +186,13 @@ class CryptoTransferTransitionLogicTest {
 
         // and :
         final var customFeesBalanceChangeWrapper =
-            List.of(new AssessedCustomFeeWrapper(a.asEntityId(), 10L, new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()}));
+                List.of(
+                        new AssessedCustomFeeWrapper(
+                                a.asEntityId(),
+                                10L,
+                                new AccountID[] {
+                                    AccountID.newBuilder().setAccountNum(123L).build()
+                                }));
         final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId(), false));
         final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
         final var impliedTransfers =
@@ -196,7 +202,7 @@ class CryptoTransferTransitionLogicTest {
                                 hbarChange(a.asGrpcAccount(), +100),
                                 hbarChange(b.asGrpcAccount(), -100)),
                         customFees,
-                    customFeesBalanceChangeWrapper);
+                        customFeesBalanceChangeWrapper);
 
         givenValidTxnCtx();
         given(accessor.getPayer()).willReturn(payer);
@@ -212,7 +218,7 @@ class CryptoTransferTransitionLogicTest {
 
         // then:
         final var customFeesBalanceChange =
-            List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
+                List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
         verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
     }
 

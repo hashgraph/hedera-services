@@ -84,7 +84,8 @@ class HbarFeeAssessorTest {
 
     private final long amountOfHbarFee = 100_000L;
     private final Id payer = new Id(0, 0, 2);
-    private final AccountID[] effPayerNums = new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
+    private final AccountID[] effPayerNums =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
     private final Id feeCollector = new Id(1, 2, 3);
     private final EntityId hbarFeeCollector = feeCollector.asEntityId();
     private final FcCustomFee hbarFee =

@@ -139,26 +139,30 @@ class SpanMapManagerTest {
                             effPayerNum),
                     new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L, effPayerNum));
 
-
-    private final AccountID[] effPayerNumWrapped = new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
+    private final AccountID[] effPayerNumWrapped =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
     private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrappers =
             List.of(
                     new AssessedCustomFeeWrapper(
                             customFeeCollector.asEntityId(),
                             customFeeToken.asEntityId(),
                             123L,
-                        effPayerNumWrapped),
-                    new AssessedCustomFeeWrapper(customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
+                            effPayerNumWrapped),
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
 
     private final ImpliedTransfers validImpliedTransfers =
             ImpliedTransfers.valid(
-                    validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFeesWrappers);
+                    validationProps,
+                    new ArrayList<>(),
+                    entityCustomFees,
+                    assessedCustomFeesWrappers);
     private final ImpliedTransfers feeChangedImpliedTransfers =
             ImpliedTransfers.valid(
                     otherValidationProps,
                     new ArrayList<>(),
                     newCustomFeeChanges,
-                assessedCustomFeesWrappers);
+                    assessedCustomFeesWrappers);
 
     private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 
