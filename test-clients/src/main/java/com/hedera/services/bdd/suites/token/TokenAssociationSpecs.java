@@ -79,7 +79,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
         final var spec = new TokenAssociationSpecs();
 
         spec.deferResultsSummary();
-        spec.runSuiteAsync();
+        spec.runSuiteConcurrent();
         spec.summarizeDeferredResults();
     }
 

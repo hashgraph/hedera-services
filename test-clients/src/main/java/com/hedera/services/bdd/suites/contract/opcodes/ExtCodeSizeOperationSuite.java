@@ -46,7 +46,7 @@ public class ExtCodeSizeOperationSuite extends HapiApiSuite {
     private static final Logger LOG = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
 
     public static void main(String[] args) {
-        new ExtCodeSizeOperationSuite().runSuiteAsync();
+        new ExtCodeSizeOperationSuite().runSuiteConcurrent();
     }
 
     @Override

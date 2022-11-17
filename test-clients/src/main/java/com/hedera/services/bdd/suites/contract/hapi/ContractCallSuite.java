@@ -1591,9 +1591,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                         "staking.startThreshold",
                                         "100_000_000",
                                         CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-                                        "100",
-                                        "contracts.throttle.throttleByGas",
-                                        "false")),
+                                        "100")),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
@@ -1645,8 +1643,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             "Result size should change the txn fee!");
                                 }),
                         UtilVerbs.resetToDefault(
-                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-                                "contracts.throttle.throttleByGas"));
+                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
     HapiApiSpec smartContractFailFirst() {

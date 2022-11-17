@@ -48,7 +48,7 @@ public class UpdateFailuresSpec extends HapiApiSuite {
     private static final String CIVILIAN = "civilian";
 
     public static void main(String... args) {
-        new UpdateFailuresSpec().runSuiteAsync();
+        new UpdateFailuresSpec().runSuiteConcurrent();
     }
 
     @Override

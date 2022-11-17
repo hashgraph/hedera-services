@@ -54,7 +54,7 @@ public class TokenDeleteSpecs extends HapiApiSuite {
     private static final String MULTI_KEY = "multiKey";
 
     public static void main(String... args) {
-        new TokenDeleteSpecs().runSuiteAsync();
+        new TokenDeleteSpecs().runSuiteConcurrent();
     }
 
     @Override

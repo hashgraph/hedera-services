@@ -48,7 +48,7 @@ public class BalanceOperationSuite extends HapiApiSuite {
     private static final String BALANCE_OF = "balanceOf";
 
     public static void main(String[] args) {
-        new BalanceOperationSuite().runSuiteAsync();
+        new BalanceOperationSuite().runSuiteConcurrent();
     }
 
     @Override

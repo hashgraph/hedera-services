@@ -103,7 +103,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String OWNER = "Owner";
 
     public static void main(String... args) {
-        new CryptoTransferHTSSuite().runSuiteAsync();
+        new CryptoTransferHTSSuite().runSuiteConcurrent();
     }
 
     @Override

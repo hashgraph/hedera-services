@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.util;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
@@ -35,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 public class UtilPrngSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
-    private static final String BOB = "bob";
+    public static final String BOB = "bob";
 
     public static void main(String... args) {
         new UtilPrngSuite().runSuiteSync();
@@ -46,25 +47,16 @@ public class UtilPrngSuite extends HapiApiSuite {
         return allOf(positiveTests());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private List<HapiApiSpec> positiveTests() {
         return List.of(
                 happyPathWorksForRangeAndBitString(),
                 failsInPreCheckForNegativeRange(),
-                usdFeeAsExpected(),
-                featureFlagWorks());
-    }
-
-    private HapiApiSpec featureFlagWorks() {
-        return defaultHapiSpec("featureFlagWorks")
-                .given(
-                        overridingAllOf(Map.of(PRNG_IS_ENABLED, "false")),
-                        cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng().payingWith(BOB).via("baseTxn").blankMemo().logged(),
-                        getTxnRecord("baseTxn").hasNoPseudoRandomData().logged())
-                .when(
-                        hapiPrng(10).payingWith(BOB).via("plusRangeTxn").blankMemo().logged(),
-                        getTxnRecord("plusRangeTxn").hasNoPseudoRandomData().logged())
-                .then();
+                usdFeeAsExpected());
     }
 
     private HapiApiSpec usdFeeAsExpected() {

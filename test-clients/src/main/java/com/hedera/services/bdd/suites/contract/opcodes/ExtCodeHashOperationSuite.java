@@ -42,7 +42,7 @@ public class ExtCodeHashOperationSuite extends HapiApiSuite {
     private static final Logger LOG = LogManager.getLogger(ExtCodeHashOperationSuite.class);
 
     public static void main(String[] args) {
-        new ExtCodeHashOperationSuite().runSuiteAsync();
+        new ExtCodeHashOperationSuite().runSuiteConcurrent();
     }
 
     @Override

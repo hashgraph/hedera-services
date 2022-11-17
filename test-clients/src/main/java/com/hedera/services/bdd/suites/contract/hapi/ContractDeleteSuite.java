@@ -49,7 +49,7 @@ public class ContractDeleteSuite extends HapiApiSuite {
     private static final String PAYABLE_CONSTRUCTOR = "PayableConstructor";
 
     public static void main(String... args) {
-        new ContractDeleteSuite().runSuiteAsync();
+        new ContractDeleteSuite().runSuiteConcurrent();
     }
 
     @Override

@@ -38,7 +38,7 @@ public class StaticCallOperationSuite extends HapiApiSuite {
     private static final String STATIC_CALL = "staticcall";
 
     public static void main(String[] args) {
-        new StaticCallOperationSuite().runSuiteAsync();
+        new StaticCallOperationSuite().runSuiteConcurrent();
     }
 
     @Override

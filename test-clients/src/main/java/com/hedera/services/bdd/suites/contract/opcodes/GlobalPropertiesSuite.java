@@ -49,7 +49,7 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
     private static final String GET_GAS_LIMIT = "getGasLimit";
 
     public static void main(String... args) {
-        new GlobalPropertiesSuite().runSuiteAsync();
+        new GlobalPropertiesSuite().runSuiteConcurrent();
     }
 
     @Override

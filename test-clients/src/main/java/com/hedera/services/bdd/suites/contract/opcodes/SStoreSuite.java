@@ -50,12 +50,15 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * - CONCURRENCY STATUS -
+ *   . Can run concurrent without temporarySStoreRefundTest()
+ */
 public class SStoreSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
-    AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
         new SStoreSuite().runSuiteSync();
@@ -65,49 +68,11 @@ public class SStoreSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {
-                    setupAppProperties(),
                     multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
                     childStorage(),
                     temporarySStoreRefundTest(),
-                    cleanupAppProperties()
                 });
-    }
-
-    private HapiApiSpec setupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Setup")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getFileContents(APP_PROPERTIES);
-                                    allRunFor(spec, lookup);
-                                    final var contents =
-                                            lookup.getResponse()
-                                                    .getFileGetContents()
-                                                    .getFileContents()
-                                                    .getContents();
-                                    legacyProps.set(contents);
-                                }),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "contracts.maxGasPerSec",
-                                                "" + MAX_CONTRACT_GAS,
-                                                "contracts.throttle.throttleByGas",
-                                                "false")))
-                .when()
-                .then();
-    }
-
-    private HapiApiSpec cleanupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Cleanup")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .contents(ignore -> legacyProps.get()))
-                .when()
-                .then();
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
@@ -116,10 +81,6 @@ public class SStoreSuite extends HapiApiSuite {
         final var GAS_TO_OFFER = 6_000_000L;
         return HapiApiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + GAS_TO_OFFER)),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
@@ -168,10 +129,6 @@ public class SStoreSuite extends HapiApiSuite {
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + MAX_CONTRACT_GAS)),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(

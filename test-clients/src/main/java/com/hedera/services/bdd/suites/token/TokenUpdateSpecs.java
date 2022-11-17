@@ -89,7 +89,7 @@ public class TokenUpdateSpecs extends HapiApiSuite {
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     public static void main(String... args) {
-        new TokenUpdateSpecs().runSuiteAsync();
+        new TokenUpdateSpecs().runSuiteConcurrent();
     }
 
     @Override

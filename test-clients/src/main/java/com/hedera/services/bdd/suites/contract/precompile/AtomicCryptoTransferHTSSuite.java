@@ -102,7 +102,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
 
     public static void main(String... args) {
-        new AtomicCryptoTransferHTSSuite().runSuiteAsync();
+        new AtomicCryptoTransferHTSSuite().runSuiteConcurrent();
     }
 
     @Override

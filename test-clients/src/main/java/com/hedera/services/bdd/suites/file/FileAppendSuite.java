@@ -35,7 +35,7 @@ public class FileAppendSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(FileAppendSuite.class);
 
     public static void main(String... args) {
-        new FileAppendSuite().runSuiteAsync();
+        new FileAppendSuite().runSuiteConcurrent();
     }
 
     @Override

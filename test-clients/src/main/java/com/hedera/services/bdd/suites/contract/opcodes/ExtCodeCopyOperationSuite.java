@@ -40,7 +40,7 @@ public class ExtCodeCopyOperationSuite extends HapiApiSuite {
     private static final Logger LOG = LogManager.getLogger(ExtCodeCopyOperationSuite.class);
 
     public static void main(String[] args) {
-        new ExtCodeCopyOperationSuite().runSuiteAsync();
+        new ExtCodeCopyOperationSuite().runSuiteConcurrent();
     }
 
     @Override

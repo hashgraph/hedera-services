@@ -169,7 +169,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                     allUnusedGasIsRefundedIfSoConfigured(),
                     maxRefundIsEnforced(),
                     gasLimitOverMaxGasLimitFailsPrecheck(),
-                    autoCreationIsDynamic(),
                     kvLimitsEnforced(),
                     serviceFeeRefundedIfConsGasExhausted(),
                     chainIdChangesDynamically(),
@@ -229,20 +228,6 @@ public class FileUpdateSuite extends HapiApiSuite {
                                                 .kyc(KycNotApplicable)
                                                 .freeze(FreezeNotApplicable))
                                 .logged());
-    }
-
-    public HapiApiSpec autoCreationIsDynamic() {
-        final var aliasKey = "autoCreationKey";
-
-        return defaultHapiSpec("AutoCreationIsDynamic")
-                .given(newKeyNamed(aliasKey), overriding("autoCreation.enabled", "false"))
-                .when(
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR))
-                                .hasKnownStatus(NOT_SUPPORTED))
-                .then(
-                        overriding("autoCreation.enabled", "true"),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR)),
-                        getAliasedAccountInfo(aliasKey));
     }
 
     public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {

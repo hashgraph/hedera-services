@@ -166,7 +166,7 @@ public abstract class HapiApiSuite {
         }
     }
 
-    public FinalOutcome runSuiteAsync() {
+    public FinalOutcome runSuiteConcurrent() {
         return runSuite(this::runAsync);
     }
 

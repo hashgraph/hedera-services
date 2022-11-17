@@ -41,7 +41,7 @@ public class LogsSuite extends HapiApiSuite {
     private static final String CONTRACT = "Logs";
 
     public static void main(String... args) {
-        new LogsSuite().runSuiteAsync();
+        new LogsSuite().runSuiteConcurrent();
     }
 
     @Override

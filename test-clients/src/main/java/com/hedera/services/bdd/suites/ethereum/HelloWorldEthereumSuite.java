@@ -256,7 +256,6 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     HapiApiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -339,8 +338,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                         spec.registry()
                                                                                                 .getBytes(
                                                                                                         ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)));
     }
 
     HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {

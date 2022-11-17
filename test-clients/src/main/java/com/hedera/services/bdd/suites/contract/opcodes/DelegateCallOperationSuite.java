@@ -36,7 +36,7 @@ public class DelegateCallOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DelegateCallOperationSuite.class);
 
     public static void main(String[] args) {
-        new DelegateCallOperationSuite().runSuiteAsync();
+        new DelegateCallOperationSuite().runSuiteConcurrent();
     }
 
     @Override

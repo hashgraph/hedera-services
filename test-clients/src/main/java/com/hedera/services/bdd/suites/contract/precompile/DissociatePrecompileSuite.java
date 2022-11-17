@@ -79,7 +79,7 @@ public class DissociatePrecompileSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "Multi key";
 
     public static void main(String... args) {
-        new DissociatePrecompileSuite().runSuiteAsync();
+        new DissociatePrecompileSuite().runSuiteConcurrent();
     }
 
     @Override

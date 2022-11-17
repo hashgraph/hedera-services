@@ -54,7 +54,7 @@ public class TransferWithCustomFees extends HapiApiSuite {
     private final String tokenOwner = "tokenOwner";
 
     public static void main(String... args) {
-        new TransferWithCustomFees().runSuiteAsync();
+        new TransferWithCustomFees().runSuiteConcurrent();
     }
 
     @Override

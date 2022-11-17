@@ -285,7 +285,6 @@ public class ContractCreateSuite extends HapiApiSuite {
 
         return defaultHapiSpec("CanCallPendingContractSafely")
                 .given(
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
                         UtilVerbs.overriding("ledger.autoRenewPeriod.minDuration", "10"),
                         uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
                         inParallel(
@@ -318,7 +317,6 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(300_000L)
                                                 .via(callTxn)),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"),
                         UtilVerbs.resetToDefault("ledger.autoRenewPeriod.minDuration"));
     }
 

@@ -160,9 +160,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private static final String GET_OWNER_OF = "getOwnerOf";
     private static final String OPERATOR_DOES_NOT_EXISTS = "OPERATOR_DOES_NOT_EXISTS";
     private static final String SET_APPROVAL_FOR_ALL = "setApprovalForAll";
-    private static final String CONTRACTS_REDIRECT_TOKEN_CALLS = "contracts.redirectTokenCalls";
-    private static final String CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS =
-            "contracts.precompile.exportRecordResults";
     private static final String REVOKE_SPECIFIC_APPROVAL = "revokeSpecificApproval";
     private static final String MSG_SENDER_IS_NOT_THE_SAME_AS_FROM =
             "MSG_SENDER_IS_NOT_THE_SAME_AS_FROM";
@@ -179,7 +176,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -925,7 +922,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("ERC_20_TRANSFER_ALIASED_SENDER")
                 .given(
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER),
                         cryptoCreate(ACCOUNT),
@@ -1020,8 +1016,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                 .balance(500))
                                                 .logged()),
                         getAccountBalance(ACCOUNT_B).hasTokenBalance(TOKEN_NAME, 1000),
-                        getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
+                        getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 
     private HapiApiSpec transferErc20TokenFrom() {
@@ -4590,8 +4585,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     private HapiApiSpec erc721TokenApprove() {
         return defaultHapiSpec("ERC_721_APPROVE")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_REDIRECT_TOKEN_CALLS, "true"),
-                        UtilVerbs.overriding(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECIPIENT).balance(100 * ONE_HUNDRED_HBARS),
@@ -4635,10 +4628,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(SUCCESS)
                                                         .gas(GAS_TO_OFFER))))
                 .then(
-                        getTxnRecord(NAME_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
-                                CONTRACTS_REDIRECT_TOKEN_CALLS,
-                                CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
+                        getTxnRecord(NAME_TXN).andAllChildRecords().logged());
     }
 
     private HapiApiSpec erc721GetApproved() {
@@ -4646,8 +4636,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("ERC_721_GET_APPROVED")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_REDIRECT_TOKEN_CALLS, "true"),
-                        UtilVerbs.overriding(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -4716,10 +4704,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
                                                                                                                                 SPENDER)))))))),
-                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
-                                CONTRACTS_REDIRECT_TOKEN_CALLS,
-                                CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
+                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
     }
 
     private HapiApiSpec erc721SetApprovalForAll() {
@@ -4727,8 +4712,6 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
         return defaultHapiSpec("ERC_721_SET_APPROVAL_FOR_ALL")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_REDIRECT_TOKEN_CALLS, "true"),
-                        UtilVerbs.overriding(CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -4776,10 +4759,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS))))
                 .then(
-                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged(),
-                        UtilVerbs.resetToDefault(
-                                CONTRACTS_REDIRECT_TOKEN_CALLS,
-                                CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS));
+                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
     }
 
     private HapiApiSpec getErc721ClearsApprovalAfterTransfer() {

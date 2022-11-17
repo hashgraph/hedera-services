@@ -621,7 +621,7 @@ public class SuiteRunner {
     private static void createPayerAccount(String nodes, String defaultNode) {
         try {
             Thread.sleep(RANDOM.nextInt(5000));
-            new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteAsync();
+            new CryptoCreateForSuiteRunner(nodes, defaultNode).runSuiteConcurrent();
             Thread.sleep(2000);
             if (!isIdLiteral(payerId)) {
                 payerId = DEFAULT_PAYER_ID;
@@ -746,7 +746,7 @@ public class SuiteRunner {
     }
 
     private static CategoryResult runSuitesAsync(String category, HapiApiSuite[] suites) {
-        List<FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteAsync);
+        List<FinalOutcome> outcomes = accumulateAsync(suites, HapiApiSuite::runSuiteConcurrent);
         List<HapiApiSuite> failed =
                 IntStream.range(0, suites.length)
                         .filter(i -> outcomes.get(i) != FinalOutcome.SUITE_PASSED)

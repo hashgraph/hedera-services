@@ -35,7 +35,6 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +47,7 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
 
     public static void main(String... args) {
-        new ContractMusicalChairsSuite().runSuiteAsync();
+        new ContractMusicalChairsSuite().runSuiteConcurrent();
     }
 
     @Override
@@ -71,7 +70,6 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
         List<HapiSpecOperation> then = new ArrayList<>();
 
         ////// Create contract //////
-        given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
         given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
         given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
         given.add(uploadInitCode(contract));
@@ -134,8 +132,6 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                                                                                                     .getAccountID(
                                                                                                                             "Player13")))
                                                                                 }))))));
-        then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
-
         return defaultHapiSpec("playGame")
                 .given(given.toArray(HapiSpecOperation[]::new))
                 .when(when.toArray(HapiSpecOperation[]::new))

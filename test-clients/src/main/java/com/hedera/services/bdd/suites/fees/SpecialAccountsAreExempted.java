@@ -40,7 +40,7 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(SpecialAccountsAreExempted.class);
 
     public static void main(String... args) {
-        new SpecialAccountsAreExempted().runSuiteAsync();
+        new SpecialAccountsAreExempted().runSuiteConcurrent();
     }
 
     @Override

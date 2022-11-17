@@ -65,7 +65,7 @@ public class ContractPerformanceSuite extends HapiApiSuite {
             "726576657274207465737420636f6e7472616374";
 
     public static void main(String... args) {
-        new ContractPerformanceSuite().runSuiteAsync();
+        new ContractPerformanceSuite().runSuiteConcurrent();
     }
 
     static HapiFileCreate createProgramFile(String name, String program) {

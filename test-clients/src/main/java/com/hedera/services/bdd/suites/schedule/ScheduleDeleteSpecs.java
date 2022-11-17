@@ -41,7 +41,7 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleDeleteSpecs.class);
 
     public static void main(String... args) {
-        new ScheduleDeleteSpecs().runSuiteAsync();
+        new ScheduleDeleteSpecs().runSuiteConcurrent();
     }
 
     @Override

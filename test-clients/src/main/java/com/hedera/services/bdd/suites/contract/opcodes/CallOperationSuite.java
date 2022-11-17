@@ -40,7 +40,7 @@ public class CallOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CallOperationSuite.class);
 
     public static void main(String... args) {
-        new CallOperationSuite().runSuiteAsync();
+        new CallOperationSuite().runSuiteConcurrent();
     }
 
     @Override

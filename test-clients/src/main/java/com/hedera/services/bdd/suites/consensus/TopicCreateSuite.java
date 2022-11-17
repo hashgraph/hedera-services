@@ -39,7 +39,7 @@ public class TopicCreateSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TopicCreateSuite.class);
 
     public static void main(String... args) {
-        new TopicCreateSuite().runSuiteAsync();
+        new TopicCreateSuite().runSuiteConcurrent();
     }
 
     @Override

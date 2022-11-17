@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -65,7 +66,6 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private static final String defaultAssociationsLimit =
             HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
     public static final String ACCOUNT = "account";
-    public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
     public static final String TRUE = "true";

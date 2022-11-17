@@ -36,7 +36,7 @@ public class CallCodeOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CallCodeOperationSuite.class);
 
     public static void main(String[] args) {
-        new CallCodeOperationSuite().runSuiteAsync();
+        new CallCodeOperationSuite().runSuiteConcurrent();
     }
 
     @Override

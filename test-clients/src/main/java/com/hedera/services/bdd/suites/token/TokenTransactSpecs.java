@@ -133,7 +133,7 @@ public class TokenTransactSpecs extends HapiApiSuite {
     public static final String TRANSFER_TXN = "transferTxn";
 
     public static void main(String... args) {
-        new TokenTransactSpecs().runSuiteAsync();
+        new TokenTransactSpecs().runSuiteConcurrent();
     }
 
     @Override

@@ -40,7 +40,7 @@ public class OverlappingKeysSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(OverlappingKeysSuite.class);
 
     public static void main(String... args) {
-        new OverlappingKeysSuite().runSuiteAsync();
+        new OverlappingKeysSuite().runSuiteConcurrent();
     }
 
     @Override

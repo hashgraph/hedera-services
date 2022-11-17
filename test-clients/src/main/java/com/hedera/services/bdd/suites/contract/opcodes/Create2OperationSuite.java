@@ -55,7 +55,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -101,7 +100,6 @@ import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -109,12 +107,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
+
+/**
+ * - CONCURRENCY STATUS -
+ *   . Can run concurrent if contracts.allowCreate2 feature-flag is removed
+ */
 public class Create2OperationSuite extends HapiApiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
-    private static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
-            "contracts.throttle.throttleByGas";
     private static final String FALSE = "false";
     private static final String GET_BYTECODE = "getBytecode";
     private static final String DEPLOY = "deploy";
@@ -224,7 +225,6 @@ public class Create2OperationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("InlineCreate2CanFailSafely")
                 .given(
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -300,7 +300,6 @@ public class Create2OperationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("InlineCreateCanFailSafely")
                 .given(
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -416,17 +415,8 @@ public class Create2OperationSuite extends HapiApiSuite {
 
         return defaultHapiSpec("Create2FactoryWorksAsExpected")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10",
-                                        "staking.isEnabled", "true",
-                                        "staking.maxDailyStakeRewardThPerH", "100",
-                                        "staking.rewardRate", "100_000_000_000",
-                                        "staking.startThreshold", "100_000_000")),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract)

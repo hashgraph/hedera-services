@@ -118,7 +118,7 @@ public class ContractKeysHTSSuite extends HapiApiSuite {
     private static final String BURN_TOKEN_METHOD = "burnToken";
 
     public static void main(String... args) {
-        new ContractKeysHTSSuite().runSuiteAsync();
+        new ContractKeysHTSSuite().runSuiteConcurrent();
     }
 
     @Override

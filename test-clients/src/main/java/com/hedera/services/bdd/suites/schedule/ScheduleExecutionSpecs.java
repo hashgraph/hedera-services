@@ -160,7 +160,7 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     String failingTxn = "failingTxn", successTxn = "successTxn", signTxn = "signTxn";
 
     public static void main(String... args) {
-        new ScheduleExecutionSpecs().runSuiteAsync();
+        new ScheduleExecutionSpecs().runSuiteConcurrent();
     }
 
     @Override

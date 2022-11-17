@@ -72,7 +72,7 @@ public class ContractUpdateSuite extends HapiApiSuite {
     private static final String CONTRACT = "Multipurpose";
 
     public static void main(String... args) {
-        new ContractUpdateSuite().runSuiteAsync();
+        new ContractUpdateSuite().runSuiteConcurrent();
     }
 
     @Override

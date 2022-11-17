@@ -64,7 +64,7 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
 
     public static void main(String... args) {
-        new ScheduleRecordSpecs().runSuiteAsync();
+        new ScheduleRecordSpecs().runSuiteConcurrent();
     }
 
     @Override

@@ -76,7 +76,7 @@ public class TokenManagementSpecs extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(TokenManagementSpecs.class);
 
     public static void main(String... args) {
-        new TokenManagementSpecs().runSuiteAsync();
+        new TokenManagementSpecs().runSuiteConcurrent();
     }
 
     @Override

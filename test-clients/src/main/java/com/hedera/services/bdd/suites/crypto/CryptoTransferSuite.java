@@ -161,7 +161,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
 
     public static void main(String... args) {
-        new CryptoTransferSuite().runSuiteAsync();
+        new CryptoTransferSuite().runSuiteConcurrent();
     }
 
     @Override
