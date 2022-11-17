@@ -36,7 +36,7 @@ import org.apache.commons.io.FileUtils;
 
 public class InfrastructureManager {
     private static final String BASE_STORAGE_DIR = "databases";
-    public static final Cryptography CRYPTO = new CryptoEngine(getStaticThreadManager());
+    public static final Cryptography CRYPTO = new CryptoEngine(getStaticThreadManager(), null);
 
     private InfrastructureManager() {
         throw new UnsupportedOperationException();

@@ -21,11 +21,12 @@ import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.state.notifications.IssListener;
@@ -70,9 +71,9 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    @Override
-    public void platformStatusChange(final PlatformStatus status) {
+    public void platformStatusChange(final PlatformStatusChangeNotification statusNotification) {
         final var nodeId = app.nodeId();
+        final var status = statusNotification.getNewStatus();
         log.info("Now current platform status = {} in HederaNode#{}.", status, nodeId);
         app.platformStatus().set(status);
         if (status == ACTIVE) {
@@ -91,11 +92,6 @@ public class ServicesMain implements SwirldMain {
 
     @Override
     public void run() {
-        /* No-op. */
-    }
-
-    @Override
-    public void preEvent() {
         /* No-op. */
     }
 
@@ -141,6 +137,8 @@ public class ServicesMain implements SwirldMain {
     private void configurePlatform() {
         final var platform = app.platform();
         app.statsManager().initializeFor(platform);
+        platform.getNotificationEngine()
+                .register(PlatformStatusChangeListener.class, this::platformStatusChange);
     }
 
     private void validateLedgerState() {

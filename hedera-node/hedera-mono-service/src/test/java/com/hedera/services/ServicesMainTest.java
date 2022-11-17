@@ -39,6 +39,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -151,7 +152,6 @@ class ServicesMainTest {
     void noopsAsExpected() {
         // expect:
         Assertions.assertDoesNotThrow(subject::run);
-        Assertions.assertDoesNotThrow(subject::preEvent);
     }
 
     @Test
@@ -169,7 +169,7 @@ class ServicesMainTest {
         subject.init(platform, nodeId);
 
         // when:
-        subject.platformStatusChange(STARTING_UP);
+        subject.platformStatusChange(new PlatformStatusChangeNotification(STARTING_UP));
 
         // then:
         verify(currentPlatformStatus).set(STARTING_UP);
@@ -185,7 +185,7 @@ class ServicesMainTest {
         subject.init(platform, nodeId);
 
         // when:
-        subject.platformStatusChange(ACTIVE);
+        subject.platformStatusChange(new PlatformStatusChangeNotification(ACTIVE));
 
         // then:
         verify(currentPlatformStatus).set(ACTIVE);
@@ -202,7 +202,7 @@ class ServicesMainTest {
         subject.init(platform, nodeId);
 
         // when:
-        subject.platformStatusChange(FREEZE_COMPLETE);
+        subject.platformStatusChange(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
 
         // then:
         verify(currentPlatformStatus).set(FREEZE_COMPLETE);
