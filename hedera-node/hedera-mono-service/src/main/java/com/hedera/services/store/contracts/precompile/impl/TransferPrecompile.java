@@ -244,7 +244,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var change = changes.get(i);
             final var units = change.getAggregatedUnits();
             if (change.hasAlias()) {
-                replaceAliasWithId(change, changes, frame, completedLazyCreates);
+                replaceAliasWithId(change, changes, completedLazyCreates);
             }
             if (change.isForNft() || units < 0) {
                 if (change.isApprovedAllowance()) {
@@ -302,7 +302,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private void replaceAliasWithId(
             final BalanceChange change,
             final List<BalanceChange> changes,
-            final MessageFrame frame,
             final Map<ByteString, EntityNum> completedLazyCreates) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         validateTrueOrRevert(
@@ -317,10 +316,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var lazyCreateResult =
                     autoCreationLogic.create(change, ledgers.accounts(), changes);
             validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
-            // charge lazy creation fees in gas
-            final var creationFeeInTinybars = lazyCreateResult.getRight();
-            final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
-            frame.decrementRemainingGas(creationFeeInGas);
             completedLazyCreates.put(
                     receiverAlias,
                     EntityNum.fromAccountId(

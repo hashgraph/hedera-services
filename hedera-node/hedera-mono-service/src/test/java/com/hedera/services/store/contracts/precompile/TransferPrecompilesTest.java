@@ -1156,8 +1156,6 @@ class TransferPrecompilesTest {
                                     .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
                             return Pair.of(OK, lazyCreationFee);
                         });
-        final var gasPrice = 50L;
-        given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
 
         // when:
         subject.prepareFields(frame);
@@ -1183,7 +1181,6 @@ class TransferPrecompilesTest {
                         accounts,
                         balanceChangesForLazyCreateHappyPath);
         verify(autoCreationLogic).submitRecords(recordSubmissions, false);
-        verify(frame).decrementRemainingGas(lazyCreationFee / gasPrice);
         verify(transferLogic).doZeroSum(balanceChangesForLazyCreateHappyPath);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1269,8 +1266,6 @@ class TransferPrecompilesTest {
                                     .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
                             return Pair.of(OK, lazyCreationFee);
                         });
-        final var gasPrice = 50L;
-        given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
 
         // when:
         subject.prepareFields(frame);
@@ -1292,7 +1287,6 @@ class TransferPrecompilesTest {
         verify(autoCreationLogic, never())
                 .create(hbarOnlyChangesAliased.get(1), accounts, hbarOnlyChangesAliased);
         verify(autoCreationLogic).submitRecords(recordSubmissions, false);
-        verify(frame).decrementRemainingGas(lazyCreationFee / gasPrice);
         verify(transferLogic).doZeroSum(hbarOnlyChangesAliased);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1392,8 +1386,6 @@ class TransferPrecompilesTest {
                                     .replaceNonEmptyAliasWith(EntityNum.fromAccountId(receiver));
                             return Pair.of(OK, lazyCreationFee);
                         });
-        final var gasPrice = 50L;
-        given(frame.getGasPrice()).willReturn(Wei.of(gasPrice));
 
         // when:
         subject.prepareFields(frame);
@@ -1410,7 +1402,6 @@ class TransferPrecompilesTest {
         assertEquals(expected + (expected / 5), gasRequirement);
         verify(autoCreationLogic, times(2)).create(any(), any(), any());
         verify(autoCreationLogic).submitRecords(any(), eq(false));
-        verify(frame, times(2)).decrementRemainingGas(lazyCreationFee / gasPrice);
         verify(transferLogic).doZeroSum(tokensTransferChangesAliased2x);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
