@@ -395,14 +395,6 @@ class WorldLedgersTest {
     }
 
     @Test
-    void nonStaticTokenInfoWorksOnThrownException() {
-        given(tokensLedger.getImmutableRef(fungibleToken)).willThrow(NullPointerException.class);
-
-        final var tokenInfo = subject.infoForToken(fungibleToken, ledgerId);
-        assertEquals(Optional.empty(), tokenInfo);
-    }
-
-    @Test
     void staticNftTokenInfoWorks() {
         subject = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         final var nftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(1L).build();

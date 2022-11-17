@@ -65,8 +65,8 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNum;
 import com.hedera.services.txns.customfees.LedgerCustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -151,19 +151,11 @@ public class WorldLedgers {
         if (staticEntityAccess != null) {
             return staticEntityAccess.infoForToken(tokenId);
         } else {
-            try {
-                final var token = tokensLedger.getImmutableRef(tokenId);
-                if (token == null) {
-                    return Optional.empty();
-                }
-                return token.asTokenInfo(tokenId, ledgerId);
-            } catch (Exception unexpected) {
-                log.warn(
-                        "Unexpected failure getting info for token {}!",
-                        readableId(tokenId),
-                        unexpected);
+            final var token = tokensLedger.getImmutableRef(tokenId);
+            if (token == null) {
                 return Optional.empty();
             }
+            return Optional.of(token.asTokenInfo(tokenId, ledgerId));
         }
     }
 

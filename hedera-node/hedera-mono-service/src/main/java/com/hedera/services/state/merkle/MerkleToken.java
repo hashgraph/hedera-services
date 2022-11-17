@@ -718,7 +718,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return grpcList;
     }
 
-    public Optional<TokenInfo> asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
+    public TokenInfo asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
         final var info =
                 TokenInfo.newBuilder()
                         .setLedgerId(ledgerId)
@@ -776,7 +776,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
         info.addAllCustomFees(grpcFeeSchedule());
 
-        return Optional.of(info.build());
+        return info.build();
     }
 
     @VisibleForTesting

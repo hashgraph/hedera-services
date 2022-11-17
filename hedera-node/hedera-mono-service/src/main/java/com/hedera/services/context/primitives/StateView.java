@@ -185,7 +185,7 @@ public class StateView {
             if (token == null) {
                 return Optional.empty();
             }
-            return token.asTokenInfo(tokenId, networkInfo.ledgerId());
+            return Optional.of(token.asTokenInfo(tokenId, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting info for token {}!",
