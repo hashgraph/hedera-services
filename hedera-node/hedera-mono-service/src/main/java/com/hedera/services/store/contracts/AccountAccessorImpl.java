@@ -30,4 +30,9 @@ public class AccountAccessorImpl implements AccountAccessor {
     public Address canonicalAddress(final Address addressOrAlias) {
         return trackingLedgers.canonicalAddress(addressOrAlias);
     }
+
+    @Override
+    public boolean isTokenAddress(Address address) {
+        return trackingLedgers.isTokenAddress(address);
+    }
 }

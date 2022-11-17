@@ -18,4 +18,6 @@ module com.hedera.services.hapi.utils {
     requires org.hyperledger.besu.secp256k1;
     requires com.google.common;
     requires com.hedera.hashgraph.protobuf.java.api;
+    requires headlong;
+    requires org.apache.commons.codec;
 }

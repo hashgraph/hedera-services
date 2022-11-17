@@ -34,6 +34,7 @@ import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.utils.EntityIdUtils;
@@ -208,6 +209,10 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final boolean isDelegateCall,
             final Address activeContract,
             final ContractAliases aliases) {
+        if (key instanceof JKeyList keyList && keyList.isEmpty()) {
+            // An empty key list is a sentinel for immutability
+            return false;
+        }
         final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
         return activationTest.test(
                 key, pkToCryptoSigsFn, validityTestFor(isDelegateCall, activeContract, aliases));
