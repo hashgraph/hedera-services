@@ -62,6 +62,23 @@ public interface TransactionMetadata {
     List<HederaKey> getReqKeys();
 
     /**
+     * Sets status on the metadata
+     *
+     * @param status given status
+     */
+    void setStatus(final ResponseCodeEnum status);
+
+    /**
+     * Adds a given HederaKey to the list of required keys for signature verification. Throws
+     * NullPointerException if the key is null.
+     *
+     * @param key given key to add for required keys
+     */
+    default void addToReqKeys(final HederaKey key) {
+        getReqKeys().add(key);
+    }
+
+    /**
      * An implementation of {@link TransactionMetadata} for cases when an unknown error has
      * occurred.
      */
@@ -99,6 +116,18 @@ public interface TransactionMetadata {
         @Override
         public List<HederaKey> getReqKeys() {
             return List.of();
+        }
+
+        @Override
+        public void setStatus(ResponseCodeEnum status) {
+            throw new UnsupportedOperationException(
+                    "This operation is not supported after an error occurred");
+        }
+
+        @Override
+        public void addToReqKeys(HederaKey key) {
+            throw new UnsupportedOperationException(
+                    "This operation is not supported after an error occurred");
         }
     }
 }

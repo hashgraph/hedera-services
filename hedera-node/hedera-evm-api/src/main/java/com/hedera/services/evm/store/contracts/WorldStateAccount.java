@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts;
+package com.hedera.services.evm.store.contracts;
 
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-
-import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -36,21 +32,18 @@ public class WorldStateAccount implements Account {
 
     private final Wei balance;
     private final Address address;
-    private final AccountID account;
-    private final CodeCache codeCache;
-    private final EntityAccess entityAccess;
+    private final AbstractCodeCache codeCache;
+    private final HederaEvmEntityAccess entityAccess;
 
     public WorldStateAccount(
             final Address address,
             final Wei balance,
-            final CodeCache codeCache,
-            final EntityAccess entityAccess) {
+            final AbstractCodeCache codeCache,
+            final HederaEvmEntityAccess entityAccess) {
         this.balance = balance;
         this.address = address;
         this.codeCache = codeCache;
         this.entityAccess = entityAccess;
-
-        this.account = accountIdFromEvmAddress(address);
     }
 
     @Override
@@ -90,7 +83,7 @@ public class WorldStateAccount implements Account {
 
     @Override
     public UInt256 getStorageValue(final UInt256 key) {
-        return UInt256.fromBytes(entityAccess.getStorage(asTypedEvmAddress(account), key));
+        return UInt256.fromBytes(entityAccess.getStorage(address, key));
     }
 
     @Override

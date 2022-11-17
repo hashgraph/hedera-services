@@ -89,6 +89,7 @@ jobs:
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     outputs:
       version: ${{ steps.tag.outputs.version }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
     steps:
       - name: Install Semantic Version Tools
         run: |
@@ -109,9 +110,12 @@ jobs:
           PRERELEASE_VERSION="$(semver get prerel "${{ github.ref_name }}")"
 
           FINAL_VERSION="${RELEASE_VERSION}"
+          PRERELEASE_FLAG="false"
           [[ -n "${PRERELEASE_VERSION}" ]] && FINAL_VERSION="${RELEASE_VERSION}-${PRERELEASE_VERSION}"
+          [[ -n "${PRERELEASE_VERSION}" ]] && PRERELEASE_FLAG="true"
 
-          echo "::set-output name=version::${FINAL_VERSION}"
+          echo "version=${FINAL_VERSION}" >>"${GITHUB_OUTPUT}"
+          echo "prerelease=${PRERELEASE_FLAG}" >>"${GITHUB_OUTPUT}"
 
   release-tag:
     name: Release / Tag
@@ -146,6 +150,9 @@ jobs:
     runs-on: [self-hosted, Linux, services, standard, ephemeral]
     needs:
       - prepare-tag-release
+      - release-adhoc
+      - release-tag
+      - release-branch
     outputs:
       payload: ${{ steps.dispatch.outputs.payload }}
     if: ${{ always() }}
@@ -190,7 +197,6 @@ jobs:
             VERSION_NUM="${{ needs.prepare-tag-release.outputs.version }}"
           fi
 
-
           REQ_JSON="$(jq --compact-output --null-input \
                       --arg ref "${{ github.ref }}" \
                       --arg jdist "${{ github.event.inputs.java-distribution || 'temurin' }}" \
@@ -200,7 +206,8 @@ jobs:
                       --arg vnum "${VERSION_NUM}" \
                       '{"ref": $ref, "java": {"distribution": $jdist, "version": $jver}, "gradle": {"version": $gver}, "release": {"version": {"policy": $vpol, "number": $vnum}}}')"
 
-          echo "::set-output name=payload::${REQ_JSON}"
+          echo "payload=${REQ_JSON}" >>"${GITHUB_OUTPUT}"
+          printf "## Dispatch Payload\n\`\`\`json\n%s\n\`\`\`\n" "$(jq '.' <<<"${REQ_JSON}")" >>"${GITHUB_STEP_SUMMARY}"
 
   dispatch-mc-release:
     name: Release / MC / Dispatch
@@ -210,7 +217,7 @@ jobs:
       - release-adhoc
       - release-tag
       - release-branch
-    if: ${{ always() }}
+    if: ${{ (needs.release-tag.result == 'success' || needs.release-branch.result == 'success' || needs.release-adhoc.result == 'success') && needs.prepare-mc-release.result == 'success' && always() }}
     steps:
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2

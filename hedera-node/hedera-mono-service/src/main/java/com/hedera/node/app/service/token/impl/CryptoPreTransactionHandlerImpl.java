@@ -52,6 +52,19 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
+    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+        final var op = txn.getCryptoDelete();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var deleteAccountId = op.getDeleteAccountID();
+        final var transferAccountId = op.getTransferAccountID();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        addIfNotPayer(deleteAccountId, payer, meta);
+        addIfNotPayerAndReceiverSigRequired(transferAccountId, payer, meta);
+        return meta;
+    }
+
+    @Override
+    /** {@inheritDoc} */
     public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
         throw new NotImplementedException();
     }
@@ -59,12 +72,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
-        throw new NotImplementedException();
-    }
-
-    @Override
-    /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
         throw new NotImplementedException();
     }
 
@@ -92,6 +99,16 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         throw new NotImplementedException();
     }
 
+    /**
+     * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
+     * for signing the transaction
+     *
+     * @param tx given transaction body
+     * @param key key provided in the transaction body
+     * @param receiverSigReq flag for receiverSigReq on the given transaction body
+     * @param payer payer for the transaction
+     * @return transaction's metadata needed to validate signatures
+     */
     private TransactionMetadata createAccountSigningMetadata(
             final TransactionBody tx,
             final Optional<HederaKey> key,
@@ -101,5 +118,34 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             return new SigTransactionMetadata(accountStore, tx, payer, List.of(key.get()));
         }
         return new SigTransactionMetadata(accountStore, tx, payer);
+    }
+
+    /**
+     * Fetches given accountId's key and add it to the metadata only if the accountId is not same as
+     * payer. If the accountId could not be fetched successfully, sets the failure status on the
+     * metadata.
+     *
+     * @param accountId given accountId
+     * @param payer payer accountId
+     * @param meta metadata to which accountId's key will be added, if success
+     */
+    private void addIfNotPayer(
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
+        accountStore.getNonPayerKey(accountId, payer).incorporateTo(meta);
+    }
+
+    /**
+     * Fetches given accountId's key and add it to the metadata requiredKeys list only if the
+     * accountId is not same as payer and the account has receiverSigRequired flag set to true. If
+     * the accountId have receiverSigRequired flag set false, the key will not be added metadata. If
+     * the accountId could not be fetched successfully, sets the failure status on the metadata.
+     *
+     * @param accountId given accountId
+     * @param payer payer accountId
+     * @param meta metadata to which accountId's key will be added to the requiredKeys, if success
+     */
+    private void addIfNotPayerAndReceiverSigRequired(
+            final AccountID accountId, final AccountID payer, final SigTransactionMetadata meta) {
+        accountStore.getNonPayerKeyIfReceiverSigRequired(accountId, payer).incorporateTo(meta);
     }
 }
