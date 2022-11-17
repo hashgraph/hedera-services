@@ -26,4 +26,9 @@ public class MockAccountAccessor implements AccountAccessor {
     public Address canonicalAddress(Address addressOrAlias) {
         return address;
     }
+
+    @Override
+    public boolean isTokenAddress(Address address) {
+        return false;
+    }
 }

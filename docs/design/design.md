@@ -52,7 +52,7 @@ transaction records, and for all error conditions, without needing any of the ac
 
 ## High Level Architecture
 
-![High Level Architecture](images/hedera-high-level-architecture.svg)
+![High Level Architecture](images/hedera-high-level-architecture.png)
 
 Our system comprises "Consensus Nodes" and "Mirror Nodes". A consensus node is responsible for gossiping with all other
 consensus nodes to "come to consensus" on which transactions should be executed, and the order in which they should
@@ -219,19 +219,38 @@ order. Each node gossips events asynchronously and in parallel, with the hashgra
 order. Once a `Round` of `Event`s is produced, nodes can begin processing those `Event`s and their transactions in
 order.
 
-#### HandleContext
+Each `Service` implementation provides three "handlers": a `QueryHandler`, a `PreTransactionHandler`, and a
+`TransactionHandler`. Each of these handlers define a concrete set of methods for handling different types of queries,
+for handling different types of transactions. For example, `ConsensusPreTransactionHandler` (for the Hedera Consensus
+Service) might have a method `TransactionMetadata preHandleCreateTopic(TransactionBody txn)` which is called to
+pre-handle a "create topic" transaction. Likewise, the `ConsensusTransactionHandler` may have a method called
+`handleCreateTopic` for handling the "create topic" transaction after it has come to consensus.
 
-When one of the handle transaction methods are called (such as `updateAccount` on `CryptoTransactionHandler`), some
-contextual information and utilities are required. For example, every handle function needs access to a `RecordBuilder`
-and a `FeeAccumulator` and some other state. The `HandleContext` defines this contextual information and these
-utilities. A new `HandleContext` is created for each transaction.
+The application module invokes these handlers with the correct arguments at the correct time and on the correct
+thread, depending on the workflow. A query is initially handled by gRPC logic in the application module, which then
+looks up the appropriate service module based on the URL of the request. It then finds the `QueryHandler` for the
+service, and looks up the appropriate method (based on the gRPC request), and invokes it. The application has error
+handling for many kinds of exceptions, and is responsible for marshalling the response.
+
+**Crucially**, the service module knows **nothing** about gRPC! The service module wants to live at the level of simple
+POJOs and business logic, without any knowledge or concern about how it was invoked or who invoke it. It just does its
+business, throws exceptions if needed, and otherwise lives in blissful ignorance. This philosophy applies to all code
+in the service, including the other handlers, and not only the `QueryHandler`.
+
+The methods in `QueryHandler`s, `PreTransactionHandler`s, and `TransactionHandler`s need some contextual information
+to perform their work. For example, some queries are paid queries, and need a way for the query transaction to be
+submitted to the hashgraph platform for consensus so the query can be paid. All transaction handlers need to be given
+some state to work with (sometimes this state will be the latest immutable state, sometimes the current mutable state),
+a simple API to work with the throttle engine, and a way to accumulate fees to be paid upon success of the transaction.
+They also need some way to create records to be added to the record stream. APIs for these components are defined in the
+SPI module, and implemented by the application, and supplied to the handlers at the time they are invoked.
 
 ##### RecordBuilder
 
 When a service handles a transaction, or a paid query, it must construct a `TransactionRecord` to be collected and sent
 to mirror nodes. We handle this by passing a `RecordBuilder` to the handle methods for transactions and paid queries.
 They can then store the necessary state that gets turned into a `TransactionReceipt` and `TransactionRecord`. You may
-be surprised to find that `RecordBuilder` itself is marker interface with no methods on it!! This is intentional.
+be surprised to find that `RecordBuilder` itself is marker interface with no methods on it! This is intentional.
 Each API in `hedera-app-spi` **only exposes the API needed to interface between the app and service modules**. There
 is no `build` method on `RecordBuilder`, because the implementation of `RecordBuilder` lies with `hedera-app` and
 services never have a need to build and inspect the resulting `TransactionRecord`. So we don't provide a build method
@@ -274,7 +293,7 @@ buffering implementation of the `FeeAccumulator` interface.
 
 Some transactions result in the creation of new entities. All entities get an entity ID from the same pool of
 numbers (we do not have a separate namespace for entity IDs for accounts and files and contracts -- we always use
-the same incrementing long value for all entities). The `EntityIdGenerator`, passed via `HandleContext`, gives the
+the same incrementing long value for all entities). The `EntityIdGenerator`, passed to handlers, gives the
 service the ability to generate new sequential IDs for use with new entities. The value is trivially rolled back
 in case of an error (in fact, we simply don't commit the new `nextEntityId` unless we have success. On failure, we
 just throw it away and start over with the last good value).
@@ -324,16 +343,14 @@ There are a couple key concepts:
 ## The Application Module
 
 The main entrypoint of the application is the `Hedera` class. This class is not set up the way it should be, based on
-today's Platform APIs, but shows a little of what it should look like once we are able to create a Platform object
-directly instead of using the Browser. Unfortunately, Netty is **not** JPMS (java package module system) friendly, so
-I ended up commenting out some things, and instead to try things out, I am adding some API to fake out submitting
-transactions to the platform.
+today's Platform APIs, but shows a little of what it should look like once we are able to create a `Platform` object
+directly instead of using the `Browser`.
 
 The ideal situation is for `Hedera` to have a main method that is used to launch the app (and not `Browser`). In our
 tests, we should be able to create multiple `Hedera` instances with different configuration, so we can fire up a
 network right within our test code, if we wanted to, and provide other kinds of configuration changes as we need.
 
-The `Hedera` class would therefore take a Platform, and have the code needed to configure and setup all the other
+The `Hedera` class would therefore take a `Platform`, and have the code needed to configure and setup all the other
 workflows and components.
 
 The follow subpackages contain implementation details:
@@ -352,21 +369,17 @@ for implementing the `FeeAccumulator`. The code in this package right now is jus
 
 ### gRPC
 
-gRPC is a simple protocol built on top of HTTP/2. Unfortunately, the only industrial HTTP/2 implementation in Java is
-Netty, which does not play well with JPMS. This is a problem that needs to be resolved, or we need to write our own
-HTTP/2 implementation (which I've flirted with more than once. I'd love to eliminate the **massive** number of
-dependencies that Netty brings with it. But I worry that compatibility will be a long tail of pain).
+gRPC is a simple protocol built on top of HTTP/2. The typical way of working with gRPC is to use the `protoc` compiler
+to generate stubs for each method in a gRPC service. The stubs take pre-parsed protobuf objects and return protobuf
+objects and all serialization is handled by the framework. This doesn't work all that well for us.
 
-When using the standard protobuf generator, protobuf "services" get some gRPC stubs generated. But you don't have to
-use them, you can programmatically register your gRPC methods. This is the approach I chose, because with a small
-amount of code I am able to register methods for transactions and queries.
+When we receive a gRPC request for paid queries or for any transaction, we need the raw bytes to send to the hashgraph
+platform for consensus. We would like to get the raw bytes from the gRPC request, not pre-parsed objects. We also have
+our own highly tuned protobuf parsing library that generates nearly no garbage, and we would like to use it for parsing
+rather than the code generated by `protoc`. For these reasons, the built-in gRPC frameworks are of little to use to us.
 
-However, since Netty was being a pain, I commented this code out. Just notice how it would work, if I could get Netty
-to behave.
-
-It is also worth noting that I had a Netty implementation and a Helidon implementation (which uses Netty but has some
-nice API on top). I'm currently using the Helidon API because it is supposed to be better at JPMS. It was working at
-one point, but now it isn't, and I'm not sure why.
+It turns out that gRPC is an extremely simple API built on top of HTTP/2, and we can therefore have our own simple gRPC
+framework built on top of an HTTP/2 server (like Netty) and get everything we want.
 
 ### Record
 

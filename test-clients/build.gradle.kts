@@ -68,6 +68,7 @@ dependencies {
         exclude("javax.annotation", "javax.annotation-api")
     }
     implementation(libs.headlong)
+    implementation(libs.log4j.core)
     implementation(testLibs.json)
     implementation(testLibs.junit.jupiter.api)
     implementation(testLibs.picocli)
@@ -100,7 +101,8 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner"
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+            "Multi-Release" to "true"
         )
     }
 }
@@ -120,7 +122,8 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
 
     manifest {
         attributes(
-            "Main-Class" to "com.hedera.services.yahcli.Yahcli"
+            "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+            "Multi-Release" to "true"
         )
     }
 }

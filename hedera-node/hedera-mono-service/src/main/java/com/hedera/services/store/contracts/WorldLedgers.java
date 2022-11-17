@@ -66,6 +66,7 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.txns.customfees.LedgerCustomFeeSchedules;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;
@@ -493,6 +494,10 @@ public class WorldLedgers {
 
     public TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens() {
         return tokensLedger;
+    }
+
+    public LedgerCustomFeeSchedules customFeeSchedules() {
+        return new LedgerCustomFeeSchedules(tokensLedger);
     }
 
     // --- Internal helpers

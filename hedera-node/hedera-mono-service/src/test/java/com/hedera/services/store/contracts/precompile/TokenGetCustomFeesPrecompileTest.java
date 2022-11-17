@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
@@ -101,7 +100,6 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private UsagePricesProvider resourceCosts;
@@ -123,9 +121,6 @@ class TokenGetCustomFeesPrecompileTest {
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
-
-    // Common token properties
-    private final EntityId treasury = senderId;
 
     @BeforeEach
     void setUp() {
@@ -152,7 +147,6 @@ class TokenGetCustomFeesPrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
