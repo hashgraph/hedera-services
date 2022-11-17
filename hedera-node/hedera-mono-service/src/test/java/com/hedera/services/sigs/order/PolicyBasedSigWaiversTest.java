@@ -170,7 +170,8 @@ class PolicyBasedSigWaiversTest {
         assertThrows(
                 IllegalArgumentException.class, () -> subject.isAppendFileWaclWaived(txn, null));
         assertThrows(
-                IllegalArgumentException.class, () -> subject.isTargetAccountSignatureWaived(txn, null));
+                IllegalArgumentException.class,
+                () -> subject.isTargetAccountSignatureWaived(txn, null));
         assertThrows(
                 IllegalArgumentException.class, () -> subject.isNewKeySignatureWaived(txn, null));
         assertThrows(

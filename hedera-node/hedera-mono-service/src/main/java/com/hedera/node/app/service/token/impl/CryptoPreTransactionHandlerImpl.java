@@ -38,8 +38,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
-    public CryptoPreTransactionHandlerImpl(
-            @NotNull final AccountStore accountStore) {
+
+    public CryptoPreTransactionHandlerImpl(@NotNull final AccountStore accountStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
     }
 
@@ -121,8 +121,10 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var updateAccountId = op.getAccountIDToUpdate();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
 
-        final var newAccountKeyMustSign = !ctx.signatureWaivers().isNewKeySignatureWaived(txn, payer);
-        final var targetAccountKeyMustSign = !ctx.signatureWaivers().isTargetAccountSignatureWaived(txn, payer);
+        final var newAccountKeyMustSign =
+                !ctx.signatureWaivers().isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign =
+                !ctx.signatureWaivers().isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
             meta.addNonPayerKey(updateAccountId);
         }
