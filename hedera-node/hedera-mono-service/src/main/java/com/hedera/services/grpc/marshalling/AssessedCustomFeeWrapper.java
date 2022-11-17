@@ -19,9 +19,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public final class AssessedCustomFeeWrapper {
 
@@ -45,7 +45,7 @@ public final class AssessedCustomFeeWrapper {
         this.effPayerAccounts = effPayerAccounts;
     }
 
-    FcAssessedCustomFee toFcAssessedCustomFee(Map<ByteString, AccountID> aliasesToNewIds) {
+    public FcAssessedCustomFee toFcAssessedCustomFee(Map<ByteString, AccountID> aliasesToNewIds) {
         final var nums = new long[effPayerAccounts.length];
         for (int i = 0; i < effPayerAccounts.length; i++) {
             final var payer = effPayerAccounts[i];
@@ -63,24 +63,12 @@ public final class AssessedCustomFeeWrapper {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        AssessedCustomFeeWrapper that = (AssessedCustomFeeWrapper) o;
-        return units == that.units
-                && Objects.equals(token, that.token)
-                && Objects.equals(account, that.account)
-                && Arrays.equals(effPayerAccounts, that.effPayerAccounts);
+        return EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(token, account, units);
-        result = 31 * result + Arrays.hashCode(effPayerAccounts);
-        return result;
+        return HashCodeBuilder.reflectionHashCode(this);
     }
 
     @Override
