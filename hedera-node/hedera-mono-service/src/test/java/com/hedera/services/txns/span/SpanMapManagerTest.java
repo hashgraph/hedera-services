@@ -34,6 +34,7 @@ import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.grpc.marshalling.AssessedCustomFeeWrapper;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -138,15 +139,26 @@ class SpanMapManagerTest {
                             effPayerNum),
                     new FcAssessedCustomFee(customFeeCollector.asEntityId(), 123L, effPayerNum));
 
+
+    private final AccountID[] effPayerNumWrapped = new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()};
+    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrappers =
+            List.of(
+                    new AssessedCustomFeeWrapper(
+                            customFeeCollector.asEntityId(),
+                            customFeeToken.asEntityId(),
+                            123L,
+                        effPayerNumWrapped),
+                    new AssessedCustomFeeWrapper(customFeeCollector.asEntityId(), 123L, effPayerNumWrapped));
+
     private final ImpliedTransfers validImpliedTransfers =
             ImpliedTransfers.valid(
-                    validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFees);
+                    validationProps, new ArrayList<>(), entityCustomFees, assessedCustomFeesWrappers);
     private final ImpliedTransfers feeChangedImpliedTransfers =
             ImpliedTransfers.valid(
                     otherValidationProps,
                     new ArrayList<>(),
                     newCustomFeeChanges,
-                    assessedCustomFees);
+                assessedCustomFeesWrappers);
 
     private final ExpandHandleSpanMapAccessor spanMapAccessor = new ExpandHandleSpanMapAccessor();
 

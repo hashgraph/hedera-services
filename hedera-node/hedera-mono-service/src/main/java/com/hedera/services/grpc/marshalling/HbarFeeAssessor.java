@@ -18,9 +18,9 @@ package com.hedera.services.grpc.marshalling;
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustForAssessedHbar;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
@@ -37,14 +37,14 @@ public class HbarFeeAssessor {
             Id payer,
             FcCustomFee hbarFee,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator) {
         final var collector = hbarFee.getFeeCollectorAsId();
         final var fixedSpec = hbarFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
         adjustForAssessedHbar(payer, collector, amount, changeManager);
-        final var effPayerAccountNums = new long[] {payer.num()};
+        final var effPayerAccountNums = new AccountID[]{payer.asGrpcAccount()};
         final var assessed =
-                new FcAssessedCustomFee(collector.asEntityId(), amount, effPayerAccountNums);
+                new AssessedCustomFeeWrapper(collector.asEntityId(), amount, effPayerAccountNums);
         accumulator.add(assessed);
         return OK;
     }

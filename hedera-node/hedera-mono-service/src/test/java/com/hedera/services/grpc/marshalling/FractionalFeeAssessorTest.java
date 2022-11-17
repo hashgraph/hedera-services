@@ -24,9 +24,9 @@ import static org.mockito.Mockito.verify;
 import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FractionalFeeAssessorTest {
-    private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
+    private final List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
     @Mock private BalanceChangeManager changeManager;
     @Mock private FixedFeeAssessor fixedFeeAssessor;
@@ -84,13 +84,13 @@ class FractionalFeeAssessorTest {
         final var totalReclaimedFees = firstExpectedFee + secondExpectedFee;
         // and:
         final var expFirstAssess =
-                new FcAssessedCustomFee(
+                new AssessedCustomFeeWrapper(
                         firstFractionalFeeCollector,
                         tokenWithFractionalFee.asEntityId(),
                         firstExpectedFee,
                         effPayerAccountNums);
         final var expSecondAssess =
-                new FcAssessedCustomFee(
+                new AssessedCustomFeeWrapper(
                         secondFractionalFeeCollector,
                         tokenWithFractionalFee.asEntityId(),
                         secondExpectedFee,
@@ -149,12 +149,12 @@ class FractionalFeeAssessorTest {
                 subject.amountOwedGiven(
                         vanillaTriggerAmount, firstFractionalFee.getFractionalFeeSpec());
         final var expectedAssess =
-                new FcAssessedCustomFee(
+                new AssessedCustomFeeWrapper(
                         firstFractionalFeeCollector,
                         tokenWithFractionalFee.asEntityId(),
                         expectedReclaimed,
                         // The first candidate payer is going to be exempt
-                        new long[] {secondVanillaReclaim.getAccount().num()});
+                        new AccountID[] {secondVanillaReclaim.getAccount().asGrpcAccount()});
         given(
                         customFeePayerExemptions.isPayerExempt(
                                 feeMeta, firstFractionalFee, firstVanillaReclaim.getAccount()))
@@ -414,7 +414,7 @@ class FractionalFeeAssessorTest {
     private final Id payer = new Id(0, 0, 2);
     private final Id firstReclaimedAcount = new Id(0, 0, 8);
     private final Id secondReclaimedAcount = new Id(0, 0, 9);
-    private final long[] effPayerAccountNums = new long[] {8L, 9L};
+    private final AccountID[] effPayerAccountNums = new AccountID[] {AccountID.newBuilder().setAccountNum(8L).build(), AccountID.newBuilder().setAccountNum(9L).build()};
     private final long vanillaTriggerAmount = 5000L;
     private final long firstCreditAmount = 4000L;
     private final long secondCreditAmount = 1000L;

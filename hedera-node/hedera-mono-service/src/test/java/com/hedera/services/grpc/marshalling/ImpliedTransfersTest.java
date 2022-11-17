@@ -30,11 +30,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,9 +77,7 @@ class ImpliedTransfersTest {
                     + " changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7,"
                     + " expectedDecimals=-1}], tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123,"
                     + " treasuryId=2.3.4, customFees=[]]],"
-                    + " assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0,"
-                    + " num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective"
-                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0,"
+                    + " assessedCustomFees=[fixme], resolvedAliases={}, numAutoCreations=0,"
                     + " numLazyCreations=0}";
 
         // expect:
@@ -199,8 +197,8 @@ class ImpliedTransfersTest {
                     someId,
                     someTreasuryId,
                     List.of(FcCustomFee.fixedFee(10L, customFeeToken, customFeeCollector, false)));
-    private final List<FcAssessedCustomFee> assessedCustomFees =
+    private final List<AssessedCustomFeeWrapper> assessedCustomFees =
             List.of(
-                    new FcAssessedCustomFee(
-                            customFeeCollector, customFeeToken, 123L, new long[] {123L}));
+                    new AssessedCustomFeeWrapper(customFeeToken,
+                            customFeeCollector,  123L, new AccountID[]{AccountID.newBuilder().setAccountNum(123L).build()}));
 }

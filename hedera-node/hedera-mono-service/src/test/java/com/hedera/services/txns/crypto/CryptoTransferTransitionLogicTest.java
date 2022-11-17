@@ -41,6 +41,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.grpc.marshalling.AssessedCustomFeeWrapper;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -184,8 +185,8 @@ class CryptoTransferTransitionLogicTest {
         final var d = Id.fromGrpcToken(asToken("5.6.7"));
 
         // and :
-        final var customFeesBalanceChange =
-                List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
+        final var customFeesBalanceChangeWrapper =
+            List.of(new AssessedCustomFeeWrapper(a.asEntityId(), 10L, new AccountID[] {AccountID.newBuilder().setAccountNum(123L).build()}));
         final var customFee = List.of(FcCustomFee.fixedFee(20L, null, a.asEntityId(), false));
         final List<CustomFeeMeta> customFees = List.of(new CustomFeeMeta(c, d, customFee));
         final var impliedTransfers =
@@ -195,7 +196,7 @@ class CryptoTransferTransitionLogicTest {
                                 hbarChange(a.asGrpcAccount(), +100),
                                 hbarChange(b.asGrpcAccount(), -100)),
                         customFees,
-                        customFeesBalanceChange);
+                    customFeesBalanceChangeWrapper);
 
         givenValidTxnCtx();
         given(accessor.getPayer()).willReturn(payer);
@@ -210,6 +211,8 @@ class CryptoTransferTransitionLogicTest {
         subject.doStateTransition();
 
         // then:
+        final var customFeesBalanceChange =
+            List.of(new FcAssessedCustomFee(a.asEntityId(), 10L, new long[] {123L}));
         verify(txnCtx).setAssessedCustomFees(customFeesBalanceChange);
     }
 

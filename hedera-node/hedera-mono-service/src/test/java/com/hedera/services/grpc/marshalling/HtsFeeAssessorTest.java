@@ -22,9 +22,9 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HtsFeeAssessorTest {
-    private final List<FcAssessedCustomFee> accumulator = new ArrayList<>();
+    private final List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
     @Mock private BalanceChange collectorChange;
     @Mock private BalanceChangeManager balanceChangeManager;
@@ -45,7 +45,7 @@ class HtsFeeAssessorTest {
     void updatesExistingChangesIfPresent() {
         // setup:
         final var expectedAssess =
-                new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
         // and:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
         expectedPayerChange.setCodeForInsufficientBalance(
@@ -68,7 +68,7 @@ class HtsFeeAssessorTest {
     void addsNewChangesIfNotPresent() {
         // setup:
         final var expectedAssess =
-                new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
@@ -91,7 +91,7 @@ class HtsFeeAssessorTest {
     void addsExemptNewChangesForSelfDenominatedFee() {
         // setup:
         final var expectedAssess =
-                new FcAssessedCustomFee(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
+                new AssessedCustomFeeWrapper(htsFeeCollector, feeDenom, amountOfHtsFee, effPayerNums);
 
         // given:
         final var expectedPayerChange = BalanceChange.tokenAdjust(payer, denom, -amountOfHtsFee);
@@ -112,7 +112,7 @@ class HtsFeeAssessorTest {
     }
 
     private final long amountOfHtsFee = 100_000L;
-    private final Id payer = new Id(0, 1, 2);
+    private final Id payer = new Id(0, 0, 2);
     private final Id denom = new Id(6, 6, 6);
     private final Id treasury = new Id(7, 7, 7);
     private final Id nonSelfDenominatedChargingToken = new Id(7, 7, 7);
@@ -124,5 +124,5 @@ class HtsFeeAssessorTest {
     private final CustomFeeMeta denomFeeMeta = new CustomFeeMeta(denom, treasury, List.of());
     private final CustomFeeMeta nonDenomFeeMeta =
             new CustomFeeMeta(nonSelfDenominatedChargingToken, treasury, List.of());
-    private final long[] effPayerNums = new long[] {2L};
+    private final AccountID[] effPayerNums = new AccountID[] {AccountID.newBuilder().setAccountNum(2L).build()};
 }

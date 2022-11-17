@@ -30,7 +30,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FixedFeeSpec;
 import com.hedera.services.store.models.Id;
@@ -47,7 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RoyaltyFeeAssessorTest {
-    private List<FcAssessedCustomFee> accumulator = new ArrayList<>();
+    private List<AssessedCustomFeeWrapper> accumulator = new ArrayList<>();
 
     @Mock private FixedFeeAssessor fixedFeeAssessor;
     @Mock private FungibleAdjuster fungibleAdjuster;
@@ -341,11 +340,11 @@ class RoyaltyFeeAssessorTest {
                     nonFungibleTokenId.asGrpcToken(),
                     ownershipChangeWithAlias,
                     payer.asGrpcAccount());
-    private final long[] effPayerNum = new long[] {payer.num()};
-    private final FcAssessedCustomFee hbarAssessed =
-            new FcAssessedCustomFee(targetCollector, originalUnits / 2, effPayerNum);
-    private final FcAssessedCustomFee htsAssessed =
-            new FcAssessedCustomFee(
+    private final AccountID[] effPayerNum = new AccountID[] {payer.asGrpcAccount()};
+    private final AssessedCustomFeeWrapper hbarAssessed =
+            new AssessedCustomFeeWrapper(targetCollector, originalUnits / 2, effPayerNum);
+    private final AssessedCustomFeeWrapper htsAssessed =
+            new AssessedCustomFeeWrapper(
                     targetCollector,
                     firstFungibleTokenId.asEntityId(),
                     originalUnits / 2,

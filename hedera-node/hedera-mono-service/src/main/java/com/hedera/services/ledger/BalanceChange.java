@@ -31,8 +31,10 @@ import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.utility.CommonUtils;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Process object that encapsulates a balance change, either ℏ or token unit .
@@ -69,6 +71,8 @@ public class BalanceChange {
     private int expectedDecimals = -1;
     private boolean isApprovedAllowance = false;
     private AccountID payerID = null;
+    // set only when the change was to an auto created account in the same txn
+    private Pair<ByteString, AccountID> aliasToNewId;
 
     public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
         return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
@@ -198,11 +202,18 @@ public class BalanceChange {
         if (isAlias(accountId)) {
             accountId = createdId.toGrpcAccountId();
             account = Id.fromGrpcAccount(accountId);
+            aliasToNewId = Pair.of(alias, accountId);
             alias = ByteString.EMPTY;
         } else if (hasNonEmptyCounterPartyAlias()) {
             counterPartyAccountId = createdId.toGrpcAccountId();
+            aliasToNewId = Pair.of(counterPartyAlias, accountId);
             counterPartyAlias = ByteString.EMPTY;
         }
+    }
+
+    @Nullable
+    public Pair<ByteString, AccountID> getAliasToNewId() {
+        return aliasToNewId;
     }
 
     public boolean isForHbar() {

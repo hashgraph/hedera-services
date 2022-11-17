@@ -18,9 +18,9 @@ package com.hedera.services.grpc.marshalling;
 import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustForAssessed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;
@@ -38,7 +38,7 @@ public class HtsFeeAssessor {
             CustomFeeMeta chargingTokenMeta,
             FcCustomFee htsFee,
             BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            List<AssessedCustomFeeWrapper> accumulator) {
         final var collector = htsFee.getFeeCollectorAsId();
         final var fixedSpec = htsFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
@@ -51,9 +51,9 @@ public class HtsFeeAssessor {
                 amount,
                 changeManager);
 
-        final var effPayerAccountNums = new long[] {payer.num()};
+        final var effPayerAccountNums = new AccountID[] {payer.asGrpcAccount()};
         final var assessed =
-                new FcAssessedCustomFee(
+                new AssessedCustomFeeWrapper(
                         htsFee.getFeeCollector(),
                         fixedSpec.getTokenDenomination(),
                         amount,
