@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -366,7 +365,7 @@ public class ContractCreateSuite extends HapiApiSuite {
         final AtomicReference<String> ftMirrorAddr = new AtomicReference<>();
         final long supply = 100_000_000;
 
-        return onlyDefaultHapiSpec("CanCreateViaFungibleWithFractionalFee")
+        return defaultHapiSpec("CanCreateViaFungibleWithFractionalFee")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(ftKey),
