@@ -613,14 +613,6 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode, bool defaultKycStatus);
 
-    /// Query token expiry info
-    /// @param token The token address to check
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return expiry Expiry info for `token`
-    function getTokenExpiryInfo(address token)
-        external
-        returns (int64 responseCode, Expiry memory expiry);
-
     /// Query fungible token info
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.

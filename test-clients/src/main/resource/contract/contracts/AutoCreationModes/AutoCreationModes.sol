@@ -27,4 +27,27 @@ contract AutoCreationModes {
             revert("Wish, command, etc.");
         }
     }
+
+    function createDirectlyViaFungible(address token, address sender, address receiver, int64 amount) public {
+        (bool success, bytes memory result) = HTS_ENTRY_POINT.call(
+            abi.encodeWithSelector(
+                IHederaTokenService.transferToken.selector, token, sender, receiver, amount));
+        require(success);
+        int32 rc = abi.decode(result, (int32));
+        require(rc == 22);
+    }
+
+    function createSeveralDirectly(
+        address token, 
+        address[] memory senders, 
+        address[] memory receivers, 
+        int64[] memory serialNums
+    ) public {
+        (bool success, bytes memory result) = HTS_ENTRY_POINT.call(
+            abi.encodeWithSelector(
+                IHederaTokenService.transferNFTs.selector, token, senders, receivers, serialNums));
+        require(success);
+        int32 rc = abi.decode(result, (int32));
+        require(rc == 22);
+    }
 }
