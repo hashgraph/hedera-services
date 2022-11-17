@@ -1642,8 +1642,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             loggedRecord.getTransactionFee(),
                                             "Result size should change the txn fee!");
                                 }),
-                        UtilVerbs.resetToDefault(
-                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
     HapiApiSpec smartContractFailFirst() {

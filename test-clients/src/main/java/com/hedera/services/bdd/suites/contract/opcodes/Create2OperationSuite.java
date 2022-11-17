@@ -107,11 +107,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-
-/**
- * - CONCURRENCY STATUS -
- *   . Can run concurrent if contracts.allowCreate2 feature-flag is removed
- */
+/** - CONCURRENCY STATUS - . Can run concurrent if contracts.allowCreate2 feature-flag is removed */
 public class Create2OperationSuite extends HapiApiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);

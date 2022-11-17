@@ -89,7 +89,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -4627,8 +4626,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .via(NAME_TXN)
                                                         .hasKnownStatus(SUCCESS)
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTxnRecord(NAME_TXN).andAllChildRecords().logged());
+                .then(getTxnRecord(NAME_TXN).andAllChildRecords().logged());
     }
 
     private HapiApiSpec erc721GetApproved() {
@@ -4758,8 +4756,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                         .payingWith(OWNER)
                                                         .via(ALLOWANCE_TXN)
                                                         .hasKnownStatus(SUCCESS))))
-                .then(
-                        getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
+                .then(getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
     }
 
     private HapiApiSpec getErc721ClearsApprovalAfterTransfer() {

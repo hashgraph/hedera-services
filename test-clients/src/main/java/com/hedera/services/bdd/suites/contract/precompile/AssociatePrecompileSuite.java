@@ -71,8 +71,8 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * - CONCURRENCY STATUS -
- *   . Can run concurrent without entities.limitTokenAssociations feature flag test
+ * - CONCURRENCY STATUS - . Can run concurrent without entities.limitTokenAssociations feature flag
+ * test
  */
 public class AssociatePrecompileSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
@@ -342,8 +342,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
                 .given(
                         UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations"),
+                                "tokens.maxPerAccount", "entities.limitTokenAssociations"),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
@@ -510,8 +509,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
         return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
                 .given(
                         UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations"),
+                                "tokens.maxPerAccount", "entities.limitTokenAssociations"),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -525,8 +523,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         uploadInitCode(THE_CONTRACT),
                         contractCreate(THE_CONTRACT),
                         UtilVerbs.overriding("tokens.maxPerAccount", "1"),
-                        UtilVerbs.overriding("entities.limitTokenAssociations", "true")
-                )
+                        UtilVerbs.overriding("entities.limitTokenAssociations", "true"))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -592,8 +589,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
                         UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations"));
+                                "tokens.maxPerAccount", "entities.limitTokenAssociations"));
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */

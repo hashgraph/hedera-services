@@ -1,29 +1,31 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.negative;
 
-import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -42,14 +44,16 @@ import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_T
 import static com.hedera.services.bdd.suites.util.UtilPrngSuite.BOB;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
-
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -64,19 +68,18 @@ public class FeatureFlagSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 disablesAllFeatureFlagsAndConfirmsNotSupported(),
-                enablesAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting()
-        );
+                enablesAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
     private HapiApiSpec disablesAllFeatureFlagsAndConfirmsNotSupported() {
         return defaultHapiSpec("DisablesAllFeatureFlagsAndConfirmsNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
-                .then(inParallel(
-                        confirmAutoCreationNotSupported(),
-                        confirmUtilPrngNotSupported(),
-                        confirmTokenAutoCreationNotSupported()
-                ));
+                .then(
+                        inParallel(
+                                confirmAutoCreationNotSupported(),
+                                confirmUtilPrngNotSupported(),
+                                confirmTokenAutoCreationNotSupported()));
     }
 
     private HapiApiSpec enablesAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
@@ -127,20 +130,15 @@ public class FeatureFlagSuite extends HapiApiSuite {
                         .via(NFT_CREATE),
                 mintToken(
                         NFT_INFINITE_SUPPLY_TOKEN,
-                        List.of(
-                                ByteString.copyFromUtf8("a"),
-                                ByteString.copyFromUtf8("b"))),
-                cryptoCreate(CIVILIAN)
-                        .balance(10 * ONE_HBAR)
-                        .maxAutomaticTokenAssociations(2),
+                        List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR).maxAutomaticTokenAssociations(2),
                 tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
                 cryptoTransfer(
                         moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
                         movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
                                 .between(TOKEN_TREASURY, CIVILIAN)),
                 getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
-                getAccountInfo(CIVILIAN)
-                        .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
+                getAccountInfo(CIVILIAN).hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
 
                 /* --- transfer token type to alias and expected to fail as the feature flag is off  --- */
                 cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
@@ -149,8 +147,8 @@ public class FeatureFlagSuite extends HapiApiSuite {
                         .hasKnownStatus(NOT_SUPPORTED)
                         .logged(),
                 cryptoTransfer(
-                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                .between(CIVILIAN, VALID_ALIAS))
+                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
+                                        .between(CIVILIAN, VALID_ALIAS))
                         .via(nftXfer)
                         .payingWith(CIVILIAN)
                         .hasKnownStatus(NOT_SUPPORTED)
@@ -162,10 +160,7 @@ public class FeatureFlagSuite extends HapiApiSuite {
                         .payingWith(CIVILIAN)
                         .signedBy(CIVILIAN, VALID_ALIAS)
                         .via(TRANSFER_TXN),
-                getTxnRecord(TRANSFER_TXN)
-                        .andAllChildRecords()
-                        .hasNonStakingChildRecordCount(1)
-        );
+                getTxnRecord(TRANSFER_TXN).andAllChildRecords().hasNonStakingChildRecordCount(1));
     }
 
     @Override
@@ -185,31 +180,32 @@ public class FeatureFlagSuite extends HapiApiSuite {
         }
 
         private Map<String, String> all(final String choice) {
-            return Map.ofEntries(Arrays.asList(NAMES).stream()
-                    .map(name -> Map.entry(name, choice))
-                    .toArray(Map.Entry[]::new));
+            return Map.ofEntries(
+                    Arrays.asList(NAMES).stream()
+                            .map(name -> Map.entry(name, choice))
+                            .toArray(Map.Entry[]::new));
         }
 
         private static final String[] NAMES = {
-                "autoCreation.enabled",
-                // Not being tested
-                "contracts.itemizeStorageFees",
-                // Not being tested
-                "contracts.precompile.htsEnableTokenCreate",
-                // Not being tested
-                "contracts.redirectTokenCalls",
-                "contracts.throttle.throttleByGas",
-                // Not being tested
-                "hedera.allowances.isEnabled",
-                // Behavior doesn't make sense, but is tested
-                "utilPrng.isEnabled",
-                "tokens.autoCreations.isEnabled",
-                "lazyCreation.enabled",
-                "cryptoCreateWithAlias.enabled",
-                "contracts.allowAutoAssociations",
-                "contracts.enforceCreationThrottle",
-                "contracts.precompile.atomicCryptoTransfer.enabled",
-                "scheduling.longTermEnabled",
+            "autoCreation.enabled",
+            // Not being tested
+            "contracts.itemizeStorageFees",
+            // Not being tested
+            "contracts.precompile.htsEnableTokenCreate",
+            // Not being tested
+            "contracts.redirectTokenCalls",
+            "contracts.throttle.throttleByGas",
+            // Not being tested
+            "hedera.allowances.isEnabled",
+            // Behavior doesn't make sense, but is tested
+            "utilPrng.isEnabled",
+            "tokens.autoCreations.isEnabled",
+            "lazyCreation.enabled",
+            "cryptoCreateWithAlias.enabled",
+            "contracts.allowAutoAssociations",
+            "contracts.enforceCreationThrottle",
+            "contracts.precompile.atomicCryptoTransfer.enabled",
+            "scheduling.longTermEnabled",
         };
     }
 }
