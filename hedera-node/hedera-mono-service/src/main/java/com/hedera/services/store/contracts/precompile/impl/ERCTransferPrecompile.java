@@ -116,7 +116,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 pricingUtils,
                 functionId,
                 callerAccount,
-            isLazyCreationEnabled);
+                isLazyCreationEnabled);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
         this.isFungible = isFungible;
@@ -148,7 +148,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils,
-                functionId, isLazyCreationEnabled);
+                functionId,
+                isLazyCreationEnabled);
     }
 
     @Override
