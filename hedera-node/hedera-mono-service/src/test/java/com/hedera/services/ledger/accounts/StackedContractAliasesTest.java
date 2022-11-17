@@ -182,11 +182,16 @@ class StackedContractAliasesTest {
     }
 
     @Test
-    void linkingWithByteStringWithSizeBiggerThanEvmAddressThrows() {
+    void linkingWithByteStringWithSizeDifferentThanEvmAddressThrows() {
         final var bytes = new byte[EVM_ADDRESS_SIZE + 1];
         final var alias = ByteStringUtils.wrapUnsafely(bytes);
         final var entityNum = EntityNum.fromEvmAddress(mirrorAddress);
         assertThrows(UnsupportedOperationException.class, () -> subject.link(alias, entityNum));
+
+        final var bytes2 = new byte[EVM_ADDRESS_SIZE - 1];
+        final var alias2 = ByteStringUtils.wrapUnsafely(bytes2);
+        final var entityNum2 = EntityNum.fromEvmAddress(mirrorAddress);
+        assertThrows(UnsupportedOperationException.class, () -> subject.link(alias2, entityNum2));
     }
 
     @Test

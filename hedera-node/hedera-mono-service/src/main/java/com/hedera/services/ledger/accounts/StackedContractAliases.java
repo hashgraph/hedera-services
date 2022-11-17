@@ -95,7 +95,7 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
     public void link(ByteString alias, EntityNum num) {
         if (alias.size() != EVM_ADDRESS_LEN) {
             throw new UnsupportedOperationException(
-                    "Stacked alias manager cannot link aliases with size > 20.");
+                    "Stacked alias manager cannot link aliases with size != 20.");
         }
         link(Address.wrap(Bytes.of(alias.toByteArray())), num.toEvmAddress());
     }
@@ -109,13 +109,13 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
     @Override
     public void forgetEvmAddress(ByteString alias) {
         throw new UnsupportedOperationException(
-                "Stacked alias manager cannot perform unlink outside EVM");
+                "Stacked alias manager cannot perform forgetEvmAddress outside EVM");
     }
 
     @Override
     public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
         throw new UnsupportedOperationException(
-                "Stacked alias manager cannot perform address link through key");
+                "Stacked alias manager cannot perform maybeLinkEvmAddress through key");
     }
 
     @Override
