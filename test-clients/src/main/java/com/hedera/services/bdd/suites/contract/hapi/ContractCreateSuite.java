@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -365,7 +366,7 @@ public class ContractCreateSuite extends HapiApiSuite {
         final AtomicReference<String> ftMirrorAddr = new AtomicReference<>();
         final long supply = 100_000_000;
 
-        return defaultHapiSpec("CanCreateViaFungibleWithFractionalFee")
+        return onlyDefaultHapiSpec("CanCreateViaFungibleWithFractionalFee")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(ftKey),
@@ -393,6 +394,21 @@ public class ContractCreateSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
+                                        /* FIXME - the hollow account's number shows as 0 in the effective payer
+                                        list of the resulting record; i.e.,
+                                            assessed_custom_fees {
+                                              amount: 5000000
+                                              token_id {
+                                                tokenNum: 1096
+                                              }
+                                              fee_collector_account_id {
+                                                accountNum: 1094
+                                              }
+                                              effective_payer_account_id {
+                                                accountNum: 0
+                                              }
+                                            }
+                                         */
                                         contractCall(
                                                         AUTO_CREATION_MODES,
                                                         "createDirectlyViaFungible",
@@ -417,7 +433,7 @@ public class ContractCreateSuite extends HapiApiSuite {
         final AtomicLong civilianId = new AtomicLong();
         final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
 
-        return defaultHapiSpec("ResourceLimitExceededRevertsAllRecords")
+        return defaultHapiSpec("CanCreateMultipleHollows")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
                         newKeyNamed(nftKey),
@@ -443,21 +459,6 @@ public class ContractCreateSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        /* FIXME - the hollow account's number shows as 0 in the effective payer
-                                        list of the resulting record; i.e.,
-                                            assessed_custom_fees {
-                                              amount: 5000000
-                                              token_id {
-                                                tokenNum: 1096
-                                              }
-                                              fee_collector_account_id {
-                                                accountNum: 1094
-                                              }
-                                              effective_payer_account_id {
-                                                accountNum: 0
-                                              }
-                                            }
-                                         */
                                         contractCall(
                                                         AUTO_CREATION_MODES,
                                                         "createSeveralDirectly",
@@ -474,7 +475,9 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .gas(10_000_000)
                                                 .alsoSigningWithFullPrefix(CIVILIAN)
                                                 .hasKnownStatus(SUCCESS)))
-                .then(resetToDefault(LAZY_CREATION_ENABLED));
+                .then(
+                        getTxnRecord(creationAttempt).andAllChildRecords().logged(),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     HapiApiSpec resourceLimitExceededRevertsAllRecords() {
