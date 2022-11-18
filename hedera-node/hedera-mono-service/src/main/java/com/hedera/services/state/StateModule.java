@@ -43,6 +43,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
+import com.hedera.services.state.logic.StatusChangeListener;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -73,6 +74,7 @@ import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.Console;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -127,6 +129,10 @@ public interface StateModule {
     StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(
             StateWriteToDiskListener stateWriteToDiskListener);
 
+    @Binds
+    @Singleton
+    PlatformStatusChangeListener bindStatusChangeListener(
+            StatusChangeListener statusChangeListener);
     @Binds
     @Singleton
     LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);

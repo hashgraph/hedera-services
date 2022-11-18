@@ -71,20 +71,6 @@ public class ServicesMain implements SwirldMain {
         }
     }
 
-    public void platformStatusChange(final PlatformStatusChangeNotification statusNotification) {
-        final var nodeId = app.nodeId();
-        final var status = statusNotification.getNewStatus();
-        log.info("Now current platform status = {} in HederaNode#{}.", status, nodeId);
-        app.platformStatus().set(status);
-        if (status == ACTIVE) {
-            app.recordStreamManager().setInFreeze(false);
-        } else if (status == FREEZE_COMPLETE) {
-            app.recordStreamManager().setInFreeze(true);
-        } else {
-            log.info("Platform {} status set to : {}", nodeId, status);
-        }
-    }
-
     @Override
     public ServicesState newState() {
         return new ServicesState();
@@ -143,7 +129,7 @@ public class ServicesMain implements SwirldMain {
         app.ledgerValidator().validate(app.workingState().accounts());
         app.nodeInfo().validateSelfAccountIfStaked();
         final var notifications = app.notificationEngine().get();
-        notifications.register(PlatformStatusChangeListener.class, this::platformStatusChange);
+        notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
         notifications.register(
                 StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
