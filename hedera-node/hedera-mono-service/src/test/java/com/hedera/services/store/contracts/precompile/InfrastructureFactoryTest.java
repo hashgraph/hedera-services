@@ -17,10 +17,14 @@ package com.hedera.services.store.contracts.precompile;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
@@ -35,10 +39,12 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -50,6 +56,7 @@ import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
@@ -72,6 +79,8 @@ import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -111,6 +120,10 @@ class InfrastructureFactoryTest {
     @Mock private FeeAssessor feeAssessor;
     @Mock private PureTransferSemanticChecks checks;
     @Mock private CustomFeeSchedules customFeeSchedules;
+    @Mock private Provider<FeeCalculator> feeCalculator;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private StateView view;
+    @Mock private EntityCreator entityCreator;
 
     private InfrastructureFactory subject;
 
@@ -130,7 +143,11 @@ class InfrastructureFactoryTest {
                         aliasManager,
                         feeDistribution,
                         feeAssessor,
-                        checks);
+                        checks,
+                        feeCalculator,
+                        syntheticTxnFactory,
+                        view,
+                        entityCreator);
     }
 
     @Test
@@ -160,6 +177,13 @@ class InfrastructureFactoryTest {
                         tokens,
                         uniqueTokens,
                         tokenRels));
+    }
+
+    @Test
+    void canCreateNewAutoCreationLogc() {
+        assertInstanceOf(
+                AutoCreationLogic.class,
+                subject.newAutoCreationLogicScopedTo(mock(HederaStackedWorldStateUpdater.class)));
     }
 
     @Test
@@ -387,5 +411,20 @@ class InfrastructureFactoryTest {
                                 sideEffects, tokens, nftsLedger, tokenRelsLedger),
                         ledgers,
                         sideEffects));
+    }
+
+    @Test
+    void canCreateNewRecordSubmissions() {
+        final var updater = mock(HederaStackedWorldStateUpdater.class);
+        final var recordSubmissions = subject.newRecordSubmissionsScopedTo(updater);
+        final var expirableTxnRecord = mock(ExpirableTxnRecord.Builder.class);
+        final var txnBodyBuilder = mock(Builder.class);
+
+        recordSubmissions.submitForTracking(txnBodyBuilder, expirableTxnRecord);
+
+        verify(expirableTxnRecord).onlyExternalizeIfSuccessful();
+        verify(updater)
+                .manageInProgressPrecedingRecord(
+                        recordsHistorian, expirableTxnRecord, txnBodyBuilder);
     }
 }

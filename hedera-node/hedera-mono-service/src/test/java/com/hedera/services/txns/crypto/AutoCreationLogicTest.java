@@ -20,6 +20,7 @@ import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURC
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -49,6 +50,8 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.HederaAccount;
@@ -57,7 +60,6 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -121,7 +123,7 @@ class AutoCreationLogicTest {
         given(usageLimits.areCreatableAccounts(anyInt())).willReturn(true);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(false);
 
-        final var input = wellKnownTokenChange();
+        final var input = wellKnownTokenChange(edKeyAlias);
         final var changes = List.of(input);
 
         final var result = subject.create(input, accountsLedger, changes);
@@ -222,7 +224,7 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.ALIAS, evmAddressAlias);
-        assertEquals(EntityIdUtils.EVM_ADDRESS_SIZE, evmAddressAlias.size());
+        assertEquals(EVM_ADDRESS_SIZE, evmAddressAlias.size());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
         verify(accountsLedger, never())
@@ -236,13 +238,105 @@ class AutoCreationLogicTest {
     }
 
     @Test
+    void hollowAccountWithFtChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+        final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
+        final var evmAddressAlias =
+                ByteString.copyFrom(
+                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+
+        final var mockBuilderWithEVMAlias =
+                ExpirableTxnRecord.newBuilder()
+                        .setAlias(evmAddressAlias)
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setAccountId(new EntityId(0, 0, createdNum.longValue())));
+
+        givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
+                .willReturn(mockSyntheticCreation);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+
+        final var input = wellKnownTokenChange(evmAddressAlias);
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
+
+        final var result = subject.create(input, accountsLedger, changes);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+        verify(aliasManager).link(evmAddressAlias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger, never())
+                .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.ALIAS, evmAddressAlias);
+        assertEquals(EVM_ADDRESS_SIZE, evmAddressAlias.size());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
+        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
+    void hollowAccountWithNFTChangeWorks() throws InvalidProtocolBufferException, DecoderException {
+        final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
+        final var evmAddressAlias =
+                ByteString.copyFrom(
+                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+
+        final var mockBuilderWithEVMAlias =
+                ExpirableTxnRecord.newBuilder()
+                        .setAlias(evmAddressAlias)
+                        .setReceiptBuilder(
+                                TxnReceipt.newBuilder()
+                                        .setAccountId(new EntityId(0, 0, createdNum.longValue())));
+
+        givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
+                .willReturn(mockSyntheticCreation);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+
+        final var input = wellKnownNftChange(evmAddressAlias);
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
+
+        final var result = subject.create(input, accountsLedger, changes);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(20L, input.getAggregatedUnits());
+        verify(aliasManager).link(evmAddressAlias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger, never())
+                .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.ALIAS, evmAddressAlias);
+        assertEquals(EVM_ADDRESS_SIZE, evmAddressAlias.size());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
+        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
-        final var input = wellKnownTokenChange();
+        final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
         final var changes = List.of(input);
 
@@ -277,13 +371,59 @@ class AutoCreationLogicTest {
     }
 
     @Test
+    void happyPathWithFungibleTokenChangeWorksWithCustomRecordSubmissions() {
+        givenCollaborators(mockBuilder, AUTO_MEMO);
+        given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
+        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
+                .willReturn(mockSyntheticCreation);
+
+        final var input = wellKnownTokenChange(edKeyAlias);
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
+        final var sourceId = 55;
+
+        final var result = subject.create(input, accountsLedger, changes);
+        subject.submitRecords(
+                (txnBody, txnRecord) -> {
+                    recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord);
+                },
+                false);
+
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+
+        verify(sigImpactHistorian, never()).markAliasChanged(edKeyAlias);
+        verify(sigImpactHistorian, never()).markEntityChanged(createdNum.longValue());
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(sourceId, mockSyntheticCreation, mockBuilder);
+
+        verify(aliasManager).link(edKeyAlias, createdNum);
+        verify(accountsLedger).create(createdNum.toGrpcAccountId());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
+        verify(accountsLedger)
+                .set(
+                        createdNum.toGrpcAccountId(),
+                        AccountProperty.AUTO_RENEW_PERIOD,
+                        THREE_MONTHS_IN_SECONDS);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
                 .willReturn(mockSyntheticCreation);
 
-        final var input = wellKnownNftChange();
+        final var input = wellKnownNftChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
         final var changes = List.of(input);
 
@@ -329,7 +469,7 @@ class AutoCreationLogicTest {
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
                 .willReturn(mockSyntheticCreation);
 
-        final var input1 = wellKnownTokenChange();
+        final var input1 = wellKnownTokenChange(edKeyAlias);
         final var input2 = anotherTokenChange();
         final var changes = List.of(input1, input2);
 
@@ -381,24 +521,24 @@ class AutoCreationLogicTest {
                 payer);
     }
 
-    private BalanceChange wellKnownTokenChange() {
+    private BalanceChange wellKnownTokenChange(ByteString alias) {
         return BalanceChange.changingFtUnits(
                 Id.fromGrpcToken(token),
                 token,
                 AccountAmount.newBuilder()
                         .setAmount(initialTransfer)
-                        .setAccountID(AccountID.newBuilder().setAlias(edKeyAlias).build())
+                        .setAccountID(AccountID.newBuilder().setAlias(alias).build())
                         .build(),
                 payer);
     }
 
-    private BalanceChange wellKnownNftChange() {
+    private BalanceChange wellKnownNftChange(ByteString alias) {
         return BalanceChange.changingNftOwnership(
                 Id.fromGrpcToken(token),
                 token,
                 NftTransfer.newBuilder()
                         .setSenderAccountID(payer)
-                        .setReceiverAccountID(AccountID.newBuilder().setAlias(edKeyAlias).build())
+                        .setReceiverAccountID(AccountID.newBuilder().setAlias(alias).build())
                         .setSerialNumber(20L)
                         .build(),
                 payer);
@@ -413,6 +553,39 @@ class AutoCreationLogicTest {
                         .setAccountID(AccountID.newBuilder().setAlias(edKeyAlias).build())
                         .build(),
                 payer);
+    }
+
+    @Test
+    void reclaimClearsTriesToUnlinkIfAliasLengthBiggerTHanEvmAddressLength() {
+        final var pendingCreations = subject.getPendingCreations();
+        pendingCreations.add(
+                new InProgressChildRecord(
+                        1,
+                        TransactionBody.newBuilder(),
+                        ExpirableTxnRecord.newBuilder().setAlias(edKeyAlias),
+                        List.of()));
+
+        subject.reclaimPendingAliases();
+
+        verify(aliasManager).unlink(edKeyAlias);
+        verify(aliasManager).forgetEvmAddress(edKeyAlias);
+    }
+
+    @Test
+    void reclaimClearsEvmAddress() {
+        final var pendingCreations = subject.getPendingCreations();
+        final ByteString alias = ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]);
+        pendingCreations.add(
+                new InProgressChildRecord(
+                        1,
+                        TransactionBody.newBuilder(),
+                        ExpirableTxnRecord.newBuilder().setAlias(alias),
+                        List.of()));
+
+        subject.reclaimPendingAliases();
+
+        verify(aliasManager).unlink(alias);
+        verify(aliasManager, never()).forgetEvmAddress(alias);
     }
 
     private static final TransactionBody.Builder mockSyntheticCreation =

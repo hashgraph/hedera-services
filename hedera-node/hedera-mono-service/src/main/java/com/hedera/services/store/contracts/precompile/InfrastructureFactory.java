@@ -21,6 +21,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;
@@ -37,7 +38,9 @@ import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.records.RecordSubmissions;
 import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.migration.HederaTokenRel;
@@ -45,6 +48,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
+import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.proxy.RedirectViewExecutor;
@@ -53,6 +57,7 @@ import com.hedera.services.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
@@ -80,6 +85,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -104,6 +110,10 @@ public class InfrastructureFactory {
     private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
     private final Predicate<CryptoTransferTransactionBody> aliasCheck;
     private final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory;
+    private final Provider<FeeCalculator> feeCalculator;
+    private final SyntheticTxnFactory syntheticTxnFactory;
+    private final StateView view;
+    private final EntityCreator entityCreator;
 
     @Inject
     public InfrastructureFactory(
@@ -119,7 +129,11 @@ public class InfrastructureFactory {
             final AliasManager aliasManager,
             final FeeDistribution feeDistribution,
             final FeeAssessor feeAssessor,
-            final PureTransferSemanticChecks checks) {
+            final PureTransferSemanticChecks checks,
+            final Provider<FeeCalculator> feeCalculator,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final StateView view,
+            final EntityCreator entityCreator) {
         this.ids = ids;
         this.encoder = encoder;
         this.validator = validator;
@@ -137,6 +151,10 @@ public class InfrastructureFactory {
         this.changeManagerFactory = BalanceChangeManager::new;
         this.aliasCheck = AliasResolver::usesAliases;
         this.schedulesManagerFactory = CustomSchedulesManager::new;
+        this.feeCalculator = feeCalculator;
+        this.syntheticTxnFactory = syntheticTxnFactory;
+        this.view = view;
+        this.entityCreator = entityCreator;
     }
 
     public SideEffectsTracker newSideEffects() {
@@ -326,5 +344,30 @@ public class InfrastructureFactory {
                 ledgers,
                 sideEffects,
                 sigImpactHistorian);
+    }
+
+    public AutoCreationLogic newAutoCreationLogicScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
+        final var autoCreationLogic =
+                new AutoCreationLogic(
+                        usageLimits,
+                        syntheticTxnFactory,
+                        entityCreator,
+                        ids,
+                        updater.aliases(),
+                        sigImpactHistorian,
+                        () -> view,
+                        txnCtx,
+                        dynamicProperties);
+        autoCreationLogic.setFeeCalculator(feeCalculator.get());
+        return autoCreationLogic;
+    }
+
+    public RecordSubmissions newRecordSubmissionsScopedTo(
+            final HederaStackedWorldStateUpdater updater) {
+        return (txnBody, txnRecord) -> {
+            txnRecord.onlyExternalizeIfSuccessful();
+            updater.manageInProgressPrecedingRecord(recordsHistorian, txnRecord, txnBody);
+        };
     }
 }

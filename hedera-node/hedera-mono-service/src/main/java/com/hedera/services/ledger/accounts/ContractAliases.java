@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface ContractAliases {
+public interface ContractAliases extends HederaAliasManager {
     void revert();
 
     void filterPendingChanges(Predicate<Address> filter);

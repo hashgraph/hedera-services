@@ -17,6 +17,7 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -35,10 +36,12 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.accounts.HederaAliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.InProgressChildRecord;
+import com.hedera.services.records.RecordSubmissions;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.HederaAccount;
@@ -81,7 +84,7 @@ public class AutoCreationLogic {
     private final EntityIdSource ids;
     private final EntityCreator creator;
     private final TransactionContext txnCtx;
-    private final AliasManager aliasManager;
+    private final HederaAliasManager aliasManager;
     private final SigImpactHistorian sigImpactHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final List<InProgressChildRecord> pendingCreations = new ArrayList<>();
@@ -100,7 +103,7 @@ public class AutoCreationLogic {
             final SyntheticTxnFactory syntheticTxnFactory,
             final EntityCreator creator,
             final EntityIdSource ids,
-            final AliasManager aliasManager,
+            final HederaAliasManager aliasManager,
             final SigImpactHistorian sigImpactHistorian,
             final Supplier<StateView> currentView,
             final TransactionContext txnCtx,
@@ -138,6 +141,9 @@ public class AutoCreationLogic {
             for (final var pendingCreation : pendingCreations) {
                 final var alias = pendingCreation.recordBuilder().getAlias();
                 aliasManager.unlink(alias);
+                if (alias.size() != EVM_ADDRESS_SIZE) {
+                    aliasManager.forgetEvmAddress(alias);
+                }
             }
             return true;
         } else {
@@ -152,14 +158,24 @@ public class AutoCreationLogic {
      * @param recordsHistorian the records historian that should track the child records
      */
     public void submitRecordsTo(final RecordsHistorian recordsHistorian) {
+        submitRecords(
+                (txnBody, txnRecord) ->
+                        recordsHistorian.trackPrecedingChildRecord(
+                                DEFAULT_SOURCE_ID, txnBody, txnRecord),
+                true);
+    }
+
+    public void submitRecords(
+            final RecordSubmissions recordSubmissions, final boolean trackSigImpact) {
         for (final var pendingCreation : pendingCreations) {
             final var syntheticCreation = pendingCreation.syntheticBody();
             final var childRecord = pendingCreation.recordBuilder();
-            sigImpactHistorian.markAliasChanged(childRecord.getAlias());
-            sigImpactHistorian.markEntityChanged(
-                    childRecord.getReceiptBuilder().getAccountId().num());
-            recordsHistorian.trackPrecedingChildRecord(
-                    DEFAULT_SOURCE_ID, syntheticCreation, childRecord);
+            if (trackSigImpact) {
+                sigImpactHistorian.markAliasChanged(childRecord.getAlias());
+                sigImpactHistorian.markEntityChanged(
+                        childRecord.getReceiptBuilder().getAccountId().num());
+            }
+            recordSubmissions.submitForTracking(syntheticCreation, childRecord);
         }
     }
 
@@ -200,23 +216,22 @@ public class AutoCreationLogic {
         TransactionBody.Builder syntheticCreation;
         String memo;
         HederaAccountCustomizer customizer = new HederaAccountCustomizer();
+        // checks tokenAliasMap if the change consists an alias that is already used in previous
+        // iteration of the token transfer list. This map is used to count number of
+        // maxAutoAssociations needed on auto created account
+        analyzeTokenTransferCreations(changes);
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        customizer.maxAutomaticAssociations(maxAutoAssociations);
         if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
             customizer.key(EMPTY_KEY);
             memo = LAZY_MEMO;
         } else {
-            // checks tokenAliasMap if the change consists an alias that is already used in previous
-            // iteration of the token transfer list. This map is used to count number of
-            // maxAutoAssociations needed on auto created account
-            analyzeTokenTransferCreations(changes);
-
-            final var maxAutoAssociations =
-                    tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
-
             final var key = asPrimitiveKeyUnchecked(alias);
             syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
             JKey jKey = asFcKeyUnchecked(key);
-            customizer.key(jKey).maxAutomaticAssociations(maxAutoAssociations);
+            customizer.key(jKey);
             memo = AUTO_MEMO;
         }
 

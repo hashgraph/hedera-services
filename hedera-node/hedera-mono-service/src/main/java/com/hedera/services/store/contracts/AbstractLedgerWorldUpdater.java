@@ -260,6 +260,17 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
                 thisRecordSourceId, syntheticBody, recordSoFar, sidecarRecords);
     }
 
+    public void manageInProgressPrecedingRecord(
+            final RecordsHistorian recordsHistorian,
+            final ExpirableTxnRecord.Builder recordSoFar,
+            final TransactionBody.Builder syntheticBody) {
+        ensureFamiliarityWith(recordsHistorian);
+        if (thisRecordSourceId == UNKNOWN_RECORD_SOURCE_ID) {
+            thisRecordSourceId = recordsHistorian.nextChildRecordSourceId();
+        }
+        recordsHistorian.trackPrecedingChildRecord(thisRecordSourceId, syntheticBody, recordSoFar);
+    }
+
     public WorldLedgers wrappedTrackingLedgers(final SideEffectsTracker sideEffectsTracker) {
         return withChangeObserver(trackingLedgers.wrapped(sideEffectsTracker));
     }
@@ -294,36 +305,32 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     private void onAccountPropertyChange(
             final AccountID id, final AccountProperty property, final Object newValue) {
-        /* HTS precompiles cannot create/delete accounts, so the only property we need to keep consistent is BALANCE */
-        if (property == BALANCE) {
-            final var address = EntityIdUtils.asTypedEvmAddress(id);
-            /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
-            if (deletedAccounts.contains(address)) {
-                throw new IllegalArgumentException(
-                        "A wrapped tracking ledger tried to change the "
-                                + "balance of deleted account "
-                                + asLiteralString(id)
-                                + " to "
-                                + newValue);
-            }
-            var updatedAccount = updatedAccounts.get(address);
-            if (updatedAccount == null) {
-                final var origin = getForMutation(address);
-                /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as
-                 * non-existent, and none of the HTS precompiles should be creating accounts */
-                if (origin == null) {
-                    throw new IllegalArgumentException(
-                            "A wrapped tracking ledger tried to create/change the "
-                                    + "balance of missing account "
-                                    + asLiteralString(id)
-                                    + " to "
-                                    + newValue);
-                }
+        final var address = EntityIdUtils.asTypedEvmAddress(id);
+        /* Impossible with a well-behaved precompile, as our wrapped accounts should also show this as deleted */
+        if (deletedAccounts.contains(address)) {
+            throw new IllegalArgumentException(
+                    "A wrapped tracking ledger tried to change the "
+                            + "balance of deleted account "
+                            + asLiteralString(id)
+                            + " to "
+                            + newValue);
+        }
+        var updatedAccount = updatedAccounts.get(address);
+        if (updatedAccount == null) {
+            final var origin = getForMutation(address);
+            if (origin == null) {
+                // we are observing property change for a freshly
+                // created lazy account through the HTS precompiled contract,
+                // which can occur with any transfer precompile function
+                updatedAccount =
+                        new UpdateTrackingLedgerAccount<>(address, trackingLedgers.accounts());
+            } else {
                 updatedAccount =
                         new UpdateTrackingLedgerAccount<>(origin, trackingLedgers.accounts());
-                track(updatedAccount);
             }
-
+            track(updatedAccount);
+        }
+        if (property == BALANCE) {
             final var newBalance = (long) newValue;
             updatedAccount.setBalanceFromPropertyChangeObserver(Wei.of(newBalance));
         }

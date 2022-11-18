@@ -463,6 +463,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .given(
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        overriding("cryptoCreateWithAlias.enabled", "false"),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
                         ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)

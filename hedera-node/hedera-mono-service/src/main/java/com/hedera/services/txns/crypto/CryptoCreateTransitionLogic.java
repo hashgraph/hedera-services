@@ -15,6 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -175,6 +176,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         if (!emptyAlias && !op.hasKey()) {
             if (op.getAlias().size() == EVM_ADDRESS_SIZE) {
                 customizer.alias(op.getAlias());
+                customizer.key(EMPTY_KEY);
             } else {
                 final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
 

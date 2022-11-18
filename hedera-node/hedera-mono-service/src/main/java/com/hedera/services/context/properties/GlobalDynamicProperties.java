@@ -791,4 +791,8 @@ public class GlobalDynamicProperties implements EvmProperties {
     public boolean shouldEnforceAccountCreationThrottleForContracts() {
         return enforceContractCreationThrottle;
     }
+
+    public boolean isImplicitCreationEnabled() {
+        return autoCreationEnabled && lazyCreationEnabled;
+    }
 }

@@ -16,9 +16,12 @@
 package com.hedera.services.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.protobuf.ByteString;
 import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.services.utils.EntityNum;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,6 +29,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,6 +89,33 @@ public class StackedContractAliases extends HederaEvmContractAliases implements 
                         }
                     });
         }
+    }
+
+    @Override
+    public void link(ByteString alias, EntityNum num) {
+        if (alias.size() != EVM_ADDRESS_LEN) {
+            throw new UnsupportedOperationException(
+                    "Stacked alias manager cannot link aliases with size != 20.");
+        }
+        link(Address.wrap(Bytes.of(alias.toByteArray())), num.toEvmAddress());
+    }
+
+    @Override
+    public void unlink(ByteString alias) {
+        throw new UnsupportedOperationException(
+                "Stacked alias manager cannot perform unlink outside EVM");
+    }
+
+    @Override
+    public void forgetEvmAddress(ByteString alias) {
+        throw new UnsupportedOperationException(
+                "Stacked alias manager cannot perform forgetEvmAddress outside EVM");
+    }
+
+    @Override
+    public boolean maybeLinkEvmAddress(@Nullable JKey key, EntityNum num) {
+        throw new UnsupportedOperationException(
+                "Stacked alias manager cannot perform maybeLinkEvmAddress through key");
     }
 
     @Override

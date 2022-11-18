@@ -131,6 +131,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
+    private static final String CHAIN_ID_PROP = "contracts.chainId";
     private static final String AUTO_CREATION_PROP = "autoCreation.enabled";
     private static final String LAZY_CREATION_PROP = "lazyCreation.enabled";
 

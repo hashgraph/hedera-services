@@ -1476,6 +1476,7 @@ class ERC721PrecompilesTest {
                                         eq(false),
                                         any(),
                                         any(),
+                                        any(),
                                         any()))
                 .thenReturn(CRYPTO_TRANSFER_NFT_WRAPPER);
         final var nftId = NftId.fromGrpc(token, serialNumber);
@@ -1568,6 +1569,7 @@ class ERC721PrecompilesTest {
                                         eq(nestedPretendArguments),
                                         any(),
                                         eq(false),
+                                        any(),
                                         any(),
                                         any(),
                                         any()))
