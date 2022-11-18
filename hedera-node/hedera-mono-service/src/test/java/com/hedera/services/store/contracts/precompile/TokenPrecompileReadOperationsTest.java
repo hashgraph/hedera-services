@@ -37,7 +37,6 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -77,14 +76,12 @@ class TokenPrecompileReadOperationsTest {
     @Mock private GlobalDynamicProperties dynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private MessageFrame frame;
-    @Mock private AccessorFactory accessorFactory;
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
     @Mock private SideEffectsTracker sideEffects;
-    @Mock private ImpliedTransfersMarshal impliedTransfers;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
@@ -122,7 +119,6 @@ class TokenPrecompileReadOperationsTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfers,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
