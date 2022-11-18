@@ -18,54 +18,54 @@ package com.hedera.node.app.spi.numbers;
 /**
  * Represents different types of special accounts used in the ledger.
  */
-public interface AccountNumbers {
+public interface HederaAccountNumbers {
     /**
-     * Account Number representing treasury
+     * Account number representing treasury
      * @return treasury account number
      */
     long treasury();
     /**
-     * Account Number representing freeze admin
+     * Account number representing freeze admin
      * @return freeze admin account number
      */
     long freezeAdmin();
     /**
-     * Account Number representing system admin
+     * Account number representing system admin
      * @return system admin account number
      */
     long systemAdmin();
     /**
-     * Account Number representing address book admin
+     * Account number representing address book admin
      * @return address book admin account
      */
     long addressBookAdmin();
     /**
-     * Account Number representing fee schedule admin
+     * Account number representing fee schedule admin
      * @return fee schedule admin account number
      */
     long feeSchedulesAdmin();
     /**
-     * Account Number representing exchange rate admin
+     * Account number representing exchange rate admin
      * @return exchange rate admin account number
      */
     long exchangeRatesAdmin();
     /**
-     * Account Number representing system delete admin
+     * Account number representing system delete admin
      * @return system delete admin account number
      */
     long systemDeleteAdmin();
     /**
-     * Account Number representing system undelete admin
+     * Account number representing system undelete admin
      * @return system undelete admin account number
      */
     long systemUndeleteAdmin();
     /**
-     * Account Number representing staking reward account number
+     * Account number representing staking reward account number
      * @return staking reward account number
      */
     long stakingRewardAccount();
     /**
-     * account number Number representing node reward account number
+     * Account number representing node reward account number
      * @return node reward account number
      */
     long nodeRewardAccount();

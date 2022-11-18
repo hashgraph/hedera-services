@@ -18,7 +18,7 @@ package com.hedera.node.app.spi.numbers;
 /**
  * Represents different types of special files used in the ledger.
  */
-public interface FileNumbers {
+public interface HederaFileNumbers {
     /**
      * File Number representing address book file
      * @return address book file number
