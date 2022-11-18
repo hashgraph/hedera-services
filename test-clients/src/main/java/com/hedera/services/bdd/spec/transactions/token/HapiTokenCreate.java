@@ -65,6 +65,9 @@ import org.apache.logging.log4j.Logger;
 public class HapiTokenCreate extends HapiTxnOp<HapiTokenCreate> {
     static final Logger log = LogManager.getLogger(HapiTokenCreate.class);
 
+    public static final long WELL_KNOWN_INITIAL_SUPPLY = 123L * Integer.MAX_VALUE;
+    public static final String WELL_KNOWN_NFT_SUPPLY_KEY = "wellKnownNftSupplyKey";
+
     private String token;
 
     private boolean advertiseCreation = false;
