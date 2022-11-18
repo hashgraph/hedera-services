@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -109,12 +110,13 @@ class HederaMessageCallProcessorTest {
         subject.start(frame, hederaTracer);
 
         verify(nonHtsPrecompile).computePrecompile(Bytes.of(1), frame);
+        verify(nonHtsPrecompile).getName();
         verify(hederaTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.of(1));
         verify(hederaTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
         verify(frame).decrementRemainingGas(GAS_ONE);
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
-        verify(frame).getState();
+        verify(frame, times(2)).getState();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaTracer);
     }
 
@@ -124,12 +126,13 @@ class HederaMessageCallProcessorTest {
         given(frame.getInputData()).willReturn(Bytes.of(1));
         given(frame.getContractAddress()).willReturn(HTS_PRECOMPILE_ADDRESS);
         given(frame.getState()).willReturn(CODE_SUCCESS);
+        given(htsPrecompile.getName()).willReturn("HTS");
         given(htsPrecompile.computeCosted(any(), eq(frame)))
                 .willReturn(Pair.of(GAS_ONE, Bytes.of(1)));
 
         subject.start(frame, hederaTracer);
 
-        verify(frame).getState();
+        verify(frame, times(2)).getState();
         verify(hederaTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.of(1));
         verify(hederaTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
         verify(frame).decrementRemainingGas(GAS_ONE);
@@ -227,6 +230,8 @@ class HederaMessageCallProcessorTest {
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(frame).decrementRemainingGas(GAS_ONE_K);
         verify(nonHtsPrecompile).computePrecompile(Bytes.EMPTY, frame);
+        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile).gasRequirement(Bytes.EMPTY);
         verify(operationTrace).tracePrecompileCall(frame, GAS_ONE_M, null);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
     }
@@ -243,6 +248,8 @@ class HederaMessageCallProcessorTest {
 
         verify(frame).setState(EXCEPTIONAL_HALT);
         verify(operationTrace).tracePrecompileCall(frame, GAS_ONE, null);
+        verify(nonHtsPrecompile).getName();
+        verify(nonHtsPrecompile).gasRequirement(Bytes.EMPTY);
         verifyNoMoreInteractions(nonHtsPrecompile, frame, operationTrace);
     }
 
@@ -250,6 +257,7 @@ class HederaMessageCallProcessorTest {
     void revertedPrecompileReturns() {
         given(frame.getInputData()).willReturn(Bytes.EMPTY);
         given(htsPrecompile.computeCosted(any(), any())).willReturn(Pair.of(GAS_ONE, output));
+        given(htsPrecompile.getName()).willReturn("HTS");
         given(frame.getState()).willReturn(REVERT);
 
         subject.executeHederaPrecompile(htsPrecompile, frame, operationTrace);

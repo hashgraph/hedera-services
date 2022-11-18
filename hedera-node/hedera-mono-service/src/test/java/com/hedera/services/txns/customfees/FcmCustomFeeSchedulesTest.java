@@ -35,7 +35,6 @@ class FcmCustomFeeSchedulesTest {
     private FcmCustomFeeSchedules subject;
 
     MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
-
     private final EntityId aTreasury = new EntityId(0, 0, 12);
     private final EntityId bTreasury = new EntityId(0, 0, 13);
     private final EntityId tokenA = new EntityId(0, 0, 1);
@@ -64,6 +63,23 @@ class FcmCustomFeeSchedulesTest {
 
     @Test
     void validateLookUpScheduleFor() {
+        // then:
+        final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
+        final var tokenBFees = subject.lookupMetaFor(tokenB.asId());
+        final var missingTokenFees = subject.lookupMetaFor(missingToken.asId());
+
+        // expect:
+        assertEquals(aToken.customFeeSchedule(), tokenAFees.customFees());
+        assertEquals(aTreasury, tokenAFees.treasuryId().asEntityId());
+        assertEquals(bToken.customFeeSchedule(), tokenBFees.customFees());
+        assertEquals(bTreasury, tokenBFees.treasuryId().asEntityId());
+        final var missingId = missingToken.asId();
+        assertEquals(CustomFeeMeta.forMissingLookupOf(missingId), missingTokenFees);
+    }
+
+    @Test
+    void validateLookUpScheduleForUsingLedger() {
+        subject = new FcmCustomFeeSchedules(() -> tokens);
         // then:
         final var tokenAFees = subject.lookupMetaFor(tokenA.asId());
         final var tokenBFees = subject.lookupMetaFor(tokenB.asId());

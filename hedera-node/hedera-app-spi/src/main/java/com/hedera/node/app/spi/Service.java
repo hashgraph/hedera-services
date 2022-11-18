@@ -30,4 +30,22 @@ public interface Service {
      */
     @Nonnull
     PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+
+    /**
+     * Creates and returns a new {@link TransactionHandler}
+     *
+     * @return A new {@link TransactionHandler}
+     */
+    default @Nonnull TransactionHandler createTransactionHandler(@Nonnull States states) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Creates and returns a new {@link QueryHandler}
+     *
+     * @return A new {@link QueryHandler}
+     */
+    default @Nonnull QueryHandler createQueryHandler(@Nonnull States states) {
+        throw new UnsupportedOperationException();
+    }
 }

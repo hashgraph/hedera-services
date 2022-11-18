@@ -329,6 +329,15 @@ class StakingAccountsCommitInterceptorTest {
     }
 
     @Test
+    void earningZeroRewardsWithStartBeforeLastNonRewardableStillUpdatesSASOLARP() {
+        final var account = mock(HederaAccount.class);
+        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(3L);
+        given(account.getStakePeriodStart()).willReturn(2L);
+
+        assertTrue(subject.shouldRememberStakeStartFor(account, -1, 0));
+    }
+
+    @Test
     void anAccountWithAlreadyCollectedRewardShouldNotHaveStakeStartUpdated() {
         given(dynamicProperties.isStakingEnabled()).willReturn(true);
         final var changes = new EntityChangeSet<AccountID, HederaAccount, AccountProperty>();

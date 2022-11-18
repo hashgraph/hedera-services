@@ -35,6 +35,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.enableContractAutoRenewWith;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
@@ -90,7 +92,50 @@ public class StakingSuite extends HapiApiSuite {
                 secondOrderRewardSituationsWork(),
                 endOfStakingPeriodRecTest(),
                 rewardsOfDeletedAreRedirectedToBeneficiary(),
-                canBeRewardedWithoutMinStakeIfSoConfigured());
+                canBeRewardedWithoutMinStakeIfSoConfigured(),
+                zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
+                autoRenewalsCanTriggerStakingRewards());
+    }
+
+    /**
+     * Creates a contract staked to a node with a lifetime just over one staking period; waits long
+     * enough for it to be eligible for rewards, and then triggers its auto-renewal.
+     *
+     * <p>Since system records aren't queryable via HAPI, it's necessary to add logging in e.g.
+     * ExpiryRecordsHelper#finalizeAndStream() to inspect the generated record and confirm staking
+     * rewards are paid.
+     *
+     * @return the spec described above
+     */
+    private HapiApiSpec autoRenewalsCanTriggerStakingRewards() {
+        final var initBalance = ONE_HBAR * 1000;
+        final var minimalLifetime = 3;
+        final var creation = "creation";
+
+        return defaultHapiSpec("AutoRenewalsCanTriggerStakingRewards")
+                .given(
+                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+                        overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)),
+                        cryptoCreate("miscStaker")
+                                .stakedNodeId(0)
+                                .balance(ONE_HUNDRED_HBARS * 1000),
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .when(
+                        enableContractAutoRenewWith(minimalLifetime, 0),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .gas(2_000_000)
+                                .entityMemo("")
+                                .stakedNodeId(0L)
+                                // Lifetime is in seconds not milliseconds
+                                .autoRenewSecs((INTER_PERIOD_SLEEP_MS + BUFFER) / 1000)
+                                .balance(initBalance)
+                                .via(creation),
+                        sleepFor(INTER_PERIOD_SLEEP_MS),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .then(cryptoTransfer(tinyBarsFromTo(GENESIS, NODE, 1L)));
     }
 
     private HapiApiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {
@@ -192,6 +237,27 @@ public class StakingSuite extends HapiApiSuite {
                         sleepFor(INTER_PERIOD_SLEEP_MS))
                 .then(
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, CAROL, 1)).via(FIRST_TRANSFER),
+                        getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
+    }
+
+    private HapiApiSpec zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP() {
+        return defaultHapiSpec("ZeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP")
+                .given(
+                        overriding(STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR),
+                        overriding(STAKING_REWARD_RATE, "" + SOME_REWARD_RATE),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)),
+                        // Ensure all periods have a non-zero reward rate
+                        cryptoCreate("helpfulStaker").stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .when(
+                        cryptoCreate(ALICE).stakedNodeId(0).balance(0L),
+                        sleepFor(INTER_PERIOD_SLEEP_MS),
+                        cryptoTransfer(tinyBarsFromTo(GENESIS, ALICE, ONE_HUNDRED_HBARS)),
+                        sleepFor(INTER_PERIOD_SLEEP_MS),
+                        cryptoTransfer(tinyBarsFromTo(ALICE, FUNDING, ONE_HUNDRED_HBARS)),
+                        sleepFor(INTER_PERIOD_SLEEP_MS))
+                .then(
+                        cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, ALICE, 1)).via(FIRST_TRANSFER),
                         getTxnRecord(FIRST_TRANSFER).hasPaidStakingRewardsCount(1));
     }
 

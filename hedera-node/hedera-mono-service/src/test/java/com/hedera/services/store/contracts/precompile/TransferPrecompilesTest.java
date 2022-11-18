@@ -285,7 +285,6 @@ class TransferPrecompilesTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
@@ -304,6 +303,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
@@ -365,6 +366,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -443,6 +446,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -512,6 +517,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -591,6 +598,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -670,6 +679,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -754,6 +765,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -846,6 +859,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -923,6 +938,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1001,6 +1018,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1694,6 +1713,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1772,6 +1793,8 @@ class TransferPrecompilesTest {
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -1870,6 +1893,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -1901,6 +1926,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -1932,6 +1959,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -1963,6 +1992,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2003,6 +2034,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2034,6 +2067,8 @@ class TransferPrecompilesTest {
         givenPricingUtilsContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2067,6 +2102,8 @@ class TransferPrecompilesTest {
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2103,6 +2140,8 @@ class TransferPrecompilesTest {
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2140,6 +2179,8 @@ class TransferPrecompilesTest {
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2177,6 +2218,8 @@ class TransferPrecompilesTest {
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))
@@ -2214,6 +2257,8 @@ class TransferPrecompilesTest {
         givenMinFrameContext();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(syntheticTxnFactory.createCryptoTransfer(any()))

@@ -23,6 +23,12 @@ import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.FeeDistribution;
+import com.hedera.services.grpc.marshalling.AliasResolver;
+import com.hedera.services.grpc.marshalling.BalanceChangeManager;
+import com.hedera.services.grpc.marshalling.CustomSchedulesManager;
+import com.hedera.services.grpc.marshalling.FeeAssessor;
+import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.services.ledger.PureTransferSemanticChecks;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.TransferLogic;
@@ -55,6 +61,7 @@ import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
+import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.txns.token.AssociateLogic;
 import com.hedera.services.txns.token.BurnLogic;
 import com.hedera.services.txns.token.CreateLogic;
@@ -72,7 +79,11 @@ import com.hedera.services.txns.token.process.DissociationFactory;
 import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -93,6 +104,12 @@ public class InfrastructureFactory {
     private final TransactionContext txnCtx;
     private final AliasManager aliasManager;
     private final FeeDistribution feeDistribution;
+    private final FeeAssessor feeAssessor;
+    private final Supplier<AliasResolver> aliasResolverFactory;
+    private final PureTransferSemanticChecks checks;
+    private final BalanceChangeManager.ChangeManagerFactory changeManagerFactory;
+    private final Predicate<CryptoTransferTransactionBody> aliasCheck;
+    private final Function<CustomFeeSchedules, CustomSchedulesManager> schedulesManagerFactory;
     private final Provider<FeeCalculator> feeCalculator;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final StateView view;
@@ -111,6 +128,8 @@ public class InfrastructureFactory {
             final TransactionContext txnCtx,
             final AliasManager aliasManager,
             final FeeDistribution feeDistribution,
+            final FeeAssessor feeAssessor,
+            final PureTransferSemanticChecks checks,
             final Provider<FeeCalculator> feeCalculator,
             final SyntheticTxnFactory syntheticTxnFactory,
             final StateView view,
@@ -126,6 +145,12 @@ public class InfrastructureFactory {
         this.txnCtx = txnCtx;
         this.aliasManager = aliasManager;
         this.feeDistribution = feeDistribution;
+        this.feeAssessor = feeAssessor;
+        this.aliasResolverFactory = AliasResolver::new;
+        this.checks = checks;
+        this.changeManagerFactory = BalanceChangeManager::new;
+        this.aliasCheck = AliasResolver::usesAliases;
+        this.schedulesManagerFactory = CustomSchedulesManager::new;
         this.feeCalculator = feeCalculator;
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.view = view;
@@ -165,6 +190,20 @@ public class InfrastructureFactory {
                 tokenRelsLedger,
                 nftsLedger,
                 backingTokens);
+    }
+
+    public ImpliedTransfersMarshal newImpliedTransfersMarshal(
+            final CustomFeeSchedules customFeeSchedules) {
+        return new ImpliedTransfersMarshal(
+                feeAssessor,
+                aliasManager,
+                customFeeSchedules,
+                aliasResolverFactory,
+                dynamicProperties,
+                checks,
+                aliasCheck,
+                changeManagerFactory,
+                schedulesManagerFactory);
     }
 
     public BurnLogic newBurnLogic(

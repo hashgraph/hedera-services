@@ -150,14 +150,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
             final Address senderAddress,
-            final ImpliedTransfersMarshal impliedTransfersMarshal,
             final boolean isLazyCreationEnabled) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.functionId = functionId;
         this.senderAddress = senderAddress;
-        this.impliedTransfersMarshal = impliedTransfersMarshal;
+        this.impliedTransfersMarshal =
+                infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
         this.isLazyCreationEnabled = isLazyCreationEnabled;
     }
 
