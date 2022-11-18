@@ -30,9 +30,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.lang3.NotImplementedException;
-
 import javax.annotation.Nonnull;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -124,9 +123,11 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
 
         final var newAccountKeyMustSign =
-                !((CryptoSignatureWaivers) ctx.signatureWaivers()).isNewKeySignatureWaived(txn, payer);
+                !((CryptoSignatureWaivers) ctx.signatureWaivers())
+                        .isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign =
-                !((CryptoSignatureWaivers) ctx.signatureWaivers()).isTargetAccountSignatureWaived(txn, payer);
+                !((CryptoSignatureWaivers) ctx.signatureWaivers())
+                        .isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
             meta.addNonPayerKey(updateAccountId);
         }

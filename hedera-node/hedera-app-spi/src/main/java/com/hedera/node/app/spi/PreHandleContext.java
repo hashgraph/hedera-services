@@ -15,10 +15,12 @@
  */
 package com.hedera.node.app.spi;
 
-
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
- * for signing requirements using {@link SigWaivers} to validate if any account's signature can be waived it contains
- * @param signatureWaivers
+ * for signing requirements using {@link SigWaivers} to validate if any account's signature can be
+ * waived it contains
+ *
+ * @param signatureWaivers provides information about signature waiver special cases for some
+ *     transactions
  */
 public record PreHandleContext(SigWaivers signatureWaivers) {}

@@ -33,9 +33,7 @@ import com.hedera.services.context.properties.PropertySource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * FUTURE: This class will be moved to hedera-app-spi module in future PRs
- */
+/** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class AccountNumbers implements HederaAccountNumbers {
     private final PropertySource properties;
@@ -55,6 +53,7 @@ public class AccountNumbers implements HederaAccountNumbers {
     public AccountNumbers(@CompositeProps PropertySource properties) {
         this.properties = properties;
     }
+
     @Override
     public long treasury() {
         if (treasury == UNKNOWN_NUMBER) {
@@ -62,6 +61,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return treasury;
     }
+
     @Override
     public long freezeAdmin() {
         if (freezeAdmin == UNKNOWN_NUMBER) {
@@ -69,6 +69,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return freezeAdmin;
     }
+
     @Override
     public long systemAdmin() {
         if (systemAdmin == UNKNOWN_NUMBER) {
@@ -76,6 +77,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return systemAdmin;
     }
+
     @Override
     public long addressBookAdmin() {
         if (addressBookAdmin == UNKNOWN_NUMBER) {
@@ -83,6 +85,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return addressBookAdmin;
     }
+
     @Override
     public long feeSchedulesAdmin() {
         if (feeSchedulesAdmin == UNKNOWN_NUMBER) {
@@ -90,6 +93,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return feeSchedulesAdmin;
     }
+
     @Override
     public long exchangeRatesAdmin() {
         if (exchangeRatesAdmin == UNKNOWN_NUMBER) {
@@ -97,6 +101,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return exchangeRatesAdmin;
     }
+
     @Override
     public long systemDeleteAdmin() {
         if (systemDeleteAdmin == UNKNOWN_NUMBER) {
@@ -104,6 +109,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return systemDeleteAdmin;
     }
+
     @Override
     public long systemUndeleteAdmin() {
         if (systemUndeleteAdmin == UNKNOWN_NUMBER) {
@@ -111,6 +117,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return systemUndeleteAdmin;
     }
+
     @Override
     public long stakingRewardAccount() {
         if (stakingRewardAccount == UNKNOWN_NUMBER) {
@@ -118,6 +125,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return stakingRewardAccount;
     }
+
     @Override
     public long nodeRewardAccount() {
         if (nodeRewardAccount == UNKNOWN_NUMBER) {
@@ -125,6 +133,7 @@ public class AccountNumbers implements HederaAccountNumbers {
         }
         return nodeRewardAccount;
     }
+
     @Override
     public boolean isSuperuser(long num) {
         return num == treasury() || num == systemAdmin();

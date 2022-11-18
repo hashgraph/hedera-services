@@ -40,7 +40,6 @@ import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

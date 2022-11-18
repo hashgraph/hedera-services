@@ -23,9 +23,8 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-/**
- * FUTURE: This class will be moved to hedera-app-spi module in future PRs
- */
+
+/** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class FileNumbers implements HederaFileNumbers {
     private final HederaNumbers hederaNums;
@@ -46,6 +45,7 @@ public class FileNumbers implements HederaFileNumbers {
         this.hederaNums = hederaNums;
         this.properties = properties;
     }
+
     @Override
     public long addressBook() {
         if (addressBook == UNKNOWN_NUMBER) {
@@ -53,6 +53,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return addressBook;
     }
+
     @Override
     public long nodeDetails() {
         if (nodeDetails == UNKNOWN_NUMBER) {
@@ -60,6 +61,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return nodeDetails;
     }
+
     @Override
     public long feeSchedules() {
         if (feeSchedules == UNKNOWN_NUMBER) {
@@ -67,6 +69,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return feeSchedules;
     }
+
     @Override
     public long exchangeRates() {
         if (exchangeRates == UNKNOWN_NUMBER) {
@@ -74,6 +77,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return exchangeRates;
     }
+
     @Override
     public long applicationProperties() {
         if (applicationProperties == UNKNOWN_NUMBER) {
@@ -81,6 +85,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return applicationProperties;
     }
+
     @Override
     public long apiPermissions() {
         if (apiPermissions == UNKNOWN_NUMBER) {
@@ -88,6 +93,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return apiPermissions;
     }
+
     @Override
     public long firstSoftwareUpdateFile() {
         if (firstUpdateFile == UNKNOWN_NUMBER) {
@@ -95,6 +101,7 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return firstUpdateFile;
     }
+
     @Override
     public long lastSoftwareUpdateFile() {
         if (lastUpdateFile == UNKNOWN_NUMBER) {
@@ -102,10 +109,12 @@ public class FileNumbers implements HederaFileNumbers {
         }
         return lastUpdateFile;
     }
+
     @Override
     public boolean isSoftwareUpdateFile(final long num) {
         return firstSoftwareUpdateFile() <= num && num <= lastSoftwareUpdateFile();
     }
+
     @Override
     public long throttleDefinitions() {
         if (throttleDefinitions == UNKNOWN_NUMBER) {

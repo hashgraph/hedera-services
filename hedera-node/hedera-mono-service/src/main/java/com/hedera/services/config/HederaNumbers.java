@@ -23,9 +23,8 @@ import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-/**
- * FUTURE: This class will be moved to hedera-app-spi module in future PRs
- */
+
+/** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
 public class HederaNumbers {
     public static final long NUM_RESERVED_SYSTEM_ENTITIES = 750L;
