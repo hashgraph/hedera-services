@@ -70,13 +70,13 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.*;
@@ -867,7 +867,9 @@ class ServicesStateTest {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
         when(platform.getCryptography())
-                .thenReturn(new CryptoEngine(getStaticThreadManager(), mock(CryptoConfig.class)));
+                .thenReturn(
+                        new CryptoEngine(
+                                getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platform.getCryptography());
         return platform;
     }
