@@ -20,5 +20,22 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
-    api(project(":hedera-node:hedera-app-api"))
+    api(project(":hedera-node:hedera-app-spi"))
+    implementation(libs.jsr305.annotation)
+    implementation(libs.hapi)
+    implementation(libs.bundles.helidon)
+    implementation(libs.bundles.swirlds)
+    itestImplementation(libs.hapi)
+    itestImplementation(libs.bundles.helidon)
+    itestImplementation(libs.bundles.swirlds)
+    itestImplementation(testLibs.helidon.grpc.client)
+    itestImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.mockito)
+    testImplementation(testLibs.bundles.junit5)
+}
+
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-api")
 }

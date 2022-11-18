@@ -24,7 +24,7 @@ import static com.hedera.services.contracts.execution.traceability.CallOperation
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -193,7 +193,7 @@ public class HederaTracer implements HederaOperationTracer {
                     syntheticInvalidAction.setCallingContract(
                             EntityId.fromAddress(
                                     asMirrorAddress(frame.getContractAddress(), frame)));
-                    syntheticInvalidAction.setInvalidSolidityAddress(
+                    syntheticInvalidAction.setTargetedAddress(
                             Words.toAddress(frame.getStackItem(1)).toArray());
                     syntheticInvalidAction.setError(
                             INVALID_SOLIDITY_ADDRESS.name().getBytes(StandardCharsets.UTF_8));

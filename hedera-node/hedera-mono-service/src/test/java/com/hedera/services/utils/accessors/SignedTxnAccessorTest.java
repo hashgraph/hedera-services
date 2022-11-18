@@ -199,13 +199,14 @@ class SignedTxnAccessorTest {
         xferWithAliasesNoAutoCreation =
                 xferWithAliasesNoAutoCreation.toBuilder().setSigMap(expectedMap).build();
         final var body = CommonUtils.extractTransactionBody(xferNoAliases);
-
-        var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
+        final var signedTransaction = TxnUtils.signedTransactionFrom(body, expectedMap);
+        final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
+        var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
         accessor.countImplicitCreationsWith(aliasManager);
         final var txnUsageMeta = accessor.baseUsageMeta();
 
-        assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
-        assertArrayEquals(xferNoAliases.toByteArray(), accessor.getSignedTxnWrapperBytes());
+        assertEquals(newTransaction, accessor.getSignedTxnWrapper());
+        assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
         assertEquals(body, accessor.getTxn());
         assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
         assertEquals(body.getTransactionID(), accessor.getTxnId());
@@ -213,7 +214,8 @@ class SignedTxnAccessorTest {
         assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
         assertEquals(offeredFee, accessor.getOfferedFee());
         assertArrayEquals(
-                CommonUtils.noThrowSha384HashOf(xferNoAliases.toByteArray()), accessor.getHash());
+                CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
+                accessor.getHash());
         assertEquals(expectedMap, accessor.getSigMap());
         assertArrayEquals("irst".getBytes(), accessor.getPkToSigsFn().sigBytesFor("f".getBytes()));
         assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
@@ -467,7 +469,10 @@ class SignedTxnAccessorTest {
                         -70000l,
                         5679l,
                         70000l);
-        final var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
+        var signedTxn =
+                SignedTransaction.parseFrom(xferWithTopLevelBodyBytes.getSignedTransactionBytes());
+        final var body = TransactionBody.parseFrom(signedTxn.getBodyBytes());
+
         final var confusedTxn = Transaction.parseFrom(body.toByteArray());
 
         final var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);

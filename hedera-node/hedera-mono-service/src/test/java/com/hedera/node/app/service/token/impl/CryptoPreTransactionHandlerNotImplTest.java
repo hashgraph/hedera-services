@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,9 +39,6 @@ class CryptoPreTransactionHandlerNotImplTest {
     void notImplementedStuffIsntImplemented() {
         assertThrows(NotImplementedException.class, () -> subject.preHandleUpdateAccount(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleCryptoDelete(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleApproveAllowances(null));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteAllowances(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null));
         assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null));
     }

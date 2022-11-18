@@ -21,7 +21,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.suites.HapiApiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiApiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiApiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiApiSuite.MAX_CALL_DATA_SIZE;
@@ -62,7 +64,6 @@ import java.util.function.Supplier;
 import org.bouncycastle.util.encoders.Hex;
 
 public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
-    public static final String ETH_HASH_KEY = "EthHash";
     private static final String CALL_DATA_FILE_NAME = "CallData";
     private List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
@@ -71,7 +72,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public static final long DEFAULT_GAS_PRICE_TINYBARS = 50L;
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
-    private byte[] chainId = Integers.toBytes(298);
     private long nonce = 0L;
     private boolean useSpecNonce = true;
     private BigInteger gasPrice =
@@ -310,7 +310,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 new EthTxData(
                         null,
                         type,
-                        chainId,
+                        Integers.toBytes(CHAIN_ID),
                         nonce,
                         gasPriceBytes,
                         maxPriorityGasBytes,

@@ -13,6 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.shadow-jar")
@@ -51,6 +68,7 @@ dependencies {
         exclude("javax.annotation", "javax.annotation-api")
     }
     implementation(libs.headlong)
+    implementation(libs.log4j.core)
     implementation(testLibs.json)
     implementation(testLibs.junit.jupiter.api)
     implementation(testLibs.picocli)
@@ -74,10 +92,8 @@ tasks.eet {
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
-val sjJar: String by project
-val sjMainClass: String by project
 tasks.shadowJar {
-    archiveFileName.set(sjJar)
+    archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
     fileMode = 664
@@ -85,11 +101,50 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Main-Class" to sjMainClass
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+            "Multi-Release" to "true"
         )
     }
 }
 
+val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    configurations = listOf(project.configurations["runtimeClasspath"])
+
+    exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+
+    archiveClassifier.set("yahcli")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+            "Multi-Release" to "true"
+        )
+    }
+}
+
+val copyYahCli = tasks.register<Copy>("copyYahCli") {
+    group = "copy"
+    from(yahCliJar)
+    into(project.file("yahcli"))
+    rename { "yahcli.jar" }
+}
+
+val cleanYahCli = tasks.register<Delete>("cleanYahCli") {
+    group = "build"
+    delete(File(project.file("yahcli"), "yahcli.jar"))
+}
+
 tasks.assemble {
     dependsOn(tasks.shadowJar)
+    dependsOn(copyYahCli)
+}
+
+tasks.clean {
+    dependsOn(cleanYahCli)
 }

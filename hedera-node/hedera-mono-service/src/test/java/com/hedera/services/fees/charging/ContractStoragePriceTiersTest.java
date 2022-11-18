@@ -136,14 +136,22 @@ class ContractStoragePriceTiersTest {
     }
 
     @Test
-    void failsOnZeroSlotsRequested() {
+    void failsOnNegativeSlotsRequested() {
         givenTypicalSubject();
-        final var usage = nonFreeUsageFor(0);
+        final var usage = nonFreeUsageFor(-1);
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         subject.priceOfPendingUsage(
                                 someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
+    }
+
+    @Test
+    void zeroSlotsRequestedIsZeroRent() {
+        givenTypicalSubject();
+        final var usage = nonFreeUsageFor(0);
+        assertEquals(
+                0, subject.priceOfPendingUsage(someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
     }
 
     @Test

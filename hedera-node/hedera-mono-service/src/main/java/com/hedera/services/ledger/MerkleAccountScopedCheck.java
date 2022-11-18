@@ -18,7 +18,7 @@ package com.hedera.services.ledger;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
@@ -105,8 +105,10 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                 return useExtantProps ? extantProps.apply(IS_DELETED) : account.isDeleted();
             case BALANCE:
                 return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
-            case EXPIRY:
-                return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
+            case EXPIRED_AND_PENDING_REMOVAL:
+                return useExtantProps
+                        ? extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)
+                        : account.isExpiredAndPendingRemoval();
             case CRYPTO_ALLOWANCES:
                 return useExtantProps
                         ? extantProps.apply(CRYPTO_ALLOWANCES)
@@ -133,11 +135,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             return ACCOUNT_DELETED;
         }
 
-        final var expiry = (long) getEffective(EXPIRY, account, extantProps, changeSet);
+        final var isDetached =
+                (boolean)
+                        getEffective(EXPIRED_AND_PENDING_REMOVAL, account, extantProps, changeSet);
         final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
         final var isContract =
                 (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
-        final var expiryStatus = validator.expiryStatusGiven(balance, expiry, isContract);
+        final var expiryStatus = validator.expiryStatusGiven(balance, isDetached, isContract);
         if (expiryStatus != OK) {
             return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
         }

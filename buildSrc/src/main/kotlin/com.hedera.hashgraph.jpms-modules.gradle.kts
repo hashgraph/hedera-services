@@ -30,6 +30,11 @@ extraJavaModuleInfo {
 
     automaticModule("io.grpc:grpc-api", "io.grpc.api")
     automaticModule("io.grpc:grpc-netty", "io.grpc.netty")
+    automaticModule("io.grpc:grpc-stub", "grpc.stub")
+    automaticModule("io.grpc:grpc-protobuf", "grpc.protobuf")
+    automaticModule("io.grpc:grpc-services", "grpc.services")
+    automaticModule("io.grpc:grpc-protobuf-lite", "grpc.protobuf.lite")
+    automaticModule("io.grpc:grpc-netty", "grpc.netty")
 
     automaticModule("org.openjdk.jmh:jmh-core", "jmh.core")
     automaticModule("org.openjdk.jmh:jmh-generator-asm", "jmh.generator.asm")
@@ -59,6 +64,9 @@ extraJavaModuleInfo {
     automaticModule("io.prometheus:simpleclient_httpserver", "io.prometheus.simpleclient.httpserver")
 
     automaticModule("j2objc-annotations-1.3.jar", "j2objc.annotations")
+    automaticModule("io.perfmark:perfmark-api", "perfmark.api")
+
+    automaticModule("org.eclipse.microprofile.health:microprofile-health-api", "microprofile.health.api")
 
     automaticModule("com.google.code.findbugs:jsr305", "jsr305")
     automaticModule("com.google.guava:listenablefuture", "listenablefuture")

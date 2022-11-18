@@ -15,6 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
@@ -28,6 +30,7 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
@@ -35,25 +38,16 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-/** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
-public class HederaMessageCallProcessor extends MessageCallProcessor {
+public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
-    private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
-            Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
@@ -65,9 +59,7 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
-        super(evm, precompiles);
-        hederaPrecompiles = new HashMap<>();
-        hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
+        super(evm, precompiles, hederaPrecompileList);
     }
 
     public HederaMessageCallProcessor(
@@ -85,32 +77,10 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 
     @Override
     public void start(final MessageFrame frame, final OperationTracer operationTracer) {
-        MessageFrame.State nonPrecompileResultState = null;
+        super.start(frame, operationTracer);
+
         final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
-        if (hederaPrecompile != null) {
-            executeHederaPrecompile(hederaPrecompile, frame, operationTracer);
-        } else {
-            if (frame.getValue().greaterThan(Wei.ZERO)) {
-                final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-                if (updater.isTokenAddress(frame.getRecipientAddress())) {
-                    frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
-                    frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
-                } else if (updater.get(frame.getRecipientAddress()) == null) {
-                    // can be reached only for a top level call with EVM_VERSION >= 0.32;
-                    // a top-level call to a non-existing recipient would have been rejected
-                    // immediately
-                    // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
-                    // EVM_VERSION < 0.32
-                    // and nested calls to non-existing recipients are currently rejected in all
-                    // versions (see {@code HederaOperationUtil})
-                    executeLazyCreate(frame, updater, operationTracer);
-                }
-            }
-            if (frame.getState() != EXCEPTIONAL_HALT) {
-                super.start(frame, operationTracer);
-            }
-            nonPrecompileResultState = frame.getState();
-        }
+        final var nonPrecompileResultState = frame.getState();
         if (nonPrecompileResultState != EXCEPTIONAL_HALT
                 && nonPrecompileResultState != CODE_EXECUTING) {
             // Pre-compile execution doesn't set the state to CODE_EXECUTING after start()
@@ -120,38 +90,29 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
                             hederaPrecompile != null
                                     ? ContractActionType.SYSTEM
                                     : ContractActionType.PRECOMPILE);
+        } else if (updater.get(frame.getRecipientAddress()) == null) {
+            // can be reached only for a top level call with EVM_VERSION >= 0.32;
+            // a top-level call to a non-existing recipient would have been rejected
+            // immediately
+            // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
+            // EVM_VERSION < 0.32
+            // and nested calls to non-existing recipients are currently rejected in all
+            // versions (see {@code HederaOperationUtil})
+            executeLazyCreate(frame, updater, operationTracer);
         }
     }
 
-    void executeHederaPrecompile(
+    @Override
+    protected void executeHederaPrecompile(
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        final long gasRequirement;
-        final Bytes output;
         if (contract instanceof HTSPrecompiledContract htsPrecompile) {
             final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
             output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
-        } else {
-            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-            gasRequirement = contract.gasRequirement(frame.getInputData());
         }
-        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-        if (frame.getState() == REVERT) {
-            return;
-        }
-        if (frame.getRemainingGas() < gasRequirement) {
-            frame.decrementRemainingGas(frame.getRemainingGas());
-            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-            frame.setState(EXCEPTIONAL_HALT);
-        } else if (output != null) {
-            frame.decrementRemainingGas(gasRequirement);
-            frame.setOutputData(output);
-            frame.setState(COMPLETED_SUCCESS);
-        } else {
-            frame.setState(EXCEPTIONAL_HALT);
-        }
+        super.executeHederaPrecompile(contract, frame, operationTracer);
     }
 
     private void executeLazyCreate(
