@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-
-public class CryptoSignatureWaiversImplTest {
+class CryptoSignatureWaiversImplTest {
     private CryptoSignatureWaiversImpl subject;
 
     @BeforeEach
@@ -33,7 +32,10 @@ public class CryptoSignatureWaiversImplTest {
 
     @Test
     void notImplementedStuffIsntImplemented() {
-        assertThrows(NotImplementedException.class, () -> subject.isNewKeySignatureWaived(any(), any()));
-        assertThrows(NotImplementedException.class, () -> subject.isTargetAccountSignatureWaived(any(), any()));
+        assertThrows(
+                NotImplementedException.class, () -> subject.isNewKeySignatureWaived(any(), any()));
+        assertThrows(
+                NotImplementedException.class,
+                () -> subject.isTargetAccountSignatureWaived(any(), any()));
     }
 }
