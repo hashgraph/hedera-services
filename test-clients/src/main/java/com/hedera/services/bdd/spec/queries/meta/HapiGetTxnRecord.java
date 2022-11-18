@@ -31,6 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.ABIJSON;
@@ -127,6 +128,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
+    private boolean assertEffectivePayersAreKnown = false;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -180,6 +182,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         this.eventName = eventName;
         this.eventDataObserver = dataObserver;
 
+        return this;
+    }
+
+    public HapiGetTxnRecord assertingKnownEffectivePayers() {
+        this.assertEffectivePayersAreKnown = true;
         return this;
     }
 
@@ -523,6 +530,23 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
         final var childRecords = txRecord.getChildTransactionRecordsList();
         assertChildRecords(spec, childRecords);
+
+        if (assertEffectivePayersAreKnown) {
+            actualRecord
+                    .getAssessedCustomFeesList()
+                    .forEach(
+                            acf ->
+                                    acf.getEffectivePayerAccountIdList()
+                                            .forEach(
+                                                    effPayer ->
+                                                            assertNotEquals(
+                                                                    0L,
+                                                                    effPayer.getAccountNum(),
+                                                                    "Assessed fee "
+                                                                            + acf
+                                                                            + " has unknown"
+                                                                            + " effective payer")));
+        }
     }
 
     private void assertCorrectRecord(HapiApiSpec spec, TransactionRecord actualRecord)
