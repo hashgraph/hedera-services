@@ -32,6 +32,7 @@ dependencies {
         exclude("com.google.code.findbugs", "jsr305")
     }
     implementation(libs.javax.inject)
+    implementation(project(":hapi-utils"))
 
     testImplementation(testLibs.mockito.jupiter)
 }

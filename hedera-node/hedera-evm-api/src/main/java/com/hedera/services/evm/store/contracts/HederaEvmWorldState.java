@@ -33,7 +33,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
 
     private AccountAccessor accountAccessor;
 
-    protected HederaEvmWorldState(
+    public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
             final AbstractCodeCache abstractCodeCache) {
@@ -42,7 +42,7 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
         this.abstractCodeCache = abstractCodeCache;
     }
 
-    protected HederaEvmWorldState(
+    public HederaEvmWorldState(
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final EvmProperties evmProperties,
             final AbstractCodeCache abstractCodeCache,

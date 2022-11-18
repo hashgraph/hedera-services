@@ -28,7 +28,7 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +70,7 @@ class HederaEvmMessageCallProcessorTest {
     @Mock private EVM evm;
     @Mock private PrecompileContractRegistry precompiles;
     @Mock private MessageFrame frame;
-    @Mock private HederaEvmOperationTracer hederaEvmOperationTracer;
+    @Mock private DefaultHederaTracer hederaEvmOperationTracer;
     @Mock private WorldUpdater worldUpdater;
     @Mock private PrecompiledContract nonHtsPrecompile;
     @Mock private AbstractLedgerEvmWorldUpdater updater;

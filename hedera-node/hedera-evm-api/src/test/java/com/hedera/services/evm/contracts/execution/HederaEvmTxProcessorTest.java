@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
@@ -78,8 +79,8 @@ class HederaEvmTxProcessorTest {
     @Mock private BlockValues blockValues;
     @Mock private BlockMetaSource blockMetaSource;
 
-    private final MockHederaEvmAccount sender =
-            new MockHederaEvmAccount(
+    private final HederaEvmAccount sender =
+            new HederaEvmAccount(
                     Address.fromHexString("0x000000000000000000000000000000000000071e"));
     private final Address senderAddress =
             Address.fromHexString("0x000000000000000000000000000000000000070e");

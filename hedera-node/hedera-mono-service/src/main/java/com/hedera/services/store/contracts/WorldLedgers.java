@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
@@ -74,9 +75,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class WorldLedgers {
-    public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
-            ByteString.copyFrom(new byte[] {0x3a, 0x21});
-
     private final ContractAliases aliases;
     private final StaticEntityAccess staticEntityAccess;
     private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
