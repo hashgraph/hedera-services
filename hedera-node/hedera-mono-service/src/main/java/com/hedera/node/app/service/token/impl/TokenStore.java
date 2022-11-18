@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
@@ -34,14 +34,14 @@ import javax.annotation.Nonnull;
  */
 public class TokenStore {
     /** The underlying data storage class that holds the token data. */
-    private final State<Long, MerkleToken> tokenState;
+    private final ReadableState<Long, MerkleToken> tokenState;
 
     /**
      * Create a new {@link TokenStore} instance.
      *
      * @param states The state to use.
      */
-    public TokenStore(@Nonnull final States states) {
+    public TokenStore(@Nonnull final ReadableStates states) {
         this.tokenState = states.get("TOKENS");
     }
 

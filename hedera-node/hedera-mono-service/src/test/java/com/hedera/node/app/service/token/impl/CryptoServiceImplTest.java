@@ -18,9 +18,9 @@ package com.hedera.node.app.service.token.impl;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.services.state.merkle.MerkleAccount;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,9 +28,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoServiceImplTest {
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
-    @Mock States states;
+    @Mock private ReadableState<Long, MerkleAccount> aliases;
+    @Mock private ReadableState<Long, MerkleAccount> accounts;
+    @Mock ReadableStates states;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";

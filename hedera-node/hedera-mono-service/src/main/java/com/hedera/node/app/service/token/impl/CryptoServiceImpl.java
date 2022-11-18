@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +26,8 @@ import org.jetbrains.annotations.NotNull;
 public final class CryptoServiceImpl implements CryptoService {
     @NotNull
     @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {
+    public CryptoPreTransactionHandler createPreTransactionHandler(
+            @Nonnull final ReadableStates states) {
         Objects.requireNonNull(states);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store);

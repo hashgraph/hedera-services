@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
@@ -46,8 +46,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TokenStoreTest {
-    @Mock private InMemoryStateImpl tokens;
-    @Mock private States states;
+    @Mock private ReadableState<Long, MerkleToken> tokens;
+    @Mock private ReadableStates states;
     private static final String TOKENS = "TOKENS";
     private final TokenID tokenId = asToken("0.0.2000");
     private final String symbol = "TestToken";

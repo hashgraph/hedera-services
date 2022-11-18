@@ -29,9 +29,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -50,11 +49,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
 class AccountStoreTest {
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
+    @Mock private ReadableState aliases;
+    @Mock private ReadableState accounts;
 
     @Mock private MerkleAccount account;
-    @Mock private States states;
+    @Mock private ReadableStates states;
     private Key payerKey = KeyUtils.A_COMPLEX_KEY;
     private HederaKey payerHederaKey = asHederaKey(payerKey).get();
     private AccountID payerAlias = asAliasAccount(ByteString.copyFromUtf8("testAlias"));

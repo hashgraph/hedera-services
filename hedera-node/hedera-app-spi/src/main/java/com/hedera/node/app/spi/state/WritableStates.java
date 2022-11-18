@@ -17,23 +17,19 @@ package com.hedera.node.app.spi.state;
 
 import javax.annotation.Nonnull;
 
-/**
- * A set of {@link State} used by a service. Any service may have one or more {@link State}s, and
- * this set is made available to the service during transaction handling by the application.
- */
-public interface States {
+public interface WritableStates {
     /**
-     * Gets the {@link State} associated with the given stateKey. If the state cannot be found, an
-     * exception is thrown. This should **never** happen in an application, and represents a fatal
-     * bug.
+     * Gets the {@link WritableState} associated with the given stateKey. If the state cannot be
+     * found, an exception is thrown. This should **never** happen in an application, and represents
+     * a fatal bug.
      *
      * @param stateKey The key used for looking up state
-     * @return The State for that key. This will never be null.
-     * @param <K> The key type in the State.
-     * @param <V> The value type in the State.
+     * @return The state for that key. This will never be null.
+     * @param <K> The key type in the state.
+     * @param <V> The value type in the state.
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @Nonnull
-    <K, V> State<K, V> get(@Nonnull String stateKey);
+    <K, V> WritableState<K, V> get(@Nonnull String stateKey);
 }

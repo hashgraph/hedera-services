@@ -15,42 +15,53 @@
  */
 package com.hedera.node.app.state.impl;
 
-import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.WritableState;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
-import java.time.Instant;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 
 /**
- * An implementation of {@link State} backed by a {@link VirtualMap}, resulting in a state that is
- * stored on disk.
+ * An implementation of {@link WritableState} backed by a {@link VirtualMap}, resulting in a state
+ * that is stored on disk.
  *
  * @param <K> The type of key for the state
  * @param <V> The type of value for the state
  */
-public final class OnDiskStateImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
-        extends StateBase<K, V> {
+public final class OnDiskState<K extends VirtualKey<? super K>, V extends VirtualValue>
+        extends MutableStateBase<K, V> {
     private final VirtualMap<K, V> virtualMap;
-    private final Instant lastModifiedTime;
 
-    public OnDiskStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull VirtualMap<K, V> virtualMap,
-            @Nonnull final Instant lastModifiedTime) {
+    public OnDiskState(@Nonnull final String stateKey, @Nonnull VirtualMap<K, V> virtualMap) {
         super(stateKey);
         this.virtualMap = Objects.requireNonNull(virtualMap);
-        this.lastModifiedTime = lastModifiedTime;
     }
 
     @Override
-    public Instant getLastModifiedTime() {
-        return lastModifiedTime;
-    }
-
-    @Override
-    protected V read(final K key) {
+    protected V readFromDataSource(@Nonnull K key) {
         return virtualMap.get(key);
+    }
+
+    @Override
+    protected V getForModifyFromDataSource(@Nonnull K key) {
+        return virtualMap.getForModify(key);
+    }
+
+    @Override
+    protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
+        virtualMap.put(key, value);
+    }
+
+    @Override
+    protected void removeFromDataSource(@Nonnull K key) {
+        virtualMap.remove(key);
+    }
+
+    @Nonnull
+    @Override
+    protected <T extends MerkleNode> T merkleNode() {
+        return (T) virtualMap;
     }
 }

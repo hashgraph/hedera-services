@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.consensus;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import javax.annotation.Nonnull;
 
 /**
@@ -33,5 +33,5 @@ public interface ConsensusService extends Service {
      */
     @Override
     @Nonnull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    ConsensusPreTransactionHandler createPreTransactionHandler(@Nonnull ReadableStates states);
 }

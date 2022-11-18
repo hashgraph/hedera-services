@@ -22,6 +22,10 @@ description = "Hedera Application - SPI"
 dependencies {
     implementation(libs.hapi)
     implementation(libs.jsr305.annotation)
+    implementation(libs.swirlds.common)
+    implementation(libs.swirlds.merkle)
+    implementation(libs.swirlds.virtualmap)
+    implementation(libs.swirlds.jasperdb)
 }
 
 configurations.all {

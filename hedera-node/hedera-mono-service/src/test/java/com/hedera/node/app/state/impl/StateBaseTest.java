@@ -15,38 +15,30 @@
  */
 package com.hedera.node.app.state.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import com.hedera.services.utils.EntityNum;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Optional;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class StateBaseTest {
-    private static final String ACCOUNTS = "ACCOUNTS";
-    private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
-
-    private StateBase subject = new InMemoryStateImpl(ACCOUNTS, lastModifiedTime);
-
-    @Test
-    void gettersWorkAsExpected() {
-        assertEquals(new HashMap<>(), subject.getReadKeys());
-        assertEquals(ACCOUNTS, subject.getStateKey());
-    }
-
-    @Test
-    void cachesReadKeys() {
-        final var num = EntityNum.fromLong(2L);
-        assertEquals(Optional.empty(), subject.get(num));
-    }
-
-    @Test
-    void throwsIfKeyIsNull() {
-        assertThrows(NullPointerException.class, () -> subject.get(null));
-    }
+    //    private static final String ACCOUNTS = "ACCOUNTS";
+    //    private final Instant lastModifiedTime = Instant.ofEpochSecond(1_234_567L);
+    //
+    //    private StateBase subject = new InMemoryState(ACCOUNTS, lastModifiedTime);
+    //
+    //    @Test
+    //    void gettersWorkAsExpected() {
+    //        assertEquals(new HashMap<>(), subject.getReadCache());
+    //        assertEquals(ACCOUNTS, subject.getStateKey());
+    //    }
+    //
+    //    @Test
+    //    void cachesReadKeys() {
+    //        final var num = EntityNum.fromLong(2L);
+    //        assertEquals(Optional.empty(), subject.get(num));
+    //    }
+    //
+    //    @Test
+    //    void throwsIfKeyIsNull() {
+    //        assertThrows(NullPointerException.class, () -> subject.get(null));
+    //    }
 }

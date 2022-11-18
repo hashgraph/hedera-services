@@ -26,9 +26,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.KeyUtils;
@@ -55,9 +54,9 @@ class SigTransactionMetadataTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
-    @Mock private States states;
+    @Mock private ReadableState<Long, MerkleAccount> aliases;
+    @Mock private ReadableState<Long, MerkleAccount> accounts;
+    @Mock private ReadableStates states;
     @Mock private MerkleAccount account;
     @Mock private MerkleAccount otherAccount;
 

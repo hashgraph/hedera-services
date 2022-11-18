@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import javax.annotation.Nonnull;
 
 /**
@@ -41,5 +41,5 @@ public interface CryptoService extends Service {
      */
     @Override
     @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull ReadableStates states);
 }

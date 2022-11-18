@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import javax.annotation.Nonnull;
 
 /**
@@ -33,5 +33,5 @@ public interface TokenService extends Service {
      */
     @Override
     @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull ReadableStates states);
 }

@@ -27,8 +27,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableState;
+import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,16 +43,16 @@ import javax.annotation.Nonnull;
  */
 public final class AccountStore {
     /** The underlying data storage class that holds the account data. */
-    private final State<Long, MerkleAccount> accountState;
+    private final ReadableState<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
-    private final State<ByteString, Long> aliases;
+    private final ReadableState<ByteString, Long> aliases;
 
     /**
      * Create a new {@link AccountStore} instance.
      *
      * @param states The state to use.
      */
-    public AccountStore(@Nonnull States states) {
+    public AccountStore(@Nonnull ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }
