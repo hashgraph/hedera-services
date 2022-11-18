@@ -137,17 +137,13 @@ public class ServicesMain implements SwirldMain {
     private void configurePlatform() {
         final var platform = app.platform();
         app.statsManager().initializeFor(platform);
-
-        final var notificationsRegistered =
-                platform.getNotificationEngine()
-                        .register(PlatformStatusChangeListener.class, this::platformStatusChange);
-        log.info("Notification engine registered: {}", notificationsRegistered);
     }
 
     private void validateLedgerState() {
         app.ledgerValidator().validate(app.workingState().accounts());
         app.nodeInfo().validateSelfAccountIfStaked();
         final var notifications = app.notificationEngine().get();
+        notifications.register(PlatformStatusChangeListener.class, this::platformStatusChange);
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
         notifications.register(
                 StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());
