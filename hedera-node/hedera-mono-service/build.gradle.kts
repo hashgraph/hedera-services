@@ -25,8 +25,18 @@ dependencies {
 
     api(project(":hedera-node:hedera-evm-api"))
     api(project(":hedera-node:hedera-app-spi"))
+    api(project(":hedera-admin-service"))
+    api(project(":hedera-consensus-service"))
+    api(project(":hedera-file-service"))
+    api(project(":hedera-network-service"))
+    api(project(":hedera-scheduled-service"))
+    api(project(":hedera-smart-contract-service"))
+    api(project(":hedera-token-service"))
+    api(project(":hedera-util-service"))
+
     implementation(project(":hapi-fees"))
     implementation(project(":hapi-utils"))
+
     implementation(libs.bundles.besu) {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }

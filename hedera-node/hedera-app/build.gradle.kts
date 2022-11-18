@@ -20,7 +20,15 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
-    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-admin-service-impl"))
+    implementation(project(":hedera-consensus-service-impl"))
+    implementation(project(":hedera-file-service-impl"))
+    implementation(project(":hedera-network-service-impl"))
+    implementation(project(":hedera-scheduled-service-impl"))
+    implementation(project(":hedera-smart-contract-service-impl"))
+    implementation(project(":hedera-token-service-impl"))
+    implementation(project(":hedera-util-service-impl"))
+
     implementation(libs.jsr305.annotation)
     implementation(libs.hapi)
     implementation(libs.bundles.helidon)
