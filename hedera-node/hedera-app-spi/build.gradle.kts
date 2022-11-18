@@ -21,4 +21,9 @@ description = "Hedera Application - SPI"
 
 dependencies {
     implementation(libs.hapi)
+    implementation(libs.jsr305.annotation)
+}
+
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
 }

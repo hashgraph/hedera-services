@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.api.implementation;
+package com.hedera.node.app.spi;
 
 /**
- * Placeholder <b>implementation</b> for to-be-determined public APIs. We'll remove this class when
- * we add real implementation code.
+ * Marks a type able to handle queries. Each {@link Service} may implement a {@link QueryHandler},
+ * exposing endpoints that may be invoked by clients.
  */
-@SuppressWarnings("unused")
-public class PlaceholderImplementation {}
+public interface QueryHandler {}

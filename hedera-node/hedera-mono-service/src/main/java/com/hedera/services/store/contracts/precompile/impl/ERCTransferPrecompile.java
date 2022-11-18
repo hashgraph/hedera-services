@@ -35,7 +35,6 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -104,8 +103,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final int functionId,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final int functionId) {
         super(
                 ledgers,
                 updater,
@@ -115,8 +113,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 infrastructureFactory,
                 pricingUtils,
                 functionId,
-                callerAccount,
-                impliedTransfersMarshal);
+                callerAccount);
         this.callerAccountID = EntityIdUtils.accountIdFromEvmAddress(callerAccount);
         this.tokenID = tokenID;
         this.isFungible = isFungible;
@@ -134,8 +131,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
-            final int functionId,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final int functionId) {
         this(
                 null,
                 callerAccount,
@@ -148,8 +144,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils,
-                functionId,
-                impliedTransfersMarshal);
+                functionId);
     }
 
     @Override
