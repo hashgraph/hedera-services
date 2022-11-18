@@ -16,8 +16,6 @@
 package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -30,8 +28,8 @@ import org.hyperledger.besu.evm.internal.FixedStack;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 public class HederaEvmSLoadOperation extends AbstractOperation {
-    protected final OptionalLong warmCost;
-    protected final OptionalLong coldCost;
+    protected final long warmCost;
+    protected final long coldCost;
 
     protected final OperationResult warmSuccess;
     protected final OperationResult coldSuccess;
@@ -39,11 +37,11 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     protected HederaEvmSLoadOperation(final GasCalculator gasCalculator) {
         super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
         final long baseCost = gasCalculator.getSloadOperationGasCost();
-        warmCost = OptionalLong.of(baseCost + gasCalculator.getWarmStorageReadCost());
-        coldCost = OptionalLong.of(baseCost + gasCalculator.getColdSloadCost());
+        warmCost = baseCost + gasCalculator.getWarmStorageReadCost();
+        coldCost = baseCost + gasCalculator.getColdSloadCost();
 
-        warmSuccess = new OperationResult(warmCost, Optional.empty());
-        coldSuccess = new OperationResult(coldCost, Optional.empty());
+        warmSuccess = new OperationResult(warmCost, null);
+        coldSuccess = new OperationResult(coldCost, null);
     }
 
     @Override
@@ -55,10 +53,9 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
             final Address address = account.getAddress();
             final Bytes32 key = UInt256.fromBytes(frame.popStackItem());
             final boolean slotIsWarm = frame.warmUpStorage(address, key);
-            final OptionalLong optionalCost = slotIsWarm ? warmCost : coldCost;
-            if (frame.getRemainingGas() < optionalCost.orElse(0L)) {
-                return new OperationResult(
-                        optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            final long optionalCost = slotIsWarm ? warmCost : coldCost;
+            if (frame.getRemainingGas() < optionalCost) {
+                return new OperationResult(optionalCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
 
@@ -68,11 +65,9 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
                 return slotIsWarm ? warmSuccess : coldSuccess;
             }
         } catch (final FixedStack.UnderflowException ufe) {
-            return new OperationResult(
-                    warmCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+            return new OperationResult(warmCost, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         } catch (final FixedStack.OverflowException ofe) {
-            return new OperationResult(
-                    warmCost, Optional.of(ExceptionalHaltReason.TOO_MANY_STACK_ITEMS));
+            return new OperationResult(warmCost, ExceptionalHaltReason.TOO_MANY_STACK_ITEMS);
         }
     }
 
