@@ -15,9 +15,13 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,10 +36,25 @@ class CryptoSignatureWaiversImplTest {
 
     @Test
     void notImplementedStuffIsntImplemented() {
+        final var account = asAccount("0.0.3000");
+        final var txn = cryptoUpdateTransaction(account, account);
         assertThrows(
-                NotImplementedException.class, () -> subject.isNewKeySignatureWaived(any(), any()));
+                NotImplementedException.class, () -> subject.isNewKeySignatureWaived(txn, account));
         assertThrows(
                 NotImplementedException.class,
-                () -> subject.isTargetAccountSignatureWaived(any(), any()));
+                () -> subject.isTargetAccountSignatureWaived(txn, account));
+    }
+
+    private TransactionBody cryptoUpdateTransaction(
+            final AccountID payerId, final AccountID accountToUpdate) {
+        final var transactionID = TransactionID.newBuilder().setAccountID(payerId);
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAccountIDToUpdate(accountToUpdate)
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoUpdateAccount(updateTxnBody)
+                .build();
     }
 }
