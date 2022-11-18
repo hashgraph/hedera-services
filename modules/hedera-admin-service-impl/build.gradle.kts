@@ -21,8 +21,6 @@ description = "Default Hedera Admin Service Implementation"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
-    exclude("io.grpc", "grpc-core")
-    exclude("io.grpc", "grpc-api")
 }
 
 dependencies {
