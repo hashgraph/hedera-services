@@ -48,7 +48,7 @@ public record CodeLine(int codeOffset, int opcode, int[] operandBytes, String eo
             sb.append(Utility.toHex(operandBytes));
         }
         if (!eolComment.isEmpty()) {
-            if (Columns.EOL_COMMENT.getColumn() - 1 < sb.length()) {
+            if (Columns.EOL_COMMENT.getColumn() - 1 > sb.length()) {
                 extendWithBlanksTo(sb, Columns.EOL_COMMENT.getColumn());
             } else {
                 sb.append("  ");

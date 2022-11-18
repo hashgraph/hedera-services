@@ -16,14 +16,18 @@
 package com.hedera.services.yahcli.commands.signedstate.evminfo;
 
 import com.hedera.services.yahcli.commands.signedstate.evminfo.Assembly.Columns;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.Assembly.Options;
 import java.util.Arrays;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-public record DataPseudoOpLine(int codeOffset, int[] operandBytes, String eolComment)
+public record DataPseudoOpLine(int codeOffset, Kind kind, int[] operandBytes, String eolComment)
         implements Assembly.Line, Assembly.Code {
 
-    public static final String PSEUDO_OP = "DATA";
+    public enum Kind {
+        DATA,
+        METADATA,
+        DATA_OVERRUN
+    }
 
     public DataPseudoOpLine {
         // De-null operands
@@ -31,19 +35,25 @@ public record DataPseudoOpLine(int codeOffset, int[] operandBytes, String eolCom
         eolComment = null != eolComment ? eolComment : "";
     }
 
-    // TODO: There's a LOT of commonality here with CodeLine! like maybe this should be a subclass
-    // (except: can't do that because it's a record)
+    // NOTTODO: There's a LOT of commonality here with CodeLine! like maybe this should be a
+    // subclass
+    // (except: can't do that because it's a record, and this doesn't seem like the kind of thing
+    // that should be a default method of the interface)
     // ...
-    @Contract(pure = true)
     public void formatLine(StringBuilder sb) {
+        if (Options.DISPLAY_CODE_OFFSET.getValue()) {
+            extendWithBlanksTo(sb, Columns.CODE_OFFSET.getColumn());
+            sb.append(String.format("%5X", codeOffset));
+        }
         extendWithBlanksTo(sb, Columns.MNEMONIC.getColumn());
-        sb.append(PSEUDO_OP);
+        sb.append(kind.name());
+
         if (0 != operandBytes.length) {
             extendWithBlanksTo(sb, Columns.OPERAND.getColumn());
             sb.append(Utility.toHex(operandBytes));
         }
         if (!eolComment.isEmpty()) {
-            if (Columns.EOL_COMMENT.getColumn() - 1 < sb.length()) {
+            if (Columns.EOL_COMMENT.getColumn() - 1 > sb.length()) {
                 extendWithBlanksTo(sb, Columns.EOL_COMMENT.getColumn());
             } else {
                 sb.append("  ");
@@ -53,41 +63,38 @@ public record DataPseudoOpLine(int codeOffset, int[] operandBytes, String eolCom
         }
     }
 
-    @Contract(pure = true)
     public int getCodeOffset() {
         return codeOffset;
     }
 
-    @Contract(pure = true)
     public int getCodeSize() {
         return operandBytes.length;
     }
 
-    @Contract(pure = true)
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o instanceof DataPseudoOpLine other) {
             return codeOffset == other.codeOffset
                     && Arrays.equals(operandBytes, other.operandBytes)
-                    && eolComment.equals(other.eolComment);
+                    && eolComment.equals(other.eolComment)
+                    && kind.equals(other.kind);
         } else return false;
     }
 
-    @Contract(pure = true)
     @Override
     public int hashCode() {
         int result = codeOffset;
         result = 31 * result + Arrays.hashCode(operandBytes);
         result = 31 * result + eolComment.hashCode();
+        result = 31 * result + kind.hashCode();
         return result;
     }
 
-    @Contract(pure = true)
     @Override
     public @NotNull String toString() {
         return String.format(
-                "CodeLine[codeOffset=%04X, operandBytes=%s, eolComment='%s']",
-                codeOffset, Utility.toHex(operandBytes), eolComment);
+                "CodeLine[codeOffset=%04X, operandBytes=%s, eolComment='%s', kind=%s]",
+                codeOffset, Utility.toHex(operandBytes), eolComment, kind.toString());
     }
 }

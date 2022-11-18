@@ -112,7 +112,9 @@ public class SignedStateHolder {
         return codes;
     }
 
-    public Optional<byte []> getContractById(@NotNull VirtualMap<VirtualBlobKey,VirtualBlobValue> fileStore,  @NotNull EntityNum contractId) {
+    public Optional<byte[]> getContractById(
+            @NotNull VirtualMap<VirtualBlobKey, VirtualBlobValue> fileStore,
+            @NotNull EntityNum contractId) {
         final var vbk = new VirtualBlobKey(Type.CONTRACT_BYTECODE, contractId.intValue());
         if (fileStore.containsKey(vbk)) {
             var blob = fileStore.get(vbk);

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSortedMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
@@ -198,8 +197,7 @@ public class Opcodes {
         descrs.sort(Comparator.comparingInt(Descr::opcode));
         byOpcode = ImmutableList.copyOf(descrs);
         byMnemonic =
-                ImmutableSortedMap.copyOf(
-                        descrs.stream().collect(toMap(Descr::mnemonic, Function.identity())));
+                ImmutableSortedMap.copyOf(descrs.stream().collect(toMap(Descr::mnemonic, d -> d)));
     }
 
     // Returns a Stream<Integer> of a range of integers, inclusive

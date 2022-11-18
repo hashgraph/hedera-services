@@ -15,7 +15,6 @@
  */
 package com.hedera.services.yahcli.commands.signedstate.evminfo;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public class Utility {
@@ -25,15 +24,19 @@ public class Utility {
     // highest nibble, even if 0.  E.g., `String.format`'s "%X" doesn't ... `HexFormat`
     // does it ... but only for `byte[]` not `int[]` ...  (correct me please if
     // I'm wrong ...)
-    @Contract(pure = true)
-    public static @NotNull String toHex(int @NotNull [] byteBuffer) {
+    public static @NotNull String toHex(int @NotNull [] byteBuffer, int from) {
         final String hexits = "0123456789ABCDEF";
         var sb = new StringBuilder(2 * byteBuffer.length);
-        for (var byt : byteBuffer) {
+        for (int i = from; i < byteBuffer.length; i++) {
+            var byt = byteBuffer[i];
             sb.append(hexits.charAt(byt >> 4));
             sb.append(hexits.charAt(byt & 0xf));
         }
         return sb.toString();
+    }
+
+    public static @NotNull String toHex(int @NotNull [] byteBuffer) {
+        return toHex(byteBuffer, 0);
     }
 
     private Utility() {}

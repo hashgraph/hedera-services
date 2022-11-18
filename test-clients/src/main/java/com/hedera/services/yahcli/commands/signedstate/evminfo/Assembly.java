@@ -15,9 +15,15 @@
  */
 package com.hedera.services.yahcli.commands.signedstate.evminfo;
 
-import com.google.common.collect.ImmutableList;
+import com.hedera.services.yahcli.commands.signedstate.evminfo.DataPseudoOpLine.Kind;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.IntPredicate;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -73,7 +79,8 @@ public class Assembly {
         }
     }
 
-    public Assembly(@NotNull Options... options) {
+    public Assembly(
+            @NotNull Map<@NotNull String, @NotNull Object> metrics, @NotNull Options... options) {
         for (var o : options) {
             switch (o) {
                 case DISPLAY_CODE_OFFSET -> {
@@ -86,7 +93,10 @@ public class Assembly {
                 }
             }
         }
+        this.metrics = metrics;
     }
+
+    private final @NotNull Map<@NotNull String, @NotNull Object> metrics;
 
     enum Columns {
         CODE_OFFSET(0, DEFAULT_CODE_OFFSET_COLUMN),
@@ -151,12 +161,15 @@ public class Assembly {
 
     @Contract(pure = true)
     // Disassemble the entire bytecode
-    public ImmutableList<Line> getInstructions(
-            @NotNull List<Line> prefixLines,
-            int @NotNull [] bytecode,
-            boolean solidityDataIsAfterInvalidOp,
-            boolean dumpPartial) {
-        var lines = new ImmutableList.Builder<Line>().addAll(prefixLines);
+    public List<@NotNull Line> getInstructions(
+            @NotNull List<@NotNull Line> prefixLines, int @NotNull [] bytecode) {
+        var lines = new ArrayList<>(prefixLines);
+
+        final var metadataPresence = locateMetadata(bytecode);
+        final int metadataOffset = metadataPresence.map(md -> md.offset).orElse(bytecode.length);
+        final int metadataLength = metadataPresence.map(md -> md.length).orElse(0);
+        final IntPredicate atMetadataOffset =
+                metadataPresence.isPresent() ? ofs -> ofs == metadataOffset : ofs -> false;
 
         int currentOffset = 0;
         ImmutablePair<Line, Integer> p;
@@ -165,30 +178,159 @@ public class Assembly {
                 lines.add(p.left);
                 currentOffset = p.right;
 
-                if (solidityDataIsAfterInvalidOp && p.left.thisLineIsA(INVALID_OPCODE)) {
-                    final var data = getRemainingBytecodesAsData(bytecode, currentOffset);
+                if (atMetadataOffset.test(currentOffset)) {
+                    final var data =
+                            getBytecodeRangeAsData(
+                                    bytecode,
+                                    currentOffset,
+                                    currentOffset + metadataLength,
+                                    String.format(
+                                            "(metadata %d (%04X) bytes)",
+                                            metadataLength, metadataLength),
+                                    Kind.METADATA);
                     lines.add(data);
                     break;
                 }
             }
-        } catch (IndexOutOfBoundsException ex) {
-            if (dumpPartial && ex.getMessage().contains("overruns bytecode")) {
-                System.out.printf("***** %s\n", ex.getMessage());
-                return lines.build();
+
+            // Have everything to end - now look for interesting cases
+
+            // First interesting case: see if there's a data block at the end that should
+            // have disassembled as DATA and not code
+
+            final var dataInstructionRange = lookBackwardsForDelimiterInstruction(lines, bytecode);
+            DataRange lineRange = dataInstructionRange.left;
+            DataRange bytecodeRange = dataInstructionRange.right;
+
+            if (0 != lineRange.length) {
+                // Eliminate wrongly assembled instructions
+                lines.subList(lineRange.offset, lineRange.offset + lineRange.length).clear();
+                // FYI (very) arguable Java design decision: See "Why is Java's `AbstractList`'s
+                // `removeRange()` method protected?
+                // See
+                // https://stackoverflow.com/questions/2289183/why-is-javas-abstractlists-removerange-method-protected
+
+                // DATAize the bytecode and add it
+                final var dataLine =
+                        getBytecodeRangeAsData(
+                                bytecode,
+                                bytecodeRange.offset,
+                                bytecodeRange.offset + bytecodeRange.length,
+                                "",
+                                Kind.DATA);
+                lines.add(lineRange.offset, dataLine);
             }
-            throw ex;
+
+        } catch (IndexOutOfBoundsException ex) {
+            if (ex.getMessage().contains("overruns bytecode")) {
+                final var data =
+                        getBytecodeRangeAsData(
+                                bytecode,
+                                currentOffset,
+                                bytecode.length,
+                                "(*** PUSHn opcode here overruns end of bytecode)",
+                                Kind.DATA_OVERRUN);
+                lines.add(data);
+            }
         }
 
-        return lines.build();
+        return lines;
     }
 
-    @Contract(pure = true)
-    private @NotNull Line getRemainingBytecodesAsData(int @NotNull [] bytecode, int currentOffset) {
-        final var dataBytes = Arrays.copyOfRange(bytecode, currentOffset, bytecode.length);
-        return new DataPseudoOpLine(currentOffset, dataBytes, "");
+    record DataRange(int offset, int length) {}
+
+    // starting at the end (skipping the metadata pseudo-op, if present) look for previous
+    // `INVALID` or `STOP` opcode, return the range of lines and bytecodes skipped over
+    @NotNull
+    ImmutablePair<@NotNull DataRange, @NotNull DataRange> lookBackwardsForDelimiterInstruction(
+            @NotNull List<@NotNull Line> lines, int @NotNull [] bytecode) {
+        // Only tricky thing here is keeping track of both Line locations and bytecode offsets.
+
+        // start with empty ranges
+        int lineRangeFrom = lines.size();
+        int lineRangeTo = lineRangeFrom;
+
+        int bytecodeTo = bytecode.length;
+
+        Supplier<ImmutablePair<@NotNull DataRange, @NotNull DataRange>> emptyRange =
+                () ->
+                        new ImmutablePair<>(
+                                new DataRange(lines.size(), lines.size()),
+                                new DataRange(bytecode.length, bytecode.length));
+        if (lines.isEmpty() || 0 == bytecode.length) return emptyRange.get();
+
+        // We either have metadata at the end, or we don't
+        if (lines.get(lines.size() - 1) instanceof DataPseudoOpLine data
+                && data.kind() == Kind.METADATA) {
+            lineRangeFrom = lineRangeTo = lines.size() - 1;
+            bytecodeTo = data.codeOffset();
+        }
+
+        while (lineRangeFrom >= 0) {
+            if (lines.get(lineRangeFrom) instanceof CodeLine code) {
+                if (code.opcode() == INVALID_OPCODE || code.opcode() == STOP_OPCODE) {
+                    final int bytecodeFrom =
+                            code.codeOffset() + 1; // the _next_ offset after this opcode
+                    lineRangeFrom++;
+                    if (lineRangeFrom == lineRangeTo)
+                        return emptyRange.get(); // This would be if there was no data block between
+                    // INVALID/STOP and the metadate/end
+                    return new ImmutablePair<>(
+                            new DataRange(lineRangeFrom, lineRangeTo - lineRangeFrom),
+                            new DataRange(bytecodeFrom, bytecodeTo - bytecodeFrom));
+                }
+            }
+            lineRangeFrom--;
+        }
+        // Here, no INVALID or STOP found
+        return emptyRange.get();
+    }
+
+    record SolidityMetadata(int metadataLength, String approxVersion, Pattern metadataPattern) {
+        SolidityMetadata(int metadataLength, String approxVersion, String metadataPattern) {
+            this(metadataLength, approxVersion, Pattern.compile(metadataPattern));
+        }
+    }
+
+    static final SolidityMetadata[] solidityMetadataEvolution = {
+        new SolidityMetadata(0x0029, "~0.4.17", "A165627A7A72305820.{64}0029"),
+        new SolidityMetadata(0x0032, "0.5.10", "A265627A7A72305820.{64}64736F6C6343.{6}0032"),
+        new SolidityMetadata(0x0032, "0.5.10", "A265627A7A72315820.{64}64736F6C6343.{6}0032"),
+        new SolidityMetadata(0x0033, "~0.8.17", "A264697066735822.{68}64736F6C6343.{6}0033")
+    };
+
+    // Attempt to locate "known" contract metadata at end of bytecode
+    // - ref: https://www.badykov.com/ethereum/solidity-bytecode-metadata/
+    // - ref:
+    // https://docs.soliditylang.org/en/v0.8.17/metadata.html#encoding-of-the-metadata-hash-in-the-bytecode
+    // Possibly not a complete list of metadata variants ...
+
+    @NotNull
+    Optional<DataRange> locateMetadata(int @NotNull [] bytecode) {
+        if (bytecode.length < 2) return Optional.empty();
+        // last 2 bytes of contract bytecode is metadata length (_not_ including the length bytes
+        // themselves)
+        final int metadataLength =
+                bytecode[bytecode.length - 2] * 256 + bytecode[bytecode.length - 1];
+        if (bytecode.length < metadataLength + 2) return Optional.empty();
+        final var metadataFrom = bytecode.length - 2 - metadataLength;
+        final var tailAsHex = Utility.toHex(bytecode, metadataFrom);
+        for (var sm : solidityMetadataEvolution) {
+            if (sm.metadataLength != metadataLength) continue;
+            if (sm.metadataPattern.matcher(tailAsHex).matches())
+                return Optional.of(new DataRange(metadataFrom, metadataLength));
+        }
+        return Optional.empty();
+    }
+
+    private @NotNull Line getBytecodeRangeAsData(
+            int @NotNull [] bytecode, int from, int to, String comment, @NotNull Kind kind) {
+        final var dataBytes = Arrays.copyOfRange(bytecode, from, to);
+        return new DataPseudoOpLine(from, kind, dataBytes, comment);
     }
 
     public static final int INVALID_OPCODE = Opcodes.getDescrFor("INVALID").opcode();
+    public static final int STOP_OPCODE = Opcodes.getDescrFor("STOP").opcode();
 
     public static final int DEFAULT_CODE_OFFSET_COLUMN = 0;
     public static final int DEFAULT_OPCODE_COLUMN = 0;
