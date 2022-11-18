@@ -55,9 +55,9 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Predicate;
@@ -194,7 +194,7 @@ class SigVerifierRegressionTest {
         given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
         isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
         SyncVerifier syncVerifier =
-                new CryptoEngine(getStaticThreadManager(), mock(CryptoConfig.class))::verifySync;
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)::verifySync;
         precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
         precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
     }

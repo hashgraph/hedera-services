@@ -69,11 +69,11 @@ import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
-import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.AbstractMap;
@@ -442,7 +442,7 @@ class SigOpsRegressionTest {
     private Rationalization invokeRationalizationScenario() {
         // setup:
         SyncVerifier syncVerifier =
-                new CryptoEngine(getStaticThreadManager(), mock(CryptoConfig.class))::verifySync;
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(

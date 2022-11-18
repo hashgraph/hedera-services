@@ -23,6 +23,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -39,6 +41,7 @@ import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
@@ -130,6 +133,7 @@ class ServicesMainTest {
     @Test
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
         withRunnableApp();
+        withNotificationEngine();
 
         // when:
         subject.init(platform, nodeId);
@@ -164,6 +168,7 @@ class ServicesMainTest {
     void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
         withRunnableApp();
         withChangeableApp();
+        withNotificationEngine();
 
         // given:
         subject.init(platform, nodeId);
@@ -179,6 +184,7 @@ class ServicesMainTest {
     void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
         withRunnableApp();
         withChangeableApp();
+        withNotificationEngine();
 
         given(app.recordStreamManager()).willReturn(recordStreamManager);
         // and:
@@ -196,6 +202,7 @@ class ServicesMainTest {
     void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
         withRunnableApp();
         withChangeableApp();
+        withNotificationEngine();
 
         given(app.recordStreamManager()).willReturn(recordStreamManager);
         // and:
@@ -260,5 +267,10 @@ class ServicesMainTest {
     private void withChangeableApp() {
         given(app.platformStatus()).willReturn(currentPlatformStatus);
         given(app.nodeId()).willReturn(nodeId);
+    }
+
+    private void withNotificationEngine() {
+        given(platform.getNotificationEngine()).willReturn(notificationEngine);
+        given(notificationEngine.register(any(), any())).willReturn(true);
     }
 }
