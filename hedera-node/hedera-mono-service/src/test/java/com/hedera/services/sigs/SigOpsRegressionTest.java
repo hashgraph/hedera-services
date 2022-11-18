@@ -442,7 +442,8 @@ class SigOpsRegressionTest {
     private Rationalization invokeRationalizationScenario() {
         // setup:
         SyncVerifier syncVerifier =
-                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)::verifySync;
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                        ::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
         SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(

@@ -194,7 +194,8 @@ class SigVerifierRegressionTest {
         given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
         isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
         SyncVerifier syncVerifier =
-                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)::verifySync;
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                        ::verifySync;
         precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
         precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
     }

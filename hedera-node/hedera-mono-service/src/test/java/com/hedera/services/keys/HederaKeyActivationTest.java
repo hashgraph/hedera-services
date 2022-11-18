@@ -165,7 +165,8 @@ class HederaKeyActivationTest {
                 createCryptoSigsFrom(
                                 explicitList, mockSigs, new ReusableBodySigningFactory(accessor))
                         .getPlatformSigs();
-        new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG).verifySync(cryptoSigs);
+        new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                .verifySync(cryptoSigs);
         final var subject = pkToSigMapFrom(cryptoSigs);
 
         final var ed25519Sig = subject.apply(ed25519Key.getEd25519());
