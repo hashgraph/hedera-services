@@ -130,7 +130,6 @@ class ServicesMainTest {
     @Test
     void doesAppDrivenInit() throws NoSuchAlgorithmException {
         withRunnableApp();
-        withNotificationEngine();
 
         // when:
         subject.init(platform, nodeId);
@@ -267,8 +266,8 @@ class ServicesMainTest {
         given(app.nodeId()).willReturn(nodeId);
     }
 
-    private void withNotificationEngine() {
-        given(platform.getNotificationEngine()).willReturn(notificationEngine);
-        given(notificationEngine.register(any(), any())).willReturn(true);
-    }
+//    private void withNotificationEngine() {
+//        given(platform.getNotificationEngine()).willReturn(notificationEngine);
+//        given(notificationEngine.register(any(), any())).willReturn(true);
+//    }
 }
