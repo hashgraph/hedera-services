@@ -16,7 +16,7 @@
 package com.hedera.services.calc;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import org.junit.jupiter.api.Test;
 
 class OverflowCheckingCalcTest {

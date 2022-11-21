@@ -29,7 +29,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
-import com.hedera.services.keys.Ed25519Utils;
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import java.io.IOException;
 import java.nio.file.Files;

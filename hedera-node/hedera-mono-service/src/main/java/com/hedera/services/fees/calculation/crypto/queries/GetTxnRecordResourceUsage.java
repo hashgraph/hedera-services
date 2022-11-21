@@ -29,7 +29,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;

@@ -26,7 +26,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenDeleteUsage;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;

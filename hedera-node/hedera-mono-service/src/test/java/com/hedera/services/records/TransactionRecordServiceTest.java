@@ -32,7 +32,7 @@ import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;

@@ -16,7 +16,7 @@
 package com.hedera.services.usage.file;
 
 import static com.hedera.services.usage.file.FileOpsUsage.asKey;
-import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.nio.charset.StandardCharsets;

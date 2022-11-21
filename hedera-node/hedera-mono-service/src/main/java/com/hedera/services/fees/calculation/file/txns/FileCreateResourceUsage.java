@@ -21,8 +21,8 @@ import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

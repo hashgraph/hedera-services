@@ -33,7 +33,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;

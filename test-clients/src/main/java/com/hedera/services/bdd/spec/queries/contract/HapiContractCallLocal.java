@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.List;

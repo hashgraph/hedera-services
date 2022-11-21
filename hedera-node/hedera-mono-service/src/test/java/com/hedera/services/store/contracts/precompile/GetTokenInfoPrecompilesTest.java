@@ -91,7 +91,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

@@ -127,7 +127,7 @@ import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;

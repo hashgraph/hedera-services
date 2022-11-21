@@ -26,7 +26,7 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

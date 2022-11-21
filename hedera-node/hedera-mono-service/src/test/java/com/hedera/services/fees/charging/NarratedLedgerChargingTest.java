@@ -36,7 +36,7 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

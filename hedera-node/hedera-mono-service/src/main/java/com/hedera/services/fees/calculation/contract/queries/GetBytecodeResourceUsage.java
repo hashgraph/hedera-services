@@ -23,7 +23,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;

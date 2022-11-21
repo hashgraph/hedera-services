@@ -58,7 +58,7 @@ import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

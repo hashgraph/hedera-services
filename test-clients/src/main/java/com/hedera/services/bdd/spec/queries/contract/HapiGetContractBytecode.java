@@ -31,7 +31,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;

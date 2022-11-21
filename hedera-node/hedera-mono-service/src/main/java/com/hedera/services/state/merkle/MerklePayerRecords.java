@@ -15,9 +15,6 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
-
 import com.google.common.primitives.Ints;
 import com.hedera.services.state.migration.QueryableRecords;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
@@ -30,108 +27,112 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
+
 import java.io.IOException;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
+import static com.hedera.services.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
+
 public class MerklePayerRecords extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
-    private static final int CURRENT_VERSION = 1;
-    private static final long RUNTIME_CONSTRUCTABLE_ID = 0x0185e6fd3ab81c31L;
+	private static final int CURRENT_VERSION = 1;
+	private static final long RUNTIME_CONSTRUCTABLE_ID = 0x0185e6fd3ab81c31L;
 
-    private static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
+	private static final FCQueue<ExpirableTxnRecord> IMMUTABLE_EMPTY_FCQ = new FCQueue<>();
 
-    static {
-        IMMUTABLE_EMPTY_FCQ.copy();
-    }
+	static {
+		IMMUTABLE_EMPTY_FCQ.copy();
+	}
 
-    private int num;
-    private FCQueue<ExpirableTxnRecord> payerRecords = null;
+	private int num;
+	private FCQueue<ExpirableTxnRecord> payerRecords = null;
 
-    public MerklePayerRecords() {
-        // RuntimeConstructable
-    }
+	public MerklePayerRecords() {
+		// RuntimeConstructable
+	}
 
-    public MerklePayerRecords(final MerklePayerRecords that) {
-        this.num = that.num;
-        this.payerRecords = (that.payerRecords == null) ? null : that.payerRecords.copy();
-    }
+	public MerklePayerRecords(final MerklePayerRecords that) {
+		this.num = that.num;
+		this.payerRecords = (that.payerRecords == null) ? null : that.payerRecords.copy();
+	}
 
-    @Override
-    public boolean isSelfHashing() {
-        return true;
-    }
+	@Override
+	public boolean isSelfHashing() {
+		return true;
+	}
 
-    @Override
-    public Hash getHash() {
-        final var recordsHash = readOnlyQueue().getHash();
-        final var recordsHashLen = recordsHash.getValue().length;
-        final byte[] bytes = new byte[recordsHashLen + 4];
-        System.arraycopy(Ints.toByteArray(num), 0, bytes, 0, 4);
-        System.arraycopy(recordsHash.getValue(), 0, bytes, 4, recordsHashLen);
-        return new Hash(noThrowSha384HashOf(bytes), DigestType.SHA_384);
-    }
+	@Override
+	public Hash getHash() {
+		final var recordsHash = readOnlyQueue().getHash();
+		final var recordsHashLen = recordsHash.getValue().length;
+		final byte[] bytes = new byte[recordsHashLen + 4];
+		System.arraycopy(Ints.toByteArray(num), 0, bytes, 0, 4);
+		System.arraycopy(recordsHash.getValue(), 0, bytes, 4, recordsHashLen);
+		return new Hash(noThrowSha384HashOf(bytes), DigestType.SHA_384);
+	}
 
-    @Override
-    public MerklePayerRecords copy() {
-        setImmutable(true);
-        return new MerklePayerRecords(this);
-    }
+	@Override
+	public MerklePayerRecords copy() {
+		setImmutable(true);
+		return new MerklePayerRecords(this);
+	}
 
-    @Override
-    public long getClassId() {
-        return RUNTIME_CONSTRUCTABLE_ID;
-    }
+	@Override
+	public long getClassId() {
+		return RUNTIME_CONSTRUCTABLE_ID;
+	}
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
-        throwIfImmutable();
-        num = in.readInt();
-        payerRecords = in.readSerializable(true, FCQueue::new);
-    }
+	@Override
+	public void deserialize(final SerializableDataInputStream in, final int version)
+			throws IOException {
+		throwIfImmutable();
+		num = in.readInt();
+		payerRecords = in.readSerializable(true, FCQueue::new);
+	}
 
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(num);
-        out.writeSerializable(payerRecords, true);
-    }
+	@Override
+	public void serialize(final SerializableDataOutputStream out) throws IOException {
+		out.writeInt(num);
+		out.writeSerializable(payerRecords, true);
+	}
 
-    @Override
-    public int getVersion() {
-        return CURRENT_VERSION;
-    }
+	@Override
+	public int getVersion() {
+		return CURRENT_VERSION;
+	}
 
-    @Override
-    public EntityNum getKey() {
-        return EntityNum.fromInt(num);
-    }
+	@Override
+	public EntityNum getKey() {
+		return EntityNum.fromInt(num);
+	}
 
-    @Override
-    public void setKey(final EntityNum num) {
-        this.num = num.intValue();
-    }
+	@Override
+	public void setKey(final EntityNum num) {
+		this.num = num.intValue();
+	}
 
-    public void offer(final ExpirableTxnRecord payerRecord) {
-        ensureUsable();
-        payerRecords.offer(payerRecord);
-    }
+	public void offer(final ExpirableTxnRecord payerRecord) {
+		ensureUsable();
+		payerRecords.offer(payerRecord);
+	}
 
-    public FCQueue<ExpirableTxnRecord> mutableQueue() {
-        ensureUsable();
-        return payerRecords;
-    }
+	public FCQueue<ExpirableTxnRecord> mutableQueue() {
+		ensureUsable();
+		return payerRecords;
+	}
 
-    public FCQueue<ExpirableTxnRecord> readOnlyQueue() {
-        return (payerRecords == null) ? IMMUTABLE_EMPTY_FCQ : payerRecords;
-    }
+	public FCQueue<ExpirableTxnRecord> readOnlyQueue() {
+		return (payerRecords == null) ? IMMUTABLE_EMPTY_FCQ : payerRecords;
+	}
 
-    public QueryableRecords asQueryableRecords() {
-        return (payerRecords == null)
-                ? NO_QUERYABLE_RECORDS
-                : new QueryableRecords(payerRecords.size(), payerRecords.iterator());
-    }
+	public QueryableRecords asQueryableRecords() {
+		return (payerRecords == null)
+				? NO_QUERYABLE_RECORDS
+				: new QueryableRecords(payerRecords.size(), payerRecords.iterator());
+	}
 
-    private void ensureUsable() {
-        if (payerRecords == null) {
-            payerRecords = new FCQueue<>();
-        }
-    }
+	private void ensureUsable() {
+		if (payerRecords == null) {
+			payerRecords = new FCQueue<>();
+		}
+	}
 }

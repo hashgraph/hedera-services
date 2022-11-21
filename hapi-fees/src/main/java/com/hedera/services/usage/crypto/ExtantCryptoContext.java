@@ -18,9 +18,9 @@ package com.hedera.services.usage.crypto;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToCryptoMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToNftMapFromGranted;
 import static com.hedera.services.usage.crypto.CryptoContextUtils.convertToTokenMapFromGranted;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
 
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;

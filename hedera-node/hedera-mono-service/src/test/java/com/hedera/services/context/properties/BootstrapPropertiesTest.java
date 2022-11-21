@@ -21,7 +21,7 @@ import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
+import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.throttling.MapAccessType.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

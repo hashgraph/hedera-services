@@ -44,7 +44,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.builder.RequestBuilder;
+import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.Collections;

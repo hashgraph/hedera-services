@@ -21,7 +21,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.state.submerkle.EvmLog;
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
@@ -70,7 +70,7 @@ public class SerdeUtils {
         }
     }
 
-    public static com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
+    public static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions pojoDefs(
             String testResource) throws IOException {
         try (InputStream in =
                 ThrottlesJsonToProtoSerde.class

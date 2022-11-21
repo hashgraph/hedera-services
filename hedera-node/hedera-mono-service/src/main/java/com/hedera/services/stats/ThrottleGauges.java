@@ -19,8 +19,8 @@ import static com.hedera.services.stats.ServicesStatsManager.GAUGE_FORMAT;
 import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;
 import com.hedera.services.throttling.annotations.HapiThrottle;

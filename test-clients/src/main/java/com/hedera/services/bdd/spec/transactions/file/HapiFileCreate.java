@@ -36,7 +36,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;

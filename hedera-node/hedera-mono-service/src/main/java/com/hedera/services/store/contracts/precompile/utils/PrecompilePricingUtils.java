@@ -59,7 +59,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;

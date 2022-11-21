@@ -15,8 +15,8 @@
  */
 package com.hedera.services.usage;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 
 public enum SingletonUsageProperties implements UsageProperties {
     USAGE_PROPERTIES;

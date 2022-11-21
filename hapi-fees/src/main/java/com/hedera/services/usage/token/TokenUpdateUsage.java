@@ -17,11 +17,11 @@ package com.hedera.services.usage.token;
 
 import static com.hedera.services.usage.EstimatorUtils.MAX_ENTITY_LIFETIME;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 import com.hedera.services.usage.TxnUsageEstimator;
 import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import java.util.Optional;
 
 public class TokenUpdateUsage extends TokenTxnUsage<TokenUpdateUsage> {

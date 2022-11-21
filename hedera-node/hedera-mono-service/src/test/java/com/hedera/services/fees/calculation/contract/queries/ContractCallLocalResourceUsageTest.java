@@ -60,7 +60,7 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

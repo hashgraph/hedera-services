@@ -22,8 +22,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

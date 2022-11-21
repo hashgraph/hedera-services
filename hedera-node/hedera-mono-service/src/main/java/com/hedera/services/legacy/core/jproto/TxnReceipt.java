@@ -29,7 +29,7 @@ import com.hedera.services.state.submerkle.TxnId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
-import com.hederahashgraph.builder.RequestBuilder;
+import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

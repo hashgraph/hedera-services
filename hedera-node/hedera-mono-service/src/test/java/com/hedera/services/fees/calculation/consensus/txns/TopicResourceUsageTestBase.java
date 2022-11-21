@@ -27,7 +27,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
 
 class TopicResourceUsageTestBase {

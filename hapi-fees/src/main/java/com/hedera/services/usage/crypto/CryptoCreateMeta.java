@@ -16,7 +16,7 @@
 package com.hedera.services.usage.crypto;
 
 import static com.hedera.services.usage.TxnUsage.keySizeIfPresent;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;

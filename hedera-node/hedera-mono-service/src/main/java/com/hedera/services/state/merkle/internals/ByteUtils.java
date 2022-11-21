@@ -16,24 +16,24 @@
 package com.hedera.services.state.merkle.internals;
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 
 public final class ByteUtils {
 
-    ByteUtils() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
+	ByteUtils() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
-    public static byte[] getHashBytes(long[] data) {
-        if (data == null) return new byte[0];
-        // ----------
-        byte[] bytes = new byte[data.length * Long.BYTES];
-        for (int i = 0; i < data.length; i++)
-            System.arraycopy(getHashBytes(data[i]), 0, bytes, i * Long.BYTES, Long.BYTES);
-        return CommonUtils.noThrowSha384HashOf(bytes);
-    }
+	public static byte[] getHashBytes(final long[] data) {
+		if (data == null) return new byte[0];
+		// ----------
+		final byte[] bytes = new byte[data.length * Long.BYTES];
+		for (int i = 0; i < data.length; i++)
+			System.arraycopy(getHashBytes(data[i]), 0, bytes, i * Long.BYTES, Long.BYTES);
+		return CommonUtils.noThrowSha384HashOf(bytes);
+	}
 
-    private static byte[] getHashBytes(long num) {
-        return Longs.toByteArray(num);
-    }
+	private static byte[] getHashBytes(final long num) {
+		return Longs.toByteArray(num);
+	}
 }

@@ -15,23 +15,23 @@
  */
 package com.hedera.services.state.merkle.internals;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.swirlds.common.crypto.DigestType;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class ByteUtilsTest {
 
-    @Test
-    void buildsByteArrayAsExpected() {
-        final var expected = new byte[] {0, 0, 0, 0, 0, 0, 48, 57};
-        final var expectedHashBytes = CommonUtils.noThrowSha384HashOf(expected);
-        final var actualLong = 12_345L;
+	@Test
+	void buildsByteArrayAsExpected() {
+		final var expected = new byte[] { 0, 0, 0, 0, 0, 0, 48, 57 };
+		final var expectedHashBytes = CommonUtils.noThrowSha384HashOf(expected);
+		final var actualLong = 12_345L;
 
-        assertArrayEquals(expectedHashBytes, ByteUtils.getHashBytes(new long[] {actualLong}));
-        assertEquals(0, ByteUtils.getHashBytes(null).length);
-        assertEquals(DigestType.SHA_384.digestLength(), ByteUtils.getHashBytes(new long[0]).length);
-    }
+		assertArrayEquals(expectedHashBytes, ByteUtils.getHashBytes(new long[] { actualLong }));
+		assertEquals(0, ByteUtils.getHashBytes(null).length);
+		assertEquals(DigestType.SHA_384.digestLength(), ByteUtils.getHashBytes(new long[0]).length);
+	}
 }

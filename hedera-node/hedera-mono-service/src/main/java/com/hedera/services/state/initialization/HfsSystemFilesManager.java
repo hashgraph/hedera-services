@@ -27,7 +27,7 @@ import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RAT
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
+import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.address.Address.ipString;
 
@@ -42,7 +42,7 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;

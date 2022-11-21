@@ -15,75 +15,76 @@
  */
 package com.hedera.services.bdd.spec.transactions.network;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
-
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
+
 public class HapiUncheckedSubmit<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiUncheckedSubmit<T>> {
-    private static final Logger log = LogManager.getLogger(HapiUncheckedSubmit.class);
+	private static final Logger log = LogManager.getLogger(HapiUncheckedSubmit.class);
 
-    private final HapiTxnOp<T> subOp;
+	private final HapiTxnOp<T> subOp;
 
-    public HapiUncheckedSubmit(HapiTxnOp<T> subOp) {
-        this.subOp = subOp;
-        this.hasAnyStatusAtAll();
-    }
+	public HapiUncheckedSubmit(final HapiTxnOp<T> subOp) {
+		this.subOp = subOp;
+		this.hasAnyStatusAtAll();
+	}
 
-    @Override
-    protected HapiUncheckedSubmit<T> self() {
-        return this;
-    }
+	@Override
+	protected HapiUncheckedSubmit<T> self() {
+		return this;
+	}
 
-    @Override
-    public HederaFunctionality type() {
-        return UncheckedSubmit;
-    }
+	@Override
+	public HederaFunctionality type() {
+		return UncheckedSubmit;
+	}
 
-    @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
-        var subOpBytes = subOp.serializeSignedTxnFor(spec);
-        if (verboseLoggingOn) {
-            log.info(
-                    "Submitting unchecked: "
-                            + CommonUtils.extractTransactionBody(
-                                    Transaction.parseFrom(subOpBytes)));
-        }
-        UncheckedSubmitBody opBody =
-                spec.txns()
-                        .<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
-                                UncheckedSubmitBody.class,
-                                b -> {
-                                    b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
-                                });
-        return b -> b.setUncheckedSubmit(opBody);
-    }
+	@Override
+	protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+		final var subOpBytes = subOp.serializeSignedTxnFor(spec);
+		if (verboseLoggingOn) {
+			log.info(
+					"Submitting unchecked: "
+							+ CommonUtils.extractTransactionBody(
+							Transaction.parseFrom(subOpBytes)));
+		}
+		final UncheckedSubmitBody opBody =
+				spec.txns()
+						.<UncheckedSubmitBody, UncheckedSubmitBody.Builder>body(
+								UncheckedSubmitBody.class,
+								b -> {
+									b.setTransactionBytes(ByteString.copyFrom(subOpBytes));
+								});
+		return b -> b.setUncheckedSubmit(opBody);
+	}
 
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
-        return spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls)::uncheckedSubmit;
-    }
+	@Override
+	protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+		return spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls)::uncheckedSubmit;
+	}
 
-    @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) {
-        return 0L;
-    }
+	@Override
+	protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys) {
+		return 0L;
+	}
 
-    @Override
-    protected MoreObjects.ToStringHelper toStringHelper() {
-        MoreObjects.ToStringHelper helper = super.toStringHelper();
-        return helper;
-    }
+	@Override
+	protected MoreObjects.ToStringHelper toStringHelper() {
+		final MoreObjects.ToStringHelper helper = super.toStringHelper();
+		return helper;
+	}
 }
