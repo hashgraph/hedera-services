@@ -109,8 +109,8 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount ownerAccount;
     @Mock private HederaAccountNumbers accountNumbers;
     @Mock private HederaFileNumbers fileNumbers;
+    @Mock private CryptoSignatureWaiversImpl waivers;
     private PreHandleContext context;
-    private CryptoSignatureWaiversImpl waivers;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -120,11 +120,12 @@ class CryptoPreTransactionHandlerImplTest {
         given(states.get(ALIASES)).willReturn(aliases);
 
         store = new AccountStore(states);
-        waivers = new CryptoSignatureWaiversImpl(accountNumbers);
 
         context = new PreHandleContext(accountNumbers, fileNumbers);
 
         subject = new CryptoPreTransactionHandlerImpl(store, context);
+
+        subject.setWaivers(waivers);
     }
 
     @Test

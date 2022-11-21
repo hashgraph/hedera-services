@@ -21,20 +21,14 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.annotation.Nonnull;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A Singleton implementation of signature waivers needed for transactions in {@link CryptoService}.
- * NOTE: FUTURE - These will be implemented in the coming PRs.
+ * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
  */
-@Singleton
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
-    private final HederaAccountNumbers accountNumbers;
-
-    public CryptoSignatureWaiversImpl(@Nonnull final HederaAccountNumbers accountNumbers) {
-        this.accountNumbers = accountNumbers;
-    }
+    public CryptoSignatureWaiversImpl(@Nonnull final HederaAccountNumbers accountNumbers) {}
 
     @Override
     public boolean isTargetAccountSignatureWaived(

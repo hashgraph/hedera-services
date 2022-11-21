@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.node.app.Utils.asHederaKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -37,11 +38,13 @@ import org.apache.commons.lang3.NotImplementedException;
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
     private final PreHandleContext preHandleContext;
+    private CryptoSignatureWaiversImpl waivers;
 
     public CryptoPreTransactionHandlerImpl(
             @Nonnull final AccountStore accountStore, @Nonnull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.preHandleContext = Objects.requireNonNull(ctx);
+        this.waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
     }
 
     @Override
@@ -121,7 +124,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var payer = txn.getTransactionID().getAccountID();
         final var updateAccountId = op.getAccountIDToUpdate();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        final var waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
@@ -174,5 +176,16 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             meta.addToReqKeys(key.get());
         }
         return meta;
+    }
+
+    /**
+     * This method is needed for testing until {@link CryptoSignatureWaiversImpl} is implemented.
+     * FUTURE: This method should be removed once {@link CryptoSignatureWaiversImpl} is implemented.
+     *
+     * @param waivers signature waivers for crypto service
+     */
+    @VisibleForTesting
+    void setWaivers(final CryptoSignatureWaiversImpl waivers) {
+        this.waivers = waivers;
     }
 }
