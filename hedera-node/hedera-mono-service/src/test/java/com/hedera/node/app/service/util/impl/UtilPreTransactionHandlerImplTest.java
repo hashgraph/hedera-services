@@ -63,7 +63,7 @@ public class UtilPreTransactionHandlerImplTest {
         given(states.get(ALIASES)).willReturn(aliases);
 
         store = new AccountStore(states);
-        subject = new UtilPreTransactionHandlerImpl(store);
+        subject = new UtilPreTransactionHandlerImpl();
     }
 
     @Test

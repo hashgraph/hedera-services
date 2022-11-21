@@ -17,18 +17,34 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.state.States;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nonnull;
+
+import com.hederahashgraph.api.proto.java.AccountID;
 import org.jetbrains.annotations.NotNull;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
+    private final AccountStore accountStore;
+
+    CryptoServiceImpl(@Nonnull final States states) {
+        Objects.requireNonNull(states);
+        final var store = new AccountStore(states);
+        this.accountStore = store;
+    }
     @NotNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {
         Objects.requireNonNull(states);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store);
+    }
+
+    @Override
+    public Optional<Account> getAccountById(@NotNull AccountID id) {
+        return accountStore.getAccount(id);
     }
 }

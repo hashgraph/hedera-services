@@ -15,9 +15,13 @@
  */
 package com.hedera.node.app.service.token;
 
+import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
+import com.hederahashgraph.api.proto.java.AccountID;
+
 import javax.annotation.Nonnull;
+import java.util.Optional;
 
 /**
  * The {@code CryptoService} is responsible for working with {Account}s. It implements all
@@ -42,4 +46,14 @@ public interface CryptoService extends Service {
     @Override
     @Nonnull
     CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+
+    /**
+     * Retrieves an {@link Account} given an {@link AccountID}. This method is not defined in
+     * "CryptoService", but exists for the use of other modules, including the Hedera application.
+     *
+     * @param id The id. Cannot be null.
+     * @return A non-null {@link Optional} with a reference to the {@link Account}, or empty if there is not one
+     *         matching the given ID.
+     */
+    Optional<Account> getAccountById(@Nonnull AccountID id);
 }

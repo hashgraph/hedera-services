@@ -16,22 +16,16 @@
 package com.hedera.node.app.service.util.impl;
 
 import com.hedera.node.app.SigTransactionMetadata;
-import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
- * A {@code UtilPreTransactionHandler} implementation that pre-computes the required signing keys
+ * A {@link UtilPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each util operation.
  */
 public class UtilPreTransactionHandlerImpl implements UtilPreTransactionHandler {
-    private final AccountStore accountStore;
-
-    public UtilPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
-        this.accountStore = Objects.requireNonNull(accountStore);
+    public UtilPreTransactionHandlerImpl() {
     }
 
     @Override
