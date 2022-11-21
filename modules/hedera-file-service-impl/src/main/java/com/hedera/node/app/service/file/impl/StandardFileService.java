@@ -25,7 +25,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class StandardFileService implements FileService {
     @NonNull
     @Override
-    public FilePreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx) {
+    public FilePreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

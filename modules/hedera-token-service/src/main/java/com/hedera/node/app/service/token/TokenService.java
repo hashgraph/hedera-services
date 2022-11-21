@@ -36,7 +36,8 @@ public interface TokenService extends Service {
      */
     @Override
     @NonNull
-    TokenPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    TokenPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

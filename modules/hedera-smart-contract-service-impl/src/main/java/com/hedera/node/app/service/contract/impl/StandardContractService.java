@@ -27,7 +27,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class StandardContractService implements ContractService {
     @NonNull
     @Override
-    public ContractPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx) {
+    public ContractPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

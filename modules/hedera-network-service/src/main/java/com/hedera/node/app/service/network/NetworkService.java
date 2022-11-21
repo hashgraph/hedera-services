@@ -36,7 +36,8 @@ public interface NetworkService extends Service {
      */
     @NonNull
     @Override
-    NetworkPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    NetworkPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

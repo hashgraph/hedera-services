@@ -36,7 +36,8 @@ public interface ContractService extends Service {
      */
     @NonNull
     @Override
-    ContractPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    ContractPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

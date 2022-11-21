@@ -29,7 +29,8 @@ public interface Service {
      * @return A new {@link PreTransactionHandler}
      */
     @NonNull
-    PreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    PreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Creates and returns a new {@link TransactionHandler}

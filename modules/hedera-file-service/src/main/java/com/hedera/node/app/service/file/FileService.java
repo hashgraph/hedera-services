@@ -36,7 +36,8 @@ public interface FileService extends Service {
      */
     @NonNull
     @Override
-    FilePreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    FilePreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

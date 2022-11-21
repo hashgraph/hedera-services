@@ -36,7 +36,8 @@ public interface FreezeService extends Service {
      */
     @NonNull
     @Override
-    FreezePreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    FreezePreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

@@ -20,7 +20,6 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ServiceLoader;
 
 /**
@@ -37,7 +36,8 @@ public interface UtilService extends Service {
      */
     @NonNull
     @Override
-    UtilPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    UtilPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

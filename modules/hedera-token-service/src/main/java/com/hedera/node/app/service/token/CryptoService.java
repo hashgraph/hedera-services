@@ -44,7 +44,8 @@ public interface CryptoService extends Service {
      */
     @Override
     @NonNull
-    CryptoPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    CryptoPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

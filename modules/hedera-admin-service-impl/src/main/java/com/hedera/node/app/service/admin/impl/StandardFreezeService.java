@@ -25,7 +25,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class StandardFreezeService implements FreezeService {
     @NonNull
     @Override
-    public FreezePreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx) {
+    public FreezePreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

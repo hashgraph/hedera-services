@@ -27,7 +27,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public final class StandardConsensusService implements ConsensusService {
     @NonNull
     @Override
-    public ConsensusPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx) {
+    public ConsensusPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

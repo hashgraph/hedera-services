@@ -36,7 +36,8 @@ public interface ConsensusService extends Service {
      */
     @Override
     @NonNull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@NonNull States states, @NonNull PreHandleContext ctx);
+    ConsensusPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service
