@@ -15,8 +15,11 @@
  */
 package com.hedera.services.evm.store.models;
 
+import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.ethereum.EthTxSigs;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -57,5 +60,22 @@ public class HederaEvmAccount {
                 return address;
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(HederaEvmAccount.class)
+            .add("alias", getAlias().toStringUtf8())
+            .toString();
     }
 }

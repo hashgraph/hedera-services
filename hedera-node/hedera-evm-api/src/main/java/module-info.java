@@ -12,6 +12,7 @@ module com.hedera.services.evm {
     requires tuweni.units;
     requires com.github.benmanes.caffeine;
     requires com.google.protobuf;
+    requires org.apache.commons.lang3;
 
     exports com.hedera.services.evm.store.contracts.utils;
     exports com.hedera.services.evm.contracts.execution;
