@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ServiceLoader;
 
 /**
@@ -28,25 +27,24 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface FreezeService extends Service {
-	/**
-	 * Creates the freeze service pre-handler given a particular Hedera world state.
-	 *
-	 * @param states
-	 * 		the state of the world
-	 * @return the corresponding freeze service pre-handler
-	 */
-	@NonNull
-	@Override
-	FreezePreTransactionHandler createPreTransactionHandler(@NonNull States states);
+    /**
+     * Creates the freeze service pre-handler given a particular Hedera world state.
+     *
+     * @param states the state of the world
+     * @return the corresponding freeze service pre-handler
+     */
+    @NonNull
+    @Override
+    FreezePreTransactionHandler createPreTransactionHandler(@NonNull States states);
 
-	/**
-	 * Returns the concrete implementation instance of the service
-	 *
-	 * @return the implementation instance
-	 */
-	@NonNull
-	static FreezeService getInstance() {
-		return ServiceFactory.loadService(
-				FreezeService.class, ServiceLoader.load(FreezeService.class));
-	}
+    /**
+     * Returns the concrete implementation instance of the service
+     *
+     * @return the implementation instance
+     */
+    @NonNull
+    static FreezeService getInstance() {
+        return ServiceFactory.loadService(
+                FreezeService.class, ServiceLoader.load(FreezeService.class));
+    }
 }

@@ -23,9 +23,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
 public final class StandardFreezeService implements FreezeService {
 
-	@Override
-	@NonNull
-	public FreezePreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
+    @Override
+    @NonNull
+    public FreezePreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }
