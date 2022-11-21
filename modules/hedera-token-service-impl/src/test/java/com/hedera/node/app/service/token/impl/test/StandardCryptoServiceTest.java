@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.admin.impl.test;
+package com.hedera.node.app.service.token.impl.test;
 
-import com.hedera.node.app.service.admin.AdminService;
-import com.hedera.node.app.service.admin.impl.StandardAdminService;
+import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.impl.StandardCryptoService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardAdminServiceTest {
+class StandardCryptoServiceTest {
 
-    @Test
-    void testSpi() {
-        // when
-        final AdminService service = AdminService.getInstance();
+	@Test
+	void testSpi() {
+		// when
+		final CryptoService service = CryptoService.getInstance();
 
-        // then
-        Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                StandardAdminService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardAdminService");
-    }
+		// then
+		Assertions.assertNotNull(service, "We must always receive an instance");
+		Assertions.assertEquals(
+				StandardCryptoService.class,
+				service.getClass(),
+				"We must always receive an instance of type StandardCryptoService");
+	}
 }

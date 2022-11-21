@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.freeze;
+package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -25,14 +25,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * Service</a>.
  */
 public interface FreezePreTransactionHandler extends PreTransactionHandler {
-    /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
-     *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FreezeTransactionBody}
-     * @return the metadata for the freeze
-     */
-    TransactionMetadata preHandleFreeze(TransactionBody txn);
+	/**
+	 * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}
+	 * transaction, returning the metadata required to, at minimum, validate the signatures of all
+	 * required signing keys.
+	 *
+	 * @param txn
+	 * 		a transaction with a {@link
+	 *        com.hederahashgraph.api.proto.java.FreezeTransactionBody}
+	 * @return the metadata for the freeze
+	 */
+	TransactionMetadata preHandleFreeze(TransactionBody txn);
 }

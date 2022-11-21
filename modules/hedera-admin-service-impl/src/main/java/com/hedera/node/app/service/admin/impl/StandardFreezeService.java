@@ -15,17 +15,17 @@
  */
 package com.hedera.node.app.service.admin.impl;
 
-import com.hedera.node.app.service.admin.AdminPreTransactionHandler;
-import com.hedera.node.app.service.admin.AdminService;
+import com.hedera.node.app.service.admin.FreezePreTransactionHandler;
+import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link AdminService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardAdminService implements AdminService {
+/** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
+public final class StandardFreezeService implements FreezeService {
 
-    @Override
-    @NonNull
-    public AdminPreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+	@Override
+	@NonNull
+	public FreezePreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
 }

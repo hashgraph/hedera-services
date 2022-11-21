@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.freeze;
+package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ServiceLoader;
 
 /**
  * Implements the HAPI <a
@@ -25,13 +28,25 @@ import org.jetbrains.annotations.NotNull;
  * Service</a>.
  */
 public interface FreezeService extends Service {
-    /**
-     * Creates the freeze service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding freeze service pre-handler
-     */
-    @NotNull
-    @Override
-    FreezePreTransactionHandler createPreTransactionHandler(@NotNull States states);
+	/**
+	 * Creates the freeze service pre-handler given a particular Hedera world state.
+	 *
+	 * @param states
+	 * 		the state of the world
+	 * @return the corresponding freeze service pre-handler
+	 */
+	@NonNull
+	@Override
+	FreezePreTransactionHandler createPreTransactionHandler(@NonNull States states);
+
+	/**
+	 * Returns the concrete implementation instance of the service
+	 *
+	 * @return the implementation instance
+	 */
+	@NonNull
+	static FreezeService getInstance() {
+		return ServiceFactory.loadService(
+				FreezeService.class, ServiceLoader.load(FreezeService.class));
+	}
 }

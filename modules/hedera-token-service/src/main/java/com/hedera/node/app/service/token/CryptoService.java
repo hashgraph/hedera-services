@@ -16,8 +16,11 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.ServiceLoader;
 
 /**
  * The {@code CryptoService} is responsible for working with {Account}s. It implements all
@@ -33,13 +36,26 @@ import javax.annotation.Nonnull;
  * Service</a>.
  */
 public interface CryptoService extends Service {
-    /**
-     * Creates the crypto service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding crypto service pre-handler
-     */
-    @Override
-    @Nonnull
-    CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+	/**
+	 * Creates the crypto service pre-handler given a particular Hedera world state.
+	 *
+	 * @param states
+	 * 		the state of the world
+	 * @return the corresponding crypto service pre-handler
+	 */
+	@Override
+	@NonNull
+	CryptoPreTransactionHandler createPreTransactionHandler(@NonNull States states);
+
+
+	/**
+	 * Returns the concrete implementation instance of the service
+	 *
+	 * @return the implementation instance
+	 */
+	@NonNull
+	static CryptoService getInstance() {
+		return ServiceFactory.loadService(
+				CryptoService.class, ServiceLoader.load(CryptoService.class));
+	}
 }
