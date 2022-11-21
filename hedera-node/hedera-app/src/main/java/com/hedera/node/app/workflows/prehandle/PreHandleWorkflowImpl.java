@@ -15,13 +15,14 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.token.CryptoQueryHandler;
+import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.UnknownErrorTransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.PreCheckException;
@@ -29,9 +30,13 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link PreHandleWorkflow} */
 public class PreHandleWorkflowImpl implements PreHandleWorkflow {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PreHandleWorkflowImpl.class);
 
     /**
      * Per-thread shared resources are shared in a {@link SessionContext}. We store these in a
@@ -104,6 +109,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final PreHandleDispatcher dispatcher,
             final CryptoQueryHandler query,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
+        TransactionBody txBody = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -118,11 +124,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             checker.checkSignedTransaction(signedTransaction);
 
             // 3. Parse and validate the TransactionBody.
-            final var txBody = ctx.txBodyParser().parseFrom(signedTransaction.getBodyBytes());
+            txBody = ctx.txBodyParser().parseFrom(signedTransaction.getBodyBytes());
             final var accountOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
             if (accountOpt.isEmpty()) {
                 // This is an error condition. No account!
-                throw new PreCheckException(ResponseCodeEnum.INVALID_ACCOUNT_ID, "Account missing");
+                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND, "Account missing");
             }
             final var account = accountOpt.get();
             checker.checkTransactionBody(txBody, account);
@@ -138,15 +144,14 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             return metadata;
 
         } catch (PreCheckException preCheckException) {
-            // TODO Actually we should have a more specific kind of metadata here maybe? And
-            //      definitely don't log.
-            return new UnknownErrorTransactionMetadata(preCheckException);
+            return new ErrorTransactionMetadata(
+                    txBody, preCheckException, preCheckException.responseCode());
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
-            // TODO Log it.
-            return new UnknownErrorTransactionMetadata(ex);
+            LOG.error("An unexpected exception was thrown during pre-handle", ex);
+            return new ErrorTransactionMetadata(txBody, ex, ResponseCodeEnum.UNKNOWN);
         }
     }
 }

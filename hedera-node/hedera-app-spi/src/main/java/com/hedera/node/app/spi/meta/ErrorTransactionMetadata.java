@@ -15,25 +15,34 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
-import java.util.Objects;
 
-/**
- * An implementation of {@link TransactionMetadata} for cases when an unknown error has occurred.
- */
-public final class UnknownErrorTransactionMetadata implements TransactionMetadata {
+/** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
+public final class ErrorTransactionMetadata implements TransactionMetadata {
+    private final TransactionBody txBody;
     private final Throwable throwable;
+    private final ResponseCodeEnum responseCode;
 
     /**
-     * Constructor of {@code UnknownErrorTransactionMetadata}
+     * Constructor of {@code ErrorTransactionMetadata}
      *
-     * @param th the {@link Throwable} that caused the error
+     * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
+     * @param throwable the {@link Throwable} that caused the error
+     * @param responseCode the {@link ResponseCodeEnum} of the error
+     * @throws NullPointerException if {@code throwable} or {@code responseCode} is {@code null}
      */
-    public UnknownErrorTransactionMetadata(Throwable th) {
-        this.throwable = Objects.requireNonNull(th);
+    public ErrorTransactionMetadata(
+            final TransactionBody txBody,
+            final Throwable throwable,
+            final ResponseCodeEnum responseCode) {
+        this.txBody = requireNonNull(txBody);
+        this.throwable = requireNonNull(throwable);
+        this.responseCode = requireNonNull(responseCode);
     }
 
     /**
@@ -47,12 +56,12 @@ public final class UnknownErrorTransactionMetadata implements TransactionMetadat
 
     @Override
     public ResponseCodeEnum status() {
-        return ResponseCodeEnum.UNKNOWN;
+        return responseCode;
     }
 
     @Override
     public TransactionBody getTxn() {
-        return null;
+        return txBody;
     }
 
     @Override
