@@ -15,16 +15,18 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
+import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.events.Event;
 
-/** Start the prehandle-workflow of an {@link Event} */
+/** A workflow to pre-handle transactions. */
 public interface PreHandleWorkflow {
 
     /**
-     * Starts the prehandle-workflow of the {@link Event}
+     * Starts the pre-handle transaction workflow of the {@link Event}
      *
-     * @param event the {@code Event} for which the prehandle-workflow should be started
-     * @throws NullPointerException if {@code event} is {@code null}
+     * @param state the {@link HederaState} that is used
+     * @param event the {@code Event} for which the workflow should be started
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
-    void start(Event event);
+    void start(HederaState state, Event event);
 }

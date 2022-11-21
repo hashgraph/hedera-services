@@ -20,19 +20,14 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.token.CryptoQueryHandler;
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.UnknownErrorTransactionMetadata;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.StateService;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.PreCheckException;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 /** Default implementation of {@link PreHandleWorkflow} */
@@ -53,7 +48,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                                     TransactionBody.parser()));
 
     private final ExecutorService exe;
-    private final StateService stateService;
     private final ServicesAccessor servicesAccessor;
     private final IngestChecker checker;
 
@@ -65,7 +59,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * Constructor of {@code PreHandleWorkflowImpl}
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param stateService the {@link StateService} used to request the latest immutable state from
      * @param servicesAccessor the {@link ServicesAccessor} with references to all {@link
      *     com.hedera.node.app.spi.Service}-implementations
      * @param ingestChecker an {@link IngestChecker} that contains all validators
@@ -73,27 +66,25 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      */
     public PreHandleWorkflowImpl(
             final ExecutorService exe,
-            final StateService stateService,
             final ServicesAccessor servicesAccessor,
             final IngestChecker ingestChecker) {
         this.exe = requireNonNull(exe);
-        this.stateService = requireNonNull(stateService);
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.checker = requireNonNull(ingestChecker);
     }
 
     @Override
-    public void start(final Event event) {
+    public synchronized void start(final HederaState state, final Event event) {
+        requireNonNull(state);
         requireNonNull(event);
 
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
-        final var hederaState = stateService.getLatestImmutableState();
-        if (!Objects.equals(hederaState, lastUsedState)) {
-            dispatcher = new PreHandleDispatcherImpl(hederaState, servicesAccessor);
-            final var cryptoState = hederaState.getServiceStates(CryptoService.class);
+        if (!Objects.equals(state, lastUsedState)) {
+            dispatcher = new PreHandleDispatcherImpl(state, servicesAccessor);
+            final var cryptoState = state.createReadableStates(HederaState.CRYPTO_SERVICE);
             cryptoQueryHandler = servicesAccessor.cryptoService().createQueryHandler(cryptoState);
-            lastUsedState = hederaState;
+            lastUsedState = state;
         }
 
         // Each transaction in the event will go through pre-handle using a background thread
@@ -101,19 +92,12 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // platform transaction. The HandleTransactionWorkflow will pull this future back
         // out and use it to block until the pre handle work is done, if needed.
         final var itr = event.transactionIterator();
-        final List<CompletableFuture<?>> futures = new ArrayList<>();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
             final var future =
-                    CompletableFuture.supplyAsync(
-                            () -> preHandle(dispatcher, cryptoQueryHandler, platformTx), exe);
+                    exe.submit(() -> preHandle(dispatcher, cryptoQueryHandler, platformTx));
             platformTx.setMetadata(future);
-            futures.add(future);
         }
-
-        // Once all pre-handle transactions are done, we can release our handle on the state.
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .whenComplete((x, y) -> hederaState.close());
     }
 
     private TransactionMetadata preHandle(

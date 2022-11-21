@@ -15,42 +15,13 @@
  */
 package com.hedera.node.app.state;
 
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
-import com.swirlds.common.AutoCloseableNonThrowing;
-import com.swirlds.common.system.SwirldState;
-import com.swirlds.common.utility.AutoCloseableWrapper;
-import java.util.Objects;
-import org.apache.commons.lang3.NotImplementedException;
 
-/** The root of all merkle state for the Hedera application. */
-public class HederaState implements AutoCloseableNonThrowing {
+public interface HederaState {
 
-    private final AutoCloseableWrapper<SwirldState> swirldState;
+    String CRYPTO_SERVICE = "CryptoService";
+    String FILE_SERVICE = "FileService";
+    String TOKEN_SERVICE = "TokenService";
 
-    /**
-     * Constructor of {@code HederaState}
-     *
-     * @param swirldState underlying {@link SwirldState}, wrapped in an {@link AutoCloseable}
-     */
-    public HederaState(final AutoCloseableWrapper<SwirldState> swirldState) {
-        this.swirldState = swirldState;
-    }
-
-    /**
-     * Get the {@link States} associated with a specific {@link Service}
-     *
-     * @param clazz {@link Class} of the {@code Service}
-     * @return A non-{@code null} {@code States} instance with access to all state of the service
-     */
-    public States getServiceStates(final Class<? extends Service> clazz) {
-        Objects.requireNonNull(clazz);
-
-        throw new NotImplementedException();
-    }
-
-    @Override
-    public void close() {
-        swirldState.close();
-    }
+    States createReadableStates(String serviceName);
 }

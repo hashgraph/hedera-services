@@ -24,7 +24,6 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.StateService;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
@@ -43,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
-    @Mock private StateService stateService;
     @Mock private CryptoService cryptoService;
     @Mock private FileService fileService;
     @Mock private TokenService tokenService;
@@ -55,53 +53,47 @@ class PreHandleWorkflowImplTest {
     @BeforeEach
     void setup() {
         servicesAccessor = new ServicesAccessor(cryptoService, fileService, tokenService);
-        workflow =
-                new PreHandleWorkflowImpl(
-                        executorService, stateService, servicesAccessor, ingestChecker);
+        workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, ingestChecker);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        null, stateService, servicesAccessor, ingestChecker))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, null, servicesAccessor, ingestChecker))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, stateService, null, ingestChecker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, stateService, servicesAccessor, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, servicesAccessor, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testStartWithIllegalParameters() {
-        assertThatThrownBy(() -> workflow.start(null)).isInstanceOf(NullPointerException.class);
+        // given
+        final HederaState state = mock(HederaState.class);
+        final Event event = mock(Event.class);
+
+        // then
+        assertThatThrownBy(() -> workflow.start(null, event))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> workflow.start(state, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void testStartEventWithNoTransactions() {
         // given
+        final HederaState state = mock(HederaState.class);
         final Event event = mock(Event.class);
         when(event.transactionIterator()).thenReturn(Collections.emptyIterator());
 
         // when
-        assertThatCode(() -> workflow.start(event)).doesNotThrowAnyException();
+        assertThatCode(() -> workflow.start(state, event)).doesNotThrowAnyException();
     }
 
     @Test
     void testStartEventWithTwoTransactions() {
         // given
+        final HederaState state = mock(HederaState.class);
         final Event event = mock(Event.class);
         final Transaction transaction1 = mock(SwirldTransaction.class);
         final Transaction transaction2 = mock(SwirldTransaction.class);
@@ -109,7 +101,7 @@ class PreHandleWorkflowImplTest {
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
-        workflow.start(event);
+        workflow.start(state, event);
 
         // then
         verify(transaction1).setMetadata(any());
@@ -119,16 +111,15 @@ class PreHandleWorkflowImplTest {
     @Test
     void testUnchangedStateDoesNotRegenerateHandlers() {
         // given
-        var hederaState = mock(HederaState.class);
-        when(stateService.getLatestImmutableState()).thenReturn(hederaState);
+        var state = mock(HederaState.class);
         final Event event = mock(Event.class);
         final Transaction transaction = mock(SwirldTransaction.class);
         final Iterator<Transaction> iterator = List.of(transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
-        workflow.start(event);
-        workflow.start(event);
+        workflow.start(state, event);
+        workflow.start(state, event);
 
         // then
         verify(cryptoService, times(1)).createQueryHandler(any());
@@ -137,19 +128,16 @@ class PreHandleWorkflowImplTest {
     @Test
     void testChangedStateDoesRegenerateHandlers() {
         // given
-        var hederaState1 = mock(HederaState.class);
-        var hederaState2 = mock(HederaState.class);
-        when(stateService.getLatestImmutableState())
-                .thenReturn(hederaState1)
-                .thenReturn(hederaState2);
+        var state1 = mock(HederaState.class);
+        var state2 = mock(HederaState.class);
         final Event event = mock(Event.class);
         final Transaction transaction = mock(SwirldTransaction.class);
         final Iterator<Transaction> iterator = List.of(transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
-        workflow.start(event);
-        workflow.start(event);
+        workflow.start(state1, event);
+        workflow.start(state2, event);
 
         // then
         verify(cryptoService, times(2)).createQueryHandler(any());

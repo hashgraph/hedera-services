@@ -19,11 +19,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.service.file.FilePreTransactionHandler;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -44,13 +41,13 @@ public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
      * @throws NullPointerException if one of the parameters is {@code null}
      */
     public PreHandleDispatcherImpl(final HederaState hederaState, final ServicesAccessor services) {
-        final var cryptoStates = hederaState.getServiceStates(CryptoService.class);
+        final var cryptoStates = hederaState.createReadableStates(HederaState.CRYPTO_SERVICE);
         cryptoHandler = services.cryptoService().createPreTransactionHandler(cryptoStates);
 
-        final var fileStates = hederaState.getServiceStates(FileService.class);
+        final var fileStates = hederaState.createReadableStates(HederaState.FILE_SERVICE);
         fileHandler = services.fileService().createPreTransactionHandler(fileStates);
 
-        final var tokenStates = hederaState.getServiceStates(TokenService.class);
+        final var tokenStates = hederaState.createReadableStates(HederaState.TOKEN_SERVICE);
         tokenHandler = services.tokenService().createPreTransactionHandler(tokenStates);
     }
 
