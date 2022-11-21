@@ -15,67 +15,68 @@
  */
 package com.hedera.node.app.spi.numbers;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class HederaFileNumbersTest {
     private HederaFileNumbers subject;
 
     @BeforeEach
-    void setUp(){
-        subject = new HederaFileNumbers() {
-            @Override
-            public long addressBook() {
-                return 101L;
-            }
+    void setUp() {
+        subject =
+                new HederaFileNumbers() {
+                    @Override
+                    public long addressBook() {
+                        return 101L;
+                    }
 
-            @Override
-            public long nodeDetails() {
-                return 102L;
-            }
+                    @Override
+                    public long nodeDetails() {
+                        return 102L;
+                    }
 
-            @Override
-            public long feeSchedules() {
-                return 111L;
-            }
+                    @Override
+                    public long feeSchedules() {
+                        return 111L;
+                    }
 
-            @Override
-            public long exchangeRates() {
-                return 112L;
-            }
+                    @Override
+                    public long exchangeRates() {
+                        return 112L;
+                    }
 
-            @Override
-            public long applicationProperties() {
-                return 121L;
-            }
+                    @Override
+                    public long applicationProperties() {
+                        return 121L;
+                    }
 
-            @Override
-            public long apiPermissions() {
-                return 122L;
-            }
+                    @Override
+                    public long apiPermissions() {
+                        return 122L;
+                    }
 
-            @Override
-            public long firstSoftwareUpdateFile() {
-                return 150L;
-            }
+                    @Override
+                    public long firstSoftwareUpdateFile() {
+                        return 150L;
+                    }
 
-            @Override
-            public long lastSoftwareUpdateFile() {
-                return 159L;
-            }
+                    @Override
+                    public long lastSoftwareUpdateFile() {
+                        return 159L;
+                    }
 
-            @Override
-            public long throttleDefinitions() {
-                return 123L;
-            }
-        };
+                    @Override
+                    public long throttleDefinitions() {
+                        return 123L;
+                    }
+                };
     }
 
     @Test
-    void checksIfNumIsSuperuser(){
+    void checksIfNumIsSuperuser() {
         assertTrue(subject.isSoftwareUpdateFile(150L));
         assertTrue(subject.isSoftwareUpdateFile(159L));
         assertFalse(subject.isSoftwareUpdateFile(160L));

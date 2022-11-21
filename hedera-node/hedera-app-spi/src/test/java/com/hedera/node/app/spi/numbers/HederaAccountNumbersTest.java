@@ -15,72 +15,73 @@
  */
 package com.hedera.node.app.spi.numbers;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class HederaAccountNumbersTest {
     private HederaAccountNumbers subject;
 
     @BeforeEach
-    void setUp(){
-        subject = new HederaAccountNumbers() {
-            @Override
-            public long treasury() {
-                return 2L;
-            }
+    void setUp() {
+        subject =
+                new HederaAccountNumbers() {
+                    @Override
+                    public long treasury() {
+                        return 2L;
+                    }
 
-            @Override
-            public long freezeAdmin() {
-                return 58L;
-            }
+                    @Override
+                    public long freezeAdmin() {
+                        return 58L;
+                    }
 
-            @Override
-            public long systemAdmin() {
-                return 50L;
-            }
+                    @Override
+                    public long systemAdmin() {
+                        return 50L;
+                    }
 
-            @Override
-            public long addressBookAdmin() {
-                return 55L;
-            }
+                    @Override
+                    public long addressBookAdmin() {
+                        return 55L;
+                    }
 
-            @Override
-            public long feeSchedulesAdmin() {
-                return 56L;
-            }
+                    @Override
+                    public long feeSchedulesAdmin() {
+                        return 56L;
+                    }
 
-            @Override
-            public long exchangeRatesAdmin() {
-                return 57L;
-            }
+                    @Override
+                    public long exchangeRatesAdmin() {
+                        return 57L;
+                    }
 
-            @Override
-            public long systemDeleteAdmin() {
-                return 59L;
-            }
+                    @Override
+                    public long systemDeleteAdmin() {
+                        return 59L;
+                    }
 
-            @Override
-            public long systemUndeleteAdmin() {
-                return 60L;
-            }
+                    @Override
+                    public long systemUndeleteAdmin() {
+                        return 60L;
+                    }
 
-            @Override
-            public long stakingRewardAccount() {
-                return 801L;
-            }
+                    @Override
+                    public long stakingRewardAccount() {
+                        return 801L;
+                    }
 
-            @Override
-            public long nodeRewardAccount() {
-                return 800L;
-            }
-        };
+                    @Override
+                    public long nodeRewardAccount() {
+                        return 800L;
+                    }
+                };
     }
 
     @Test
-    void checksIfNumIsSuperuser(){
+    void checksIfNumIsSuperuser() {
         assertTrue(subject.isSuperuser(2L));
         assertTrue(subject.isSuperuser(50L));
         assertFalse(subject.isSuperuser(51L));
