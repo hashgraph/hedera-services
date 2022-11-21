@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,138 +45,137 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
  * instance could only ever return {@code false} from {@link BucketThrottle#allow(int, long)}.
  */
 public class BucketThrottle {
-	private static final int DEFAULT_BURST_PERIOD = 1;
+    private static final int DEFAULT_BURST_PERIOD = 1;
 
-	static final long MS_PER_SEC = 1_000L;
-	static final long MTPS_PER_TPS = 1_000L;
-	static final long NTPS_PER_MTPS = 1_000_000L;
-	static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
-	static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
+    static final long MS_PER_SEC = 1_000L;
+    static final long MTPS_PER_TPS = 1_000L;
+    static final long NTPS_PER_MTPS = 1_000_000L;
+    static final long CAPACITY_UNITS_PER_TXN = 1_000_000_000_000L;
+    static final long CAPACITY_UNITS_PER_NANO_TXN = 1_000L;
 
-	public static long capacityUnitsPerTxn() {
-		return CAPACITY_UNITS_PER_TXN;
-	}
+    public static long capacityUnitsPerTxn() {
+        return CAPACITY_UNITS_PER_TXN;
+    }
 
-	public static long capacityUnitsPerMs(final long mtps) {
-		return mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / MS_PER_SEC;
-	}
+    public static long capacityUnitsPerMs(final long mtps) {
+        return mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / MS_PER_SEC;
+    }
 
-	private final long mtps;
-	private final DiscreteLeakyBucket bucket;
+    private final long mtps;
+    private final DiscreteLeakyBucket bucket;
 
-	private long lastAllowedUnits = 0L;
+    private long lastAllowedUnits = 0L;
 
-	static BucketThrottle withTps(final int tps) {
-		return new BucketThrottle(tps * MTPS_PER_TPS, DEFAULT_BURST_PERIOD * MS_PER_SEC);
-	}
+    static BucketThrottle withTps(final int tps) {
+        return new BucketThrottle(tps * MTPS_PER_TPS, DEFAULT_BURST_PERIOD * MS_PER_SEC);
+    }
 
-	static BucketThrottle withMtps(final long mtps) {
-		return new BucketThrottle(mtps, DEFAULT_BURST_PERIOD * MS_PER_SEC);
-	}
+    static BucketThrottle withMtps(final long mtps) {
+        return new BucketThrottle(mtps, DEFAULT_BURST_PERIOD * MS_PER_SEC);
+    }
 
-	static BucketThrottle withTpsAndBurstPeriod(final int tps, final int burstPeriod) {
-		return new BucketThrottle(tps * MTPS_PER_TPS, burstPeriod * MS_PER_SEC);
-	}
+    static BucketThrottle withTpsAndBurstPeriod(final int tps, final int burstPeriod) {
+        return new BucketThrottle(tps * MTPS_PER_TPS, burstPeriod * MS_PER_SEC);
+    }
 
-	static BucketThrottle withTpsAndBurstPeriodMs(final int tps, final long burstPeriodMs) {
-		return new BucketThrottle(tps * MTPS_PER_TPS, burstPeriodMs);
-	}
+    static BucketThrottle withTpsAndBurstPeriodMs(final int tps, final long burstPeriodMs) {
+        return new BucketThrottle(tps * MTPS_PER_TPS, burstPeriodMs);
+    }
 
-	static BucketThrottle withMtpsAndBurstPeriod(final long mtps, final int burstPeriod) {
-		return new BucketThrottle(mtps, burstPeriod * MS_PER_SEC);
-	}
+    static BucketThrottle withMtpsAndBurstPeriod(final long mtps, final int burstPeriod) {
+        return new BucketThrottle(mtps, burstPeriod * MS_PER_SEC);
+    }
 
-	static BucketThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
-		return new BucketThrottle(mtps, burstPeriodMs);
-	}
+    static BucketThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
+        return new BucketThrottle(mtps, burstPeriodMs);
+    }
 
-	private BucketThrottle(final long mtps, final long burstPeriodMs) {
-		this.mtps = mtps;
-		validateCapacityForRequested(mtps, burstPeriodMs);
-		final long capacity =
-				(mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN) / 1_000 * burstPeriodMs;
-		bucket = new DiscreteLeakyBucket(capacity);
-		if (bucket.totalCapacity() < CAPACITY_UNITS_PER_TXN) {
-			throw new IllegalArgumentException(
-					"A throttle with "
-							+ mtps
-							+ " MTPS and "
-							+ burstPeriodMs
-							+ "ms burst period can never allow a transaction");
-		}
-	}
+    private BucketThrottle(final long mtps, final long burstPeriodMs) {
+        this.mtps = mtps;
+        validateCapacityForRequested(mtps, burstPeriodMs);
+        final long capacity =
+                (mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN) / 1_000 * burstPeriodMs;
+        bucket = new DiscreteLeakyBucket(capacity);
+        if (bucket.totalCapacity() < CAPACITY_UNITS_PER_TXN) {
+            throw new IllegalArgumentException(
+                    "A throttle with "
+                            + mtps
+                            + " MTPS and "
+                            + burstPeriodMs
+                            + "ms burst period can never allow a transaction");
+        }
+    }
 
-	private void validateCapacityForRequested(final long mtps, final long burstPeriodMs) {
-		if (productWouldOverflow(mtps, NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN)) {
-			throw new IllegalArgumentException(
-					"Base bucket capacity calculation outside numeric range");
-		}
-		final var unscaledCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / 1_000;
-		if (productWouldOverflow(unscaledCapacity, burstPeriodMs)) {
-			throw new IllegalArgumentException(
-					"Scaled bucket capacity calculation outside numeric range");
-		}
-	}
+    private void validateCapacityForRequested(final long mtps, final long burstPeriodMs) {
+        if (productWouldOverflow(mtps, NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN)) {
+            throw new IllegalArgumentException(
+                    "Base bucket capacity calculation outside numeric range");
+        }
+        final var unscaledCapacity = mtps * NTPS_PER_MTPS * CAPACITY_UNITS_PER_NANO_TXN / 1_000;
+        if (productWouldOverflow(unscaledCapacity, burstPeriodMs)) {
+            throw new IllegalArgumentException(
+                    "Scaled bucket capacity calculation outside numeric range");
+        }
+    }
 
-	boolean allow(final int n, final long elapsedNanos) {
-		leakFor(elapsedNanos);
-		return allowInstantaneous(n);
-	}
+    boolean allow(final int n, final long elapsedNanos) {
+        leakFor(elapsedNanos);
+        return allowInstantaneous(n);
+    }
 
-	void leakFor(final long elapsedNanos) {
-		final var leakedUnits = effectiveLeak(elapsedNanos);
-		bucket.leak(leakedUnits);
-	}
+    void leakFor(final long elapsedNanos) {
+        final var leakedUnits = effectiveLeak(elapsedNanos);
+        bucket.leak(leakedUnits);
+    }
 
-	boolean allowInstantaneous(final int n) {
-		if (productWouldOverflow(n, CAPACITY_UNITS_PER_TXN)) {
-			return false;
-		}
-		final long requiredUnits = n * CAPACITY_UNITS_PER_TXN;
-		if (requiredUnits > bucket.capacityFree()) {
-			return false;
-		}
+    boolean allowInstantaneous(final int n) {
+        if (productWouldOverflow(n, CAPACITY_UNITS_PER_TXN)) {
+            return false;
+        }
+        final long requiredUnits = n * CAPACITY_UNITS_PER_TXN;
+        if (requiredUnits > bucket.capacityFree()) {
+            return false;
+        }
 
-		bucket.useCapacity(requiredUnits);
-		lastAllowedUnits += requiredUnits;
-		return true;
-	}
+        bucket.useCapacity(requiredUnits);
+        lastAllowedUnits += requiredUnits;
+        return true;
+    }
 
-	/**
-	 * Returns the percent of the throttle bucket's capacity that is used, given some number of
-	 * nanoseconds have elapsed since the last capacity test.
-	 *
-	 * @param givenElapsedNanos
-	 * 		time since last test
-	 * @return the percent of the bucket that is used
-	 */
-	double percentUsed(final long givenElapsedNanos) {
-		final var used = bucket.capacityUsed();
-		return 100.0
-				* (used - Math.min(used, effectiveLeak(givenElapsedNanos)))
-				/ bucket.totalCapacity();
-	}
+    /**
+     * Returns the percent of the throttle bucket's capacity that is used, given some number of
+     * nanoseconds have elapsed since the last capacity test.
+     *
+     * @param givenElapsedNanos time since last test
+     * @return the percent of the bucket that is used
+     */
+    double percentUsed(final long givenElapsedNanos) {
+        final var used = bucket.capacityUsed();
+        return 100.0
+                * (used - Math.min(used, effectiveLeak(givenElapsedNanos)))
+                / bucket.totalCapacity();
+    }
 
-	private long effectiveLeak(final long elapsedNanos) {
-		return productWouldOverflow(elapsedNanos, mtps)
-				? bucket.totalCapacity()
-				: elapsedNanos * mtps;
-	}
+    private long effectiveLeak(final long elapsedNanos) {
+        return productWouldOverflow(elapsedNanos, mtps)
+                ? bucket.totalCapacity()
+                : elapsedNanos * mtps;
+    }
 
-	void resetLastAllowedUse() {
-		lastAllowedUnits = 0;
-	}
+    void resetLastAllowedUse() {
+        lastAllowedUnits = 0;
+    }
 
-	void reclaimLastAllowedUse() {
-		bucket.leak(lastAllowedUnits);
-		lastAllowedUnits = 0;
-	}
+    void reclaimLastAllowedUse() {
+        bucket.leak(lastAllowedUnits);
+        lastAllowedUnits = 0;
+    }
 
-	DiscreteLeakyBucket bucket() {
-		return bucket;
-	}
+    DiscreteLeakyBucket bucket() {
+        return bucket;
+    }
 
-	long mtps() {
-		return mtps;
-	}
+    long mtps() {
+        return mtps;
+    }
 }

@@ -18,7 +18,6 @@ package com.hedera.node.app.hapi.utils.throttles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.hapi.utils.throttles.DiscreteLeakyBucket;
 import org.junit.jupiter.api.Test;
 
 class DiscreteLeakyBucketTest {

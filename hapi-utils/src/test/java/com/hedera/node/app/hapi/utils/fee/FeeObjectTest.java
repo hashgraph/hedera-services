@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.hapi.utils.fee;
 
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

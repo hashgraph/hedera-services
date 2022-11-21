@@ -29,10 +29,12 @@ public final class ThrottlesJsonToProtoSerde {
         return loadPojoDefs(in).toProto();
     }
 
-    public static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions loadPojoDefs(
-            InputStream in) throws IOException {
+    public static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
+            loadPojoDefs(InputStream in) throws IOException {
         var om = new ObjectMapper();
         return om.readValue(
-                in, com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.class);
+                in,
+                com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
+                        .class);
     }
 }

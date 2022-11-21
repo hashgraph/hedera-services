@@ -25,7 +25,6 @@ import static java.util.Collections.disjoint;
 
 import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -204,7 +203,9 @@ public final class ThrottleBucket<E extends Enum<E>> {
         for (final var group : throttleGroups) {
             final var opsReq = (int) (mtps / group.impliedMilliOpsPerSec());
             minCapacityUnitsPostSplit =
-                    Math.max(minCapacityUnitsPostSplit, DeterministicThrottle.capacityRequiredFor(opsReq));
+                    Math.max(
+                            minCapacityUnitsPostSplit,
+                            DeterministicThrottle.capacityRequiredFor(opsReq));
         }
         final var minCapacityUnits = minCapacityUnitsPostSplit * capacitySplit;
         final var capacityUnitsPerMs = BucketThrottle.capacityUnitsPerMs(mtps);

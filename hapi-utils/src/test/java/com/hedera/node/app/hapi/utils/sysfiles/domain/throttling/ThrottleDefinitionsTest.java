@@ -16,19 +16,17 @@
 package com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
 
 import com.hedera.node.app.hapi.utils.TestUtils;
-import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
+import java.io.IOException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 class ThrottleDefinitionsTest {
-	@Test
-	void factoryWorks() throws IOException {
-		// given:
-		final var proto = TestUtils.protoDefs("bootstrap/throttles.json");
+    @Test
+    void factoryWorks() throws IOException {
+        // given:
+        final var proto = TestUtils.protoDefs("bootstrap/throttles.json");
 
-		// expect:
-		Assertions.assertEquals(proto, ThrottleDefinitions.fromProto(proto).toProto());
-	}
+        // expect:
+        Assertions.assertEquals(proto, ThrottleDefinitions.fromProto(proto).toProto());
+    }
 }
