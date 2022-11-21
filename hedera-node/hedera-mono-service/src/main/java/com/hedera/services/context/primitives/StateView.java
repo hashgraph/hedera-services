@@ -37,7 +37,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
@@ -56,7 +55,13 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.*;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.HederaTokenRel;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RawTokenRelationship;
 import com.hedera.services.state.virtual.ContractKey;
@@ -68,6 +73,7 @@ import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.services.utils.EthSigsUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
@@ -477,7 +483,7 @@ public class StateView {
 
     private String getContractAccountId(final JKey key, final AccountID accountID) {
         // If we can recover an Ethereum EOA address from the account key, we should return that
-        final var evmAddress = tryAddressRecovery(key, EthTxSigs::recoverAddressFromPubKey);
+        final var evmAddress = tryAddressRecovery(key, EthSigsUtils::recoverAddressFromPubKey);
         if (evmAddress != null) {
             return Bytes.wrap(evmAddress).toUnprefixedHexString();
         } else {

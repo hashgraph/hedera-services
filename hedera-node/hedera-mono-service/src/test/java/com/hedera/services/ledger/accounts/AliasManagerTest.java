@@ -156,7 +156,8 @@ class AliasManagerTest {
         var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
         Key key = Key.newBuilder().setEd25519(keyData).build();
         JKey jKey = JKey.mapKey(key);
-        boolean added = subject.maybeLinkEvmAddress(jKey, num, EthSigsUtils::recoverAddressFromPubKey);
+        boolean added =
+                subject.maybeLinkEvmAddress(jKey, num, EthSigsUtils::recoverAddressFromPubKey);
         assertFalse(added);
         assertEquals(Map.of(), subject.getAliases());
 

@@ -24,6 +24,7 @@ import static com.hedera.services.ethereum.TestingConstants.TRUFFLE0_PUBLIC_ECDS
 import static com.hedera.services.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
 import static com.hedera.services.ethereum.TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY;
 import static com.hedera.services.ethereum.TestingConstants.ZERO_BYTES;
+import static com.hedera.services.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -355,10 +356,9 @@ class EthTxSigsTest {
     @Test
     void extractsAddress() {
         // good recovery
-        assertArrayEquals(
-                TRUFFLE0_ADDRESS, EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
+        assertArrayEquals(TRUFFLE0_ADDRESS, recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
-        assertNull(EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertNull(recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 }

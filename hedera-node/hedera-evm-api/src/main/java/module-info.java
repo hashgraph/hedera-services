@@ -22,5 +22,5 @@ module com.hedera.services.evm {
     exports com.hedera.services.evm.store.models;
     exports com.hedera.services.evm.accounts;
     exports com.hedera.services.evm;
-  exports com.hedera.services.utils;
+    exports com.hedera.services.utils;
 }

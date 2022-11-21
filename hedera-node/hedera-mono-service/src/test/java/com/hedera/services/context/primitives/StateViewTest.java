@@ -23,6 +23,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungib
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
 import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
@@ -60,7 +61,6 @@ import static org.mockito.Mockito.mockStatic;
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -805,7 +805,7 @@ class StateViewTest {
                 Hex.decode("033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
         given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
         tokenAccount.setAccountKey(new JECDSASecp256k1Key(ecdsaKey));
-        final var expectedAddress = CommonUtils.hex(EthTxSigs.recoverAddressFromPubKey(ecdsaKey));
+        final var expectedAddress = CommonUtils.hex(recoverAddressFromPubKey(ecdsaKey));
 
         mockedStatic = mockStatic(StateView.class);
         mockedStatic
