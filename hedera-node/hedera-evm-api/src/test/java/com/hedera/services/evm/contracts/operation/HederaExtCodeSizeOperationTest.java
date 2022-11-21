@@ -17,13 +17,12 @@ package com.hedera.services.evm.contracts.operation;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.evm.contracts.operations.HederaExtCodeSizeOperation;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -73,9 +72,8 @@ class HederaExtCodeSizeOperationTest {
         var opResult = subject.execute(mf, evm);
 
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(12L, opResult.getGasCost());
     }
 
     @Test
@@ -84,8 +82,8 @@ class HederaExtCodeSizeOperationTest {
 
         var opResult = subject.execute(mf, evm);
 
-        assertEquals(Optional.of(INSUFFICIENT_STACK_ITEMS), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+        assertEquals(INSUFFICIENT_STACK_ITEMS, opResult.getHaltReason());
+        assertEquals(12L, opResult.getGasCost());
     }
 
     @Test
@@ -105,7 +103,7 @@ class HederaExtCodeSizeOperationTest {
         var opResult = subject.execute(mf, evm);
 
         // then:
-        assertEquals(Optional.empty(), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(12L), opResult.getGasCost());
+        assertNull(opResult.getHaltReason());
+        assertEquals(12L, opResult.getGasCost());
     }
 }

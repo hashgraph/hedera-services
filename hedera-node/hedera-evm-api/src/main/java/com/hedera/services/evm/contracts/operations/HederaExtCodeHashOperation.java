@@ -37,8 +37,6 @@ package com.hedera.services.evm.contracts.operations;
  *
  */
 
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -55,7 +53,7 @@ import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
  *
  * <p>Performs an existence check on the requested {@link Address} Halts the execution of the EVM
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
- * not exist or it is deleted.
+ * not exist, or it is deleted.
  */
 public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
 
@@ -73,16 +71,14 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
             final Address address = Words.toAddress(frame.popStackItem());
             if (!addressValidator.test(address, frame)) {
                 return new OperationResult(
-                        OptionalLong.of(cost(true)),
-                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                        cost(true), HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             final var account = frame.getWorldUpdater().get(address);
             boolean accountIsWarm =
                     frame.warmUpAddress(address) || this.gasCalculator().isPrecompile(address);
-            OptionalLong optionalCost = OptionalLong.of(this.cost(accountIsWarm));
-            if (frame.getRemainingGas() < optionalCost.getAsLong()) {
-                return new OperationResult(
-                        optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+            long localCost = cost(accountIsWarm);
+            if (frame.getRemainingGas() < localCost) {
+                return new OperationResult(localCost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             } else {
                 if (!account.isEmpty()) {
                     frame.pushStackItem(UInt256.fromBytes(account.getCodeHash()));
@@ -90,12 +86,10 @@ public class HederaExtCodeHashOperation extends ExtCodeHashOperation {
                     frame.pushStackItem(UInt256.ZERO);
                 }
 
-                return new OperationResult(optionalCost, Optional.empty());
+                return new OperationResult(localCost, null);
             }
         } catch (final FixedStack.UnderflowException ufe) {
-            return new OperationResult(
-                    OptionalLong.of(cost(true)),
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+            return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }
     }
 }
