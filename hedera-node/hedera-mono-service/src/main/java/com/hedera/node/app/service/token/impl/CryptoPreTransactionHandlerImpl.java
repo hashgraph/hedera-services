@@ -16,13 +16,10 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -39,9 +36,12 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
+    private final PreHandleContext preHandleContext;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public CryptoPreTransactionHandlerImpl(
+            @Nonnull final AccountStore accountStore, @Nonnull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
+        this.preHandleContext = Objects.requireNonNull(ctx);
     }
 
     @Override
@@ -116,18 +116,15 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(PreHandleContext ctx, TransactionBody txn) {
+    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
         final var op = txn.getCryptoUpdateAccount();
         final var payer = txn.getTransactionID().getAccountID();
         final var updateAccountId = op.getAccountIDToUpdate();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        final var waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
 
-        final var newAccountKeyMustSign =
-                !((CryptoSignatureWaivers) ctx.signatureWaivers())
-                        .isNewKeySignatureWaived(txn, payer);
-        final var targetAccountKeyMustSign =
-                !((CryptoSignatureWaivers) ctx.signatureWaivers())
-                        .isTargetAccountSignatureWaived(txn, payer);
+        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
         if (targetAccountKeyMustSign) {
             meta.addNonPayerKey(updateAccountId);
         }

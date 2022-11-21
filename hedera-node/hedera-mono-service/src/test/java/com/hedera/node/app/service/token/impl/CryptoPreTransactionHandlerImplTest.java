@@ -30,10 +30,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
-import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
@@ -106,8 +107,10 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount transferAccount;
     @Mock private MerkleAccount updateAccount;
     @Mock private MerkleAccount ownerAccount;
-    @Mock private CryptoSignatureWaivers waivers;
+    @Mock private HederaAccountNumbers accountNumbers;
+    @Mock private HederaFileNumbers fileNumbers;
     private PreHandleContext context;
+    private CryptoSignatureWaiversImpl waivers;
     private AccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
@@ -117,9 +120,11 @@ class CryptoPreTransactionHandlerImplTest {
         given(states.get(ALIASES)).willReturn(aliases);
 
         store = new AccountStore(states);
-        context = new PreHandleContext(waivers);
+        waivers = new CryptoSignatureWaiversImpl(accountNumbers);
 
-        subject = new CryptoPreTransactionHandlerImpl(store);
+        context = new PreHandleContext(accountNumbers, fileNumbers);
+
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
     }
 
     @Test
@@ -382,7 +387,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 3, false, OK);
         assertTrue(meta.getReqKeys().contains(payerKey));
         assertTrue(meta.getReqKeys().contains(updateAccountKey));
@@ -396,7 +401,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 2, false, OK);
         assertIterableEquals(List.of(payerKey, updateAccountKey), meta.getReqKeys());
     }
@@ -407,7 +412,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 2, false, OK);
         assertTrue(meta.getReqKeys().contains(payerKey));
         assertFalse(meta.getReqKeys().contains(updateAccountKey));
@@ -421,7 +426,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 1, true, INVALID_PAYER_ACCOUNT_ID);
     }
 
@@ -433,7 +438,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
     }
 
@@ -445,7 +450,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
-        var meta = subject.preHandleUpdateAccount(context, txn);
+        var meta = subject.preHandleUpdateAccount(txn);
         basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
     }
 

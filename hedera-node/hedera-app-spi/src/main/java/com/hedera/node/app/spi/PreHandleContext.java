@@ -15,19 +15,23 @@
  */
 package com.hedera.node.app.spi;
 
-import javax.annotation.Nonnull;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
  * for signing requirements using {@link SigWaivers} to validate if any account's signature can be
  * waived it contains
  *
- * @param signatureWaivers provides information about signature waiver special cases for some
+ * @param accountNumbers provides information about signature waiver special cases for some
  *     transactions
  */
-public record PreHandleContext(@Nonnull SigWaivers signatureWaivers) {
+public record PreHandleContext(
+        @Nonnull HederaAccountNumbers accountNumbers, @Nonnull HederaFileNumbers fileNumbers) {
     public PreHandleContext {
-        Objects.requireNonNull(signatureWaivers);
+        Objects.requireNonNull(accountNumbers);
+        Objects.requireNonNull(fileNumbers);
     }
 }

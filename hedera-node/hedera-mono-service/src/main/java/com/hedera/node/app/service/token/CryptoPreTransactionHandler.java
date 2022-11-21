@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -46,7 +45,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody}
      * @return the metadata for the account update
      */
-    TransactionMetadata preHandleUpdateAccount(PreHandleContext ctx, TransactionBody txn);
+    TransactionMetadata preHandleUpdateAccount(TransactionBody txn);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}

@@ -1,27 +1,41 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.spi.numbers;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.SigWaivers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @ExtendWith(MockitoExtension.class)
 class PreHandleContextTest {
-    @Mock
-    private SigWaivers sigWaivers;
+    @Mock private HederaAccountNumbers accountNumbers;
+    @Mock private HederaFileNumbers fileNumbers;
 
     @Test
-    void checksNullParams(){
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null));
+    void checksNullParams() {
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, null));
     }
 
     @Test
-    void passesWIthNonNullParams(){
-        assertDoesNotThrow(() -> new PreHandleContext(sigWaivers));
+    void passesWIthNonNullParams() {
+        assertDoesNotThrow(() -> new PreHandleContext(accountNumbers, fileNumbers));
     }
 }

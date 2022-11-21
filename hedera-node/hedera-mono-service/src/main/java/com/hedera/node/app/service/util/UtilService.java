@@ -15,8 +15,10 @@
  */
 package com.hedera.node.app.service.util;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,5 +35,6 @@ public interface UtilService extends Service {
      */
     @NotNull
     @Override
-    UtilPreTransactionHandler createPreTransactionHandler(@NotNull States states);
+    UtilPreTransactionHandler createPreTransactionHandler(
+            @NotNull States states, @NonNull PreHandleContext ctx);
 }

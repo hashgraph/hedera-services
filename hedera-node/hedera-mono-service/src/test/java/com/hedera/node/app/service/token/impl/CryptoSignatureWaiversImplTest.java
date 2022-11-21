@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -25,13 +26,18 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class CryptoSignatureWaiversImplTest {
+    @Mock HederaAccountNumbers accountNumbers;
     private CryptoSignatureWaiversImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CryptoSignatureWaiversImpl();
+        subject = new CryptoSignatureWaiversImpl(accountNumbers);
     }
 
     @Test

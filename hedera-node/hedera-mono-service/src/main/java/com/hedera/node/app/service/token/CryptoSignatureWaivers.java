@@ -22,8 +22,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 /** Signature waivers needed for transactions in {@link CryptoService} */
 public interface CryptoSignatureWaivers extends SigWaivers {
     /**
-     * Advises if the target account's key must sign a given crypto update. Since accounts 0.0.2
-     * and 0.0.50 can update any non-0.0.2 system accounts with no other signatures. Checks if the
+     * Advises if the target account's key must sign a given crypto update. Since accounts 0.0.2 and
+     * 0.0.50 can update any non-0.0.2 system accounts with no other signatures. Checks if the
      * target account being updated by the above accounts.
      *
      * @param cryptoUpdateTxn a crypto update transaction

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  */
 package com.hedera.node.app.service.freeze;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.state.States;
+import javax.annotation.Nonnull;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -33,5 +35,6 @@ public interface FreezeService extends Service {
      */
     @NotNull
     @Override
-    FreezePreTransactionHandler createPreTransactionHandler(@NotNull States states);
+    FreezePreTransactionHandler createPreTransactionHandler(
+            @NotNull States states, @Nonnull PreHandleContext ctx);
 }
