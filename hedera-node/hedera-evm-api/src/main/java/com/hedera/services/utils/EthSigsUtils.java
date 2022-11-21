@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.ethereum;
+package com.hedera.services.utils;
 
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
@@ -39,7 +39,7 @@ public final class EthSigsUtils {
         }
     }
 
-    static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
+    public static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
         final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
         LibSecp256k1.secp256k1_ec_pubkey_serialize(

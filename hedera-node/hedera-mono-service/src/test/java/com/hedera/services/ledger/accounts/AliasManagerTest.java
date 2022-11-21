@@ -29,13 +29,13 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EthSigsUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -148,7 +148,7 @@ class AliasManagerTest {
 
     @Test
     void ignoresNullKeys() {
-        assertFalse(subject.maybeLinkEvmAddress(null, num, EthTxSigs::recoverAddressFromPubKey));
+        assertFalse(subject.maybeLinkEvmAddress(null, num, EthSigsUtils::recoverAddressFromPubKey));
     }
 
     @Test
@@ -156,7 +156,7 @@ class AliasManagerTest {
         var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
         Key key = Key.newBuilder().setEd25519(keyData).build();
         JKey jKey = JKey.mapKey(key);
-        boolean added = subject.maybeLinkEvmAddress(jKey, num, EthTxSigs::recoverAddressFromPubKey);
+        boolean added = subject.maybeLinkEvmAddress(jKey, num, EthSigsUtils::recoverAddressFromPubKey);
         assertFalse(added);
         assertEquals(Map.of(), subject.getAliases());
 

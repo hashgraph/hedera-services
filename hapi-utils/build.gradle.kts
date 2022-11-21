@@ -20,6 +20,7 @@ plugins {
 description = "Hedera Services API Utilities"
 
 dependencies {
+    api(project(":hedera-node:hedera-evm-api"))
     implementation(libs.bundles.logging)
     implementation(libs.protobuf.java)
     implementation(libs.hapi) {

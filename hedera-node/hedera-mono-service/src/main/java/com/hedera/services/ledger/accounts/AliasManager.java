@@ -16,12 +16,12 @@
 package com.hedera.services.ledger.accounts;
 
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.services.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -30,6 +30,7 @@ import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EthSigsUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,7 +57,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     private static final String NON_TRANSACTIONAL_MSG =
             "Base alias manager does not buffer changes";
     private static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
-            EthTxSigs::recoverAddressFromPubKey;
+            EthSigsUtils::recoverAddressFromPubKey;
 
     private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -223,7 +224,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 // trust, but verify
                 if (rawCompressedKey.length
                         == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+                    var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
                     if (evmAddress != null) {
                         curAliases().remove(ByteString.copyFrom(evmAddress));
                     }

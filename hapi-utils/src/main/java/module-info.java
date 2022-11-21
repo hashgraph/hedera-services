@@ -25,4 +25,5 @@ module com.hedera.services.hapi.utils {
     requires net.i2p.crypto.eddsa;
     requires annotations;
     requires javax.inject;
+    requires com.hedera.services.evm;
 }

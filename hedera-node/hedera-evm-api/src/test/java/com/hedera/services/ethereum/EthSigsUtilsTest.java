@@ -19,6 +19,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.hedera.services.utils.EthSigsUtils;
 import org.junit.jupiter.api.Test;
 
 class EthSigsUtilsTest {

@@ -17,7 +17,7 @@ package com.hedera.services.evm.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ethereum.EthSigsUtils;
+import com.hedera.services.utils.EthSigsUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
