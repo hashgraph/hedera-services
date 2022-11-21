@@ -18,7 +18,7 @@ package com.hedera.services.utils;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 
-import com.sun.jna.ptr.LongByReference;
+import com.sun.jna.ptr.LongByReference; // NOSONAR
 import java.nio.ByteBuffer;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
@@ -27,7 +27,6 @@ public final class EthSigsUtils {
 
     private EthSigsUtils() {}
 
-    @SuppressWarnings("java:S1191")
     public static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
         var parseResult =
@@ -40,7 +39,6 @@ public final class EthSigsUtils {
         }
     }
 
-    @SuppressWarnings("java:S1191")
     public static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
         final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
