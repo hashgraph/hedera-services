@@ -16,14 +16,12 @@
 package com.hedera.services.evm.contracts.operation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
@@ -62,8 +60,8 @@ class HederaEvmOperationsUtilTest {
                                 (a, b) -> true);
 
         // then:
-        assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(messageFrame, never()).getWorldUpdater();
@@ -88,9 +86,8 @@ class HederaEvmOperationsUtilTest {
                                 (a, b) -> false);
 
         // then:
-        assertEquals(
-                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason().get());
-        assertEquals(expectedHaltGas, result.getGasCost().getAsLong());
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
+        assertEquals(expectedHaltGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(gasSupplier).getAsLong();
@@ -102,9 +99,7 @@ class HederaEvmOperationsUtilTest {
         // given:
         given(messageFrame.getStackItem(0)).willReturn(Address.ZERO);
         given(executionSupplier.get())
-                .willReturn(
-                        new Operation.OperationResult(
-                                OptionalLong.of(expectedSuccessfulGas), Optional.empty()));
+                .willReturn(new Operation.OperationResult(expectedSuccessfulGas, null));
 
         // when:
         final var result =
@@ -117,8 +112,8 @@ class HederaEvmOperationsUtilTest {
                                 (a, b) -> true);
 
         // when:
-        assertTrue(result.getHaltReason().isEmpty());
-        assertEquals(expectedSuccessfulGas, result.getGasCost().getAsLong());
+        assertNull(result.getHaltReason());
+        assertEquals(expectedSuccessfulGas, result.getGasCost());
         // and:
         verify(messageFrame).getStackItem(0);
         verify(gasSupplier, never()).getAsLong();

@@ -16,6 +16,7 @@
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.benchmark-conventions")
+    `java-test-fixtures`
 }
 
 description = "Hedera Application - MONO Service Implementation"
@@ -48,6 +49,13 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
+
+    testFixturesApi(project(":hapi-utils"))
+    testFixturesApi(libs.swirlds.merkle)
+    testFixturesApi(libs.swirlds.virtualmap)
+    testFixturesApi(libs.hapi)
+    testFixturesApi(libs.commons.codec)
+    testFixturesImplementation(testLibs.bundles.testing)
 
     jmhImplementation(libs.swirlds.common)
 

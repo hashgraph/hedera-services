@@ -18,7 +18,6 @@ package com.hedera.services.context.primitives;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTest.scheduleCreateTxnWith;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
@@ -35,6 +34,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
+import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
