@@ -63,20 +63,60 @@ dependencies {
     implementation(testLibs.testcontainers.core)
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
+    itestImplementation(project(":hedera-node:hedera-app"))
+    itestImplementation(project(":hedera-node:hedera-app-spi"))
+    itestImplementation(project(":hedera-node:hedera-evm"))
+    itestImplementation(project(":hedera-node:hedera-evm-api"))
+    itestImplementation(project(":hedera-node:hedera-mono-service"))
+    itestImplementation(project(":modules:hedera-admin-service"))
+    itestImplementation(project(":modules:hedera-admin-service-impl"))
+    itestImplementation(project(":modules:hedera-consensus-service"))
+    itestImplementation(project(":modules:hedera-consensus-service-impl"))
+    itestImplementation(project(":modules:hedera-file-service"))
+    itestImplementation(project(":modules:hedera-file-service-impl"))
+    itestImplementation(project(":modules:hedera-network-service"))
+    itestImplementation(project(":modules:hedera-network-service-impl"))
+    itestImplementation(project(":modules:hedera-schedule-service"))
+    itestImplementation(project(":modules:hedera-schedule-service-impl"))
+    itestImplementation(project(":modules:hedera-smart-contract-service"))
+    itestImplementation(project(":modules:hedera-smart-contract-service-impl"))
+    itestImplementation(project(":modules:hedera-token-service"))
+    itestImplementation(project(":modules:hedera-token-service-impl"))
+    itestImplementation(project(":modules:hedera-util-service"))
+    itestImplementation(project(":modules:hedera-util-service-impl"))
     eetImplementation(testLibs.bundles.testcontainers)
+    eetImplementation(project(":hedera-node:hedera-app"))
+    eetImplementation(project(":hedera-node:hedera-app-spi"))
+    eetImplementation(project(":hedera-node:hedera-evm"))
+    eetImplementation(project(":hedera-node:hedera-evm-api"))
+    eetImplementation(project(":hedera-node:hedera-mono-service"))
+    eetImplementation(project(":modules:hedera-admin-service"))
+    eetImplementation(project(":modules:hedera-admin-service-impl"))
+    eetImplementation(project(":modules:hedera-consensus-service"))
+    eetImplementation(project(":modules:hedera-consensus-service-impl"))
+    eetImplementation(project(":modules:hedera-file-service"))
+    eetImplementation(project(":modules:hedera-file-service-impl"))
+    eetImplementation(project(":modules:hedera-network-service"))
+    eetImplementation(project(":modules:hedera-network-service-impl"))
+    eetImplementation(project(":modules:hedera-schedule-service"))
+    eetImplementation(project(":modules:hedera-schedule-service-impl"))
+    eetImplementation(project(":modules:hedera-smart-contract-service"))
+    eetImplementation(project(":modules:hedera-smart-contract-service-impl"))
+    eetImplementation(project(":modules:hedera-token-service"))
+    eetImplementation(project(":modules:hedera-token-service-impl"))
+    eetImplementation(project(":modules:hedera-util-service"))
+    eetImplementation(project(":modules:hedera-util-service-impl"))
 }
 
 tasks.itest {
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
-    outputs.upToDateWhen { false }
 }
 
 tasks.eet {
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
-    outputs.upToDateWhen { false }
 }
 
 tasks.shadowJar {
