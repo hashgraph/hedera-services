@@ -4,7 +4,6 @@ module com.hedera.services.evm {
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.secp256k1;
     requires com.hedera.hashgraph.protobuf.java.api;
-    requires com.hedera.services.hapi.utils;
     requires tuweni.bytes;
     requires javax.inject;
     requires com.swirlds.common;
@@ -13,9 +12,12 @@ module com.hedera.services.evm {
     requires com.github.benmanes.caffeine;
     requires com.google.protobuf;
     requires org.apache.commons.lang3;
+    requires org.bouncycastle.provider;
+    requires com.sun.jna;
 
     exports com.hedera.services.evm.store.contracts.utils;
     exports com.hedera.services.evm.contracts.execution;
+    exports com.hedera.services.evm.contracts.execution.traceability;
     exports com.hedera.services.evm.store.contracts;
     exports com.hedera.services.evm.store.models;
     exports com.hedera.services.evm.accounts;

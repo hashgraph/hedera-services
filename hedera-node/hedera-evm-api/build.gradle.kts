@@ -28,7 +28,6 @@ dependencies {
     }
     api(libs.besu.secp256k1)
     api(libs.swirlds.common)
-    api(project(":hapi-utils"))
     implementation(libs.caffeine)
     implementation(libs.guava) {
         exclude("com.google.code.findbugs", "jsr305")
@@ -38,6 +37,7 @@ dependencies {
         exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
+    implementation(libs.jna)
 
     testImplementation(testLibs.mockito.jupiter)
 }

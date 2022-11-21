@@ -17,7 +17,7 @@ package com.hedera.services.evm.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.ethereum.EthSigsUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.tuweni.bytes.Bytes;
@@ -53,8 +53,7 @@ public class HederaEvmAccount {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                var addressBytes =
-                        EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                var addressBytes = EthSigsUtils.recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 return addressBytes == null ? address : Address.wrap(Bytes.wrap(addressBytes));
             } else {
                 return address;
