@@ -22,6 +22,7 @@ description = "Hedera Application - SPI"
 dependencies {
     implementation(libs.hapi)
     implementation(libs.jsr305.annotation)
+    testImplementation(testLibs.bundles.mockito)
 }
 
 configurations.all {
