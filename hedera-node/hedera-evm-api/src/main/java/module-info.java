@@ -2,6 +2,7 @@
 module com.hedera.services.evm {
     requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.datatypes;
+    requires org.hyperledger.besu.secp256k1;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.hedera.services.hapi.utils;
     requires tuweni.bytes;

@@ -26,13 +26,14 @@ dependencies {
     api(libs.besu.datatypes) {
         exclude("com.google.code.findbugs", "jsr305")
     }
+    api(libs.besu.secp256k1)
     api(libs.swirlds.common)
+    api(project(":hapi-utils"))
     implementation(libs.caffeine)
     implementation(libs.hapi) {
         exclude("com.google.code.findbugs", "jsr305")
     }
     implementation(libs.javax.inject)
-    implementation(project(":hapi-utils"))
 
     testImplementation(testLibs.mockito.jupiter)
 }

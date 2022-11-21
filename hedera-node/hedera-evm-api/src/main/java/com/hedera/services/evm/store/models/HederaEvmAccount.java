@@ -23,7 +23,7 @@ import org.hyperledger.besu.datatypes.Address;
 public class HederaEvmAccount {
 
     public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
-        ByteString.copyFrom(new byte[] {0x3a, 0x21});
+            ByteString.copyFrom(new byte[] {0x3a, 0x21});
     public static final int EVM_ADDRESS_SIZE = 20;
     public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
 
@@ -34,12 +34,12 @@ public class HederaEvmAccount {
         this.address = address;
     }
 
-    public ByteString getAlias() {
-        return alias;
-    }
-
     public void setAlias(final ByteString alias) {
         this.alias = alias;
+    }
+
+    public ByteString getAlias() {
+        return alias;
     }
 
     public Address canonicalAddress() {
@@ -49,12 +49,10 @@ public class HederaEvmAccount {
             if (alias.size() == EVM_ADDRESS_SIZE) {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
-                && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
+                    && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 var addressBytes =
-                    EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                return addressBytes == null
-                    ? address
-                    : Address.wrap(Bytes.wrap(addressBytes));
+                        EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                return addressBytes == null ? address : Address.wrap(Bytes.wrap(addressBytes));
             } else {
                 return address;
             }

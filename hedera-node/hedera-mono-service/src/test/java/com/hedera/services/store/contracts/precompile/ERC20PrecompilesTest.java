@@ -44,7 +44,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.AMOUNT
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_FUNGIBLE_WRAPPER;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.failResult;
@@ -220,6 +219,7 @@ class ERC20PrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private Account account;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -979,7 +979,7 @@ class ERC20PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -988,7 +988,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1059,8 +1059,8 @@ class ERC20PrecompilesTest {
                 .willReturn(tokenStore);
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
-        given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -1069,7 +1069,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1147,7 +1147,7 @@ class ERC20PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
 
@@ -1157,7 +1157,7 @@ class ERC20PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
