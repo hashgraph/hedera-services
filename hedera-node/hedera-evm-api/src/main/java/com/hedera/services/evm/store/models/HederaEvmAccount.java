@@ -53,7 +53,8 @@ public class HederaEvmAccount {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                var addressBytes = EthSigsUtils.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                var addressBytes =
+                        EthSigsUtils.recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 return addressBytes == null ? address : Address.wrap(Bytes.wrap(addressBytes));
             } else {
                 return address;
