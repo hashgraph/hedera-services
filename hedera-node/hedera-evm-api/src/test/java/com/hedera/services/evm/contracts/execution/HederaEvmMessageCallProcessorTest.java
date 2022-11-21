@@ -20,7 +20,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -42,6 +41,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
+import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,7 +81,13 @@ class HederaEvmMessageCallProcessorTest {
                 new HederaEvmMessageCallProcessor(
                         evm,
                         precompiles,
-                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
+                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile)) {
+                    @Override
+                    protected void executeLazyCreate(
+                            MessageFrame frame, OperationTracer operationTracer) {
+                        // no-op
+                    }
+                };
     }
 
     @Test
@@ -129,12 +135,12 @@ class HederaEvmMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
+        given(updater.get(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
 
         subject.start(frame, hederaEvmOperationTracer);
 
         verifyNoMoreInteractions(nonHtsPrecompile, frame);
-        assertEquals(123, receiver.getBalance().getAsBigInteger().longValue());
     }
 
     @Test

@@ -125,7 +125,7 @@ public class HederaTracer implements HederaOperationTracer {
         final var contractAddress = messageFrame.getContractAddress();
         if (messageFrame.getType() != Type.CONTRACT_CREATION
                 && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
-            action.setInvalidSolidityAddress(contractAddress.toArray());
+            action.setTargetedAddress(contractAddress.toArray());
         } else {
             final var recipient =
                     EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
@@ -159,7 +159,7 @@ public class HederaTracer implements HederaOperationTracer {
                                             Address.wrap(
                                                     Bytes.of(action.getInvalidSolidityAddress())),
                                             frame));
-                    action.setInvalidSolidityAddress(null);
+                    action.setTargetedAddress(null);
                     action.setRecipientAccount(recipientAsHederaId);
                 }
             } else {
@@ -216,7 +216,7 @@ public class HederaTracer implements HederaOperationTracer {
             final var lastAction = currentActionsStack.pop();
             lastAction.setCallType(type);
             lastAction.setRecipientAccount(null);
-            lastAction.setInvalidSolidityAddress(null);
+            lastAction.setTargetedAddress(null);
             lastAction.setRecipientContract(EntityId.fromAddress(frame.getContractAddress()));
             finalizeActionFor(lastAction, frame, frame.getState());
         }

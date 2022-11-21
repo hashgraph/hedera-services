@@ -15,32 +15,30 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.services.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
+import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -51,9 +49,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
-    private final Map<Address, PrecompiledContract> hederaPrecompiles;
-    private AutoCreationLogic autoCreationLogic;
-    private RecordsHistorian recordsHistorian;
+    private InfrastructureFactory infrastructureFactory;
 
     public HederaMessageCallProcessor(
             final EVM evm,
@@ -66,13 +62,9 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList,
-            final AutoCreationLogic autoCreationLogic,
-            final RecordsHistorian recordsHistorian) {
-        super(evm, precompiles);
-        hederaPrecompiles = new HashMap<>();
-        hederaPrecompileList.forEach((k, v) -> hederaPrecompiles.put(Address.fromHexString(k), v));
-        this.autoCreationLogic = autoCreationLogic;
-        this.recordsHistorian = recordsHistorian;
+            final InfrastructureFactory infrastructureFactory) {
+        super(evm, precompiles, hederaPrecompileList);
+        this.infrastructureFactory = infrastructureFactory;
     }
 
     @Override
@@ -90,15 +82,6 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
                             hederaPrecompile != null
                                     ? ContractActionType.SYSTEM
                                     : ContractActionType.PRECOMPILE);
-        } else if (updater.get(frame.getRecipientAddress()) == null) {
-            // can be reached only for a top level call with EVM_VERSION >= 0.32;
-            // a top-level call to a non-existing recipient would have been rejected
-            // immediately
-            // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
-            // EVM_VERSION < 0.32
-            // and nested calls to non-existing recipients are currently rejected in all
-            // versions (see {@code HederaOperationUtil})
-            executeLazyCreate(frame, updater, operationTracer);
         }
     }
 
@@ -115,10 +98,17 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         super.executeHederaPrecompile(contract, frame, operationTracer);
     }
 
-    private void executeLazyCreate(
-            final MessageFrame frame,
-            final HederaStackedWorldStateUpdater updater,
-            final OperationTracer operationTracer) {
+    // can be reached only for a top level call with EVM_VERSION >= 0.32;
+    // a top-level call to a non-existing recipient would have been rejected
+    // immediately
+    // in {@code ContractCallTransitionLogic.doStateTransitionOperation()} if
+    // EVM_VERSION < 0.32
+    // and nested calls to non-existing recipients are currently rejected in all
+    // versions (see {@code HederaOperationUtil})
+    @Override
+    protected void executeLazyCreate(
+            final MessageFrame frame, final OperationTracer operationTracer) {
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var syntheticBalanceChange =
                 BalanceChange.changingHbar(
                         AccountAmount.newBuilder()
@@ -131,8 +121,12 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
                                                 .build())
                                 .build(),
                         null);
+        final var autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
         final var lazyCreateResult =
-                autoCreationLogic.create(syntheticBalanceChange, updater.trackingAccounts(), null);
+                autoCreationLogic.create(
+                        syntheticBalanceChange,
+                        updater.trackingAccounts(),
+                        List.of(syntheticBalanceChange));
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
             haltFrameAndTraceCreationResult(
                     frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
@@ -140,14 +134,15 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
             final var creationFeeInTinybars = lazyCreateResult.getRight();
             final var creationFeeInGas = creationFeeInTinybars / frame.getGasPrice().toLong();
             if (frame.getRemainingGas() < creationFeeInGas) {
-                // ledgers won't be committed on unsuccessful frame,
-                // all we need to do is clear the alias link
-                autoCreationLogic.reclaimPendingAliases();
+                // ledgers won't be committed on unsuccessful frame and StackedContractAliases
+                // will revert any new aliases
                 haltFrameAndTraceCreationResult(frame, operationTracer, INSUFFICIENT_GAS);
             } else {
                 frame.decrementRemainingGas(creationFeeInGas);
                 // track auto-creation preceding child record
-                autoCreationLogic.submitRecordsTo(recordsHistorian);
+                final var recordSubmissions =
+                        infrastructureFactory.newRecordSubmissionsScopedTo(updater);
+                autoCreationLogic.submitRecords(recordSubmissions, false);
                 // track the lazy account so it is accessible to the EVM
                 updater.trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));

@@ -36,7 +36,7 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 /** Overrides Besu precompiler handling, so we can break model layers in Precompile execution */
-public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
+public abstract class HederaEvmMessageCallProcessor extends MessageCallProcessor {
     private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
             Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
 
@@ -66,6 +66,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
                     frame.setExceptionalHaltReason(ILLEGAL_STATE_CHANGE);
                     frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
                     return;
+                } else if (updater.get(frame.getRecipientAddress()) == null) {
+                    executeLazyCreate(frame, operationTracer);
+                    if (frame.getState() == EXCEPTIONAL_HALT) {
+                        return;
+                    }
                 }
             }
 
@@ -98,4 +103,7 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             frame.setState(EXCEPTIONAL_HALT);
         }
     }
+
+    protected abstract void executeLazyCreate(
+            final MessageFrame frame, final OperationTracer operationTracer);
 }

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
@@ -40,15 +40,17 @@ import com.hedera.services.contracts.execution.traceability.HederaOperationTrace
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.services.records.RecordSubmissions;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,7 +114,8 @@ class HederaMessageCallProcessorTest {
     @Mock private HederaOperationTracer hederaTracer;
     @Mock private HederaStackedWorldStateUpdater updater;
     @Mock private AutoCreationLogic autoCreationLogic;
-    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private RecordSubmissions recordSubmissions;
+    @Mock private InfrastructureFactory infrastructureFactory;
 
     @BeforeEach
     void setup() {
@@ -123,8 +126,7 @@ class HederaMessageCallProcessorTest {
                         Map.of(
                                 HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile,
                                 HTS_PRECOMPILE_ADDRESS_STRING, htsPrecompile),
-                        autoCreationLogic,
-                        recordsHistorian);
+                        infrastructureFactory);
     }
 
     @Test
@@ -312,13 +314,19 @@ class HederaMessageCallProcessorTest {
         final var transactionalLedger = mock(TransactionalLedger.class);
         given(updater.trackingAccounts()).willReturn(transactionalLedger);
         final var creationFee = 500L;
-        given(autoCreationLogic.create(BALANCE_CHANGE, transactionalLedger, null))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(infrastructureFactory.newRecordSubmissionsScopedTo(updater))
+                .willReturn(recordSubmissions);
+        given(
+                        autoCreationLogic.create(
+                                BALANCE_CHANGE, transactionalLedger, List.of(BALANCE_CHANGE)))
                 .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
 
         subject.start(frame, hederaTracer);
 
         verify(frame).decrementRemainingGas(creationFee / gasPrice.toLong());
-        verify(autoCreationLogic).submitRecordsTo(recordsHistorian);
+        verify(autoCreationLogic).submitRecords(recordSubmissions, false);
         verify(updater)
                 .trackLazilyCreatedAccount(
                         EntityIdUtils.asTypedEvmAddress(BALANCE_CHANGE.accountId()));
@@ -352,7 +360,9 @@ class HederaMessageCallProcessorTest {
                                 .build(),
                         null);
         final var creationFee = 500L;
-        given(autoCreationLogic.create(change, transactionalLedger, null))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
                 .willReturn(Pair.of(ResponseCodeEnum.OK, creationFee));
 
         subject.start(frame, hederaTracer);
@@ -362,8 +372,7 @@ class HederaMessageCallProcessorTest {
         verify(frame, times(2)).getState();
         verify(hederaTracer).traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
         verify(transactionalLedger, never()).set(change.accountId(), BALANCE, 1000L);
-        verify(autoCreationLogic).reclaimPendingAliases();
-        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 
@@ -390,7 +399,9 @@ class HederaMessageCallProcessorTest {
                                                 .build())
                                 .build(),
                         null);
-        given(autoCreationLogic.create(change, transactionalLedger, null))
+        given(infrastructureFactory.newAutoCreationLogicScopedTo(updater))
+                .willReturn(autoCreationLogic);
+        given(autoCreationLogic.create(change, transactionalLedger, List.of(change)))
                 .willReturn(
                         Pair.of(
                                 ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED,
@@ -403,7 +414,7 @@ class HederaMessageCallProcessorTest {
         verify(frame, times(2)).getState();
         verify(hederaTracer)
                 .traceAccountCreationResult(frame, Optional.of(FAILURE_DURING_LAZY_ACCOUNT_CREATE));
-        verify(autoCreationLogic, never()).submitRecordsTo(recordsHistorian);
+        verifyNoMoreInteractions(autoCreationLogic);
         verify(hederaTracer, never()).tracePrecompileCall(any(), anyLong(), any());
     }
 }

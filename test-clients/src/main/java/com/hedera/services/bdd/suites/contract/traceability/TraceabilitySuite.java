@@ -93,7 +93,6 @@ import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -7166,7 +7165,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                             accountWith()
                                                                     .balance(FIVE_HBARS)
                                                                     .alias(firstAliasAsByteString)
-                                                                    .key(Key.getDefaultInstance()))
+                                                                    .key(EMPTY_KEY))
                                                     .exposingIdTo(lazyAccountIdReference::set);
                                     AtomicReference<AccountID> ethSenderAccountReference =
                                             new AtomicReference<>();
@@ -7190,7 +7189,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .setGas(179000)
                                                                     .setGasUsed(179000)
                                                                     .setValue(valueToSend)
-                                                                    .setInvalidSolidityAddress(
+                                                                    .setTargetedAddress(
                                                                             firstAliasAsByteString)
                                                                     .setError(
                                                                             ByteString.copyFromUtf8(

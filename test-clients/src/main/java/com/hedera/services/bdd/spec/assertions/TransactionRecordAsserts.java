@@ -331,11 +331,6 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts alias(ByteString alias) {
-        registerTypedProvider("alias", shouldBe(alias));
-        return this;
-    }
-
     public TransactionRecordAsserts fee(Function<HapiApiSpec, Long> amountFn) {
         registerTypedProvider("transactionFee", shouldBe(amountFn));
         return this;
