@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class HederaFileNumbersTest {
+class HederaFileNumbersTest {
     private HederaFileNumbers subject;
 
     @BeforeEach
@@ -78,7 +78,9 @@ public class HederaFileNumbersTest {
     @Test
     void checksIfNumIsSuperuser() {
         assertTrue(subject.isSoftwareUpdateFile(150L));
+        assertTrue(subject.isSoftwareUpdateFile(155L));
         assertTrue(subject.isSoftwareUpdateFile(159L));
         assertFalse(subject.isSoftwareUpdateFile(160L));
+        assertFalse(subject.isSoftwareUpdateFile(149L));
     }
 }
