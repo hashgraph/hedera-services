@@ -49,7 +49,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 
 /**
  * Hedera adapted version of the {@link org.hyperledger.besu.evm.operation.SLoadOperation}. No
- * externally visible changes, the result of sload is stored for the benefit of ther record stream.
+ * externally visible changes, the result of sload is stored for the benefit of their record stream.
  */
 public class HederaSLoadOperation extends HederaEvmSLoadOperation {
     private final GlobalDynamicProperties dynamicProperties;

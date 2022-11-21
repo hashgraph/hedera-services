@@ -20,4 +20,9 @@ module com.hedera.services.hapi.utils {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires headlong;
     requires org.apache.commons.codec;
+    requires com.sun.jna;
+    requires org.apache.commons.lang3;
+    requires net.i2p.crypto.eddsa;
+    requires annotations;
+    requires javax.inject;
 }

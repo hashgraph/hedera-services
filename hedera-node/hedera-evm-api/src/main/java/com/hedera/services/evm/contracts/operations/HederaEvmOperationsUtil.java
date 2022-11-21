@@ -15,8 +15,6 @@
  */
 package com.hedera.services.evm.contracts.operations;
 
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -52,15 +50,15 @@ public interface HederaEvmOperationsUtil {
             final var address = Words.toAddress(supplierAddressBytes.get());
             if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
                 return new Operation.OperationResult(
-                        OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                        Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
+                        supplierHaltGasCost.getAsLong(),
+                        HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
 
             return supplierExecution.get();
         } catch (final FixedStack.UnderflowException ufe) {
             return new Operation.OperationResult(
-                    OptionalLong.of(supplierHaltGasCost.getAsLong()),
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS));
+                    supplierHaltGasCost.getAsLong(),
+                    ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         }
     }
 }

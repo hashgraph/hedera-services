@@ -18,7 +18,6 @@ package com.hedera.services.contracts.operation;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
@@ -32,7 +31,6 @@ import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -88,8 +86,7 @@ class HederaSLoadOperationTest {
 
         final var coldResult = subject.execute(messageFrame, evm);
 
-        final var expectedColdResult =
-                new Operation.OperationResult(OptionalLong.of(20L), Optional.empty());
+        final var expectedColdResult = new Operation.OperationResult(20L, null);
 
         assertEquals(expectedColdResult.getGasCost(), coldResult.getGasCost());
         assertEquals(expectedColdResult.getHaltReason(), coldResult.getHaltReason());
@@ -116,8 +113,7 @@ class HederaSLoadOperationTest {
 
         final var warmResult = subject.execute(messageFrame, evm);
 
-        final var expectedWarmResult =
-                new Operation.OperationResult(OptionalLong.of(30L), Optional.empty());
+        final var expectedWarmResult = new Operation.OperationResult(30L, null);
         assertEquals(expectedWarmResult.getGasCost(), warmResult.getGasCost());
         assertEquals(expectedWarmResult.getHaltReason(), warmResult.getHaltReason());
         assertEquals(expectedWarmResult.getPcIncrement(), warmResult.getPcIncrement());
@@ -135,8 +131,7 @@ class HederaSLoadOperationTest {
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
         final var expectedHaltResult =
-                new Operation.OperationResult(
-                        OptionalLong.of(30L), Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
+                new Operation.OperationResult(30L, ExceptionalHaltReason.INSUFFICIENT_GAS);
 
         final var haltResult = subject.execute(messageFrame, evm);
 
@@ -150,7 +145,7 @@ class HederaSLoadOperationTest {
         givenAdditionalContext(keyBytesMock, valueBytesMock);
         given(messageFrame.popStackItem()).willThrow(new FixedStack.UnderflowException());
         final var result = subject.execute(messageFrame, evm);
-        assertEquals(INSUFFICIENT_STACK_ITEMS, result.getHaltReason().get());
+        assertEquals(INSUFFICIENT_STACK_ITEMS, result.getHaltReason());
     }
 
     @Test
@@ -167,8 +162,7 @@ class HederaSLoadOperationTest {
         doThrow(new FixedStack.OverflowException()).when(messageFrame).pushStackItem(any());
 
         final var result = subject.execute(messageFrame, evm);
-        assertTrue(result.getHaltReason().isPresent());
-        assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason().get());
+        assertEquals(TOO_MANY_STACK_ITEMS, result.getHaltReason());
     }
 
     private void givenAdditionalContext(Bytes key, Bytes value) {

@@ -139,7 +139,7 @@ public class ContractCallSuite extends HapiApiSuite {
     private static final long DEPOSIT_AMOUNT = 1000;
     private static final long GAS_TO_OFFER = 2_000_000L;
 
-    private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
+    public static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     private static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
