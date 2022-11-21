@@ -191,7 +191,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
-                if (recoveredEvmAddressFromPrimitiveKey != null) {
+                if (recoveredEvmAddressFromPrimitiveKey.length > 0) {
                     customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
             }
@@ -378,7 +378,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
     private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(final byte[] key) {
         var recoveredEVMAddress = recoverAddressFromPubKey(key);
-        if (recoveredEVMAddress != null) {
+        if (recoveredEVMAddress.length > 0) {
             return isUsedAsAliasCheck(ByteString.copyFrom(recoveredEVMAddress));
         }
         return OK;

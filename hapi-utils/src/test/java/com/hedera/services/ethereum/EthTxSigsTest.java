@@ -30,12 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.swirlds.common.utility.*;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.Arrays;
+import java.util.SplittableRandom;
 import org.junit.jupiter.api.Test;
 
 class EthTxSigsTest {
@@ -359,6 +359,6 @@ class EthTxSigsTest {
         assertArrayEquals(TRUFFLE0_ADDRESS, recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
-        assertNull(recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertArrayEquals(new byte[0], recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 }

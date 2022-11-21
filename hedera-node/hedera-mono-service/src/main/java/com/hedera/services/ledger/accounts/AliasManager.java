@@ -225,7 +225,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 if (rawCompressedKey.length
                         == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                     var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
-                    if (evmAddress != null) {
+                    if (evmAddress.length > 0) {
                         curAliases().remove(ByteString.copyFrom(evmAddress));
                     }
                 }

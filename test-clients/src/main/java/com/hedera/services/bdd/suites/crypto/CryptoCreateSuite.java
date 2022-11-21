@@ -612,7 +612,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
@@ -695,7 +695,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
                                     final var op2 =
@@ -755,7 +755,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
@@ -852,7 +852,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
 
                                     final var op =

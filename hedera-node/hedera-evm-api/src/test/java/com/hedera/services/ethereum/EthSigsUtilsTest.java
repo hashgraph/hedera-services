@@ -16,8 +16,8 @@
 package com.hedera.services.ethereum;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.services.utils.EthSigsUtils;
 import org.junit.jupiter.api.Test;
@@ -37,6 +37,7 @@ class EthSigsUtilsTest {
                 TRUFFLE0_ADDRESS, EthSigsUtils.recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
-        assertNull(EthSigsUtils.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertEquals(
+                new byte[0], EthSigsUtils.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 }

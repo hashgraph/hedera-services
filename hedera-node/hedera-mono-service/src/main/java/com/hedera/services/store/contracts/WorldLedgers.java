@@ -286,7 +286,7 @@ public class WorldLedgers {
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 byte[] value = recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                if (value != null) {
+                if (value.length > 0) {
                     return Address.wrap(Bytes.wrap(value));
                 }
             }

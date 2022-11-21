@@ -35,10 +35,11 @@ public final class EthSigsUtils {
         if (parseResult == 1) {
             return recoverAddressFromPubKey(pubKey);
         } else {
-            return null;
+            return new byte[0];
         }
     }
 
+    @SuppressWarnings("java:S1191")
     public static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
         final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
