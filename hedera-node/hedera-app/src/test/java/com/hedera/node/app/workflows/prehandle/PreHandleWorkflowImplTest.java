@@ -20,9 +20,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.ServicesAccessor;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.freeze.FreezeService;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.swirlds.common.system.events.Event;
@@ -42,9 +48,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
+    @Mock private ConsensusService consensusService;
+    @Mock private ContractService contractService;
     @Mock private CryptoService cryptoService;
     @Mock private FileService fileService;
+    @Mock private FreezeService freezeService;
+    @Mock private NetworkService networkService;
+    @Mock private ScheduleService scheduleService;
     @Mock private TokenService tokenService;
+    @Mock private UtilService utilService;
     @Mock private IngestChecker ingestChecker;
     private ServicesAccessor servicesAccessor;
 
@@ -52,7 +64,17 @@ class PreHandleWorkflowImplTest {
 
     @BeforeEach
     void setup() {
-        servicesAccessor = new ServicesAccessor(cryptoService, fileService, tokenService);
+        servicesAccessor =
+                new ServicesAccessor(
+                        consensusService,
+                        contractService,
+                        cryptoService,
+                        fileService,
+                        freezeService,
+                        networkService,
+                        scheduleService,
+                        tokenService,
+                        utilService);
         workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, ingestChecker);
     }
 

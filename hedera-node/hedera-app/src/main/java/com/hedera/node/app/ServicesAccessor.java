@@ -15,9 +15,15 @@
  */
 package com.hedera.node.app;
 
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.freeze.FreezeService;
+import com.hedera.node.app.service.network.NetworkService;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.util.UtilService;
 
 /**
  * A {@code ServiceAccessor} is used to pass all services to components via a single parameter.
@@ -27,4 +33,12 @@ import com.hedera.node.app.service.token.TokenService;
  * @param tokenService a {@link TokenService}
  */
 public record ServicesAccessor(
-        CryptoService cryptoService, FileService fileService, TokenService tokenService) {}
+        ConsensusService consensusService,
+        ContractService contractService,
+        CryptoService cryptoService,
+        FileService fileService,
+        FreezeService freezeService,
+        NetworkService networkService,
+        ScheduleService scheduleService,
+        TokenService tokenService,
+        UtilService utilService) {}
