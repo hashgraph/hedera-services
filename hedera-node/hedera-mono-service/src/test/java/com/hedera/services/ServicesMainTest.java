@@ -16,10 +16,12 @@
 package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
+import static com.swirlds.common.system.PlatformStatus.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -29,6 +31,7 @@ import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.state.exports.AccountsExporter;
+import com.hedera.services.state.logic.StatusChangeListener;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.validation.LedgerValidator;
 import com.hedera.services.stats.ServicesStatsManager;
@@ -37,6 +40,7 @@ import com.hedera.services.utils.NamedDigestFactory;
 import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -136,6 +140,8 @@ class ServicesMainTest {
         verify(ledgerValidator).validate(accounts);
         verify(nodeInfo).validateSelfAccountIfStaked();
         // and:
+        verify(notificationEngine)
+                .register(PlatformStatusChangeListener.class, statusChangeListener);
         verify(notificationEngine).register(IssListener.class, issListener);
         verify(notificationEngine).register(NewSignedStateListener.class, newSignedStateListener);
         verify(statsManager).initializeFor(platform);
@@ -158,57 +164,49 @@ class ServicesMainTest {
         assertThat(subject.newState(), instanceOf(ServicesState.class));
     }
 
-    //    @Test
-    //    void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
-    //        withRunnableApp();
-    //        withChangeableApp();
-    //        withNotificationEngine();
-    //
-    //        // given:
-    //        subject.init(platform, nodeId);
-    //
-    //        // when:
-    //        subject.platformStatusChange(new PlatformStatusChangeNotification(STARTING_UP));
-    //
-    //        // then:
-    //        verify(currentPlatformStatus).set(STARTING_UP);
-    //    }
+    @Test
+    void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
+        final var listener =
+                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp();
+        withChangeableApp();
+        withNotificationEngine();
 
-    //    @Test
-    //    void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
-    //        withRunnableApp();
-    //        withChangeableApp();
-    //        withNotificationEngine();
-    //
-    //        given(app.recordStreamManager()).willReturn(recordStreamManager);
-    //        // and:
-    //        subject.init(platform, nodeId);
-    //
-    //        // when:
-    //        subject.platformStatusChange(new PlatformStatusChangeNotification(ACTIVE));
-    //
-    //        // then:
-    //        verify(currentPlatformStatus).set(ACTIVE);
-    //        verify(recordStreamManager).setInFreeze(false);
-    //    }
+        subject.init(platform, nodeId);
+        listener.notify(new PlatformStatusChangeNotification(STARTING_UP));
 
-    //    @Test
-    //    void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-    //        withRunnableApp();
-    //        withChangeableApp();
-    //        withNotificationEngine();
-    //
-    //        given(app.recordStreamManager()).willReturn(recordStreamManager);
-    //        // and:
-    //        subject.init(platform, nodeId);
-    //
-    //        // when:
-    //        subject.platformStatusChange(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
-    //
-    //        // then:
-    //        verify(currentPlatformStatus).set(FREEZE_COMPLETE);
-    //        verify(recordStreamManager).setInFreeze(true);
-    //    }
+        verify(currentPlatformStatus).set(STARTING_UP);
+    }
+
+    @Test
+    void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
+        final var listener =
+                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp();
+        withChangeableApp();
+        withNotificationEngine();
+
+        subject.init(platform, nodeId);
+        listener.notify(new PlatformStatusChangeNotification(ACTIVE));
+
+        verify(currentPlatformStatus).set(ACTIVE);
+        verify(recordStreamManager).setInFreeze(false);
+    }
+
+    @Test
+    void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
+        final var listener =
+                new StatusChangeListener(currentPlatformStatus, nodeId, recordStreamManager);
+        withRunnableApp();
+        withChangeableApp();
+        withNotificationEngine();
+
+        subject.init(platform, nodeId);
+        listener.notify(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
+
+        verify(currentPlatformStatus).set(FREEZE_COMPLETE);
+        verify(recordStreamManager).setInFreeze(true);
+    }
 
     @Test
     void failsHardIfCannotInit() throws NoSuchAlgorithmException {
@@ -260,12 +258,10 @@ class ServicesMainTest {
     }
 
     private void withChangeableApp() {
-        given(app.platformStatus()).willReturn(currentPlatformStatus);
         given(app.nodeId()).willReturn(nodeId);
     }
 
-    //    private void withNotificationEngine() {
-    //        given(platform.getNotificationEngine()).willReturn(notificationEngine);
-    //        given(notificationEngine.register(any(), any())).willReturn(true);
-    //    }
+    private void withNotificationEngine() {
+        given(notificationEngine.register(any(), any())).willReturn(true);
+    }
 }
