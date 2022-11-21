@@ -99,4 +99,18 @@ class HederaEvmAccountTest {
 
         assertTrue(actualResult);
     }
+
+    @Test
+    void accountHashCodeCheck() {
+        // setup:
+        subject.setAlias(ByteString.copyFrom(mockCreate2Addr));
+        var otherSubject = new HederaEvmAccount(accountAddress);
+        otherSubject.setAlias(ByteString.copyFrom(mockCreate2Addr));
+
+        // when:
+        var actualResult = subject.hashCode();
+
+        // expect:
+        assertEquals(otherSubject.hashCode(), actualResult);
+    }
 }

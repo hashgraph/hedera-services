@@ -25,6 +25,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.services.evm.store.models.HederaEvmAccount;
@@ -145,7 +146,7 @@ class HederaEvmTxProcessorTest {
                         ccps,
                         blockMetaSource);
 
-        final var hederaEvmOperationTracer = new MockHederaEvmOperationTracer();
+        final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
     }
 
