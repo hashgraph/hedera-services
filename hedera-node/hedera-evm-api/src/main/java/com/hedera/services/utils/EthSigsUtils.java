@@ -27,6 +27,7 @@ public final class EthSigsUtils {
 
     private EthSigsUtils() {}
 
+    @SuppressWarnings("java:S1191")
     public static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
         var parseResult =

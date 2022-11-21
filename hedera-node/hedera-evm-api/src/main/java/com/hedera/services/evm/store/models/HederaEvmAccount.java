@@ -55,7 +55,7 @@ public class HederaEvmAccount {
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
                 var addressBytes =
                         EthSigsUtils.recoverAddressFromPubKey(alias.substring(2).toByteArray());
-                return addressBytes == null ? address : Address.wrap(Bytes.wrap(addressBytes));
+                return addressBytes.length == 0 ? address : Address.wrap(Bytes.wrap(addressBytes));
             } else {
                 return address;
             }
