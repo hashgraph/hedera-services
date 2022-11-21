@@ -84,11 +84,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer.ExecuteOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -372,8 +372,8 @@ class CallEvmTxProcessorTest {
                         (mock, context) -> {
                             doCallRealMethod()
                                     .when(mock)
-                                    .traceExecution(
-                                            any(MessageFrame.class), any(ExecuteOperation.class));
+                                    .tracePostExecution(
+                                            any(MessageFrame.class), any(OperationResult.class));
                             doReturn(List.of(action, action2)).when(mock).getActions();
                         })) {
 
