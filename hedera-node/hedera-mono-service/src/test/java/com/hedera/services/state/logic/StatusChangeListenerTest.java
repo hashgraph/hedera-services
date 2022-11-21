@@ -15,6 +15,12 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.test.extensions.LogCaptor;
@@ -23,22 +29,12 @@ import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.NodeId;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class StatusChangeListenerTest {
@@ -55,7 +51,8 @@ class StatusChangeListenerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new StatusChangeListener(currentStatus, new NodeId(false, 3L), recordStreamManager);
+        subject =
+                new StatusChangeListener(currentStatus, new NodeId(false, 3L), recordStreamManager);
     }
 
     @Test
@@ -63,8 +60,18 @@ class StatusChangeListenerTest {
         given(notification.getNewStatus()).willReturn(ACTIVE);
         subject.notify(notification);
         System.out.println(logCaptor.infoLogs());
-        assertTrue(logCaptor.infoLogs().get(0).contains("Notification Received: Current Platform status changed to ACTIVE"));
-        assertTrue(logCaptor.infoLogs().get(1).contains("Now current platform status = ACTIVE in HederaNode#3"));
+        assertTrue(
+                logCaptor
+                        .infoLogs()
+                        .get(0)
+                        .contains(
+                                "Notification Received: Current Platform status changed to"
+                                        + " ACTIVE"));
+        assertTrue(
+                logCaptor
+                        .infoLogs()
+                        .get(1)
+                        .contains("Now current platform status = ACTIVE in HederaNode#3"));
         verify(currentStatus).set(ACTIVE);
         verify(recordStreamManager).setInFreeze(false);
     }
@@ -73,8 +80,18 @@ class StatusChangeListenerTest {
     void notifiesWhenFrozen() {
         given(notification.getNewStatus()).willReturn(FREEZE_COMPLETE);
         subject.notify(notification);
-        assertTrue(logCaptor.infoLogs().get(0).contains("Notification Received: Current Platform status changed to FREEZE_COMPLETE"));
-        assertTrue(logCaptor.infoLogs().get(1).contains("Now current platform status = FREEZE_COMPLETE in HederaNode#3"));
+        assertTrue(
+                logCaptor
+                        .infoLogs()
+                        .get(0)
+                        .contains(
+                                "Notification Received: Current Platform status changed to"
+                                        + " FREEZE_COMPLETE"));
+        assertTrue(
+                logCaptor
+                        .infoLogs()
+                        .get(1)
+                        .contains("Now current platform status = FREEZE_COMPLETE in HederaNode#3"));
         verify(currentStatus).set(FREEZE_COMPLETE);
         verify(recordStreamManager).setInFreeze(true);
     }

@@ -17,12 +17,9 @@ package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
-import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;

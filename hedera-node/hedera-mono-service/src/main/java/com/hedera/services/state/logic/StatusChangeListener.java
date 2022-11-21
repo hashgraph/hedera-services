@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,18 @@
  */
 package com.hedera.services.state.logic;
 
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
+
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.stream.RecordStreamManager;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.NodeId;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Listener that will be notified with {@link
@@ -40,10 +39,12 @@ public class StatusChangeListener implements PlatformStatusChangeListener {
     private final CurrentPlatformStatus currentPlatformStatus;
     private final NodeId nodeId;
     private final RecordStreamManager recordStreamManager;
+
     @Inject
-    public StatusChangeListener( final CurrentPlatformStatus currentPlatformStatus,
-                                 final NodeId nodeId,
-                                 final RecordStreamManager recordStreamManager) {
+    public StatusChangeListener(
+            final CurrentPlatformStatus currentPlatformStatus,
+            final NodeId nodeId,
+            final RecordStreamManager recordStreamManager) {
         this.currentPlatformStatus = currentPlatformStatus;
         this.nodeId = nodeId;
         this.recordStreamManager = recordStreamManager;
@@ -51,7 +52,9 @@ public class StatusChangeListener implements PlatformStatusChangeListener {
 
     @Override
     public void notify(PlatformStatusChangeNotification notification) {
-        log.info("Notification Received: Current Platform status changed to {}",notification.getNewStatus());
+        log.info(
+                "Notification Received: Current Platform status changed to {}",
+                notification.getNewStatus());
 
         final var status = notification.getNewStatus();
         currentPlatformStatus.set(status);

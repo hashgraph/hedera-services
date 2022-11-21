@@ -15,6 +15,14 @@
  */
 package com.hedera.services;
 
+import static com.hedera.services.context.AppsManager.APPS;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.services.context.CurrentPlatformStatus;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.NodeInfo;
@@ -35,27 +43,17 @@ import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.function.Supplier;
-
-import static com.hedera.services.context.AppsManager.APPS;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ServicesMainTest {
@@ -160,57 +158,57 @@ class ServicesMainTest {
         assertThat(subject.newState(), instanceOf(ServicesState.class));
     }
 
-//    @Test
-//    void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
-//        withRunnableApp();
-//        withChangeableApp();
-//        withNotificationEngine();
-//
-//        // given:
-//        subject.init(platform, nodeId);
-//
-//        // when:
-//        subject.platformStatusChange(new PlatformStatusChangeNotification(STARTING_UP));
-//
-//        // then:
-//        verify(currentPlatformStatus).set(STARTING_UP);
-//    }
+    //    @Test
+    //    void updatesCurrentMiscPlatformStatus() throws NoSuchAlgorithmException {
+    //        withRunnableApp();
+    //        withChangeableApp();
+    //        withNotificationEngine();
+    //
+    //        // given:
+    //        subject.init(platform, nodeId);
+    //
+    //        // when:
+    //        subject.platformStatusChange(new PlatformStatusChangeNotification(STARTING_UP));
+    //
+    //        // then:
+    //        verify(currentPlatformStatus).set(STARTING_UP);
+    //    }
 
-//    @Test
-//    void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
-//        withRunnableApp();
-//        withChangeableApp();
-//        withNotificationEngine();
-//
-//        given(app.recordStreamManager()).willReturn(recordStreamManager);
-//        // and:
-//        subject.init(platform, nodeId);
-//
-//        // when:
-//        subject.platformStatusChange(new PlatformStatusChangeNotification(ACTIVE));
-//
-//        // then:
-//        verify(currentPlatformStatus).set(ACTIVE);
-//        verify(recordStreamManager).setInFreeze(false);
-//    }
+    //    @Test
+    //    void updatesCurrentActivePlatformStatus() throws NoSuchAlgorithmException {
+    //        withRunnableApp();
+    //        withChangeableApp();
+    //        withNotificationEngine();
+    //
+    //        given(app.recordStreamManager()).willReturn(recordStreamManager);
+    //        // and:
+    //        subject.init(platform, nodeId);
+    //
+    //        // when:
+    //        subject.platformStatusChange(new PlatformStatusChangeNotification(ACTIVE));
+    //
+    //        // then:
+    //        verify(currentPlatformStatus).set(ACTIVE);
+    //        verify(recordStreamManager).setInFreeze(false);
+    //    }
 
-//    @Test
-//    void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
-//        withRunnableApp();
-//        withChangeableApp();
-//        withNotificationEngine();
-//
-//        given(app.recordStreamManager()).willReturn(recordStreamManager);
-//        // and:
-//        subject.init(platform, nodeId);
-//
-//        // when:
-//        subject.platformStatusChange(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
-//
-//        // then:
-//        verify(currentPlatformStatus).set(FREEZE_COMPLETE);
-//        verify(recordStreamManager).setInFreeze(true);
-//    }
+    //    @Test
+    //    void updatesCurrentMaintenancePlatformStatus() throws NoSuchAlgorithmException {
+    //        withRunnableApp();
+    //        withChangeableApp();
+    //        withNotificationEngine();
+    //
+    //        given(app.recordStreamManager()).willReturn(recordStreamManager);
+    //        // and:
+    //        subject.init(platform, nodeId);
+    //
+    //        // when:
+    //        subject.platformStatusChange(new PlatformStatusChangeNotification(FREEZE_COMPLETE));
+    //
+    //        // then:
+    //        verify(currentPlatformStatus).set(FREEZE_COMPLETE);
+    //        verify(recordStreamManager).setInFreeze(true);
+    //    }
 
     @Test
     void failsHardIfCannotInit() throws NoSuchAlgorithmException {
@@ -266,8 +264,8 @@ class ServicesMainTest {
         given(app.nodeId()).willReturn(nodeId);
     }
 
-//    private void withNotificationEngine() {
-//        given(platform.getNotificationEngine()).willReturn(notificationEngine);
-//        given(notificationEngine.register(any(), any())).willReturn(true);
-//    }
+    //    private void withNotificationEngine() {
+    //        given(platform.getNotificationEngine()).willReturn(notificationEngine);
+    //        given(notificationEngine.register(any(), any())).willReturn(true);
+    //    }
 }

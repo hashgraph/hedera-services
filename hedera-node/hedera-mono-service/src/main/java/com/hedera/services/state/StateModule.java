@@ -133,6 +133,7 @@ public interface StateModule {
     @Singleton
     PlatformStatusChangeListener bindStatusChangeListener(
             StatusChangeListener statusChangeListener);
+
     @Binds
     @Singleton
     LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
