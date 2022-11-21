@@ -24,7 +24,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-util-service"))
+    api(project(":modules:hedera-util-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     compileOnly(libs.spotbugs.annotations)
 }

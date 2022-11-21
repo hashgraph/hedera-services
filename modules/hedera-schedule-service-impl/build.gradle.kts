@@ -17,14 +17,14 @@ plugins {
     id("com.hedera.hashgraph.conventions")
 }
 
-description = "Default Hedera Scheduled Service Implementation"
+description = "Default Hedera Schedule Service Implementation"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
 }
 
 dependencies {
-    api(project(":hedera-scheduled-service"))
+    api(project(":modules:hedera-schedule-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     compileOnly(libs.spotbugs.annotations)
 }

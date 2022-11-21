@@ -24,7 +24,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-smart-contract-service"))
+    api(project(":modules:hedera-smart-contract-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     compileOnly(libs.spotbugs.annotations)
 }

@@ -24,7 +24,7 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-token-service"))
+    api(project(":modules:hedera-token-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
     compileOnly(libs.spotbugs.annotations)
 }

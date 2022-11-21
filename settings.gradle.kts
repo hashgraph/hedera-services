@@ -17,27 +17,22 @@ plugins {
     id("com.gradle.enterprise").version("3.10.3")
 }
 
-rootProject.name = "hedera-services"
-
-val services = ArrayList<String>()
-services.add("hedera-admin-service")
-services.add("hedera-consensus-service")
-services.add("hedera-file-service")
-services.add("hedera-network-service")
-services.add("hedera-scheduled-service")
-services.add("hedera-smart-contract-service")
-services.add("hedera-token-service")
-services.add("hedera-util-service")
-
-services.forEach { s ->
-    run {
-        include(":" + s)
-        project(":" + s).projectDir = file("modules/" + s)
-        val implProjectName = s + "-impl"
-        include(":" + implProjectName)
-        project(":" + implProjectName).projectDir = file("modules/" + implProjectName)
-    }
-}
+include(":modules:hedera-admin-service")
+include(":modules:hedera-admin-service-impl")
+include(":modules:hedera-consensus-service")
+include(":modules:hedera-consensus-service-impl")
+include(":modules:hedera-file-service")
+include(":modules:hedera-file-service-impl")
+include(":modules:hedera-network-service")
+include(":modules:hedera-network-service-impl")
+include(":modules:hedera-schedule-service")
+include(":modules:hedera-schedule-service-impl")
+include(":modules:hedera-smart-contract-service")
+include(":modules:hedera-smart-contract-service-impl")
+include(":modules:hedera-token-service")
+include(":modules:hedera-token-service-impl")
+include(":modules:hedera-util-service")
+include(":modules:hedera-util-service-impl")
 
 include(":hapi-utils")
 include(":hapi-fees")
