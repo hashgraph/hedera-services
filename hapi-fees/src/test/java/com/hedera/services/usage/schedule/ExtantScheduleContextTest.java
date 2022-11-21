@@ -15,12 +15,12 @@
  */
 package com.hedera.services.usage.schedule;
 
-import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.ADMIN_KEY;
-import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NO_ADMIN_KEY;
-import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NUM_SIGNERS;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_RICH_INSTANT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.KEY_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.ADMIN_KEY;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NO_ADMIN_KEY;
+import static com.hedera.services.usage.schedule.ExtantScheduleContextTest.SettableField.NUM_SIGNERS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;

@@ -17,6 +17,7 @@ package com.hedera.services.legacy.unit;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,7 +29,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -40,10 +40,10 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.stringTu
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.bdd.suites.contract.Utils;
-import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;

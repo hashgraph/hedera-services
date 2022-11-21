@@ -15,10 +15,11 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.services.test.AdapterUtils.feeDataFrom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.pricing.ResourceProvider;
 import com.hedera.services.pricing.UsableResource;
 import com.hedera.services.test.IdUtils;
@@ -36,7 +37,6 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SubType;
-import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

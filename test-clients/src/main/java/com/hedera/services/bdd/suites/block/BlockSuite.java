@@ -30,10 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Arrays;
 import java.util.List;

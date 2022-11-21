@@ -17,13 +17,13 @@ package com.hedera.services.fees.calculation.contract.queries;
 
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;

@@ -15,11 +15,11 @@
  */
 package com.hedera.services.usage.token.entities;
 
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BOOL_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 
 public enum TokenEntitySizes {
     TOKEN_ENTITY_SIZES;

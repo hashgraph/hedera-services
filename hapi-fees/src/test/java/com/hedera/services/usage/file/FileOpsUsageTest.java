@@ -15,13 +15,13 @@
  */
 package com.hedera.services.usage.file;
 
-import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
-import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASE_FILEINFO_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getAccountKeyStorageSize;
+import static com.hedera.services.test.UsageUtils.A_USAGES_MATRIX;
+import static com.hedera.services.usage.SingletonUsageProperties.USAGE_PROPERTIES;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_STATE_PROOF;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.test.KeyUtils;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.EstimatorFactory;
@@ -50,7 +51,6 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -15,12 +15,12 @@
  */
 package com.hedera.services.fees.calculation.file.queries;
 
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;

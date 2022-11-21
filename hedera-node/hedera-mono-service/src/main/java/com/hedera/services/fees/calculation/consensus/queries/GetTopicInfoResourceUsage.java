@@ -15,8 +15,6 @@
  */
 package com.hedera.services.fees.calculation.consensus.queries;
 
-import static com.hedera.services.utils.EntityNum.fromTopicId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
@@ -25,6 +23,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
+import static com.hedera.services.utils.EntityNum.fromTopicId;
+import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;

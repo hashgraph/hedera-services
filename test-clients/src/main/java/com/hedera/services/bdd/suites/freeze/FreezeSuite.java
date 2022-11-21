@@ -15,77 +15,76 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
-
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.suites.HapiApiSuite;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class FreezeSuite extends HapiApiSuite {
-	private static final Logger log = LogManager.getLogger(FreezeSuite.class);
+    private static final Logger log = LogManager.getLogger(FreezeSuite.class);
 
-	private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
-	private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
+    private static final String UPLOAD_PATH_PREFIX = "src/main/resource/testfiles/updateFeature/";
+    private static final String UPDATE_NEW_FILE = UPLOAD_PATH_PREFIX + "addNewFile/newFile.zip";
 
-	private static String uploadPath = "updateSettings";
+    private static String uploadPath = "updateSettings";
 
-	public static void main(final String... args) {
-		if (args.length > 0) {
-			uploadPath = args[0];
-		}
-		new FreezeSuite().runSuiteSync();
-	}
+    public static void main(final String... args) {
+        if (args.length > 0) {
+            uploadPath = args[0];
+        }
+        new FreezeSuite().runSuiteSync();
+    }
 
-	@Override
-	protected Logger getResultsLogger() {
-		return log;
-	}
+    @Override
+    protected Logger getResultsLogger() {
+        return log;
+    }
 
-	@Override
-	public List<HapiApiSpec> getSpecsInSuite() {
-		return List.of(uploadNewFile());
-	}
+    @Override
+    public List<HapiApiSpec> getSpecsInSuite() {
+        return List.of(uploadNewFile());
+    }
 
-	private HapiApiSpec uploadNewFile() {
-		String uploadFile = UPDATE_NEW_FILE;
-		if (uploadPath != null) {
-			log.info("Creating zip file from " + uploadPath);
-			final var zipFile = "Archive.zip";
-			createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
-			uploadFile = zipFile;
-		}
+    private HapiApiSpec uploadNewFile() {
+        String uploadFile = UPDATE_NEW_FILE;
+        if (uploadPath != null) {
+            log.info("Creating zip file from " + uploadPath);
+            final var zipFile = "Archive.zip";
+            createZip(UPLOAD_PATH_PREFIX + uploadPath, zipFile, null);
+            uploadFile = zipFile;
+        }
 
-		log.info("Uploading file " + uploadFile);
-		final File f = new File(uploadFile);
-		byte[] bytes = new byte[0];
-		try {
-			bytes = Files.readAllBytes(f.toPath());
-		} catch (final IOException e) {
-			e.printStackTrace();
-		}
-		final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);
+        log.info("Uploading file " + uploadFile);
+        final File f = new File(uploadFile);
+        byte[] bytes = new byte[0];
+        try {
+            bytes = Files.readAllBytes(f.toPath());
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+        final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);
 
-		// mnemonic for file 0.0.150
-		final var fileIDString = "UPDATE_FEATURE";
-		return defaultHapiSpec("uploadFileAndUpdate")
-				.given(fileUpdate(fileIDString).path(uploadFile).payingWith(GENESIS))
-				.when(
-						freezeOnly()
-								.withUpdateFile(fileIDString)
-								.havingHash(hash)
-								.payingWith(GENESIS)
-								.startingIn(60)
-								.seconds())
-				.then();
-	}
+        // mnemonic for file 0.0.150
+        final var fileIDString = "UPDATE_FEATURE";
+        return defaultHapiSpec("uploadFileAndUpdate")
+                .given(fileUpdate(fileIDString).path(uploadFile).payingWith(GENESIS))
+                .when(
+                        freezeOnly()
+                                .withUpdateFile(fileIDString)
+                                .havingHash(hash)
+                                .payingWith(GENESIS)
+                                .startingIn(60)
+                                .seconds())
+                .then();
+    }
 }

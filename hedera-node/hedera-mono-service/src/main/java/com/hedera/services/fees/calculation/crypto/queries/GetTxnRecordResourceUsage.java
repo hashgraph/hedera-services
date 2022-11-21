@@ -20,6 +20,7 @@ import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECO
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
@@ -29,7 +30,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;

@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -36,7 +37,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.List;

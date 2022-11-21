@@ -19,6 +19,7 @@ import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -27,7 +28,6 @@ import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.swirlds.merkle.map.MerkleMap;
 
 class TopicResourceUsageTestBase {

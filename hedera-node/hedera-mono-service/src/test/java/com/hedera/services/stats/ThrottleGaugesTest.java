@@ -20,9 +20,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
+import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;

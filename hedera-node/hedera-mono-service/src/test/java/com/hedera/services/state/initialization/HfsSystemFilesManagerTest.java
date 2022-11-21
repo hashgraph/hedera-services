@@ -45,6 +45,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.SysFileCallbacks;
@@ -53,7 +54,6 @@ import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
-import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;

@@ -15,8 +15,8 @@
  */
 package com.hedera.services.utils.accessors;
 
-import com.hedera.services.context.primitives.StateView;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;

@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.spec.persistence;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
@@ -23,7 +24,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
 import com.hedera.services.bdd.spec.keys.deterministic.Ed25519Factory;
-import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;

@@ -17,6 +17,7 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
@@ -25,7 +26,6 @@ import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

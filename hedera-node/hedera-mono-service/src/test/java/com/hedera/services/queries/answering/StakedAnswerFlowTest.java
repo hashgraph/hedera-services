@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
@@ -57,7 +58,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;

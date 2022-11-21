@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSu
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
@@ -39,7 +40,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

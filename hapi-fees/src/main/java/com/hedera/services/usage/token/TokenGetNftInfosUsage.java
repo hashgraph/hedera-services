@@ -15,9 +15,9 @@
  */
 package com.hedera.services.usage.token;
 
-import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.services.usage.token.entities.NftEntitySizes.NFT_ENTITY_SIZES;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.usage.QueryUsage;

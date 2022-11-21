@@ -47,8 +47,8 @@ public class ThrottlesCallback {
     public Consumer<ThrottleDefinitions> throttlesCb() {
         return throttles -> {
             var defs =
-                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions.fromProto(
-                            throttles);
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions
+                            .fromProto(throttles);
             hapiThrottling.rebuildFor(defs);
             handleThrottling.rebuildFor(defs);
             scheduleThrottling.rebuildFor(defs);

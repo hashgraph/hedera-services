@@ -19,6 +19,7 @@ import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
@@ -40,7 +41,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;

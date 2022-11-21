@@ -15,8 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
