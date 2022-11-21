@@ -33,12 +33,8 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hedera.test.factories.txns.ScheduledTxnFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -251,7 +247,7 @@ public class ScheduleVirtualValueTest {
         assertEquals(entityMemo, subject.memo().get());
         assertEquals(adminKey.toString(), subject.adminKey().get().toString());
         assertEquals(schedulingTXValidStart, subject.schedulingTXValidStart());
-        assertEquals(scheduledTxn, subject.scheduledTxn());
+        assertEquals(ScheduledTxnFactory.scheduledTxn, subject.scheduledTxn());
         assertEquals(ordinaryVersionOfScheduledTxn, subject.ordinaryViewOfScheduledTxn());
         assertEquals(expectedSignedTxn(), subject.asSignedTxn());
         assertArrayEquals(bodyBytes, subject.bodyBytes());
@@ -419,7 +415,7 @@ public class ScheduleVirtualValueTest {
                         .setScheduleCreate(
                                 parentTxn.getScheduleCreate().toBuilder()
                                         .setScheduledTransactionBody(
-                                                scheduledTxn.toBuilder()
+                                                ScheduledTxnFactory.scheduledTxn.toBuilder()
                                                         .setMemo("Slightly different!")))
                         .build()
                         .toByteArray();
@@ -534,7 +530,7 @@ public class ScheduleVirtualValueTest {
         final var expected =
                 "ScheduleVirtualValue{"
                         + "scheduledTxn="
-                        + scheduledTxn
+                        + ScheduledTxnFactory.scheduledTxn
                         + ", "
                         + "expirationTimeProvided="
                         + providedExpiry
@@ -629,7 +625,7 @@ public class ScheduleVirtualValueTest {
         assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
         assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
         assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
-        assertEquals(scheduledTxn, copySubject.scheduledTxn());
+        assertEquals(ScheduledTxnFactory.scheduledTxn, copySubject.scheduledTxn());
         assertEquals(3L, copySubject.getKey().getKeyAsLong());
         assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
         assertArrayEquals(bodyBytes, copySubject.bodyBytes());
@@ -661,7 +657,7 @@ public class ScheduleVirtualValueTest {
         assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
         assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
         assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
-        assertEquals(scheduledTxn, copySubject.scheduledTxn());
+        assertEquals(ScheduledTxnFactory.scheduledTxn, copySubject.scheduledTxn());
         assertEquals(3L, copySubject.getKey().getKeyAsLong());
         assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
         assertArrayEquals(bodyBytes, copySubject.bodyBytes());
@@ -693,7 +689,7 @@ public class ScheduleVirtualValueTest {
         assertEquals(adminKey.toString(), copySubject.adminKey().get().toString());
         assertEquals(MiscUtils.asKeyUnchecked(adminKey), copySubject.grpcAdminKey());
         assertEquals(schedulingTXValidStart, copySubject.schedulingTXValidStart());
-        assertEquals(scheduledTxn, copySubject.scheduledTxn());
+        assertEquals(ScheduledTxnFactory.scheduledTxn, copySubject.scheduledTxn());
         assertEquals(3L, copySubject.getKey().getKeyAsLong());
         assertEquals(expectedSignedTxn(), copySubject.asSignedTxn());
         assertArrayEquals(bodyBytes, copySubject.bodyBytes());
@@ -706,27 +702,15 @@ public class ScheduleVirtualValueTest {
         return signatories.stream().map(CommonUtils::hex).collect(Collectors.joining(", "));
     }
 
-    private static final long fee = 123L;
-    private static final String scheduledTxnMemo = "Wait for me!";
-
     private static final TransactionID parentTxnId =
             TransactionID.newBuilder()
                     .setTransactionValidStart(
                             MiscUtils.asTimestamp(schedulingTXValidStart.toJava()))
                     .setAccountID(schedulingAccount.toGrpcAccountId())
                     .build();
-    private static final SchedulableTransactionBody scheduledTxn =
-            SchedulableTransactionBody.newBuilder()
-                    .setTransactionFee(fee)
-                    .setMemo(scheduledTxnMemo)
-                    .setCryptoDelete(
-                            CryptoDeleteTransactionBody.newBuilder()
-                                    .setDeleteAccountID(IdUtils.asAccount("0.0.2"))
-                                    .setTransferAccountID(IdUtils.asAccount("0.0.75231")))
-                    .build();
 
     private static final TransactionBody ordinaryVersionOfScheduledTxn =
-            MiscUtils.asOrdinary(scheduledTxn, parentTxnId);
+            MiscUtils.asOrdinary(ScheduledTxnFactory.scheduledTxn, parentTxnId);
 
     private static final ScheduleCreateTransactionBody creation =
             ScheduleCreateTransactionBody.newBuilder()
@@ -735,7 +719,7 @@ public class ScheduleVirtualValueTest {
                     .setExpirationTime(providedExpiry.toGrpc())
                     .setWaitForExpiry(waitForExpiry)
                     .setMemo(entityMemo)
-                    .setScheduledTransactionBody(scheduledTxn)
+                    .setScheduledTransactionBody(ScheduledTxnFactory.scheduledTxn)
                     .build();
     private static final TransactionBody parentTxn =
             TransactionBody.newBuilder()
@@ -757,52 +741,13 @@ public class ScheduleVirtualValueTest {
                                         TransactionBody.newBuilder()
                                                 .mergeFrom(
                                                         MiscUtils.asOrdinary(
-                                                                scheduledTxn, parentTxnId))
+                                                                ScheduledTxnFactory.scheduledTxn,
+                                                                parentTxnId))
                                                 .setTransactionID(expectedId)
                                                 .build()
                                                 .toByteString())
                                 .build()
                                 .toByteString())
-                .build();
-    }
-
-    public static TransactionBody scheduleCreateTxnWith(
-            final Key scheduleAdminKey,
-            final String scheduleMemo,
-            final AccountID payer,
-            final AccountID scheduler,
-            final Timestamp validStart) {
-        return scheduleCreateTxnWith(
-                scheduleAdminKey, scheduleMemo, payer, scheduler, validStart, null, null);
-    }
-
-    public static TransactionBody scheduleCreateTxnWith(
-            final Key scheduleAdminKey,
-            final String scheduleMemo,
-            final AccountID payer,
-            final AccountID scheduler,
-            final Timestamp validStart,
-            final Timestamp expirationTime,
-            final Boolean waitForExpiry) {
-        final var creation =
-                ScheduleCreateTransactionBody.newBuilder()
-                        .setAdminKey(scheduleAdminKey)
-                        .setPayerAccountID(payer)
-                        .setMemo(scheduleMemo)
-                        .setScheduledTransactionBody(scheduledTxn);
-        if (expirationTime != null) {
-            creation.setExpirationTime(expirationTime);
-        }
-        if (waitForExpiry != null) {
-            creation.setWaitForExpiry(waitForExpiry);
-        }
-        return TransactionBody.newBuilder()
-                .setTransactionID(
-                        TransactionID.newBuilder()
-                                .setTransactionValidStart(validStart)
-                                .setAccountID(scheduler)
-                                .build())
-                .setScheduleCreate(creation)
                 .build();
     }
 }
