@@ -124,7 +124,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
         final var parentUpdater = updater.parentUpdater();
         if (parentUpdater.isPresent()) {
             final var parent = (AbstractLedgerWorldUpdater) parentUpdater.get();
-            parent.manageInProgressRecord(recordsHistorian, childRecord, body(randomNum));
+            parent.manageInProgressRecord(recordsHistorian, childRecord, synthBody());
         } else {
             throw new InvalidTransactionException(
                     "PRNG precompile frame had no parent updater", FAIL_INVALID);
@@ -214,13 +214,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     }
 
     @VisibleForTesting
-    TransactionBody.Builder body(final Bytes randomNum) {
-        final var txnBody = TransactionBody.newBuilder();
-        if (randomNum == null) {
-            return txnBody;
-        }
-        final var body = UtilPrngTransactionBody.newBuilder();
-        return txnBody.setUtilPrng(body.build());
+    TransactionBody.Builder synthBody() {
+        return TransactionBody.newBuilder().setUtilPrng(UtilPrngTransactionBody.newBuilder());
     }
 
     private void addContractCallResultToRecord(

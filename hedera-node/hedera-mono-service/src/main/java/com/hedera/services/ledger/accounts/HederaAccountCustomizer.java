@@ -56,6 +56,8 @@ public final class HederaAccountCustomizer
                 Option.AUTO_RENEW_ACCOUNT_ID, AccountProperty.AUTO_RENEW_ACCOUNT_ID);
         optionAccountPropertyMap.put(Option.DECLINE_REWARD, AccountProperty.DECLINE_REWARD);
         optionAccountPropertyMap.put(Option.STAKED_ID, AccountProperty.STAKED_ID);
+        optionAccountPropertyMap.put(
+                Option.EXPIRED_AND_PENDING_REMOVAL, AccountProperty.EXPIRED_AND_PENDING_REMOVAL);
         OPTION_PROPERTIES = Collections.unmodifiableMap(optionAccountPropertyMap);
     }
 

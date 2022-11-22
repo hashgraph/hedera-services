@@ -20,6 +20,9 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public interface HederaEvmEntityAccess {
+
+    boolean isUsable(Address address);
+
     long getBalance(Address address);
 
     boolean isTokenAccount(Address address);

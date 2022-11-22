@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.CodeCache;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
@@ -69,7 +68,6 @@ class HederaEvmTxProcessorTest {
     private final String EVM_VERSION_0_32 = "v0.32";
     @Mock private PricesAndFeesProvider livePricesSource;
     @Mock private HederaEvmMutableWorldState worldState;
-    @Mock private CodeCache codeCache;
     @Mock private EvmProperties globalDynamicProperties;
     @Mock private GasCalculator gasCalculator;
     @Mock private Set<Operation> operations;

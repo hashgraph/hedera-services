@@ -18,8 +18,6 @@ package com.hedera.services.contracts.operation;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import java.util.Optional;
-import java.util.OptionalLong;
 import javax.inject.Inject;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -41,11 +39,8 @@ public class HederaChainIdOperation extends AbstractOperation {
         super(0x46, "CHAINID", 0, 1, 1, gasCalculator);
         this.globalDynamicProperties = globalDynamicProperties;
         this.gasCost = gasCalculator.getBaseTierGasCost();
-        OptionalLong optionalGasCost = OptionalLong.of(gasCost);
-        this.successResponse =
-                new OperationResult(
-                        OptionalLong.of(gasCalculator.getBaseTierGasCost()), Optional.empty());
-        this.oogResponse = new OperationResult(optionalGasCost, Optional.of(INSUFFICIENT_GAS));
+        this.successResponse = new OperationResult(gasCost, null);
+        this.oogResponse = new OperationResult(gasCost, INSUFFICIENT_GAS);
     }
 
     public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {

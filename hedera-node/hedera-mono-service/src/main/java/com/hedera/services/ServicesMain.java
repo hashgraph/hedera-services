@@ -17,15 +17,13 @@ package com.hedera.services;
 
 import static com.hedera.services.context.AppsManager.APPS;
 import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
-import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldMain;
 import com.swirlds.common.system.state.notifications.IssListener;
@@ -71,31 +69,12 @@ public class ServicesMain implements SwirldMain {
     }
 
     @Override
-    public void platformStatusChange(final PlatformStatus status) {
-        final var nodeId = app.nodeId();
-        log.info("Now current platform status = {} in HederaNode#{}.", status, nodeId);
-        app.platformStatus().set(status);
-        if (status == ACTIVE) {
-            app.recordStreamManager().setInFreeze(false);
-        } else if (status == FREEZE_COMPLETE) {
-            app.recordStreamManager().setInFreeze(true);
-        } else {
-            log.info("Platform {} status set to : {}", nodeId, status);
-        }
-    }
-
-    @Override
     public ServicesState newState() {
         return new ServicesState();
     }
 
     @Override
     public void run() {
-        /* No-op. */
-    }
-
-    @Override
-    public void preEvent() {
         /* No-op. */
     }
 
@@ -147,6 +126,7 @@ public class ServicesMain implements SwirldMain {
         app.ledgerValidator().validate(app.workingState().accounts());
         app.nodeInfo().validateSelfAccountIfStaked();
         final var notifications = app.notificationEngine().get();
+        notifications.register(PlatformStatusChangeListener.class, app.statusChangeListener());
         notifications.register(ReconnectCompleteListener.class, app.reconnectListener());
         notifications.register(
                 StateWriteToDiskCompleteListener.class, app.stateWriteToDiskListener());

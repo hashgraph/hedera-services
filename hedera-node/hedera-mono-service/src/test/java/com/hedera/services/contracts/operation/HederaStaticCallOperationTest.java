@@ -39,17 +39,15 @@ package com.hedera.services.contracts.operation;
 
 import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -106,11 +104,8 @@ class HederaStaticCallOperationTest {
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
-        assertEquals(
-                opRes.getHaltReason(),
-                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS));
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
+        assertEquals(cost, opRes.getGasCost());
     }
 
     @Test
@@ -142,8 +137,7 @@ class HederaStaticCallOperationTest {
         given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(Optional.empty(), opRes.getHaltReason());
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertNull(opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
     }
 }
