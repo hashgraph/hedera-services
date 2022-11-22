@@ -101,13 +101,13 @@ All states act as a near cache for looked up values. Since many (if not most) va
 
 ### States used with Queries
 
-The HAPI supports a number of queries. Queries are always answered from **the latest immutable state**. Query logic
-only needs a read-only view of the state, and so use `ReadableState`. It is not important to keep track of the
-different keys queries use. When the [Query Workflow](workflows.md#query-workflow) is run, it lazily determines whether
-a `QueryHandler` has already been created for the current query thread, and whether the latest immutable state matches
-the state used with that query handler. If so, the handler is reused. If both conditions are not true, then a new
-`QueryHandler` is created, using the `ReadableState`s for the service module (as registered with the `StateRegistry`)
-based on the latest immutable state.
+The HAPI supports a number of queries. Queries are always answered either from **the latest immutable state** or the
+**last signed state** (if a state proof is requested). Query logic only needs a read-only view of the state, and so use
+`ReadableState`. It is not important to keep track of the different keys queries use. When the
+[Query Workflow](workflows.md#query-workflow) is run, it lazily determines whether a `QueryHandler` has already been
+created for the current query thread, and whether the latest immutable state matches the state used with that query
+handler. If so, the handler is reused. If both conditions are not true, then a new `QueryHandler` is created, using the
+`ReadableState`s for the service module (as registered with the `StateRegistry`) based on the latest immutable state.
 
 ### States used during Ingestion
 

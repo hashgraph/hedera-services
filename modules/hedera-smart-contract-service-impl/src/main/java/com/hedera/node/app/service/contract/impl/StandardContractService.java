@@ -17,7 +17,7 @@ package com.hedera.node.app.service.contract.impl;
 
 import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,7 +27,7 @@ public final class StandardContractService implements ContractService {
 
     @Override
     @NonNull
-    public ContractPreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
+    public ContractPreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

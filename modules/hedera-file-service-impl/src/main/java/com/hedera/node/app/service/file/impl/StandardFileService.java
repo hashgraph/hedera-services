@@ -17,7 +17,7 @@ package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FilePreTransactionHandler;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
@@ -25,7 +25,7 @@ public final class StandardFileService implements FileService {
 
     @Override
     @NonNull
-    public FilePreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
+    public FilePreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

@@ -17,7 +17,7 @@ package com.hedera.node.app.service.scheduled.impl;
 
 import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.state.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -27,7 +27,7 @@ public final class StandardScheduledService implements ScheduleService {
 
     @Override
     @NonNull
-    public SchedulePreTransactionHandler createPreTransactionHandler(final @NonNull States states) {
+    public SchedulePreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

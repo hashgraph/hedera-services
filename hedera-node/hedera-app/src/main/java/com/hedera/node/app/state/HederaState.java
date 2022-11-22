@@ -18,8 +18,29 @@ package com.hedera.node.app.state;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
 
-public interface HederaState {
-    ReadableStates createReadableStates(String serviceName);
+import javax.annotation.Nonnull;
 
-    WritableStates createWritableStates(String serviceName);
+/**
+ * The full state used by Hedera. The current implementation is based on a merkle tree, and the data structures
+ * provided by the hashgraph platform. But most of our code doesn't need to know that detail, and are happy with
+ * just the API provided by this interface.
+ */
+public interface HederaState {
+    /**
+     * Creates a {@link ReadableStates} for the given named service. If such a service doesn't exist, an empty
+     * {@link ReadableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link com.hedera.node.app.spi.state.ReadableState} instance belonging to the service.
+     */
+    @Nonnull ReadableStates createReadableStates(@Nonnull String serviceName);
+
+    /**
+     * Creates a {@link WritableStates} for the given named service. If such a service doesn't exist, an empty
+     * {@link WritableStates} is returned.
+     *
+     * @param serviceName The name of the service.
+     * @return A collection of {@link com.hedera.node.app.spi.state.WritableState} instance belonging to the service.
+     */
+    @Nonnull WritableStates createWritableStates(@Nonnull String serviceName);
 }
