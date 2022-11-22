@@ -17,8 +17,9 @@ package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.WritableState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.*;
-import javax.annotation.Nonnull;
 
 /**
  * A base class for implementations of {@link ReadableState} and {@link WritableState}.
@@ -44,21 +45,21 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
      *
      * @param stateKey The state key. Cannot be null.
      */
-    StateBase(@Nonnull String stateKey) {
+    StateBase(@NonNull String stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
     /** {@inheritDoc} */
     @Override
-    @Nonnull
+    @NonNull
     public final String getStateKey() {
         return stateKey;
     }
 
     /** {@inheritDoc} */
     @Override
-    @Nonnull
-    public final Optional<V> get(@Nonnull K key) {
+    @NonNull
+    public final Optional<V> get(@NonNull K key) {
         Objects.requireNonNull(key);
         return Optional.ofNullable(
                 readCache.computeIfAbsent(key, ignore -> readFromDataSource(key)));
@@ -66,7 +67,7 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
 
     /** {@inheritDoc} */
     @Override
-    public final boolean contains(@Nonnull K key) {
+    public final boolean contains(@NonNull K key) {
         // We need to cache the item because somebody may perform business logic basic on this
         // contains call, even if they never need the value itself!
         final var item = readCache.computeIfAbsent(key, ignore -> readFromDataSource(key));
@@ -78,7 +79,7 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
      *
      * @return The possibly empty set of keys.
      */
-    @Nonnull
+    @NonNull
     public final Set<K> readKeys() {
         return readCache.keySet();
     }
@@ -95,5 +96,5 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
      * @param key key to read from state
      * @return The value read from the underlying data source. May be null.
      */
-    protected abstract V readFromDataSource(@Nonnull K key);
+    protected abstract V readFromDataSource(@NonNull K key);
 }

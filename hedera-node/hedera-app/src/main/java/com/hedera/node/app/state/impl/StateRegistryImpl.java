@@ -24,8 +24,7 @@ import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An implementation of the {@link StateRegistry} based on merkle tree. Each instance of this class
@@ -35,7 +34,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  *
  * @see StateRegistry
  */
-@NotThreadSafe
+/*@NotThreadSafe*/
 public final class StateRegistryImpl implements StateRegistry {
     /**
      * The root node onto which all state for a service will be registered. This is not the root of
@@ -53,9 +52,9 @@ public final class StateRegistryImpl implements StateRegistry {
      *     be null.
      */
     public StateRegistryImpl(
-            @Nonnull ServiceStateNode serviceMerkle,
-            @Nonnull SoftwareVersion currentVersion,
-            @Nonnull SoftwareVersion previousVersion) {
+            @NonNull ServiceStateNode serviceMerkle,
+            @NonNull SoftwareVersion currentVersion,
+            @NonNull SoftwareVersion previousVersion) {
         this.serviceMerkle = Objects.requireNonNull(serviceMerkle);
         this.currentVersion = Objects.requireNonNull(currentVersion);
         this.previousVersion = Objects.requireNonNull(previousVersion);
@@ -72,7 +71,7 @@ public final class StateRegistryImpl implements StateRegistry {
     }
 
     @Override
-    public <K, V> WritableState<K, V> getState(@Nonnull String stateKey) {
+    public <K, V> WritableState<K, V> getState(@NonNull String stateKey) {
         final var existingMerkle = serviceMerkle.find(stateKey);
 
         // Get the new state to use from the createOrMigrate lambda
@@ -80,14 +79,14 @@ public final class StateRegistryImpl implements StateRegistry {
     }
 
     @Override
-    public StateDefinition defineNewState(@Nonnull String stateKey) {
+    public StateDefinition defineNewState(@NonNull String stateKey) {
         // TODO Return a builder which, upon "define", will register a new thing here.
         // serviceMerkle.put(stateKey, newState.merkleNode())
         return new StateDefinitionBuilder(stateKey);
     }
 
     @Override
-    public void removeState(@Nonnull String stateKey) {
+    public void removeState(@NonNull String stateKey) {
         serviceMerkle.remove(stateKey);
     }
 

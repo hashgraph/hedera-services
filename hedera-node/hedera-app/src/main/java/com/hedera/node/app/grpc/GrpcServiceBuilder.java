@@ -25,8 +25,7 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.NotThreadSafe;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * this to segregate the code. This class is <strong>only</strong> responsible for the gRPC call,
  * the workflows are responsible for working with protobuf.
  */
-@NotThreadSafe
+/*@NotThreadSafe*/
 public final class GrpcServiceBuilder {
     /** Logger */
     private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceBuilder.class);
@@ -101,9 +100,9 @@ public final class GrpcServiceBuilder {
      * @param queryWorkflow The workflow to use for handling all queries
      */
     public GrpcServiceBuilder(
-            @Nonnull String serviceName,
-            @Nonnull IngestWorkflow ingestWorkflow,
-            @Nonnull QueryWorkflow queryWorkflow) {
+            @NonNull String serviceName,
+            @NonNull IngestWorkflow ingestWorkflow,
+            @NonNull QueryWorkflow queryWorkflow) {
         this.ingestWorkflow = Objects.requireNonNull(ingestWorkflow);
         this.queryWorkflow = Objects.requireNonNull(queryWorkflow);
         this.serviceName = Objects.requireNonNull(serviceName);
@@ -119,7 +118,7 @@ public final class GrpcServiceBuilder {
      * @param methodName The name of the transaction method. Cannot be null or blank.
      * @return A reference to the builder.
      */
-    public @Nonnull GrpcServiceBuilder transaction(@Nonnull String methodName) {
+    public @NonNull GrpcServiceBuilder transaction(@NonNull String methodName) {
         if (Objects.requireNonNull(methodName).isBlank()) {
             throw new IllegalArgumentException("The gRPC method name cannot be blank");
         }
@@ -135,7 +134,7 @@ public final class GrpcServiceBuilder {
      * @param methodName The name of the query method. Cannot be null or blank.
      * @return A reference to the builder.
      */
-    public @Nonnull GrpcServiceBuilder query(@Nonnull String methodName) {
+    public @NonNull GrpcServiceBuilder query(@NonNull String methodName) {
         if (Objects.requireNonNull(methodName).isBlank()) {
             throw new IllegalArgumentException("The gRPC method name cannot be blank");
         }

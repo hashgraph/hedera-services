@@ -19,11 +19,11 @@ import com.hedera.node.app.SessionContext;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuffer> {
     // To be set by configuration. See Issue #4294
@@ -84,9 +84,9 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * @param methodName a non-null reference to the method name
      */
     MethodBase(
-            @Nonnull final String serviceName,
-            @Nonnull final String methodName,
-            @Nonnull final Metrics metrics) {
+            @NonNull final String serviceName,
+            @NonNull final String methodName,
+            @NonNull final Metrics metrics) {
 
         this.serviceName = Objects.requireNonNull(serviceName);
         this.methodName = Objects.requireNonNull(methodName);
@@ -105,8 +105,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
 
     @Override
     public void invoke(
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull StreamObserver<ByteBuffer> responseObserver) {
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull StreamObserver<ByteBuffer> responseObserver) {
         try {
             // Track the number of times this method has been called
             callsReceivedCounter.increment();
@@ -145,9 +145,9 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      *     written
      */
     protected abstract void handle(
-            @Nonnull final SessionContext session,
-            @Nonnull final ByteBuffer requestBuffer,
-            @Nonnull final ByteBuffer responseBuffer);
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer);
 
     /**
      * Helper method for creating a {@link Counter} metric.
@@ -157,10 +157,10 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * @param descriptionTemplate A template to use for generating the metric description
      * @return The metric
      */
-    protected final @Nonnull Counter counter(
-            @Nonnull final Metrics metrics,
-            @Nonnull final String nameTemplate,
-            @Nonnull final String descriptionTemplate) {
+    protected final @NonNull Counter counter(
+            @NonNull final Metrics metrics,
+            @NonNull final String nameTemplate,
+            @NonNull final String descriptionTemplate) {
         final var baseName = serviceName + "/" + methodName;
         var name = String.format(nameTemplate, baseName);
         var desc = String.format(descriptionTemplate, baseName);
@@ -175,10 +175,10 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
      * @param descriptionTemplate A template to use for generating the metric description
      * @return The metric
      */
-    protected final @Nonnull SpeedometerMetric speedometer(
-            @Nonnull final Metrics metrics,
-            @Nonnull final String nameTemplate,
-            @Nonnull final String descriptionTemplate) {
+    protected final @NonNull SpeedometerMetric speedometer(
+            @NonNull final Metrics metrics,
+            @NonNull final String nameTemplate,
+            @NonNull final String descriptionTemplate) {
         final var baseName = serviceName + "/" + methodName;
         var name = String.format(nameTemplate, baseName);
         var desc = String.format(descriptionTemplate, baseName);

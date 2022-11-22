@@ -19,9 +19,10 @@ import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.state.merkle.HederaStateImpl;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link ReadableState} backed by a {@link FCHashMap} for aliases, that needs
@@ -36,32 +37,32 @@ public final class RebuiltState<K, V> extends MutableStateBase<K, V> {
     // TODO This is broken, it also needs a reference to the state with account Ids,
     //      otherwise changes to this or queries from this won't map to the same
     //      account Ids and lead to errors!
-    public RebuiltState(@Nonnull final String stateKey, @Nonnull Map<K, V> aliases) {
+    public RebuiltState(@NonNull final String stateKey, @NonNull Map<K, V> aliases) {
         super(stateKey);
         this.aliases = Objects.requireNonNull(aliases);
     }
 
     @Override
-    protected V getForModifyFromDataSource(@Nonnull K key) {
+    protected V getForModifyFromDataSource(@NonNull K key) {
         return aliases.get(key);
     }
 
     @Override
-    protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
+    protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         aliases.put(key, value);
     }
 
     @Override
-    protected void removeFromDataSource(@Nonnull K key) {
+    protected void removeFromDataSource(@NonNull K key) {
         aliases.remove(key);
     }
 
     @Override
-    protected V readFromDataSource(@Nonnull K key) {
+    protected V readFromDataSource(@NonNull K key) {
         return aliases.get(key);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     protected <T extends MerkleNode> T merkleNode() {
         throw new UnsupportedOperationException("Not implemented");

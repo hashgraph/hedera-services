@@ -29,11 +29,12 @@ dependencies {
     implementation(project(":modules:hedera-token-service-impl"))
     implementation(project(":modules:hedera-util-service-impl"))
 
-    implementation(libs.jsr305.annotation)
+    compileOnly(libs.spotbugs.annotations)
     implementation(libs.hapi)
     implementation(libs.bundles.helidon)
     implementation(libs.bundles.swirlds)
 
+    itestCompileOnly(libs.spotbugs.annotations)
     itestImplementation(libs.hapi)
     itestImplementation(libs.bundles.helidon)
     itestImplementation(libs.bundles.swirlds)
@@ -47,6 +48,7 @@ dependencies {
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
     exclude("io.grpc", "grpc-core")
     exclude("io.grpc", "grpc-api")
 }

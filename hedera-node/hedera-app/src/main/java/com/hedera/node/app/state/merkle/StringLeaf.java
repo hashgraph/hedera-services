@@ -20,9 +20,10 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * A {@link MerkleLeaf} containing a single String value. This is an immutable leaf -- once set, the
@@ -55,7 +56,7 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @param value The value cannot be null.
      */
-    public StringLeaf(@Nonnull final String value) {
+    public StringLeaf(@NonNull final String value) {
         Objects.requireNonNull(value);
 
         // Scrub the data by converting to normalized bytes, and check that we didn't get more bytes
@@ -78,14 +79,14 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return A non-null string.
      */
-    @Nonnull
+    @NonNull
     public String getValue() {
         return value;
     }
 
     /** {@inheritDoc} */
     @Override
-    @Nonnull
+    @NonNull
     public StringLeaf copy() {
         throwIfImmutable();
         throwIfDestroyed();
@@ -101,7 +102,7 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
 
     /** {@inheritDoc} */
     @Override
-    public void deserialize(@Nonnull final SerializableDataInputStream in, int ver)
+    public void deserialize(@NonNull final SerializableDataInputStream in, int ver)
             throws IOException {
         // We cannot parse streams from future versions.
         if (ver > VERSION_0) {
@@ -113,7 +114,7 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
 
     /** {@inheritDoc} */
     @Override
-    public void serialize(@Nonnull final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeNormalisedString(this.value);
     }
 
@@ -133,8 +134,8 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
      * @return The deserialized {@link StringLeaf}
      * @throws IOException If there is a problem reading from the stream
      */
-    public static @Nonnull StringLeaf createFromStream(
-            @Nonnull final SerializableDataInputStream in, int ver) throws IOException {
+    public static @NonNull StringLeaf createFromStream(
+            @NonNull final SerializableDataInputStream in, int ver) throws IOException {
 
         // We cannot parse streams from future versions.
         if (ver > VERSION_0) {

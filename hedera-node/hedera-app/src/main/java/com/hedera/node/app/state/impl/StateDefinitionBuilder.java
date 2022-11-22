@@ -26,26 +26,27 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 class StateDefinitionBuilder implements StateDefinition {
     private final String stateKey;
 
-    StateDefinitionBuilder(@Nonnull final String stateKey) {
+    StateDefinitionBuilder(@NonNull final String stateKey) {
         this.stateKey = Objects.requireNonNull(stateKey);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public <K, V extends MerkleNode & Keyed<K>> InMemoryDefinition<K, V> inMemory() {
         return new InMemoryBuilderImpl<K, V>(stateKey);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public <K extends VirtualKey<? super K>, V extends VirtualValue> OnDiskDefinition<K, V> onDisk(
-            @Nonnull final String label) {
+            @NonNull final String label) {
         return new OnDiskBuilderImpl<>(stateKey, label);
     }
 
@@ -64,7 +65,7 @@ class StateDefinitionBuilder implements StateDefinition {
             this.stateKey = Objects.requireNonNull(stateKey);
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public WritableState<K, V> define() {
             return new InMemoryState<>(stateKey, new MerkleMap<>());
@@ -91,23 +92,23 @@ class StateDefinitionBuilder implements StateDefinition {
             // TODO other serializers and such here such as the internal serializer
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public WritableState<K, V> define() {
             return new OnDiskState<>(stateKey, new VirtualMap<>(label, builder));
         }
 
-        @Nonnull
+        @NonNull
         @Override
-        public OnDiskDefinition<K, V> keySerializer(@Nonnull final KeySerializer<K> serializer) {
+        public OnDiskDefinition<K, V> keySerializer(@NonNull final KeySerializer<K> serializer) {
             builder.keySerializer(serializer);
             return this;
         }
 
-        @Nonnull
+        @NonNull
         @Override
         public OnDiskDefinition<K, V> valueSerializer(
-                @Nonnull VirtualLeafRecordSerializer<K, V> serializer) {
+                @NonNull VirtualLeafRecordSerializer<K, V> serializer) {
             builder.virtualLeafRecordSerializer(serializer);
             return this;
         }

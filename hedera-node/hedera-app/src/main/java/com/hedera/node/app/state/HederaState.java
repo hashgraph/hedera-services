@@ -17,7 +17,7 @@ package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableStates;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * The full state used by Hedera. The current implementation is based on a merkle tree, and the data
@@ -33,8 +33,8 @@ public interface HederaState {
      * @return A collection of {@link com.hedera.node.app.spi.state.ReadableState} instance
      *     belonging to the service.
      */
-    @Nonnull
-    ReadableStates createReadableStates(@Nonnull String serviceName);
+    @NonNull
+    ReadableStates createReadableStates(@NonNull String serviceName);
 
     /**
      * Creates a {@link WritableStates} for the given named service. If such a service doesn't
@@ -44,6 +44,6 @@ public interface HederaState {
      * @return A collection of {@link com.hedera.node.app.spi.state.WritableState} instance
      *     belonging to the service.
      */
-    @Nonnull
-    WritableStates createWritableStates(@Nonnull String serviceName);
+    @NonNull
+    WritableStates createWritableStates(@NonNull String serviceName);
 }

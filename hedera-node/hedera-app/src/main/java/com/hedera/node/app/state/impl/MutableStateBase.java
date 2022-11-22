@@ -17,8 +17,9 @@ package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.WritableState;
 import com.swirlds.common.merkle.MerkleNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.*;
-import javax.annotation.Nonnull;
 
 /**
  * A base class for implementations of {@link WritableState}.
@@ -38,7 +39,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
      *
      * @param stateKey The state key. Cannot be null.
      */
-    protected MutableStateBase(@Nonnull final String stateKey) {
+    protected MutableStateBase(@NonNull final String stateKey) {
         super(stateKey);
     }
 
@@ -63,9 +64,9 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     }
 
     /** {@inheritDoc} */
-    @Nonnull
+    @NonNull
     @Override
-    public final Optional<V> getForModify(@Nonnull final K key) {
+    public final Optional<V> getForModify(@NonNull final K key) {
         // Check whether the key has been removed!
         if (removed.contains(key)) {
             return Optional.empty();
@@ -81,20 +82,20 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
 
     /** {@inheritDoc} */
     @Override
-    public final void put(@Nonnull final K key, @Nonnull final V value) {
+    public final void put(@NonNull final K key, @NonNull final V value) {
         modified.put(key, value);
         removed.remove(key);
     }
 
     /** {@inheritDoc} */
     @Override
-    public final void remove(@Nonnull final K key) {
+    public final void remove(@NonNull final K key) {
         modified.remove(key);
         removed.add(key);
     }
 
     /** {@inheritDoc} */
-    @Nonnull
+    @NonNull
     @Override
     public final Set<K> modifiedKeys() {
         final var combinedKeys = modified.keySet();
@@ -109,7 +110,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
      * @param key key to read from state
      * @return The value read from the underlying data source. May be null.
      */
-    protected abstract V getForModifyFromDataSource(@Nonnull K key);
+    protected abstract V getForModifyFromDataSource(@NonNull K key);
 
     /**
      * Puts the given key/value pair into the underlying data source.
@@ -117,14 +118,14 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
      * @param key key to update
      * @param value value to put
      */
-    protected abstract void putIntoDataSource(@Nonnull K key, @Nonnull V value);
+    protected abstract void putIntoDataSource(@NonNull K key, @NonNull V value);
 
     /**
      * Removes the given key and implicit value from the underlying data source.
      *
      * @param key key to remove from the underlying data source
      */
-    protected abstract void removeFromDataSource(@Nonnull K key);
+    protected abstract void removeFromDataSource(@NonNull K key);
 
     /**
      * Gets the underlying merkle node.
@@ -132,6 +133,6 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
      * @return The merkle node
      * @param <T> The type of merkle node
      */
-    @Nonnull
+    @NonNull
     protected abstract <T extends MerkleNode> T merkleNode();
 }

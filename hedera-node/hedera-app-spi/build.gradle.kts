@@ -21,7 +21,6 @@ description = "Hedera Application - SPI"
 
 dependencies {
     api(libs.hapi)
-    implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
     implementation(libs.swirlds.common)
     implementation(libs.swirlds.merkle)

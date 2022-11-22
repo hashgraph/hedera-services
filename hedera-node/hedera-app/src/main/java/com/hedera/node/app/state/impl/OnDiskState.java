@@ -20,8 +20,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link WritableState} backed by a {@link VirtualMap}, resulting in a state
@@ -34,32 +35,32 @@ public final class OnDiskState<K extends VirtualKey<? super K>, V extends Virtua
         extends MutableStateBase<K, V> {
     private final VirtualMap<K, V> virtualMap;
 
-    public OnDiskState(@Nonnull final String stateKey, @Nonnull VirtualMap<K, V> virtualMap) {
+    public OnDiskState(@NonNull final String stateKey, @NonNull VirtualMap<K, V> virtualMap) {
         super(stateKey);
         this.virtualMap = Objects.requireNonNull(virtualMap);
     }
 
     @Override
-    protected V readFromDataSource(@Nonnull K key) {
+    protected V readFromDataSource(@NonNull K key) {
         return virtualMap.get(key);
     }
 
     @Override
-    protected V getForModifyFromDataSource(@Nonnull K key) {
+    protected V getForModifyFromDataSource(@NonNull K key) {
         return virtualMap.getForModify(key);
     }
 
     @Override
-    protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
+    protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         virtualMap.put(key, value);
     }
 
     @Override
-    protected void removeFromDataSource(@Nonnull K key) {
+    protected void removeFromDataSource(@NonNull K key) {
         virtualMap.remove(key);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     protected <T extends MerkleNode> T merkleNode() {
         return (T) virtualMap;

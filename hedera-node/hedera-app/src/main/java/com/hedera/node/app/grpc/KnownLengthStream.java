@@ -15,11 +15,12 @@
  */
 package com.hedera.node.app.grpc;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
+
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An {@link InputStream} that implements {@link KnownLength} which allows the gRPC server to do
@@ -43,7 +44,7 @@ final class KnownLengthStream extends InputStream implements KnownLength {
     }
 
     @Override
-    public int read(@Nonnull byte[] b) {
+    public int read(@NonNull byte[] b) {
         int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;
@@ -55,7 +56,7 @@ final class KnownLengthStream extends InputStream implements KnownLength {
     }
 
     @Override
-    public int read(@Nonnull byte[] b, int off, int len) {
+    public int read(@NonNull byte[] b, int off, int len) {
         int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;

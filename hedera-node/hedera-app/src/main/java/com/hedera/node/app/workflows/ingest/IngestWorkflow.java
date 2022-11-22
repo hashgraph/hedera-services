@@ -18,8 +18,9 @@ package com.hedera.node.app.workflows.ingest;
 import com.hedera.node.app.SessionContext;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /**
  * The {@link IngestWorkflow} represents the workflow used when receiving a {@link Transaction} from
@@ -39,7 +40,7 @@ public interface IngestWorkflow {
      * @param responseBuffer The raw protobuf response bytes.
      */
     void handleTransaction(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer);
+            @NonNull SessionContext session,
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull ByteBuffer responseBuffer);
 }

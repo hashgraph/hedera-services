@@ -1,5 +1,4 @@
 module com.hedera.node.app.spi {
-    requires static jsr305;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires static com.github.spotbugs.annotations;
 

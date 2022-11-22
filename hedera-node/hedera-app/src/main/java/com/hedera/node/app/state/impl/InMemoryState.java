@@ -19,8 +19,9 @@ import com.hedera.node.app.spi.state.WritableState;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link WritableState} backed by a {@link MerkleMap}, resulting in a state
@@ -40,34 +41,34 @@ public final class InMemoryState<K, V extends MerkleNode & Keyed<K>>
      * @param stateKey The state key to use. Cannot be null.
      * @param merkleMap The backing merkle map. Cannot be null.
      */
-    public InMemoryState(@Nonnull String stateKey, @Nonnull MerkleMap<K, V> merkleMap) {
+    public InMemoryState(@NonNull String stateKey, @NonNull MerkleMap<K, V> merkleMap) {
         super(stateKey);
         this.merkle = Objects.requireNonNull(merkleMap);
     }
 
     @Override
-    @Nonnull
-    protected V readFromDataSource(@Nonnull K key) {
+    @NonNull
+    protected V readFromDataSource(@NonNull K key) {
         return merkle.get(key);
     }
 
     @Override
-    @Nonnull
-    protected V getForModifyFromDataSource(@Nonnull K key) {
+    @NonNull
+    protected V getForModifyFromDataSource(@NonNull K key) {
         return merkle.getForModify(key);
     }
 
     @Override
-    protected void putIntoDataSource(@Nonnull K key, @Nonnull V value) {
+    protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         merkle.put(key, value);
     }
 
     @Override
-    protected void removeFromDataSource(@Nonnull K key) {
+    protected void removeFromDataSource(@NonNull K key) {
         merkle.remove(key);
     }
 
-    @Nonnull
+    @NonNull
     @Override
     protected <T extends MerkleNode> T merkleNode() {
         return (T) merkle;

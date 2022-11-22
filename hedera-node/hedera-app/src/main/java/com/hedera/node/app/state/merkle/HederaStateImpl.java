@@ -30,12 +30,13 @@ import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import org.apache.commons.lang3.NotImplementedException;
 
 public class HederaStateImpl extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState {
@@ -58,7 +59,7 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
      *
      * @param from The other state to fast-copy from. Cannot be null.
      */
-    private HederaStateImpl(@Nonnull final HederaStateImpl from) {
+    private HederaStateImpl(@NonNull final HederaStateImpl from) {
         // Copy the Merkle route from the source instance
         super(from);
 
@@ -76,16 +77,16 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
     }
 
     @Override
-    public ReadableStates createReadableStates(@Nonnull final String serviceName) {
+    public ReadableStates createReadableStates(@NonNull final String serviceName) {
         final var opt = getServiceStateNode(serviceName);
         if (opt.isEmpty()) {
             return null; // Null, or optional??
         }
 
         return new ReadableStates() {
-            @Nonnull
+            @NonNull
             @Override
-            public <K, V, S extends ReadableState<K, V>> S get(@Nonnull String stateKey) {
+            public <K, V, S extends ReadableState<K, V>> S get(@NonNull String stateKey) {
                 final var service = opt.get();
                 final var merkleNode = service.find(stateKey);
                 if (merkleNode instanceof MerkleMap) {
@@ -102,7 +103,7 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
     }
 
     @Override
-    public WritableStates createWritableStates(@Nonnull final String serviceName) {
+    public WritableStates createWritableStates(@NonNull final String serviceName) {
         throwIfImmutable();
         final var opt = getServiceStateNode(serviceName);
         if (opt.isEmpty()) {
@@ -110,9 +111,9 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
         }
 
         return new WritableStates() {
-            @Nonnull
+            @NonNull
             @Override
-            public <K, V> WritableState<K, V> get(@Nonnull String stateKey) {
+            public <K, V> WritableState<K, V> get(@NonNull String stateKey) {
                 final var service = opt.get();
                 final var merkleNode = service.find(stateKey);
                 if (merkleNode instanceof MerkleMap) {
@@ -146,7 +147,7 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
      *
      * @param node The node to add. Cannot be null.
      */
-    public void addServiceStateNode(@Nonnull final ServiceStateNode node) {
+    public void addServiceStateNode(@NonNull final ServiceStateNode node) {
         throwIfImmutable();
         // See if there is already a node for this, if not, add it.
         final var optNode = getServiceStateNode(node.getServiceName());
@@ -164,8 +165,8 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
      * @return An {@link Optional} that is empty if nothing was found, or it contains the matching
      *     {@link ServiceStateNode}.
      */
-    @Nonnull
-    public Optional<ServiceStateNode> getServiceStateNode(@Nonnull final String serviceName) {
+    @NonNull
+    public Optional<ServiceStateNode> getServiceStateNode(@NonNull final String serviceName) {
         Objects.requireNonNull(serviceName);
 
         // Find a node with this service name, if there is one.
@@ -188,7 +189,7 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
      *
      * @param serviceName The service name. Cannot be null.
      */
-    public void removeServiceStateNode(@Nonnull final String serviceName) {
+    public void removeServiceStateNode(@NonNull final String serviceName) {
         throwIfImmutable();
         Objects.requireNonNull(serviceName);
         // See if there is already a node for this, if so, remove it.

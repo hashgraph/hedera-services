@@ -22,14 +22,13 @@ import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
  * single instance of this class is used by all query threads in the node.
  */
-@ThreadSafe
+/*@ThreadSafe*/
 final class QueryMethod extends MethodBase {
     private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     private static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
@@ -53,10 +52,10 @@ final class QueryMethod extends MethodBase {
      * @param workflow a non-null {@link QueryWorkflow}
      */
     QueryMethod(
-            @Nonnull final String serviceName,
-            @Nonnull final String methodName,
-            @Nonnull final QueryWorkflow workflow,
-            @Nonnull final Metrics metrics) {
+            @NonNull final String serviceName,
+            @NonNull final String methodName,
+            @NonNull final QueryWorkflow workflow,
+            @NonNull final Metrics metrics) {
         super(serviceName, methodName, metrics);
         this.workflow = Objects.requireNonNull(workflow);
 
@@ -68,9 +67,9 @@ final class QueryMethod extends MethodBase {
 
     @Override
     protected void handle(
-            @Nonnull SessionContext session,
-            @Nonnull ByteBuffer requestBuffer,
-            @Nonnull ByteBuffer responseBuffer) {
+            @NonNull SessionContext session,
+            @NonNull ByteBuffer requestBuffer,
+            @NonNull ByteBuffer responseBuffer) {
         workflow.handleQuery(session, requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();
