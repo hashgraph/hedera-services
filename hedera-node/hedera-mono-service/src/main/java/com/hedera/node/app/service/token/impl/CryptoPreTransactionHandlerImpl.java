@@ -179,9 +179,9 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     /**
-     * This method is needed for testing until {@link CryptoSignatureWaiversImpl} is implemented.
-     * FUTURE: This method should be removed once {@link CryptoSignatureWaiversImpl} is implemented.
-     *
+     * @deprecated This method is needed for testing until {@link CryptoSignatureWaiversImpl} is
+     *     implemented. FUTURE: This method should be removed once {@link
+     *     CryptoSignatureWaiversImpl} is implemented.
      * @param waivers signature waivers for crypto service
      */
     @Deprecated(forRemoval = true)
