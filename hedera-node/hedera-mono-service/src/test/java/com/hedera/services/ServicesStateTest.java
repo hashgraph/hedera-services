@@ -70,9 +70,10 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
@@ -854,7 +855,7 @@ class ServicesStateTest {
         return DaggerServicesApp.builder()
                 .initialHash(new Hash())
                 .platform(platform)
-                .crypto(CryptoFactory.getInstance())
+                .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
                 .selfId(platform.getSelfId().getId())
                 .staticAccountMemo("memo")
@@ -865,7 +866,10 @@ class ServicesStateTest {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography()).thenReturn(new CryptoEngine(getStaticThreadManager()));
+        when(platform.getCryptography())
+                .thenReturn(
+                        new CryptoEngine(
+                                getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platform.getCryptography());
         return platform;
     }
