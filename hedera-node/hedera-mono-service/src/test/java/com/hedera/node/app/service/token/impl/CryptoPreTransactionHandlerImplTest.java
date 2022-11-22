@@ -111,25 +111,30 @@ class CryptoPreTransactionHandlerImplTest {
                     .build();
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
+    private static final String TOKENS = "TOKENS";
 
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
+    @Mock private InMemoryStateImpl tokens;
     @Mock private States states;
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
     @Mock private MerkleAccount ownerAccount;
-    private AccountStore store;
+    private AccountStore accountStore;
+    private TokenStore tokenStore;
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     public void setUp() {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
+        given(states.get(TOKENS)).willReturn(tokens);
 
-        store = new AccountStore(states);
+        accountStore = new AccountStore(states);
+        tokenStore = new TokenStore(states);
 
-        subject = new CryptoPreTransactionHandlerImpl(store);
+        subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore);
     }
 
     @Test
@@ -146,7 +151,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
-        final var expectedMeta = new SigTransactionMetadata(store, txn, payer);
+        final var expectedMeta = new SigTransactionMetadata(accountStore, txn, payer);
 
         final var meta = subject.preHandleCryptoCreate(txn);
 

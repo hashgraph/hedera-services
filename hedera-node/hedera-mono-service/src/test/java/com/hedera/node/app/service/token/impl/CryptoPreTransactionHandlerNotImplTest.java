@@ -26,13 +26,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
-    @Mock private AccountStore store;
+    @Mock private AccountStore accountStore;
+
+    @Mock private TokenStore tokenStore;
 
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CryptoPreTransactionHandlerImpl(store);
+        subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore);
     }
 
     @Test

@@ -28,7 +28,8 @@ public final class CryptoServiceImpl implements CryptoService {
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(@Nonnull final States states) {
         Objects.requireNonNull(states);
-        final var store = new AccountStore(states);
-        return new CryptoPreTransactionHandlerImpl(store);
+        final var accountStore = new AccountStore(states);
+        final var tokenStore = new TokenStore(states);
+        return new CryptoPreTransactionHandlerImpl(accountStore, tokenStore);
     }
 }

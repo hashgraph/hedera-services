@@ -24,7 +24,9 @@ import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,13 +40,16 @@ import org.apache.commons.lang3.NotImplementedException;
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    private final TokenStore tokenStore;
+    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore,@Nonnull final TokenStore tokenStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
+        this.tokenStore = Objects.requireNonNull(tokenStore);
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoCreate(final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoCreate(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         final var op = txn.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
@@ -54,7 +59,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoDelete(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         final var op = txn.getCryptoDelete();
         final var payer = txn.getTransactionID().getAccountID();
         final var deleteAccountId = op.getDeleteAccountID();
@@ -67,7 +73,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(TransactionBody txn) {
+    public TransactionMetadata preHandleApproveAllowances(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         final var op = txn.getCryptoApproveAllowance();
         final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
@@ -101,7 +108,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteAllowances(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         final var op = txn.getCryptoDeleteAllowance();
         final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
@@ -114,26 +122,40 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(TransactionBody txn) {
+    public TransactionMetadata preHandleUpdateAccount(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoTransfer(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
+        final var op = txn.getCryptoTransfer();
         final var payer = txn.getTransactionID().getAccountID();
-        return new SigTransactionMetadata(accountStore, txn, payer);
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        for (var x : meta.getReqKeys()) {
+            System.out.println("Asdf" + x.toString());
+        }
+        for (TokenTransferList transfers : op.getTokenTransfersList()) {
+            for (AccountAmount adjust : transfers.getTransfersList()) {
+            }
+        }
+        
+        return meta;
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAddLiveHash(TransactionBody txn) {
+    public TransactionMetadata preHandleAddLiveHash(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteLiveHash(@Nonnull final TransactionBody txn) {
+        Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
