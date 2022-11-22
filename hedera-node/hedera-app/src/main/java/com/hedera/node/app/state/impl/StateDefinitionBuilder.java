@@ -84,7 +84,7 @@ class StateDefinitionBuilder implements StateDefinition {
         private final String label;
         private final JasperDbBuilder<K, V> builder;
 
-        OnDiskBuilderImpl(String stateKey, String label) {
+        OnDiskBuilderImpl(final String stateKey, final String label) {
             this.stateKey = Objects.requireNonNull(stateKey);
             this.label = Objects.requireNonNull(label);
             this.builder = new JasperDbBuilder<>();
@@ -99,7 +99,7 @@ class StateDefinitionBuilder implements StateDefinition {
 
         @Nonnull
         @Override
-        public OnDiskDefinition<K, V> keySerializer(@Nonnull KeySerializer<K> serializer) {
+        public OnDiskDefinition<K, V> keySerializer(@Nonnull final KeySerializer<K> serializer) {
             builder.keySerializer(serializer);
             return this;
         }

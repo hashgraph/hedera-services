@@ -38,7 +38,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
      *
      * @param stateKey The state key. Cannot be null.
      */
-    MutableStateBase(@Nonnull final String stateKey) {
+    protected MutableStateBase(@Nonnull final String stateKey) {
         super(stateKey);
     }
 

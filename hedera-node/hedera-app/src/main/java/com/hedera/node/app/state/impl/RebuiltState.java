@@ -64,6 +64,6 @@ public final class RebuiltState<K, V> extends MutableStateBase<K, V> {
     @Nonnull
     @Override
     protected <T extends MerkleNode> T merkleNode() {
-        throw new RuntimeException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

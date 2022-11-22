@@ -62,7 +62,7 @@ public final class StateRegistryImpl implements StateRegistry {
 
         // Get the new state to use from the createOrMigrate lambda
         final MutableStateBase<K, V> existingState = asMutableStateBase(stateKey, existingMerkle);
-        final var newState =
+        final MutableStateBase<K, V> newState =
                 (MutableStateBase<K, V>)
                         createOrMigrate.apply(
                                 new StateDefinitionBuilder(stateKey), Optional.ofNullable(existingState));
