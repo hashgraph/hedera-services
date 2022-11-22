@@ -21,26 +21,28 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
 public final class ErrorTransactionMetadata implements TransactionMetadata {
-    private final TransactionBody txBody;
-    private final Throwable throwable;
     private final ResponseCodeEnum responseCode;
+    private final Throwable throwable;
+    private final TransactionBody txBody;
 
     /**
      * Constructor of {@code ErrorTransactionMetadata}
      *
-     * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
-     * @param throwable the {@link Throwable} that caused the error
      * @param responseCode the {@link ResponseCodeEnum} of the error
-     * @throws NullPointerException if {@code throwable} or {@code responseCode} is {@code null}
+     * @param throwable the {@link Throwable} that caused the error
+     * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
+     * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public ErrorTransactionMetadata(
-            final TransactionBody txBody,
-            final Throwable throwable,
-            final ResponseCodeEnum responseCode) {
-        this.txBody = requireNonNull(txBody);
+            @Nonnull final ResponseCodeEnum responseCode,
+            @Nullable final Throwable throwable,
+            @Nullable final TransactionBody txBody) {
+        this.txBody = txBody;
         this.throwable = requireNonNull(throwable);
         this.responseCode = requireNonNull(responseCode);
     }
@@ -50,33 +52,37 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
      *
      * @return the {@link Throwable} that caused the error
      */
+    @Nullable
     public Throwable cause() {
         return throwable;
     }
 
+    @Nonnull
     @Override
     public ResponseCodeEnum status() {
         return responseCode;
     }
 
+    @Nullable
     @Override
     public TransactionBody getTxn() {
         return txBody;
     }
 
+    @Nonnull
     @Override
     public List<HederaKey> getReqKeys() {
         return List.of();
     }
 
     @Override
-    public void setStatus(ResponseCodeEnum status) {
+    public void setStatus(final ResponseCodeEnum status) {
         throw new UnsupportedOperationException(
                 "This operation is not supported after an error occurred");
     }
 
     @Override
-    public void addToReqKeys(HederaKey key) {
+    public void addToReqKeys(final HederaKey key) {
         throw new UnsupportedOperationException(
                 "This operation is not supported after an error occurred");
     }

@@ -24,21 +24,28 @@ import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import javax.annotation.Nonnull;
 
 /**
  * A {@code ServiceAccessor} is used to pass all services to components via a single parameter.
  *
+ * @param consensusService a {@link ConsensusService}
+ * @param contractService a {@link ContractService}
  * @param cryptoService a {@link CryptoService}
  * @param fileService a {@link FileService}
+ * @param freezeService a {@link FreezeService}
+ * @param networkService a {@link NetworkService}
+ * @param scheduleService a {@link ScheduleService}
  * @param tokenService a {@link TokenService}
+ * @param utilService a {@link UtilService}
  */
 public record ServicesAccessor(
-        ConsensusService consensusService,
-        ContractService contractService,
-        CryptoService cryptoService,
-        FileService fileService,
-        FreezeService freezeService,
-        NetworkService networkService,
-        ScheduleService scheduleService,
-        TokenService tokenService,
-        UtilService utilService) {}
+        @Nonnull ConsensusService consensusService,
+        @Nonnull ContractService contractService,
+        @Nonnull CryptoService cryptoService,
+        @Nonnull FileService fileService,
+        @Nonnull FreezeService freezeService,
+        @Nonnull NetworkService networkService,
+        @Nonnull ScheduleService scheduleService,
+        @Nonnull TokenService tokenService,
+        @Nonnull UtilService utilService) {}

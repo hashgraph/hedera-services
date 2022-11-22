@@ -20,6 +20,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Nonnull;
 
 /**
  * This record keeps a list of everything that is used per-thread
@@ -30,7 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * @param txBodyParser a parser for {@link TransactionBody}
  */
 public record SessionContext(
-        Parser<Query> queryParser,
-        Parser<Transaction> txParser,
-        Parser<SignedTransaction> signedParser,
-        Parser<TransactionBody> txBodyParser) {}
+        @Nonnull Parser<Query> queryParser,
+        @Nonnull Parser<Transaction> txParser,
+        @Nonnull Parser<SignedTransaction> signedParser,
+        @Nonnull Parser<TransactionBody> txBodyParser) {}

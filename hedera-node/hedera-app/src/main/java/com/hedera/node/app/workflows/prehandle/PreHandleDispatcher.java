@@ -17,6 +17,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Nonnull;
 
 /**
  * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct
@@ -31,5 +32,6 @@ public interface PreHandleDispatcher {
      * @param transactionBody the {@link TransactionBody} of the request
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    TransactionMetadata dispatch(TransactionBody transactionBody);
+    @Nonnull
+    TransactionMetadata dispatch(@Nonnull TransactionBody transactionBody);
 }

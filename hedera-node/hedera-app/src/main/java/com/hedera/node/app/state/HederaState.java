@@ -17,6 +17,7 @@ package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.state.States;
 
+// Placeholder until the state-implementation is added
 public interface HederaState {
 
     String CONSENSUS_SERVICE = "ConsensusService";

@@ -30,6 +30,7 @@ import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Nonnull;
 
 /** Default implementation of {@link PreHandleDispatcher} */
 public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
@@ -51,7 +52,10 @@ public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
      * @param services the {@link ServicesAccessor} with all available services
      * @throws NullPointerException if one of the parameters is {@code null}
      */
-    public PreHandleDispatcherImpl(final HederaState hederaState, final ServicesAccessor services) {
+    public PreHandleDispatcherImpl(
+            @Nonnull final HederaState hederaState, @Nonnull final ServicesAccessor services) {
+        requireNonNull(hederaState);
+        requireNonNull(services);
         final var consensusState = hederaState.createReadableStates(HederaState.CONSENSUS_SERVICE);
         consensusHandler = services.consensusService().createPreTransactionHandler(consensusState);
 
@@ -80,8 +84,9 @@ public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
         utilHandler = services.utilService().createPreTransactionHandler(utilStates);
     }
 
+    @Nonnull
     @Override
-    public TransactionMetadata dispatch(final TransactionBody transactionBody) {
+    public TransactionMetadata dispatch(@Nonnull final TransactionBody transactionBody) {
         requireNonNull(transactionBody);
         return switch (transactionBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> consensusHandler.preHandleCreateTopic(transactionBody);

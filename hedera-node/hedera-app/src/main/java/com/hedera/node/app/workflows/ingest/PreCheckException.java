@@ -18,6 +18,8 @@ package com.hedera.node.app.workflows.ingest;
 import static java.util.Objects.requireNonNull;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
@@ -33,7 +35,8 @@ public class PreCheckException extends Exception {
      * @param message an error message with further details
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public PreCheckException(ResponseCodeEnum responseCode, String message) {
+    public PreCheckException(
+            @Nonnull final ResponseCodeEnum responseCode, @Nullable final String message) {
         super(message);
         this.responseCode = requireNonNull(responseCode);
     }
@@ -43,6 +46,7 @@ public class PreCheckException extends Exception {
      *
      * @return the {@link ResponseCodeEnum responseCode}
      */
+    @Nonnull
     public ResponseCodeEnum responseCode() {
         return responseCode;
     }

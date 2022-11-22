@@ -35,6 +35,7 @@ public interface CryptoQueryHandler extends QueryHandler {
      * @return A non-null {@link Optional} with a reference to the {@link Account}, or empty if
      *     there is not one matching the given ID.
      */
+    @NonNull
     Optional<Account> getAccountById(@NonNull AccountID id);
 
     /**

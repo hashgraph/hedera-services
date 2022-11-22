@@ -25,33 +25,34 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 /** Default implementation of {@link CryptoQueryHandler} */
 public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
 
+    @NonNull
     @Override
-    public Optional<Account> getAccountById(@NonNull AccountID id) {
+    public Optional<Account> getAccountById(@NonNull final AccountID id) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void getAccountRecords(@NonNull CryptoGetAccountRecordsQuery query) {
+    public void getAccountRecords(@NonNull final CryptoGetAccountRecordsQuery query) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void cryptoGetBalance(@NonNull CryptoGetAccountBalanceQuery query) {
+    public void cryptoGetBalance(@NonNull final CryptoGetAccountBalanceQuery query) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void getAccountInfo(@NonNull GetAccountDetailsQuery query) {
+    public void getAccountInfo(@NonNull final GetAccountDetailsQuery query) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void getTransactionReceipts(@NonNull TransactionGetReceiptQuery query) {
+    public void getTransactionReceipts(@NonNull final TransactionGetReceiptQuery query) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void getTxRecordByTxID(@NonNull TransactionGetRecordQuery query) {
+    public void getTxRecordByTxID(@NonNull final TransactionGetRecordQuery query) {
         throw new NotImplementedException();
     }
 }

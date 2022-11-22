@@ -30,6 +30,7 @@ import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,16 +71,16 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
-            final ExecutorService exe,
-            final ServicesAccessor servicesAccessor,
-            final IngestChecker ingestChecker) {
+            @Nonnull final ExecutorService exe,
+            @Nonnull final ServicesAccessor servicesAccessor,
+            @Nonnull final IngestChecker ingestChecker) {
         this.exe = requireNonNull(exe);
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.checker = requireNonNull(ingestChecker);
     }
 
     @Override
-    public synchronized void start(final HederaState state, final Event event) {
+    public synchronized void start(@Nonnull final HederaState state, @Nonnull final Event event) {
         requireNonNull(state);
         requireNonNull(event);
 
@@ -145,13 +146,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         } catch (PreCheckException preCheckException) {
             return new ErrorTransactionMetadata(
-                    txBody, preCheckException, preCheckException.responseCode());
+                    preCheckException.responseCode(), preCheckException, txBody);
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return new ErrorTransactionMetadata(txBody, ex, ResponseCodeEnum.UNKNOWN);
+            return new ErrorTransactionMetadata(ResponseCodeEnum.UNKNOWN, ex, txBody);
         }
     }
 }
