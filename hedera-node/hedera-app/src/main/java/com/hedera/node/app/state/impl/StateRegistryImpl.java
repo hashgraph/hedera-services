@@ -88,8 +88,10 @@ public final class StateRegistryImpl implements StateRegistry {
 
         if (merkleNode instanceof MerkleMap mmap) {
             return new InMemoryState(stateKey, mmap);
+        } else if (merkleNode instanceof VirtualMap vmap) {
+            return new OnDiskState(stateKey, vmap);
         } else {
-            return new OnDiskState(stateKey, (VirtualMap) merkleNode);
+            throw new IllegalStateException("The merkle node was of an unsupported type!");
         }
     }
 }
