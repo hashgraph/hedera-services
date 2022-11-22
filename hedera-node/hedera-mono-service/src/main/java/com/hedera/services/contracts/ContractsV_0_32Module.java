@@ -43,6 +43,7 @@ import java.math.BigInteger;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -65,7 +66,12 @@ public interface ContractsV_0_32Module {
     @V_0_32
     static BiPredicate<Address, MessageFrame> provideAddressValidator(
             final Map<String, PrecompiledContract> precompiledContractMap) {
-        return (address, frame) -> true;
+        final var precompiles =
+                precompiledContractMap.keySet().stream()
+                        .map(Address::fromHexString)
+                        .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
     }
 
     @Provides

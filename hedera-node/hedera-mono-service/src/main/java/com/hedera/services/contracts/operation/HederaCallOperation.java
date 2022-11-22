@@ -15,34 +15,13 @@
  */
 package com.hedera.services.contracts.operation;
 
-/*
- * -
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- *
- */
-
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.merkle.MerkleAccount;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -78,13 +57,21 @@ public class HederaCallOperation extends CallOperation {
 
     @Override
     public OperationResult execute(final MessageFrame frame, final EVM evm) {
-        return HederaOperationUtil.addressSignatureCheckExecution(
-                sigsVerifier,
-                frame,
-                to(frame),
-                () -> cost(frame),
-                () -> super.execute(frame, evm),
-                addressValidator,
-                precompiledContractMap);
+        if (isLazyCreateAttempt(frame)) {
+            return super.execute(frame, evm);
+        } else {
+            return HederaOperationUtil.addressSignatureCheckExecution(
+                    sigsVerifier,
+                    frame,
+                    to(frame),
+                    () -> cost(frame),
+                    () -> super.execute(frame, evm),
+                    addressValidator,
+                    precompiledContractMap);
+        }
+    }
+
+    private boolean isLazyCreateAttempt(final MessageFrame frame) {
+        return !addressValidator.test(to(frame), frame) && value(frame).greaterThan(Wei.ZERO);
     }
 }
