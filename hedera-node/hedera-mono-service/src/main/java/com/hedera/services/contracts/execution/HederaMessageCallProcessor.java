@@ -43,6 +43,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
+import org.jetbrains.annotations.NotNull;
 
 public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
@@ -109,19 +110,9 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     protected void executeLazyCreate(
             final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var syntheticBalanceChange =
-                BalanceChange.changingHbar(
-                        AccountAmount.newBuilder()
-                                .setAccountID(
-                                        AccountID.newBuilder()
-                                                .setAlias(
-                                                        ByteStringUtils.wrapUnsafely(
-                                                                frame.getRecipientAddress()
-                                                                        .toArrayUnsafe()))
-                                                .build())
-                                .build(),
-                        null);
+        final var syntheticBalanceChange = constructSyntheticLazyCreateBalanceChangeFrom(frame);
         final var autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
+
         final var lazyCreateResult =
                 autoCreationLogic.create(
                         syntheticBalanceChange,
@@ -148,6 +139,21 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
                         EntityIdUtils.asTypedEvmAddress(syntheticBalanceChange.accountId()));
             }
         }
+    }
+
+    @NotNull
+    private BalanceChange constructSyntheticLazyCreateBalanceChangeFrom(final MessageFrame frame) {
+        return BalanceChange.changingHbar(
+                AccountAmount.newBuilder()
+                        .setAccountID(
+                                AccountID.newBuilder()
+                                        .setAlias(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        frame.getRecipientAddress()
+                                                                .toArrayUnsafe()))
+                                        .build())
+                        .build(),
+                null);
     }
 
     private void haltFrameAndTraceCreationResult(
