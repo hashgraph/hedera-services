@@ -120,7 +120,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1170,7 +1170,7 @@ class StateViewTest {
     void specialFileMemoIsHexedHash() {
         FileID file150 = asFile("0.0.150");
         final var expectedMemo =
-                CommonUtils.hex(CryptoFactory.getInstance().digestSync(data).getValue());
+                CommonUtils.hex(CryptographyHolder.get().digestSync(data).getValue());
 
         given(specialFiles.get(file150)).willReturn(data);
         given(specialFiles.contains(file150)).willReturn(true);
