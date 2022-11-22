@@ -35,7 +35,7 @@ class HederaAccountNumbersTest {
 
                     @Override
                     public long freezeAdmin() {
-                        return 58L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
@@ -45,37 +45,37 @@ class HederaAccountNumbersTest {
 
                     @Override
                     public long addressBookAdmin() {
-                        return 55L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long feeSchedulesAdmin() {
-                        return 56L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long exchangeRatesAdmin() {
-                        return 57L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long systemDeleteAdmin() {
-                        return 59L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long systemUndeleteAdmin() {
-                        return 60L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long stakingRewardAccount() {
-                        return 801L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long nodeRewardAccount() {
-                        return 800L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
                 };
     }

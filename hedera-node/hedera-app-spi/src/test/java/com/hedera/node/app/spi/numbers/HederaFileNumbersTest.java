@@ -30,32 +30,32 @@ class HederaFileNumbersTest {
                 new HederaFileNumbers() {
                     @Override
                     public long addressBook() {
-                        return 101L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long nodeDetails() {
-                        return 102L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long feeSchedules() {
-                        return 111L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long exchangeRates() {
-                        return 112L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long applicationProperties() {
-                        return 121L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
                     public long apiPermissions() {
-                        return 122L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
 
                     @Override
@@ -70,7 +70,7 @@ class HederaFileNumbersTest {
 
                     @Override
                     public long throttleDefinitions() {
-                        return 123L;
+                        throw new IllegalCallerException("Should not be called here");
                     }
                 };
     }
