@@ -25,6 +25,9 @@ import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
 import javax.annotation.Nonnull;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@code ServiceAccessor} is used to pass all services to components via a single parameter.
@@ -48,4 +51,26 @@ public record ServicesAccessor(
         @Nonnull NetworkService networkService,
         @Nonnull ScheduleService scheduleService,
         @Nonnull TokenService tokenService,
-        @Nonnull UtilService utilService) {}
+        @Nonnull UtilService utilService) {
+
+    public ServicesAccessor(
+            @Nonnull final ConsensusService consensusService,
+            @Nonnull final ContractService contractService,
+            @Nonnull final CryptoService cryptoService,
+            @Nonnull final FileService fileService,
+            @Nonnull final FreezeService freezeService,
+            @Nonnull final NetworkService networkService,
+            @Nonnull final ScheduleService scheduleService,
+            @Nonnull final TokenService tokenService,
+            @Nonnull final UtilService utilService) {
+        this.consensusService = requireNonNull(consensusService);
+        this.contractService = requireNonNull(contractService);
+        this.cryptoService = requireNonNull(cryptoService);
+        this.fileService = requireNonNull(fileService);
+        this.freezeService = requireNonNull(freezeService);
+        this.networkService = requireNonNull(networkService);
+        this.scheduleService = requireNonNull(scheduleService);
+        this.tokenService = requireNonNull(tokenService);
+        this.utilService = requireNonNull(utilService);
+    }
+}

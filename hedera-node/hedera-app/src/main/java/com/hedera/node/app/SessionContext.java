@@ -21,6 +21,9 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.annotation.Nonnull;
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This record keeps a list of everything that is used per-thread
@@ -34,4 +37,16 @@ public record SessionContext(
         @Nonnull Parser<Query> queryParser,
         @Nonnull Parser<Transaction> txParser,
         @Nonnull Parser<SignedTransaction> signedParser,
-        @Nonnull Parser<TransactionBody> txBodyParser) {}
+        @Nonnull Parser<TransactionBody> txBodyParser) {
+
+    public SessionContext(
+            @Nonnull final Parser<Query> queryParser,
+            @Nonnull final Parser<Transaction> txParser,
+            @Nonnull final Parser<SignedTransaction> signedParser,
+            @Nonnull final Parser<TransactionBody> txBodyParser) {
+        this.queryParser = requireNonNull(queryParser);
+        this.txParser = requireNonNull(txParser);
+        this.signedParser = requireNonNull(signedParser);
+        this.txBodyParser = requireNonNull(txBodyParser);
+    }
+}

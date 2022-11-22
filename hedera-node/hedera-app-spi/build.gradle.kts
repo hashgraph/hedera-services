@@ -20,10 +20,6 @@ plugins {
 description = "Hedera Application - SPI"
 
 dependencies {
-    api(libs.swirlds.common)
-    api(libs.swirlds.jasperdb)
-    api(libs.swirlds.virtualmap)
-
     implementation(libs.hapi)
     implementation(libs.jsr305.annotation)
 }
