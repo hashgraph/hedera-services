@@ -25,7 +25,8 @@ public final class StandardUtilService implements UtilService {
 
     @Override
     @NonNull
-    public UtilPreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public UtilPreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

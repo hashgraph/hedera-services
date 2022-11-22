@@ -25,7 +25,8 @@ public final class StandardTokenService implements TokenService {
 
     @Override
     @NonNull
-    public TokenPreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public TokenPreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

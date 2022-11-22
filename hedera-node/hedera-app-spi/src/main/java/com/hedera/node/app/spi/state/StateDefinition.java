@@ -52,7 +52,8 @@ public interface StateDefinition {
      * @param <V> The value type to use for the on disk state
      */
     @Nonnull
-    <K extends VirtualKey<? super K>, V extends VirtualValue> OnDiskDefinition<K, V> onDisk(@Nonnull String label);
+    <K extends VirtualKey<? super K>, V extends VirtualValue> OnDiskDefinition<K, V> onDisk(
+            @Nonnull String label);
 
     /**
      * A fluent-API for defining configuration for in-memory state.

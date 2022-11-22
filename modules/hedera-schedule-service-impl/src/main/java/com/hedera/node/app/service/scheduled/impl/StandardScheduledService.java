@@ -27,7 +27,8 @@ public final class StandardScheduledService implements ScheduleService {
 
     @Override
     @NonNull
-    public SchedulePreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public SchedulePreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

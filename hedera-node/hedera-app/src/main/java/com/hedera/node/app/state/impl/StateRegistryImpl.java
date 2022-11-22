@@ -65,7 +65,8 @@ public final class StateRegistryImpl implements StateRegistry {
         final MutableStateBase<K, V> newState =
                 (MutableStateBase<K, V>)
                         createOrMigrate.apply(
-                                new StateDefinitionBuilder(stateKey), Optional.ofNullable(existingState));
+                                new StateDefinitionBuilder(stateKey),
+                                Optional.ofNullable(existingState));
 
         // The user doesn't want the existing state, so remove it.
         if (newState == null || newState != existingState) {

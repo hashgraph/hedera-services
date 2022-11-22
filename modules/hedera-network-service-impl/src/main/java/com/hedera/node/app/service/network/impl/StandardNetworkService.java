@@ -27,7 +27,8 @@ public final class StandardNetworkService implements NetworkService {
 
     @Override
     @NonNull
-    public NetworkPreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public NetworkPreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

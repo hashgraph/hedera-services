@@ -25,7 +25,8 @@ public final class StandardFreezeService implements FreezeService {
 
     @Override
     @NonNull
-    public FreezePreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public FreezePreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

@@ -25,7 +25,8 @@ public final class StandardFileService implements FileService {
 
     @Override
     @NonNull
-    public FilePreTransactionHandler createPreTransactionHandler(final @NonNull ReadableStates states) {
+    public FilePreTransactionHandler createPreTransactionHandler(
+            final @NonNull ReadableStates states) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }
