@@ -11,7 +11,6 @@ module com.hedera.services.hapi.utils {
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;
     requires com.swirlds.common;
-    requires com.sun.jna;
     requires org.apache.logging.log4j;
     requires jsr305;
     requires org.bouncycastle.provider;
@@ -21,5 +20,9 @@ module com.hedera.services.hapi.utils {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires headlong;
     requires org.apache.commons.codec;
+    requires com.sun.jna;
     requires org.apache.commons.lang3;
+    requires net.i2p.crypto.eddsa;
+    requires annotations;
+    requires javax.inject;
 }

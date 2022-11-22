@@ -28,8 +28,12 @@ dependencies {
     }
     api(libs.swirlds.common)
     implementation(libs.caffeine)
+    implementation(libs.guava) {
+        exclude("com.google.code.findbugs", "jsr305")
+    }
     implementation(libs.hapi) {
         exclude("com.google.code.findbugs", "jsr305")
+        exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
 

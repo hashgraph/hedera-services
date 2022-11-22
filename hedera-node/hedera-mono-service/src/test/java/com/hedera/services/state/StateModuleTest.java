@@ -22,11 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.store.schedule.ScheduleStore;
+import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;
 import java.nio.charset.Charset;
 import org.junit.jupiter.api.Test;
@@ -57,7 +59,7 @@ class StateModuleTest {
     @Test
     void notificationEngineAvail() {
         // expect:
-        assertDoesNotThrow(() -> StateModule.provideNotificationEngine().get());
+        assertDoesNotThrow(() -> StateModule.provideNotificationEngine(mock(Platform.class)).get());
     }
 
     @Test

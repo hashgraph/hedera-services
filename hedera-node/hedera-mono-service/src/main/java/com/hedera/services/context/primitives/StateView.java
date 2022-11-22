@@ -95,7 +95,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.ArrayList;
@@ -423,8 +423,7 @@ public class StateView {
             info.setMemo(attr.getMemo());
         } else {
             // The "memo" of a special upgrade file is its hexed SHA-384 hash for DevOps convenience
-            final var upgradeHash =
-                    hex(CryptoFactory.getInstance().digestSync(contents).getValue());
+            final var upgradeHash = hex(CryptographyHolder.get().digestSync(contents).getValue());
             info.setMemo(upgradeHash);
         }
         return Optional.of(info.build());

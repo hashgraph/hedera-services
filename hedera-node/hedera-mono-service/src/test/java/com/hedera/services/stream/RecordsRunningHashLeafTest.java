@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
@@ -73,8 +73,8 @@ class RecordsRunningHashLeafTest {
         assertTrue(runningHashLeaf.isImmutable());
         assertFalse(copy.isImmutable());
         // Hashes of the original and the copy should be the same
-        CryptoFactory.getInstance().digestSync(copy, DigestType.SHA_384);
-        CryptoFactory.getInstance().digestSync(runningHashLeaf, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(copy, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(runningHashLeaf, DigestType.SHA_384);
         assertEquals(runningHashLeaf.getHash(), copy.getHash());
     }
 
@@ -179,7 +179,7 @@ class RecordsRunningHashLeafTest {
 
         // initializes a leaf with a RunningHash
         final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash1);
-        CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus1RunningHash().getHash());
@@ -190,7 +190,7 @@ class RecordsRunningHashLeafTest {
         runningHash2.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
 
         leafForTestingRunningHash.setRunningHash(runningHash2);
-        CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus2RunningHash().getHash());
         assertEquals(
@@ -203,7 +203,7 @@ class RecordsRunningHashLeafTest {
         runningHash3.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
 
         leafForTestingRunningHash.setRunningHash(runningHash3);
-        CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
         assertEquals(EMPTY_HASH, leafForTestingRunningHash.getNMinus3RunningHash().getHash());
         assertEquals(
                 runningHash1.getHash(),
@@ -218,7 +218,7 @@ class RecordsRunningHashLeafTest {
         runningHash4.setHash(new Hash(RandomUtils.nextBytes(DigestType.SHA_384.digestLength())));
 
         leafForTestingRunningHash.setRunningHash(runningHash4);
-        CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
         assertEquals(
                 runningHash1.getHash(),
                 leafForTestingRunningHash.getNMinus3RunningHash().getHash());
@@ -295,7 +295,7 @@ class RecordsRunningHashLeafTest {
         // initializes a leaf with a RunningHash
         final var leafForTestingRunningHash = new RecordsRunningHashLeaf(runningHash);
         // digest this leaf
-        CryptoFactory.getInstance().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
+        CryptographyHolder.get().digestSync(leafForTestingRunningHash, DigestType.SHA_384);
         assertNotNull(leafForTestingRunningHash.getHash());
 
         // update runningHash object

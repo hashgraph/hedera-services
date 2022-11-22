@@ -20,7 +20,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.TOO_MANY_STACK_ITEMS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
@@ -112,7 +112,7 @@ class HederaBalanceOperationTest {
 
         final var result = subject.execute(frame, evm);
 
-        assertTrue(result.getHaltReason().isEmpty());
+        assertNull(result.getHaltReason());
     }
 
     private void givenAddress() {
@@ -121,6 +121,6 @@ class HederaBalanceOperationTest {
 
     private void thenOperationWillFailWithReason(ExceptionalHaltReason reason) {
         final var result = subject.execute(frame, evm);
-        assertEquals(reason, result.getHaltReason().get());
+        assertEquals(reason, result.getHaltReason());
     }
 }

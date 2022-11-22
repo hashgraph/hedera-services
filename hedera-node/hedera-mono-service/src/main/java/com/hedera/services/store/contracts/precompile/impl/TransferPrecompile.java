@@ -129,14 +129,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils pricingUtils,
             final int functionId,
-            final Address senderAddress,
-            final ImpliedTransfersMarshal impliedTransfersMarshal) {
+            final Address senderAddress) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.updater = updater;
         this.sigsVerifier = sigsVerifier;
         this.functionId = functionId;
         this.senderAddress = senderAddress;
-        this.impliedTransfersMarshal = impliedTransfersMarshal;
+        this.impliedTransfersMarshal =
+                infrastructureFactory.newImpliedTransfersMarshal(ledgers.customFeeSchedules());
     }
 
     protected void initializeHederaTokenStore() {
