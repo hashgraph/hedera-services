@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLoca
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
@@ -73,6 +74,10 @@ public class QueryVerbs {
 
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+    }
+
+    public static HapiGetAccountInfo getAliasedAccountInfo(final ByteString alias) {
+        return new HapiGetAccountInfo(alias);
     }
 
     public static HapiGetAccountRecords getAccountRecords(final String account) {
