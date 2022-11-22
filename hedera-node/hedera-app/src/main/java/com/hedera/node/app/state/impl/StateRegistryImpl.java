@@ -15,14 +15,15 @@
  */
 package com.hedera.node.app.state.impl;
 
+import com.hedera.node.app.spi.state.StateDefinition;
 import com.hedera.node.app.spi.state.StateRegistry;
-import com.hedera.node.app.spi.state.StateRegistryCallback;
+import com.hedera.node.app.spi.state.WritableState;
 import com.hedera.node.app.state.merkle.ServiceStateNode;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -42,41 +43,52 @@ public final class StateRegistryImpl implements StateRegistry {
      */
     private final ServiceStateNode serviceMerkle;
 
+    private final SoftwareVersion currentVersion;
+    private final SoftwareVersion previousVersion;
+
     /**
      * Create a new instance.
      *
      * @param serviceMerkle The {@link ServiceStateNode} instance for this registry to use. Cannot
      *     be null.
      */
-    public StateRegistryImpl(@Nonnull ServiceStateNode serviceMerkle) {
+    public StateRegistryImpl(
+            @Nonnull ServiceStateNode serviceMerkle,
+            @Nonnull SoftwareVersion currentVersion,
+            @Nonnull SoftwareVersion previousVersion) {
         this.serviceMerkle = Objects.requireNonNull(serviceMerkle);
+        this.currentVersion = Objects.requireNonNull(currentVersion);
+        this.previousVersion = Objects.requireNonNull(previousVersion);
     }
 
-    /** {@inheritDoc} */
     @Override
-    public <K, V> void registerOrMigrate(
-            @Nonnull final String stateKey,
-            @Nonnull final StateRegistryCallback<K, V> createOrMigrate) {
-        // Look up the existing state
+    public SoftwareVersion getCurrentVersion() {
+        return currentVersion;
+    }
+
+    @Override
+    public SoftwareVersion getExistingVersion() {
+        return previousVersion;
+    }
+
+    @Override
+    public <K, V> WritableState<K, V> getState(@Nonnull String stateKey) {
         final var existingMerkle = serviceMerkle.find(stateKey);
 
         // Get the new state to use from the createOrMigrate lambda
-        final MutableStateBase<K, V> existingState = asMutableStateBase(stateKey, existingMerkle);
-        final MutableStateBase<K, V> newState =
-                (MutableStateBase<K, V>)
-                        createOrMigrate.apply(
-                                new StateDefinitionBuilder(stateKey),
-                                Optional.ofNullable(existingState));
+        return asMutableStateBase(stateKey, existingMerkle);
+    }
 
-        // The user doesn't want the existing state, so remove it.
-        if (newState == null || newState != existingState) {
-            serviceMerkle.remove(stateKey);
-        }
+    @Override
+    public StateDefinition defineNewState(@Nonnull String stateKey) {
+        // TODO Return a builder which, upon "define", will register a new thing here.
+        // serviceMerkle.put(stateKey, newState.merkleNode())
+        return new StateDefinitionBuilder(stateKey);
+    }
 
-        // Add the new state in
-        if (newState != null) {
-            serviceMerkle.put(stateKey, newState.merkleNode());
-        }
+    @Override
+    public void removeState(@Nonnull String stateKey) {
+        serviceMerkle.remove(stateKey);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

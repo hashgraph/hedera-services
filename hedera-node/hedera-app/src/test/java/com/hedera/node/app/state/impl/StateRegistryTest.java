@@ -17,6 +17,8 @@ package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.state.merkle.HederaStateImpl;
 import com.hedera.node.app.state.merkle.ServiceStateNode;
+import com.swirlds.common.system.BasicSoftwareVersion;
+import com.swirlds.common.system.SoftwareVersion;
 import org.junit.jupiter.api.Test;
 
 class StateRegistryTest {
@@ -31,7 +33,9 @@ class StateRegistryTest {
 
         // Now, pretend we're going to create a StateRegistry to pass to the ConsensusService
         // in its constructor, and let it create the "topics" merkle map.
-        final var registry = new StateRegistryImpl(consensusService);
+        final var registry =
+                new StateRegistryImpl(
+                        consensusService, new BasicSoftwareVersion(1), SoftwareVersion.NO_VERSION);
         //        registry.registerOrMigrate("topics", (definer, opt) -> {
         //            return definer.inMemory().define();
         //        });

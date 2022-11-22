@@ -15,65 +15,65 @@
  */
 package com.hedera.node.app.spi.state;
 
-/**
- * Defines a registry of states for services.
- *
- * <p>Each service instance must, upon construction, define any states it wants to use. This is done
- * by calling the {@link #registerOrMigrate(String, StateRegistryCallback)} method, which can be
- * used for all different state management tasks: genesis, migration, removal, etc.
- */
+import com.swirlds.common.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+/** Defines a registry of states for services. */
 public interface StateRegistry {
+
     /**
-     * Called by the service during initialization to register a new state if none is present, or
-     * migrate one if desired. or delete one from the underlying storage. The service will call this
-     * method with a {@code stateKey} that represents a state that it knows about. The {@link
-     * StateRegistryCallback} lambda is then invoked by the registry for the following two
-     * conditions:
+     * Gets the current {@link SoftwareVersion} of this application at the time of startup. This may
+     * be different from the {@link #getExistingVersion()} if the system is starting with an older,
+     * existing body of state from an older version.
      *
-     * <ol>
-     *   <li>A {@link WritableState} for that {@code stateKey} was found. The callback will be
-     *       provided with a {@link StateDefinition} that can be used to create a new {@link
-     *       WritableState} to replace this one if desired. The {@link WritableState} found will
-     *       also be supplied. The state returned by the lambda will be the one stored in the
-     *       registry. If null, nothing will be registered and any state that was registered will be
-     *       removed.
-     *   <li>A {@link WritableState} was not found. The callback will be provided with a {@link
-     *       StateDefinition} but with no {@link WritableState}. The callback can create and return
-     *       the state to use, or it can return null if it wants no state registered.
-     * </ol>
-     *
-     * <p>For example, suppose my service used to have an in-memory state but wants to migrate to an
-     * on-disk state. It may be that the service is starting with an existing state (upgrade), or
-     * with no existing state (genesis). In either case, my code may look like this:
-     *
-     * <pre>
-     *     registry.registerOrMigrate(MyStateKey.SOME_STATE, (builder, existingState) -> {
-     *        if (existingState.isEmpty()) {
-     *            // This is the genesis case, use the builder to create the state definition
-     *            // and return the built state
-     *            return builder.onDisk(MyStateKey.SOME_STATE)
-     *            		.keySerializer(...)
-     *            	    .valueSerializer(...)
-     *            	    .build();
-     *        } else {
-     *        	  // If I do not want to do a migration, I can just return existingState.get().
-     *        	  // If I want to do a migration in place, I can do it by using existingState.get()
-     *        	  // and making any modifications I want to. Or if I want to migrate, say, from
-     *        	  // in-memory to on-disk, I could do it like this:
-     *            final var newStateOnDisk = builder.onDisk(MyStateKey.SOME_STATE)
-     *            		.keySerializer(...)
-     *            	    .valueSerializer(...)
-     *            	    .build();
-     *
-     *            final var existingStateInMemory = existingState.get();
-     *
-     *            // ... write code here to migrate from existingStateInMemory to newStateOnDisk
-     *
-     *            // Return the new state to make it permanent in the registry
-     *            return newStateOnDisk;
-     *        }
-     *     });
-     * </pre>
+     * @return The version of the current system.
      */
-    <K, V> void registerOrMigrate(String stateKey, StateRegistryCallback<K, V> createOrMigrate);
+    @NonNull
+    SoftwareVersion getCurrentVersion();
+
+    /**
+     * Gets the {@link SoftwareVersion} of the state at the time of startup. This may be different
+     * from {@link #getCurrentVersion()} if the system is starting with an older, existing body of
+     * state from an older version.
+     *
+     * @return The version of the system's state that was loaded, or {@link
+     *     SoftwareVersion#NO_VERSION}.
+     */
+    @NonNull
+    SoftwareVersion getExistingVersion();
+
+    /**
+     * Gets an existing state from the {@link StateRegistry}, identified by {@code stateKey}.
+     *
+     * @param stateKey The key of the state to get.
+     * @return the {@link WritableState} associated with the key, if there is one. This state should
+     *     <b>NOT</b> be held but should only be used during construction of the service. It refers
+     *     to a mutable state, which will not be mutable once the service is up and running! The
+     *     returned value may be null if there is no such state.
+     * @param <K> The key for the state.
+     * @param <V> The value for the state.
+     */
+    @Nullable
+    <K, V> WritableState<K, V> getState(@NonNull String stateKey);
+
+    /**
+     * Replaces any existing state associated with {@code stateKey} with a new, empty state as
+     * defined by {@link StateDefinition}. Or, create a new state that didn't exist before.
+     *
+     * <p>If you need to migrate data from an old state, please use {@link #getState(String)} first
+     * to get the old state, then replace the state with this method, and then call {@link
+     * #getState(String)} again to get the new state. Then migrate data from old to new.
+     *
+     * @param stateKey The state key. Cannot be null and must be a valid state key.
+     * @return A {@link StateDefinition} to be used to define the state.
+     */
+    StateDefinition defineNewState(@NonNull String stateKey);
+
+    /**
+     * Removes the specified state from the registry.
+     *
+     * @param stateKey The key of the state to remove
+     */
+    void removeState(@NonNull String stateKey);
 }
