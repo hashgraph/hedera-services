@@ -112,7 +112,6 @@ tasks.itest {
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
 }
 
 tasks.eet {
