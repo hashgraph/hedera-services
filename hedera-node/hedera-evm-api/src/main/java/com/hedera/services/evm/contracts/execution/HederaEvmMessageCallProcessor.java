@@ -20,7 +20,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCES
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,12 +77,11 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
             final PrecompiledContract contract,
             final MessageFrame frame,
             final OperationTracer operationTracer) {
-        if (output == null || output.isEmpty()) {
+        if (!"HTS".equals(contract.getName())) {
             output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-        }
-        if (gasRequirement == 0L) {
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
+
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
         if (frame.getState() == REVERT) {
             return;
@@ -99,15 +97,5 @@ public class HederaEvmMessageCallProcessor extends MessageCallProcessor {
         } else {
             frame.setState(EXCEPTIONAL_HALT);
         }
-    }
-
-    @VisibleForTesting
-    public void setGasRequirement(long gasRequirement) {
-        this.gasRequirement = gasRequirement;
-    }
-
-    @VisibleForTesting
-    public void setOutput(Bytes output) {
-        this.output = output;
     }
 }

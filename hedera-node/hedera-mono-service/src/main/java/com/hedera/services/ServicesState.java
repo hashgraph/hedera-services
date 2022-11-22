@@ -43,7 +43,7 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
@@ -289,7 +289,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             .initialHash(initialHash)
                             .platform(platform)
                             .consoleCreator(SwirldsGui::createConsole)
-                            .crypto(CryptoFactory.getInstance())
+                            .crypto(CryptographyHolder.get())
                             .selfId(selfId)
                             .build();
             APPS.save(selfId, app);
