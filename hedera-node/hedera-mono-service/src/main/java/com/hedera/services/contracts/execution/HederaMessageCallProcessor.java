@@ -110,8 +110,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     protected void executeLazyCreate(
             final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-        final var syntheticBalanceChange =
-            constructSyntheticLazyCreateBalanceChangeFrom(frame);
+        final var syntheticBalanceChange = constructSyntheticLazyCreateBalanceChangeFrom(frame);
         final var autoCreationLogic = infrastructureFactory.newAutoCreationLogicScopedTo(updater);
 
         final var lazyCreateResult =
@@ -145,16 +144,16 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     @NotNull
     private BalanceChange constructSyntheticLazyCreateBalanceChangeFrom(final MessageFrame frame) {
         return BalanceChange.changingHbar(
-            AccountAmount.newBuilder()
-                .setAccountID(
-                    AccountID.newBuilder()
-                        .setAlias(
-                            ByteStringUtils.wrapUnsafely(
-                                frame.getRecipientAddress()
-                                    .toArrayUnsafe()))
-                        .build())
-                .build(),
-            null);
+                AccountAmount.newBuilder()
+                        .setAccountID(
+                                AccountID.newBuilder()
+                                        .setAlias(
+                                                ByteStringUtils.wrapUnsafely(
+                                                        frame.getRecipientAddress()
+                                                                .toArrayUnsafe()))
+                                        .build())
+                        .build(),
+                null);
     }
 
     private void haltFrameAndTraceCreationResult(
