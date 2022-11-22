@@ -21,6 +21,7 @@ import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
@@ -71,6 +72,7 @@ import com.hedera.services.ledger.backing.BackingTokens;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -903,6 +905,49 @@ class StateViewTest {
                         .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
                         .setAccountID(tokenAccountId)
                         .setAlias(tokenAccount.getAlias())
+                        .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
+                        .setDeleted(tokenAccount.isDeleted())
+                        .setMemo(tokenAccount.getMemo())
+                        .setAutoRenewPeriod(
+                                Duration.newBuilder().setSeconds(tokenAccount.getAutoRenewSecs()))
+                        .setBalance(tokenAccount.getBalance())
+                        .setExpirationTime(
+                                Timestamp.newBuilder().setSeconds(tokenAccount.getExpiry()))
+                        .setContractAccountID(EntityIdUtils.asHexedEvmAddress(tokenAccountId))
+                        .setOwnedNfts(tokenAccount.getNftsOwned())
+                        .setMaxAutomaticTokenAssociations(
+                                tokenAccount.getMaxAutomaticAssociations())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setDeclineReward(true)
+                                        .setStakedAccountId(
+                                                AccountID.newBuilder().setAccountNum(10L).build())
+                                        .build())
+                        .build();
+
+        final var actualResponse =
+                subject.infoForAccount(
+                        accountWithAlias, aliasManager, maxTokensFprAccountInfo, rewardCalculator);
+        mockedStatic.close();
+        assertEquals(expectedResponse, actualResponse.get());
+    }
+
+    @Test
+    void infoForAccountWithEVMAddressAlias() {
+        given(aliasManager.lookupIdBy(any())).willReturn(EntityNum.fromAccountId(tokenAccountId));
+        given(contracts.get(EntityNum.fromAccountId(tokenAccountId))).willReturn(tokenAccount);
+        mockedStatic = mockStatic(StateView.class);
+        mockedStatic
+                .when(() -> StateView.tokenRels(subject, tokenAccount, maxTokensFprAccountInfo))
+                .thenReturn(Collections.emptyList());
+        given(networkInfo.ledgerId()).willReturn(ledgerId);
+
+        tokenAccount.setAlias(ByteStringUtils.wrapUnsafely(new byte[EVM_ADDRESS_SIZE]));
+        final var expectedResponse =
+                CryptoGetInfoResponse.AccountInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setKey(asKeyUnchecked(tokenAccount.getAccountKey()))
+                        .setAccountID(tokenAccountId)
                         .setReceiverSigRequired(tokenAccount.isReceiverSigRequired())
                         .setDeleted(tokenAccount.isDeleted())
                         .setMemo(tokenAccount.getMemo())

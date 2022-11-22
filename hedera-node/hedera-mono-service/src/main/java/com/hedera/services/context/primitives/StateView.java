@@ -23,6 +23,7 @@ import static com.hedera.services.store.schedule.ScheduleStore.MISSING_SCHEDULE;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
@@ -449,7 +450,6 @@ public class StateView {
                         .setLedgerId(networkInfo.ledgerId())
                         .setKey(asKeyUnchecked(account.getAccountKey()))
                         .setAccountID(accountID)
-                        .setAlias(account.getAlias())
                         .setReceiverSigRequired(account.isReceiverSigRequired())
                         .setDeleted(account.isDeleted())
                         .setMemo(account.getMemo())
@@ -465,6 +465,9 @@ public class StateView {
         Optional.ofNullable(account.getProxy())
                 .map(EntityId::toGrpcAccountId)
                 .ifPresent(info::setProxyAccountID);
+        if (account.getAlias().size() != EVM_ADDRESS_SIZE) {
+            info.setAlias(account.getAlias());
+        }
         final var tokenRels = tokenRels(this, account, maxTokensForAccountInfo);
         if (!tokenRels.isEmpty()) {
             info.addAllTokenRelationships(tokenRels);
