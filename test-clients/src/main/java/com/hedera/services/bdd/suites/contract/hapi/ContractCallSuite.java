@@ -1535,8 +1535,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }),
                         resetToDefault(
                                 lazyCreationProperty,
-                                contractsEvmVersionProperty,
-                                contractsEvmVersionDynamicProperty));
+                                contractsEvmVersionProperty));
     }
 
     HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
