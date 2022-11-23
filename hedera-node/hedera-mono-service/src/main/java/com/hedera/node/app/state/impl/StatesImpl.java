@@ -57,11 +57,10 @@ public class StatesImpl implements States {
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
             return (StateBase) state;
         } else if (stateKey.equals("TOKENS")) {
-            final var tokens = children.tokens();
             final var state =
-                    new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
+                    new InMemoryStateImpl<>(stateKey, children.tokens(), children.signedAt());
             return (StateBase) state;
-        } else {
+        }  else {
             throw new NotImplementedException(
                     String.format("State key %s not supported", stateKey));
         }

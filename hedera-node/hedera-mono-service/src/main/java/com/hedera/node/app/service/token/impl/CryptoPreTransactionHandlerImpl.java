@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -41,6 +42,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     private final AccountStore accountStore;
 
     private final TokenStore tokenStore;
+
     public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore,@Nonnull final TokenStore tokenStore) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.tokenStore = Objects.requireNonNull(tokenStore);
@@ -134,12 +136,25 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var op = txn.getCryptoTransfer();
         final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        for (var x : meta.getReqKeys()) {
-            System.out.println("Asdf" + x.toString());
-        }
+
         for (TokenTransferList transfers : op.getTokenTransfersList()) {
-            for (AccountAmount adjust : transfers.getTransfersList()) {
+            final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
+            for (AccountAmount accountAmount : transfers.getTransfersList()) {
+                if (!tokenMeta.failed()) {
+                    meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                }
             }
+
+            for (NftTransfer nftTransfer : transfers.getNftTransfersList()) {
+                if (!tokenMeta.failed()) {
+                    meta.addNonPayerKeyIfReceiverSigRequired(nftTransfer.getSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    meta.addNonPayerKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                }
+            }
+        }
+
+        for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
+            meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
         }
         
         return meta;
