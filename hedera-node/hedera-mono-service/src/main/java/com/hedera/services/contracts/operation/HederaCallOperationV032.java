@@ -34,11 +34,11 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  *
  * <p>Performs an existence check on the {@link Address} to be called. If the account does not exist
  * or is deleted and value is being transferred, execution is allowed to attempt a lazy create.
- * However, if account does not exist and value is not being transferred, halts the execution of the EVM
- * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS}.
+ * However, if account does not exist and value is not being transferred, halts the execution of the
+ * EVM transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS}.
  *
- * <p>If the target {@link Address} exists and has {@link MerkleAccount#isReceiverSigRequired()} set to true,
- * verification of the provided signature is performed. If the signature is not active, the
+ * <p>If the target {@link Address} exists and has {@link MerkleAccount#isReceiverSigRequired()} set
+ * to true, verification of the provided signature is performed. If the signature is not active, the
  * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
  */
 public class HederaCallOperationV032 extends CallOperation {

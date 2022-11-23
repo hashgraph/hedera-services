@@ -1533,9 +1533,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             spec,
                                             getAccountBalance(name).hasTinyBars(DEPOSIT_AMOUNT));
                                 }),
-                        resetToDefault(
-                                lazyCreationProperty,
-                                contractsEvmVersionProperty));
+                        resetToDefault(lazyCreationProperty, contractsEvmVersionProperty));
     }
 
     HapiApiSpec callingDestructedContractReturnsStatusDeleted() {

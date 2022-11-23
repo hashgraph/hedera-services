@@ -156,8 +156,11 @@ public interface ContractsV_0_32Module {
             final Map<String, PrecompiledContract> precompiledContractMap,
             final GlobalDynamicProperties globalDynamicProperties) {
         return new HederaCallOperationV032(
-                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap,
-            globalDynamicProperties);
+                sigsVerifier,
+                gasCalculator,
+                addressValidator,
+                precompiledContractMap,
+                globalDynamicProperties);
     }
 
     @Provides
