@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -156,25 +157,66 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
         for (TokenTransferList transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
+
             for (AccountAmount accountAmount : transfers.getTransfersList()) {
                 if (!tokenMeta.failed()) {
-                    meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    final var isUnapprovedDebit = accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
+                    if (isUnapprovedDebit) {
+                        meta.addNonPayerKey(accountAmount.getAccountID());
+                    } else {
+                        meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    }
                 }
             }
 
             for (NftTransfer nftTransfer : transfers.getNftTransfersList()) {
-                if (!tokenMeta.failed()) {
-                    meta.addNonPayerKeyIfReceiverSigRequired(nftTransfer.getSenderAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                if (!tokenMeta.failed() && nftTransfer.hasSenderAccountID()) {
+                    final var shouldAddSenderKey = !nftTransfer.getSenderAccountID().equals(payer) && !nftTransfer.getIsApproval();
+                    if (shouldAddSenderKey) {
+                        meta.addNonPayerKey(nftTransfer.getSenderAccountID());
+                    }
+
                     meta.addNonPayerKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    if (tokenMeta.metadata().hasRoyaltyWithFallback() && nftTransfer.hasReceiverAccountID()
+                            && !receivesFungibleValue(nftTransfer.getReceiverAccountID(), op)) {
+                        // Fallback situation; but we still need to check if the treasury is
+                        // the sender or receiver, since in neither case will the fallback fee
+                        // actually be charged
+                        final var treasury = tokenMeta.metadata().treasury().toGrpcAccountId();
+                        if (!treasury.equals(nftTransfer.getSenderAccountID()) && !treasury.equals(nftTransfer.getReceiverAccountID())) {
+                            meta.addNonPayerKey(nftTransfer.getReceiverAccountID());
+                        }
+                    }
                 }
             }
         }
 
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
-            meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            final var isUnapprovedDebit = accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
+            if (isUnapprovedDebit) {
+                meta.addNonPayerKey(accountAmount.getAccountID());
+            } else {
+                meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+            }
         }
         
         return meta;
+    }
+
+    private boolean receivesFungibleValue(AccountID target, CryptoTransferTransactionBody op) {
+        for (var adjust : op.getTransfers().getAccountAmountsList()) {
+            if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+                return true;
+            }
+        }
+        for (var transfers : op.getTokenTransfersList()) {
+            for (var adjust : transfers.getTransfersList()) {
+                if (adjust.getAmount() > 0 && adjust.getAccountID().equals(target)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
