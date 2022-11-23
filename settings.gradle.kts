@@ -17,9 +17,23 @@ plugins {
     id("com.gradle.enterprise").version("3.10.3")
 }
 
-rootProject.name = "hedera-services"
+include(":modules:hedera-admin-service")
+include(":modules:hedera-admin-service-impl")
+include(":modules:hedera-consensus-service")
+include(":modules:hedera-consensus-service-impl")
+include(":modules:hedera-file-service")
+include(":modules:hedera-file-service-impl")
+include(":modules:hedera-network-service")
+include(":modules:hedera-network-service-impl")
+include(":modules:hedera-schedule-service")
+include(":modules:hedera-schedule-service-impl")
+include(":modules:hedera-smart-contract-service")
+include(":modules:hedera-smart-contract-service-impl")
+include(":modules:hedera-token-service")
+include(":modules:hedera-token-service-impl")
+include(":modules:hedera-util-service")
+include(":modules:hedera-util-service-impl")
 
-// Define the subprojects
 include(":hapi-utils")
 include(":hapi-fees")
 include(":hedera-node")
@@ -70,10 +84,11 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.32.0-alpha.3")
+            version("swirlds-version", "0.33.0-alpha.2")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
+            version("spotbugs-version", "4.7.3")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -147,6 +162,7 @@ dependencyResolutionManagement {
             library("swirlds-virtualmap", "com.swirlds", "swirlds-virtualmap").versionRef("swirlds-version")
             library("tuweni-units", "org.apache.tuweni", "tuweni-units").versionRef("tuweni-version")
             library("jna", "net.java.dev.jna", "jna").versionRef("jna-version")
+            library("spotbugs-annotations", "com.github.spotbugs", "spotbugs-annotations").versionRef("spotbugs-version")
         }
 
         // The libs of this catalog can be used for test or build uses.
