@@ -46,7 +46,9 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     private final TokenStore tokenStore;
 
     public CryptoPreTransactionHandlerImpl(
-            @Nonnull final AccountStore accountStore, @Nonnull final TokenStore tokenStore, @Nonnull final PreHandleContext ctx) {
+            @Nonnull final AccountStore accountStore,
+            @Nonnull final TokenStore tokenStore,
+            @Nonnull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.tokenStore = Objects.requireNonNull(tokenStore);
         this.preHandleContext = Objects.requireNonNull(ctx);
@@ -160,30 +162,37 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
             for (AccountAmount accountAmount : transfers.getTransfersList()) {
                 if (!tokenMeta.failed()) {
-                    final var isUnapprovedDebit = accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
+                    final var isUnapprovedDebit =
+                            accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
                     if (isUnapprovedDebit) {
                         meta.addNonPayerKey(accountAmount.getAccountID());
                     } else {
-                        meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                        meta.addNonPayerKeyIfReceiverSigRequired(
+                                accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                     }
                 }
             }
 
             for (NftTransfer nftTransfer : transfers.getNftTransfersList()) {
                 if (!tokenMeta.failed() && nftTransfer.hasSenderAccountID()) {
-                    final var shouldAddSenderKey = !nftTransfer.getSenderAccountID().equals(payer) && !nftTransfer.getIsApproval();
+                    final var shouldAddSenderKey =
+                            !nftTransfer.getSenderAccountID().equals(payer)
+                                    && !nftTransfer.getIsApproval();
                     if (shouldAddSenderKey) {
                         meta.addNonPayerKey(nftTransfer.getSenderAccountID());
                     }
 
-                    meta.addNonPayerKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                    if (tokenMeta.metadata().hasRoyaltyWithFallback() && nftTransfer.hasReceiverAccountID()
+                    meta.addNonPayerKeyIfReceiverSigRequired(
+                            nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    if (tokenMeta.metadata().hasRoyaltyWithFallback()
+                            && nftTransfer.hasReceiverAccountID()
                             && !receivesFungibleValue(nftTransfer.getReceiverAccountID(), op)) {
                         // Fallback situation; but we still need to check if the treasury is
                         // the sender or receiver, since in neither case will the fallback fee
                         // actually be charged
                         final var treasury = tokenMeta.metadata().treasury().toGrpcAccountId();
-                        if (!treasury.equals(nftTransfer.getSenderAccountID()) && !treasury.equals(nftTransfer.getReceiverAccountID())) {
+                        if (!treasury.equals(nftTransfer.getSenderAccountID())
+                                && !treasury.equals(nftTransfer.getReceiverAccountID())) {
                             meta.addNonPayerKey(nftTransfer.getReceiverAccountID());
                         }
                     }
@@ -192,14 +201,16 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         }
 
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
-            final var isUnapprovedDebit = accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
+            final var isUnapprovedDebit =
+                    accountAmount.getAmount() < 0 && !accountAmount.getIsApproval();
             if (isUnapprovedDebit) {
                 meta.addNonPayerKey(accountAmount.getAccountID());
             } else {
-                meta.addNonPayerKeyIfReceiverSigRequired(accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                meta.addNonPayerKeyIfReceiverSigRequired(
+                        accountAmount.getAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
             }
         }
-        
+
         return meta;
     }
 

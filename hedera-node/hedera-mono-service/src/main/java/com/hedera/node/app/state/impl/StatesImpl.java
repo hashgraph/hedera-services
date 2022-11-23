@@ -60,7 +60,7 @@ public class StatesImpl implements States {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.tokens(), children.signedAt());
             return (StateBase) state;
-        }  else {
+        } else {
             throw new NotImplementedException(
                     String.format("State key %s not supported", stateKey));
         }
