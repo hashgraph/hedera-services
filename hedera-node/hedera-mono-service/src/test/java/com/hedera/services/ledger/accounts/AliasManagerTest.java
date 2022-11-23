@@ -50,6 +50,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class AliasManagerTest {
     private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
@@ -127,6 +129,21 @@ class AliasManagerTest {
 
         subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
         assertEquals(Collections.emptyMap(), subject.getAliases());
+    }
+
+    @Test
+    void publicKeyCouldNotBeParsed()
+        throws InvalidProtocolBufferException, DecoderException {
+        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        JKey jKey = JKey.mapKey(key);
+        subject.maybeLinkEvmAddress(jKey, num);
+
+        try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
+            utilities.when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any())).thenReturn(new byte[0]);
+            subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
+            assertEquals(
+                Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
+        }
     }
 
     @Test
