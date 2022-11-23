@@ -105,7 +105,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
     private static final String AUTO_MEMO = "auto-created account";
     public static final String LAZY_MEMO = "lazy-created account";
-    private static final String VALID_ALIAS = "validAlias";
+    public static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String ALIAS = "alias";
