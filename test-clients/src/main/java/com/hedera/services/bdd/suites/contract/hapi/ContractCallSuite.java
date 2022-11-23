@@ -1470,7 +1470,7 @@ public class ContractCallSuite extends HapiApiSuite {
     }
 
     HapiApiSpec nestedLazyCreate() {
-        final var LAZY_CREATE_CONTRACT = "LazyCreateContract";
+        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
         final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
