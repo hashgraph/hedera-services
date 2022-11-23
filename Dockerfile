@@ -42,6 +42,8 @@ RUN mkdir /opt/hedera/services/hapi-utils
 COPY hapi-utils /opt/hedera/services/hapi-utils
 RUN mkdir /opt/hedera/services/hapi-fees
 COPY hapi-fees /opt/hedera/services/hapi-fees
+RUN mkdir /opt/hedera/services/modules
+COPY modules /opt/hedera/services/modules
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients

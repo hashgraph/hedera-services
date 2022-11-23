@@ -23,7 +23,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hederahashgraph.api.proto.java.FileID;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -250,8 +250,7 @@ public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf 
 
     private byte[] hashOfKnown(FileID fid) {
         return hashCache.computeIfAbsent(
-                fid,
-                missingFid -> CryptoFactory.getInstance().digestSync(get(missingFid)).getValue());
+                fid, missingFid -> CryptographyHolder.get().digestSync(get(missingFid)).getValue());
     }
 
     private FCQueue<BytesElement> newFcqWith(byte[] initialContents) {

@@ -17,13 +17,12 @@ package com.hedera.services.evm.contracts.operation;
 
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.evm.contracts.operations.HederaExtCodeCopyOperation;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -86,9 +85,8 @@ class HederaExtCodeCopyOperationTest {
 
         // then:
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS),
-                opResult.getHaltReason());
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+                HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 
     @Test
@@ -126,7 +124,7 @@ class HederaExtCodeCopyOperationTest {
         var opResult = subject.execute(mf, evm);
 
         // then:
-        assertEquals(Optional.empty(), opResult.getHaltReason());
-        assertEquals(OptionalLong.of(ACTUAL_COST), opResult.getGasCost());
+        assertNull(opResult.getHaltReason());
+        assertEquals(ACTUAL_COST, opResult.getGasCost());
     }
 }
