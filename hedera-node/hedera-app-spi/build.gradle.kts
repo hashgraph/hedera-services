@@ -20,8 +20,10 @@ plugins {
 description = "Hedera Application - SPI"
 
 dependencies {
-    implementation(libs.hapi)
+    api(libs.hapi)
     implementation(libs.jsr305.annotation)
+    compileOnly(libs.spotbugs.annotations)
+    testImplementation(testLibs.bundles.mockito)
 }
 
 configurations.all {
