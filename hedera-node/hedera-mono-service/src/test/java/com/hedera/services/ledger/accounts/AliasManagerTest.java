@@ -132,17 +132,19 @@ class AliasManagerTest {
     }
 
     @Test
-    void publicKeyCouldNotBeParsed()
-        throws InvalidProtocolBufferException, DecoderException {
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
         Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
         JKey jKey = JKey.mapKey(key);
         subject.maybeLinkEvmAddress(jKey, num);
 
         try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
-            utilities.when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any())).thenReturn(new byte[0]);
+            utilities
+                    .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
+                    .thenReturn(new byte[0]);
             subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
             assertEquals(
-                Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
+                    Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num),
+                    subject.getAliases());
         }
     }
 
