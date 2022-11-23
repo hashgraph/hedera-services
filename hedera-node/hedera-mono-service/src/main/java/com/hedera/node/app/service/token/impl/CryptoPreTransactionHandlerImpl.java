@@ -16,12 +16,12 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -40,12 +40,16 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
-
+    private final PreHandleContext preHandleContext;
+    private CryptoSignatureWaiversImpl waivers;
     private final TokenStore tokenStore;
 
-    public CryptoPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore,@Nonnull final TokenStore tokenStore) {
+    public CryptoPreTransactionHandlerImpl(
+            @Nonnull final AccountStore accountStore, @Nonnull final TokenStore tokenStore, @Nonnull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.tokenStore = Objects.requireNonNull(tokenStore);
+        this.preHandleContext = Objects.requireNonNull(ctx);
+        this.waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());
     }
 
     @Override
@@ -125,8 +129,21 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleUpdateAccount(@Nonnull final TransactionBody txn) {
-        Objects.requireNonNull(txn);
-        throw new NotImplementedException();
+        final var op = txn.getCryptoUpdateAccount();
+        final var payer = txn.getTransactionID().getAccountID();
+        final var updateAccountId = op.getAccountIDToUpdate();
+        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+
+        final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
+        final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
+        if (targetAccountKeyMustSign) {
+            meta.addNonPayerKey(updateAccountId);
+        }
+        if (newAccountKeyMustSign && op.hasKey()) {
+            var candidate = asHederaKey(op.getKey());
+            candidate.ifPresent(meta::addToReqKeys);
+        }
+        return meta;
     }
 
     @Override
@@ -195,5 +212,17 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             meta.addToReqKeys(key.get());
         }
         return meta;
+    }
+
+    /**
+     * @deprecated This method is needed for testing until {@link CryptoSignatureWaiversImpl} is
+     *     implemented. FUTURE: This method should be removed once {@link
+     *     CryptoSignatureWaiversImpl} is implemented.
+     * @param waivers signature waivers for crypto service
+     */
+    @Deprecated(forRemoval = true)
+    @VisibleForTesting
+    void setWaivers(final CryptoSignatureWaiversImpl waivers) {
+        this.waivers = waivers;
     }
 }

@@ -17,14 +17,16 @@ package com.hedera.services.config;
 
 import static com.hedera.services.config.EntityNumbers.UNKNOWN_NUMBER;
 
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/** FUTURE: This class will be moved to hedera-app-spi module in future PRs */
 @Singleton
-public class FileNumbers {
+public class FileNumbers implements HederaFileNumbers {
     private final HederaNumbers hederaNums;
     private final PropertySource properties;
 
@@ -44,6 +46,7 @@ public class FileNumbers {
         this.properties = properties;
     }
 
+    @Override
     public long addressBook() {
         if (addressBook == UNKNOWN_NUMBER) {
             addressBook = properties.getLongProperty("files.addressBook");
@@ -51,6 +54,7 @@ public class FileNumbers {
         return addressBook;
     }
 
+    @Override
     public long nodeDetails() {
         if (nodeDetails == UNKNOWN_NUMBER) {
             nodeDetails = properties.getLongProperty("files.nodeDetails");
@@ -58,6 +62,7 @@ public class FileNumbers {
         return nodeDetails;
     }
 
+    @Override
     public long feeSchedules() {
         if (feeSchedules == UNKNOWN_NUMBER) {
             feeSchedules = properties.getLongProperty("files.feeSchedules");
@@ -65,6 +70,7 @@ public class FileNumbers {
         return feeSchedules;
     }
 
+    @Override
     public long exchangeRates() {
         if (exchangeRates == UNKNOWN_NUMBER) {
             exchangeRates = properties.getLongProperty("files.exchangeRates");
@@ -72,6 +78,7 @@ public class FileNumbers {
         return exchangeRates;
     }
 
+    @Override
     public long applicationProperties() {
         if (applicationProperties == UNKNOWN_NUMBER) {
             applicationProperties = properties.getLongProperty("files.networkProperties");
@@ -79,6 +86,7 @@ public class FileNumbers {
         return applicationProperties;
     }
 
+    @Override
     public long apiPermissions() {
         if (apiPermissions == UNKNOWN_NUMBER) {
             apiPermissions = properties.getLongProperty("files.hapiPermissions");
@@ -86,6 +94,7 @@ public class FileNumbers {
         return apiPermissions;
     }
 
+    @Override
     public long firstSoftwareUpdateFile() {
         if (firstUpdateFile == UNKNOWN_NUMBER) {
             firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
@@ -93,6 +102,7 @@ public class FileNumbers {
         return firstUpdateFile;
     }
 
+    @Override
     public long lastSoftwareUpdateFile() {
         if (lastUpdateFile == UNKNOWN_NUMBER) {
             lastUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getRight();
@@ -100,10 +110,12 @@ public class FileNumbers {
         return lastUpdateFile;
     }
 
+    @Override
     public boolean isSoftwareUpdateFile(final long num) {
         return firstSoftwareUpdateFile() <= num && num <= lastSoftwareUpdateFile();
     }
 
+    @Override
     public long throttleDefinitions() {
         if (throttleDefinitions == UNKNOWN_NUMBER) {
             throttleDefinitions = properties.getLongProperty("files.throttleDefinitions");

@@ -110,8 +110,6 @@ class StatesImplTest {
 
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof InMemoryStateImpl);
-
-        assertThrows(NotImplementedException.class, () -> subject.get(TOKENS));
     }
 
     @Test

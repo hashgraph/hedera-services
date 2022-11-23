@@ -33,8 +33,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.SigTransactionMetadata;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
@@ -47,6 +50,7 @@ import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -69,11 +73,13 @@ class CryptoPreTransactionHandlerImplTest {
     private final Key key = A_COMPLEX_KEY;
     private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
+    private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
     private final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final AccountID payer = asAccount("0.0.3");
     private final AccountID deleteAccountId = asAccount("0.0.3213");
     private final AccountID transferAccountId = asAccount("0.0.32134");
+    private final AccountID updateAccountId = asAccount("0.0.32132");
     private final AccountID spender = asAccount("0.0.12345");
     private final AccountID delegatingSpender = asAccount("0.0.1234567");
     private final AccountID owner = asAccount("0.0.123456");
@@ -120,7 +126,12 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
+    @Mock private MerkleAccount updateAccount;
     @Mock private MerkleAccount ownerAccount;
+    @Mock private HederaAccountNumbers accountNumbers;
+    @Mock private HederaFileNumbers fileNumbers;
+    @Mock private CryptoSignatureWaiversImpl waivers;
+    private PreHandleContext context;
     private AccountStore accountStore;
     private TokenStore tokenStore;
     private CryptoPreTransactionHandlerImpl subject;
@@ -133,8 +144,11 @@ class CryptoPreTransactionHandlerImplTest {
 
         accountStore = new AccountStore(states);
         tokenStore = new TokenStore(states);
+        context = new PreHandleContext(accountNumbers, fileNumbers);
 
-        subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore);
+        subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore, context);
+
+        subject.setWaivers(waivers);
     }
 
     @Test
@@ -411,6 +425,81 @@ class CryptoPreTransactionHandlerImplTest {
         assertFalse(meta.getReqKeys().contains(payerKey));
     }
 
+    @Test
+    void cryptoUpdateVanilla() {
+        var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
+        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 3, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(updateAccountKey));
+    }
+
+    @Test
+    void cryptoUpdateNewSignatureKeyWaivedVanilla() {
+        var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.of(updateAccount));
+        given(updateAccount.getAccountKey()).willReturn((JKey) updateAccountKey);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 2, false, OK);
+        assertIterableEquals(List.of(payerKey, updateAccountKey), meta.getReqKeys());
+    }
+
+    @Test
+    void cryptoUpdateTargetSignatureKeyWaivedVanilla() {
+        var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 2, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertFalse(meta.getReqKeys().contains(updateAccountKey));
+    }
+
+    @Test
+    void cryptoUpdatePayerMissingFails() {
+        var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+
+        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
+        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 1, true, INVALID_PAYER_ACCOUNT_ID);
+    }
+
+    @Test
+    void cryptoUpdatePayerMissingFailsWhenNoOtherSigsRequired() {
+        var txn = cryptoUpdateTransaction(updateAccountId, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+
+        given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+    }
+
+    @Test
+    void cryptoUpdateUpdateAccountMissingFails() {
+        var txn = cryptoUpdateTransaction(payer, updateAccountId);
+        given(accounts.get(updateAccountId.getAccountNum())).willReturn(Optional.empty());
+
+        given(waivers.isNewKeySignatureWaived(txn, payer)).willReturn(true);
+        given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
+
+        var meta = subject.preHandleUpdateAccount(txn);
+        basicMetadataAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
+    }
+
     private void basicMetadataAssertions(
             final TransactionMetadata meta,
             final int keysSize,
@@ -482,6 +571,26 @@ class CryptoPreTransactionHandlerImplTest {
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoApproveAllowance(allowanceTxnBody)
+                .build();
+    }
+
+    private TransactionBody cryptoUpdateTransaction(
+            final AccountID payerId, final AccountID accountToUpdate) {
+        if (payerId.equals(payer)) {
+            setUpPayer();
+        }
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(consensusTimestamp);
+        final var updateTxnBody =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAccountIDToUpdate(accountToUpdate)
+                        .setKey(key)
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoUpdateAccount(updateTxnBody)
                 .build();
     }
 
