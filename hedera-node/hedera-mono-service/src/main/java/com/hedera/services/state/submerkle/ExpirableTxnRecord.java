@@ -25,6 +25,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 
@@ -73,7 +74,9 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     static final int RELEASE_0270_VERSION = 10;
 
     static final int RELEASE_0280_VERSION = 11;
-    static final int CURRENT_VERSION = RELEASE_0280_VERSION;
+    // Debatable -- 0.33/0.34?
+    static final int RELEASE_0340_VERSION = 12;
+    static final int CURRENT_VERSION = RELEASE_0340_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x8b9ede7ca8d8db93L;
 
     static final int MAX_MEMO_BYTES = 32 * 1_024;
@@ -82,6 +85,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     static final int MAX_ASSESSED_CUSTOM_FEES_CHANGES = 20;
     public static final ByteString MISSING_ALIAS = ByteString.EMPTY;
     public static final byte[] MISSING_ETHEREUM_HASH = new byte[0];
+    private static final byte[] MISSING_EVM_ADDRESS = new byte[0];
 
     private static final byte NO_PRNG_OUTPUT = (byte) 0x00;
     private static final byte PRNG_INT_OUTPUT = (byte) 0x01;
@@ -117,6 +121,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     private byte[] ethereumHash = MISSING_ETHEREUM_HASH;
     private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
     private int pseudoRandomNumber = MISSING_NUMBER;
+    private byte[] evmAddress = MISSING_EVM_ADDRESS;
 
     public ExpirableTxnRecord() {
         /* RuntimeConstructable */
@@ -146,6 +151,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         this.ethereumHash = builder.ethereumHash;
         this.pseudoRandomNumber = builder.pseudoRandomNumber;
         this.pseudoRandomBytes = builder.pseudoRandomBytes;
+        this.evmAddress = builder.evmAddress;
     }
 
     /* --- Object --- */
@@ -171,7 +177,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
                         .add("alias", alias.toStringUtf8())
                         .add("ethereumHash", CommonUtils.hex(ethereumHash))
                         .add("pseudoRandomNumber", pseudoRandomNumber)
-                        .add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes));
+                        .add("pseudoRandomBytes", CommonUtils.hex(pseudoRandomBytes))
+                        .add("evmAddress", CommonUtils.hex(evmAddress));
 
         if (packedParentConsensusTime != MISSING_PARENT_CONSENSUS_TIMESTAMP) {
             helper.add(
@@ -257,7 +264,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
                 && Objects.equals(this.alias, that.alias)
                 && Arrays.equals(this.ethereumHash, that.ethereumHash)
                 && this.pseudoRandomNumber == that.pseudoRandomNumber
-                && Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes);
+                && Arrays.equals(this.pseudoRandomBytes, that.pseudoRandomBytes)
+                && Arrays.equals(this.evmAddress, that.evmAddress);
     }
 
     @Override
@@ -287,7 +295,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
                         ethereumHash,
                         pseudoRandomNumber);
         result = result * 31 + Arrays.hashCode(txnHash);
-        return result * 31 + Arrays.hashCode(pseudoRandomBytes);
+        result = result * 31 + Arrays.hashCode(pseudoRandomBytes);
+        return result * 31 + Arrays.hashCode(evmAddress);
     }
 
     /* --- SelfSerializable --- */
@@ -360,6 +369,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         } else {
             out.writeByte(NO_PRNG_OUTPUT);
         }
+        out.writeByteArray(evmAddress);
     }
 
     @Override
@@ -418,6 +428,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             } else if (outputType == PRNG_BYTES_OUTPUT) {
                 pseudoRandomBytes = in.readByteArray(MAX_PSEUDORANDOM_BYTES_LENGTH);
             }
+        }
+
+        if (version >= RELEASE_0340_VERSION) {
+            evmAddress = in.readByteArray(EVM_ADDRESS_SIZE);
         }
     }
 
@@ -566,6 +580,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         return pseudoRandomNumber;
     }
 
+    public byte[] getEvmAddress() {
+        return evmAddress;
+    }
+
     /* --- FastCopyable --- */
     @Override
     public boolean isImmutable() {
@@ -642,6 +660,9 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         } else if (pseudoRandomBytes.length != 0) {
             grpc.setPrngBytes(wrapUnsafely(pseudoRandomBytes));
         }
+        if (evmAddress != MISSING_EVM_ADDRESS) {
+            grpc.setEvmAddress(ByteStringUtils.wrapUnsafely(evmAddress));
+        }
 
         return grpc.build();
     }
@@ -700,6 +721,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         private int pseudoRandomNumber = MISSING_NUMBER;
         private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
         private boolean onlyExternalizedIfSuccessful = false;
+        private byte[] evmAddress = MISSING_EVM_ADDRESS;
 
         public Builder setFee(long fee) {
             this.fee = fee;
@@ -817,6 +839,11 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             return this;
         }
 
+        public Builder setEvmAddress(final byte[] evmAddress) {
+            this.evmAddress = evmAddress;
+            return this;
+        }
+
         public ExpirableTxnRecord build() {
             return new ExpirableTxnRecord(this);
         }
@@ -920,6 +947,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             ethereumHash = MISSING_ETHEREUM_HASH;
             pseudoRandomNumber = MISSING_NUMBER;
             pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
+            evmAddress = MISSING_EVM_ADDRESS;
             /* if this is a revert of a child record we want to have contractCallResult */
             if (removeCallResult) {
                 contractCallResult = null;
@@ -1009,5 +1037,10 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     public void clearPrngData() {
         pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
         pseudoRandomNumber = MISSING_NUMBER;
+    }
+
+    @VisibleForTesting
+    public void clearEvmAddress() {
+        evmAddress = MISSING_EVM_ADDRESS;
     }
 }
