@@ -1,16 +1,28 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.token.impl.entity;
 
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * An implementation of {@link Account}.
- */
+/** An implementation of {@link Account}. */
 public record AccountImpl(
         long accountNumber,
         Optional<byte[]> alias,
@@ -33,48 +45,30 @@ public record AccountImpl(
         long stakedNum,
         boolean declineReward,
         long stakeAtStartOfLastRewardedPeriod,
-        long autoRenewAccountNumber
-        ) implements Account {
+        long autoRenewAccountNumber,
+        long autoRenewSecs)
+        implements Account {
 
-    /**
-     * @inheritDoc
-     */
     @Override
     public long shardNumber() {
-        // LATER: In the real world, we would want to get this from config
+        // FUTURE: Need to get this from config
         return 0;
     }
 
-    /**
-     * @inheritDoc
-     */
     @Override
     public long realmNumber() {
-        // LATER: In the real world, we would want to get this from config
+        // FUTURE: Need to get this from config
         return 0;
     }
 
-    /**
-     * @inheritDoc
-     */
     @Override
     public boolean isHollow() {
         return key.isEmpty();
     }
 
     @Override
-    public long balanceInHbar() {
-        return balance * ;
-    }
-
-    @Override
     public long balanceInTinyBar() {
-        return ;
-    }
-
-    @Override
-    public long autoRenewSecs() {
-        return 0;
+        return balance;
     }
 
     @Override
@@ -88,25 +82,109 @@ public record AccountImpl(
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AccountImpl account = (AccountImpl) o;
-        return accountNumber == account.accountNumber && expiry == account.expiry && balance == account.balance
-                && isDeleted == account.isDeleted && isSmartContract == account.isSmartContract
+        return accountNumber == account.accountNumber
+                && expiry == account.expiry
+                && balance == account.balance
+                && isDeleted == account.isDeleted
+                && isSmartContract == account.isSmartContract
                 && isReceiverSigRequired == account.isReceiverSigRequired
-                && proxyAccountNumber == account.proxyAccountNumber && numberOfOwnedNfts == account.numberOfOwnedNfts
+                && proxyAccountNumber == account.proxyAccountNumber
+                && numberOfOwnedNfts == account.numberOfOwnedNfts
                 && maxAutoAssociations == account.maxAutoAssociations
-                && usedAutoAssociations == account.usedAutoAssociations && numAssociations == account.numAssociations
-                && numPositiveBalances == account.numPositiveBalances && ethereumNonce == account.ethereumNonce
-                && stakedToMe == account.stakedToMe && stakePeriodStart == account.stakePeriodStart
-                && stakedNum == account.stakedNum && declineReward == account.declineReward
+                && usedAutoAssociations == account.usedAutoAssociations
+                && numAssociations == account.numAssociations
+                && numPositiveBalances == account.numPositiveBalances
+                && ethereumNonce == account.ethereumNonce
+                && stakedToMe == account.stakedToMe
+                && stakePeriodStart == account.stakePeriodStart
+                && stakedNum == account.stakedNum
+                && declineReward == account.declineReward
                 && stakeAtStartOfLastRewardedPeriod == account.stakeAtStartOfLastRewardedPeriod
-                && autoRenewAccountNumber == account.autoRenewAccountNumber && alias.equals(account.alias)
-                && key.equals(account.key) && memo.equals(account.memo);
+                && autoRenewAccountNumber == account.autoRenewAccountNumber
+                && alias.equals(account.alias)
+                && key.equals(account.key)
+                && memo.equals(account.memo)
+                && autoRenewSecs == account.autoRenewSecs;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(accountNumber, alias, key, expiry, balance, memo, isDeleted, isSmartContract,
-                isReceiverSigRequired, proxyAccountNumber, numberOfOwnedNfts, maxAutoAssociations,
-                usedAutoAssociations, numAssociations, numPositiveBalances, ethereumNonce, stakedToMe,
-                stakePeriodStart, stakedNum, declineReward, stakeAtStartOfLastRewardedPeriod, autoRenewAccountNumber);
+        return Objects.hash(
+                accountNumber,
+                alias,
+                key,
+                expiry,
+                balance,
+                memo,
+                isDeleted,
+                isSmartContract,
+                isReceiverSigRequired,
+                proxyAccountNumber,
+                numberOfOwnedNfts,
+                maxAutoAssociations,
+                usedAutoAssociations,
+                numAssociations,
+                numPositiveBalances,
+                ethereumNonce,
+                stakedToMe,
+                stakePeriodStart,
+                stakedNum,
+                declineReward,
+                stakeAtStartOfLastRewardedPeriod,
+                autoRenewAccountNumber,
+                autoRenewSecs);
+    }
+
+    @Override
+    public String toString() {
+        return "AccountImpl{"
+                + "accountNumber="
+                + accountNumber
+                + ", alias="
+                + alias
+                + ", key="
+                + key
+                + ", expiry="
+                + expiry
+                + ", balance="
+                + balance
+                + ", memo='"
+                + memo
+                + '\''
+                + ", isDeleted="
+                + isDeleted
+                + ", isSmartContract="
+                + isSmartContract
+                + ", isReceiverSigRequired="
+                + isReceiverSigRequired
+                + ", proxyAccountNumber="
+                + proxyAccountNumber
+                + ", numberOfOwnedNfts="
+                + numberOfOwnedNfts
+                + ", maxAutoAssociations="
+                + maxAutoAssociations
+                + ", usedAutoAssociations="
+                + usedAutoAssociations
+                + ", numAssociations="
+                + numAssociations
+                + ", numPositiveBalances="
+                + numPositiveBalances
+                + ", ethereumNonce="
+                + ethereumNonce
+                + ", stakedToMe="
+                + stakedToMe
+                + ", stakePeriodStart="
+                + stakePeriodStart
+                + ", stakedNum="
+                + stakedNum
+                + ", declineReward="
+                + declineReward
+                + ", stakeAtStartOfLastRewardedPeriod="
+                + stakeAtStartOfLastRewardedPeriod
+                + ", autoRenewAccountNumber="
+                + autoRenewAccountNumber
+                + ", autoRenewSecs="
+                + autoRenewSecs
+                + '}';
     }
 }

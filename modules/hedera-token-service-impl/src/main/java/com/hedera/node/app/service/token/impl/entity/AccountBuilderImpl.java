@@ -1,10 +1,24 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.token.impl.entity;
 
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
 
@@ -18,6 +32,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     // These fields are the ones that can be set in the builder
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private Optional<HederaKey> key;
+
     private long expiry;
     private long balance;
     private String memo;
@@ -36,10 +51,11 @@ public class AccountBuilderImpl implements AccountBuilder {
     private boolean declineReward;
     private long stakeAtStartOfLastRewardedPeriod;
     private long autoRenewAccountNumber;
+    private long autoRenewSecs;
 
     /**
-     * Create a builder for creating {@link Account}s, using the given copy as the basis for all settings
-     * that are not overridden.
+     * Create a builder for creating {@link Account}s, using the given copy as the basis for all
+     * settings that are not overridden.
      *
      * @param copyOf The instance to copy
      */
@@ -64,6 +80,7 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.declineReward = copyOf.declineReward();
         this.stakeAtStartOfLastRewardedPeriod = copyOf.stakeAtStartOfLastRewardedPeriod();
         this.autoRenewAccountNumber = copyOf.autoRenewAccountNumber();
+        this.autoRenewSecs = copyOf.autoRenewSecs();
     }
 
     @Override
@@ -205,6 +222,13 @@ public class AccountBuilderImpl implements AccountBuilder {
 
     @Override
     @NonNull
+    public AccountBuilder autoRenewSecs(long value) {
+        this.autoRenewSecs = value;
+        return this;
+    }
+
+    @Override
+    @NonNull
     public Account build() {
         return new AccountImpl(
                 copyOf.accountNumber(),
@@ -228,6 +252,7 @@ public class AccountBuilderImpl implements AccountBuilder {
                 stakedNum,
                 declineReward,
                 stakeAtStartOfLastRewardedPeriod,
-                autoRenewAccountNumber);
+                autoRenewAccountNumber,
+                autoRenewSecs);
     }
 }
