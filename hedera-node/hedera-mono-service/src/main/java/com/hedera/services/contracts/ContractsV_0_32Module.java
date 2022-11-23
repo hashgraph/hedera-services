@@ -23,7 +23,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.ContractsModule.V_0_30;
 import com.hedera.services.contracts.ContractsModule.V_0_32;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
-import com.hedera.services.contracts.operation.HederaCallOperation;
+import com.hedera.services.contracts.operation.HederaCallOperationV032;
 import com.hedera.services.contracts.operation.HederaChainIdOperation;
 import com.hedera.services.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.contracts.operation.HederaCreateOperation;
@@ -153,9 +153,11 @@ public interface ContractsV_0_32Module {
             final EvmSigsVerifier sigsVerifier,
             final GasCalculator gasCalculator,
             @V_0_32 final BiPredicate<Address, MessageFrame> addressValidator,
-            final Map<String, PrecompiledContract> precompiledContractMap) {
-        return new HederaCallOperation(
-                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap);
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final GlobalDynamicProperties globalDynamicProperties) {
+        return new HederaCallOperationV032(
+                sigsVerifier, gasCalculator, addressValidator, precompiledContractMap,
+            globalDynamicProperties);
     }
 
     @Provides

@@ -140,38 +140,4 @@ class HederaCallOperationTest {
                 Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE),
                 invalidSignaturesRes.getHaltReason());
     }
-
-    @Test
-    void executesLazyCreateAsExpected() {
-        commonSetup(evmMsgFrame, worldUpdater, acc);
-        given(
-                        calc.callOperationGasCost(
-                                any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(),
-                                any(), any()))
-                .willReturn(cost);
-        // and:
-        given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(2)).willReturn(Bytes.of(2)); // frame value
-        given(evmMsgFrame.getStackItem(3)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(4)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(5)).willReturn(Bytes.EMPTY);
-        given(evmMsgFrame.getStackItem(6)).willReturn(Bytes.EMPTY);
-        // and:
-        given(evmMsgFrame.stackSize()).willReturn(20);
-        given(evmMsgFrame.getRemainingGas()).willReturn(cost);
-        given(evmMsgFrame.getMessageStackDepth()).willReturn(1025);
-
-        given(evmMsgFrame.getRecipientAddress()).willReturn(Address.ALTBN128_ADD);
-
-        given(worldUpdater.get(any())).willReturn(acc);
-        given(acc.getBalance()).willReturn(Wei.of(100));
-        given(calc.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).willReturn(10L);
-        given(addressValidator.test(any(), any())).willReturn(false);
-
-        var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(Optional.empty(), opRes.getHaltReason());
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
-    }
 }
