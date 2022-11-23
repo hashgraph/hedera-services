@@ -17,29 +17,33 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.ServicesAccessor;
+import com.hedera.node.app.service.admin.FreezePreTransactionHandler;
+import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FilePreTransactionHandler;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.freeze.FreezePreTransactionHandler;
-import com.hedera.node.app.service.freeze.FreezeService;
 import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
 import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
-import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.services.config.AccountNumbers;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -57,39 +61,35 @@ class PreHandleDispatcherTest {
 
     @Mock private HederaState hederaState;
 
-    @Mock private ConsensusService consensusService;
     @Mock private ConsensusPreTransactionHandler consensusHandler;
-
-    @Mock private ContractService contractService;
     @Mock private ContractPreTransactionHandler contractHandler;
-
-    @Mock private CryptoService cryptoService;
     @Mock private CryptoPreTransactionHandler cryptoHandler;
-
-    @Mock private FileService fileService;
     @Mock private FilePreTransactionHandler fileHandler;
-
-    @Mock private FreezeService freezeService;
     @Mock private FreezePreTransactionHandler freezeHandler;
-
-    @Mock private NetworkService networkService;
     @Mock private NetworkPreTransactionHandler networkHandler;
-
-    @Mock private ScheduleService scheduleService;
     @Mock private SchedulePreTransactionHandler scheduleHandler;
-
-    @Mock private TokenService tokenService;
     @Mock private TokenPreTransactionHandler tokenHandler;
-
-    @Mock private UtilService utilService;
     @Mock private UtilPreTransactionHandler utilHandler;
 
     private ServicesAccessor servicesAccessor;
 
+    private PreHandleContext context;
+
     private PreHandleDispatcher dispatcher;
 
     @BeforeEach
-    void setup() {
+    void setup(
+            @Mock ConsensusService consensusService,
+            @Mock ContractService contractService,
+            @Mock CryptoService cryptoService,
+            @Mock FileService fileService,
+            @Mock FreezeService freezeService,
+            @Mock NetworkService networkService,
+            @Mock ScheduleService scheduleService,
+            @Mock TokenService tokenService,
+            @Mock UtilService utilService,
+            @Mock AccountNumbers accountNumbers,
+            @Mock HederaFileNumbers hederaFileNumbers) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -102,24 +102,34 @@ class PreHandleDispatcherTest {
                         tokenService,
                         utilService);
 
-        when(consensusService.createPreTransactionHandler(any())).thenReturn(consensusHandler);
-        when(contractService.createPreTransactionHandler(any())).thenReturn(contractHandler);
-        when(cryptoService.createPreTransactionHandler(any())).thenReturn(cryptoHandler);
-        when(fileService.createPreTransactionHandler(any())).thenReturn(fileHandler);
-        when(freezeService.createPreTransactionHandler(any())).thenReturn(freezeHandler);
-        when(networkService.createPreTransactionHandler(any())).thenReturn(networkHandler);
-        when(scheduleService.createPreTransactionHandler(any())).thenReturn(scheduleHandler);
-        when(tokenService.createPreTransactionHandler(any())).thenReturn(tokenHandler);
-        when(utilService.createPreTransactionHandler(any())).thenReturn(utilHandler);
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
 
-        dispatcher = new PreHandleDispatcher(hederaState, servicesAccessor);
+        when(consensusService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(consensusHandler);
+        when(contractService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(contractHandler);
+        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(cryptoHandler);
+        when(fileService.createPreTransactionHandler(any(), eq(context))).thenReturn(fileHandler);
+        when(freezeService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(freezeHandler);
+        when(networkService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(networkHandler);
+        when(scheduleService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(scheduleHandler);
+        when(tokenService.createPreTransactionHandler(any(), eq(context))).thenReturn(tokenHandler);
+        when(utilService.createPreTransactionHandler(any(), eq(context))).thenReturn(utilHandler);
+
+        dispatcher = new PreHandleDispatcher(hederaState, servicesAccessor, context);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreHandleDispatcher(null, servicesAccessor))
+        assertThatThrownBy(() -> new PreHandleDispatcher(null, servicesAccessor, context))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleDispatcher(hederaState, null))
+        assertThatThrownBy(() -> new PreHandleDispatcher(hederaState, null, context))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleDispatcher(hederaState, servicesAccessor, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

@@ -54,8 +54,8 @@ public interface CryptoService extends Service {
      * @return the corresponding crypto service query-handler
      */
     @Override
-    @Nonnull
-    CryptoQueryHandler createQueryHandler(@Nonnull States states);
+    @NonNull
+    CryptoQueryHandler createQueryHandler(@NonNull States states);
 
     /**
      * Returns the concrete implementation instance of the service

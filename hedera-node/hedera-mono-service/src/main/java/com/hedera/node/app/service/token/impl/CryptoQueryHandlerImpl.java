@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoQueryHandler;
-import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
@@ -27,7 +26,7 @@ public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
 
     @NonNull
     @Override
-    public Optional<Account> getAccountById(@NonNull final AccountID id) {
+    public Optional<Object> getAccountById(@NonNull final AccountID id) {
         throw new NotImplementedException();
     }
 

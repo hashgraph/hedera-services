@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.token.CryptoQueryHandler;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
@@ -28,9 +29,9 @@ import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.PreCheckException;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
-import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private final ExecutorService exe;
     private final ServicesAccessor servicesAccessor;
+    private final PreHandleContext context;
     private final IngestChecker checker;
 
     private HederaState lastUsedState;
@@ -71,23 +73,25 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
-            @Nonnull final ExecutorService exe,
-            @Nonnull final ServicesAccessor servicesAccessor,
-            @Nonnull final IngestChecker ingestChecker) {
+            @NonNull final ExecutorService exe,
+            @NonNull final ServicesAccessor servicesAccessor,
+            @NonNull final PreHandleContext context,
+            @NonNull final IngestChecker ingestChecker) {
         this.exe = requireNonNull(exe);
         this.servicesAccessor = requireNonNull(servicesAccessor);
+        this.context = requireNonNull(context);
         this.checker = requireNonNull(ingestChecker);
     }
 
     @Override
-    public synchronized void start(@Nonnull final HederaState state, @Nonnull final Event event) {
+    public synchronized void start(@NonNull final HederaState state, @NonNull final Event event) {
         requireNonNull(state);
         requireNonNull(event);
 
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcher(state, servicesAccessor);
+            dispatcher = new PreHandleDispatcher(state, servicesAccessor, context);
             final var cryptoState = state.createReadableStates(HederaState.CRYPTO_SERVICE);
             cryptoQueryHandler = servicesAccessor.cryptoService().createQueryHandler(cryptoState);
             lastUsedState = state;

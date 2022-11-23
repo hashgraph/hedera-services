@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":modules:hedera-smart-contract-service-impl"))
     implementation(project(":modules:hedera-token-service-impl"))
     implementation(project(":modules:hedera-util-service-impl"))
+    compileOnly(libs.spotbugs.annotations)
 
     implementation(libs.jsr305.annotation)
     implementation(libs.hapi)

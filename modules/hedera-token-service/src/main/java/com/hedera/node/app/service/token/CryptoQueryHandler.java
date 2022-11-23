@@ -16,10 +16,9 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.QueryHandler;
-import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * Defines APIs for responding to queries on state. Most of these APIs are defined in
@@ -28,15 +27,15 @@ import org.checkerframework.checker.nullness.qual.NonNull;
  */
 public interface CryptoQueryHandler extends QueryHandler {
     /**
-     * Retrieves an {@link Account} given an {@link AccountID}. This method is not defined in
+     * Retrieves an {@code Account} given an {@link AccountID}. This method is not defined in
      * "CryptoService", but exists for the use of other modules, including the Hedera application.
      *
      * @param id The id. Cannot be null.
-     * @return A non-null {@link Optional} with a reference to the {@link Account}, or empty if
+     * @return A non-null {@link Optional} with a reference to the {@code Account}, or empty if
      *     there is not one matching the given ID.
      */
     @NonNull
-    Optional<Account> getAccountById(@NonNull AccountID id);
+    Optional<Object> getAccountById(@NonNull AccountID id);
 
     /**
      * Returns all transactions in the last 180s of consensus time for which the given account was

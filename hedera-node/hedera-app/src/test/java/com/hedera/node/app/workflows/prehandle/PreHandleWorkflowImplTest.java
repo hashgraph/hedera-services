@@ -20,17 +20,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.ServicesAccessor;
+import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.freeze.FreezeService;
 import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
+import com.hedera.services.config.AccountNumbers;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -48,22 +51,26 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
-    @Mock private ConsensusService consensusService;
-    @Mock private ContractService contractService;
     @Mock private CryptoService cryptoService;
-    @Mock private FileService fileService;
-    @Mock private FreezeService freezeService;
-    @Mock private NetworkService networkService;
-    @Mock private ScheduleService scheduleService;
-    @Mock private TokenService tokenService;
-    @Mock private UtilService utilService;
     @Mock private IngestChecker ingestChecker;
+
     private ServicesAccessor servicesAccessor;
+    private PreHandleContext context;
 
     private PreHandleWorkflowImpl workflow;
 
     @BeforeEach
-    void setup() {
+    void setup(
+            @Mock ConsensusService consensusService,
+            @Mock ContractService contractService,
+            @Mock FileService fileService,
+            @Mock FreezeService freezeService,
+            @Mock NetworkService networkService,
+            @Mock ScheduleService scheduleService,
+            @Mock TokenService tokenService,
+            @Mock UtilService utilService,
+            @Mock AccountNumbers accountNumbers,
+            @Mock HederaFileNumbers hederaFileNumbers) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -75,16 +82,35 @@ class PreHandleWorkflowImplTest {
                         scheduleService,
                         tokenService,
                         utilService);
-        workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, ingestChecker);
+
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
+
+        workflow =
+                new PreHandleWorkflowImpl(
+                        executorService, servicesAccessor, context, ingestChecker);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, ingestChecker))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        null, servicesAccessor, context, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, ingestChecker))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, null, context, ingestChecker))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, servicesAccessor, null))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, servicesAccessor, null, ingestChecker))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, servicesAccessor, context, null))
                 .isInstanceOf(NullPointerException.class);
     }
 

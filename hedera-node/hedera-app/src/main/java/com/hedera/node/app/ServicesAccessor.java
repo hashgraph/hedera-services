@@ -17,12 +17,12 @@ package com.hedera.node.app;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.freeze.FreezeService;
 import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;

@@ -16,7 +16,6 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -49,14 +48,14 @@ public interface IngestChecker {
     void checkSignedTransaction(@Nonnull SignedTransaction tx) throws PreCheckException;
 
     /**
-     * Validates a {@link TransactionBody} with the paying {@link Account}
+     * Validates a {@link TransactionBody} with the paying {@link Object}
      *
      * @param txBody the {@code TransactionBody} to check
-     * @param account the paying {@code Account}
+     * @param account the paying {@code Object}
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    void checkTransactionBody(@Nonnull TransactionBody txBody, @Nonnull Account account)
+    void checkTransactionBody(@Nonnull TransactionBody txBody, @Nonnull Object account)
             throws PreCheckException;
 
     /**
