@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
@@ -43,7 +44,8 @@ public interface CryptoService extends Service {
      */
     @Override
     @NonNull
-    CryptoPreTransactionHandler createPreTransactionHandler(@NonNull States states);
+    CryptoPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service
