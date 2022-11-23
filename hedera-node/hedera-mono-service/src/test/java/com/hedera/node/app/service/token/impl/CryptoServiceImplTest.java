@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
@@ -31,6 +32,7 @@ class CryptoServiceImplTest {
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock States states;
+    @Mock PreHandleContext ctx;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -43,8 +45,8 @@ class CryptoServiceImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        final var serviceImpl = subject.createPreTransactionHandler(states);
-        final var serviceImpl1 = subject.createPreTransactionHandler(states);
+        final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 }

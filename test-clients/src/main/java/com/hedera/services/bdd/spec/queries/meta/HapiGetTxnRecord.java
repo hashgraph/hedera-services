@@ -75,6 +75,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
@@ -135,6 +136,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
     private int numStakingRewardsPaid = -1;
 
+    @Nullable private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
+
     private Consumer<List<?>> eventDataObserver;
     private String eventName;
     private String contractResultAbi = null;
@@ -191,6 +194,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord assertingOnlyPriority() {
         assertOnlyPriority = true;
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingStakingRewardsTo(final Consumer<List<AccountAmount>> observer) {
+        stakingRewardsObserver = observer;
         return this;
     }
 
@@ -852,6 +860,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
+        }
+        if (stakingRewardsObserver != null) {
+            stakingRewardsObserver.accept(rcd.getPaidStakingRewardsList());
         }
         observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();
