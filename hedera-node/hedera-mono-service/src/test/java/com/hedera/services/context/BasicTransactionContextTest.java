@@ -48,6 +48,7 @@ import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -409,6 +410,21 @@ class BasicTransactionContextTest {
         record = subject.recordSoFar().build();
 
         assertSame(result, record.getContractCreateResult());
+    }
+
+    @Test
+    void configuresEvmAddress() {
+        given(exchange.fcActiveRates()).willReturn(ExchangeRates.fromGrpc(ratesNow));
+        given(accessor.getTxnId()).willReturn(txnId);
+        given(accessor.getTxn()).willReturn(txn);
+
+        // when:
+        setUpBuildingExpirableTxnRecord();
+        final var evmAddress = ByteStringUtils.wrapUnsafely("evmAddress".getBytes());
+        subject.setEvmAddress(evmAddress);
+        record = subject.recordSoFar().build();
+
+        assertArrayEquals(evmAddress.toByteArray(), record.getEvmAddress());
     }
 
     @Test
