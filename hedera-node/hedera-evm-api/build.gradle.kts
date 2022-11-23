@@ -26,7 +26,7 @@ dependencies {
     api(libs.besu.datatypes) {
         exclude("com.google.code.findbugs", "jsr305")
     }
-    api(libs.besu.secp256k1)
+    implementation(libs.besu.secp256k1)
     api(libs.swirlds.common)
     implementation(libs.caffeine)
     implementation(libs.guava) {
