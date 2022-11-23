@@ -909,14 +909,16 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         final var delta = sigNum * amount;
         var newPendingRewards = pendingRewards + delta;
         if (MAX_PENDING_REWARDS - pendingRewards < delta) {
-            log.warn(
-                    "Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar",
+            log.error(
+                    "Pending rewards increased by {} to an un-payable {}, fixing to 50B hbar." +
+                            "Something could be going wrong in reward calculation.",
                     amount,
                     newPendingRewards);
             newPendingRewards = MAX_PENDING_REWARDS;
         } else if (newPendingRewards < 0) {
-            log.warn(
-                    "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
+            log.error(
+                    "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar." +
+                            "Something could be going wrong in reward calculation.",
                     amount,
                     newPendingRewards);
             newPendingRewards = 0;
