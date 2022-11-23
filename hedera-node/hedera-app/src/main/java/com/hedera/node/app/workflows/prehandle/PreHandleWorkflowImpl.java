@@ -87,7 +87,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcherImpl(state, servicesAccessor);
+            dispatcher = new PreHandleDispatcher(state, servicesAccessor);
             final var cryptoState = state.createReadableStates(HederaState.CRYPTO_SERVICE);
             cryptoQueryHandler = servicesAccessor.cryptoService().createQueryHandler(cryptoState);
             lastUsedState = state;

@@ -15,15 +15,14 @@
  */
 package com.hedera.node.app;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.Parser;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.annotation.Nonnull;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This record keeps a list of everything that is used per-thread

@@ -40,7 +40,7 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
      */
     public ErrorTransactionMetadata(
             @Nonnull final ResponseCodeEnum responseCode,
-            @Nullable final Throwable throwable,
+            @Nonnull final Throwable throwable,
             @Nullable final TransactionBody txBody) {
         this.txBody = txBody;
         this.throwable = requireNonNull(throwable);
