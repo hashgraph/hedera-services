@@ -15,11 +15,14 @@
  */
 package com.hedera.services.bdd.spec.utilops.pauses;
 
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
+
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,20 +31,52 @@ public class HapiSpecWaitUntil extends UtilOp {
     static final Logger log = LogManager.getLogger(HapiSpecWaitUntil.class);
 
     private long timeMs;
+    private long stakePeriodMins;
+    private long targetTimeOffsetSecs;
+    private boolean startOfNextStakingPeriod;
 
     public HapiSpecWaitUntil(String timeOfDay) throws ParseException {
-        timeMs = convertToEpoc(timeOfDay);
+        timeMs = convertToEpochMillis(timeOfDay);
+    }
+
+    public static HapiSpecWaitUntil untilStartOfNextStakingPeriod(final long stakePeriodMins) {
+        return new HapiSpecWaitUntil(stakePeriodMins);
+    }
+
+    public static HapiSpecWaitUntil untilJustBeforeStakingPeriod(
+            final long stakePeriodMins, final long secondsBefore) {
+        return new HapiSpecWaitUntil(stakePeriodMins, -secondsBefore);
+    }
+
+    private HapiSpecWaitUntil(final long stakePeriodMins) {
+        this(stakePeriodMins, 0L);
+    }
+
+    private HapiSpecWaitUntil(final long stakePeriodMins, final long targetTimeOffsetSecs) {
+        this.stakePeriodMins = stakePeriodMins;
+        this.targetTimeOffsetSecs = targetTimeOffsetSecs;
+        this.startOfNextStakingPeriod = true;
     }
 
     @Override
     protected boolean submitOp(HapiApiSpec spec) throws Throwable {
-        log.info("waiting until we reach to " + timeMs + "of the day");
-        long currentTime = Instant.now().getEpochSecond();
-        Thread.sleep(timeMs - currentTime);
+        final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
+        final var now = Instant.now();
+        if (startOfNextStakingPeriod) {
+            final var currentPeriod = getPeriod(now, stakePeriodMillis);
+            final var nextPeriod = currentPeriod + 1;
+            timeMs = nextPeriod * stakePeriodMillis + (targetTimeOffsetSecs * 1000L);
+        }
+        log.info(
+                "Sleeping until epoch milli {} ({} CST)",
+                timeMs,
+                Instant.ofEpochMilli(timeMs).atZone(ZoneId.systemDefault()));
+        long currentEpocMillis = now.getEpochSecond() * 1000L;
+        Thread.sleep(timeMs - currentEpocMillis);
         return false;
     }
 
-    private long convertToEpoc(String timeOfDay) throws ParseException {
+    private long convertToEpochMillis(final String timeOfDay) throws ParseException {
         SimpleDateFormat dateMonthYear = new SimpleDateFormat("MM/dd/yyyy");
         SimpleDateFormat dateMonthYearTime = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
         Date currentDate = new Date();
@@ -49,6 +84,6 @@ public class HapiSpecWaitUntil extends UtilOp {
 
         String currDateTimeInString = currDateInString + " " + timeOfDay;
 
-        return dateMonthYearTime.parse(currDateTimeInString).getTime();
+        return dateMonthYearTime.parse(currDateTimeInString).getTime() * 1000L;
     }
 }
