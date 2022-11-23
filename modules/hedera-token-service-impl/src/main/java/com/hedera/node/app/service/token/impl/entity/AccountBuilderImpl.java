@@ -38,7 +38,6 @@ public class AccountBuilderImpl implements AccountBuilder {
     private String memo;
     private boolean deleted;
     private boolean receiverSigRequired;
-    private long proxyAccountNumber;
     private long numberOfOwnedNfts;
     private int maxAutoAssociations;
     private int usedAutoAssociations;
@@ -67,7 +66,6 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.memo = copyOf.memo();
         this.deleted = copyOf.isDeleted();
         this.receiverSigRequired = copyOf.isReceiverSigRequired();
-        this.proxyAccountNumber = copyOf.proxyAccountNumber();
         this.numberOfOwnedNfts = copyOf.numberOfOwnedNfts();
         this.maxAutoAssociations = copyOf.maxAutoAssociations();
         this.usedAutoAssociations = copyOf.usedAutoAssociations();
@@ -126,13 +124,6 @@ public class AccountBuilderImpl implements AccountBuilder {
     @Override
     public AccountBuilder receiverSigRequired(boolean value) {
         this.receiverSigRequired = value;
-        return this;
-    }
-
-    @NonNull
-    @Override
-    public AccountBuilder proxyAccountNumber(long value) {
-        this.proxyAccountNumber = value;
         return this;
     }
 
@@ -240,7 +231,6 @@ public class AccountBuilderImpl implements AccountBuilder {
                 deleted,
                 copyOf.isSmartContract(),
                 receiverSigRequired,
-                proxyAccountNumber,
                 numberOfOwnedNfts,
                 maxAutoAssociations,
                 usedAutoAssociations,

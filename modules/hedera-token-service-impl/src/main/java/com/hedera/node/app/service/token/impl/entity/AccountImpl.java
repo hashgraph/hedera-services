@@ -33,7 +33,6 @@ public record AccountImpl(
         boolean isDeleted,
         boolean isSmartContract,
         boolean isReceiverSigRequired,
-        long proxyAccountNumber,
         long numberOfOwnedNfts,
         int maxAutoAssociations,
         int usedAutoAssociations,
@@ -88,7 +87,6 @@ public record AccountImpl(
                 && isDeleted == account.isDeleted
                 && isSmartContract == account.isSmartContract
                 && isReceiverSigRequired == account.isReceiverSigRequired
-                && proxyAccountNumber == account.proxyAccountNumber
                 && numberOfOwnedNfts == account.numberOfOwnedNfts
                 && maxAutoAssociations == account.maxAutoAssociations
                 && usedAutoAssociations == account.usedAutoAssociations
@@ -119,7 +117,6 @@ public record AccountImpl(
                 isDeleted,
                 isSmartContract,
                 isReceiverSigRequired,
-                proxyAccountNumber,
                 numberOfOwnedNfts,
                 maxAutoAssociations,
                 usedAutoAssociations,
@@ -157,8 +154,6 @@ public record AccountImpl(
                 + isSmartContract
                 + ", isReceiverSigRequired="
                 + isReceiverSigRequired
-                + ", proxyAccountNumber="
-                + proxyAccountNumber
                 + ", numberOfOwnedNfts="
                 + numberOfOwnedNfts
                 + ", maxAutoAssociations="
