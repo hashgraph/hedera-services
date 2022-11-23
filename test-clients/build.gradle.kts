@@ -109,7 +109,7 @@ dependencies {
 }
 
 tasks.itest {
-    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/itest"))
 }
