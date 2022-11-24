@@ -240,7 +240,7 @@ public class AutoCreationLogic {
         customizer.customize(newId, accountsLedger);
 
         final var sideEffects = new SideEffectsTracker();
-        sideEffects.trackAutoCreation(newId, alias);
+        sideEffects.trackAutoCreation(newId);
 
         final var childRecord =
                 creator.createSuccessfulSyntheticRecord(NO_CUSTOM_FEES, sideEffects, memo);

@@ -240,14 +240,12 @@ class ExpiringCreationsTest {
     }
 
     @Test
-    void includesAutoCreatedAliases() {
-        final var mockAlias = ByteString.copyFromUtf8("make-believe");
+    void includesAutoCreatedAccount() {
         setupTrackerNoUnitOrOwnershipChanges();
         setUpForExpiringRecordBuilder();
 
         given(sideEffectsTracker.hasTrackedAutoCreation()).willReturn(true);
         given(sideEffectsTracker.getTrackedAutoCreatedAccountId()).willReturn(effPayer);
-        given(sideEffectsTracker.getNewEntityAlias()).willReturn(mockAlias);
 
         final var created =
                 subject.createTopLevelRecord(
@@ -261,7 +259,6 @@ class ExpiringCreationsTest {
                         .build();
 
         assertEquals(effPayer, created.getReceipt().getAccountId().toGrpcAccountId());
-        assertEquals(mockAlias, created.getAlias());
     }
 
     @Test
