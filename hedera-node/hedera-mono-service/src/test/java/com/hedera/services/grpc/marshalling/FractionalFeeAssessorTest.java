@@ -21,11 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.fees.CustomFeePayerExemptions;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import java.math.BigInteger;
@@ -70,7 +72,7 @@ class FractionalFeeAssessorTest {
         final var secondCollectorChange =
                 BalanceChange.tokenAdjust(
                         secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
-        final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
+        final var credits = List.of(firstVanillaReclaim, aliasedVanillaReclaim);
         // and:
         final var firstExpectedFee =
                 subject.amountOwedGiven(
@@ -114,7 +116,7 @@ class FractionalFeeAssessorTest {
                 firstVanillaReclaim.getAggregatedUnits());
         assertEquals(
                 secondCreditAmount - (totalReclaimedFees / 5),
-                secondVanillaReclaim.getAggregatedUnits());
+                aliasedVanillaReclaim.getAggregatedUnits());
         // and:
         assertEquals(firstExpectedFee, firstCollectorChange.getAggregatedUnits());
         assertEquals(secondExpectedFee, secondCollectorChange.getAggregatedUnits());
@@ -414,11 +416,6 @@ class FractionalFeeAssessorTest {
     private final Id payer = new Id(0, 0, 2);
     private final Id firstReclaimedAcount = new Id(0, 0, 8);
     private final Id secondReclaimedAcount = new Id(0, 0, 9);
-    private final AccountID[] effPayerAccountNums =
-            new AccountID[] {
-                AccountID.newBuilder().setAccountNum(8L).build(),
-                AccountID.newBuilder().setAccountNum(9L).build()
-            };
     private final long vanillaTriggerAmount = 5000L;
     private final long firstCreditAmount = 4000L;
     private final long secondCreditAmount = 1000L;
@@ -492,15 +489,6 @@ class FractionalFeeAssessorTest {
                     notNetOfTransfers,
                     secondFractionalFeeCollector,
                     false);
-    private final FcCustomFee exemptCustomFractionalFee =
-            FcCustomFee.fractionalFee(
-                    secondNumerator,
-                    secondDenominator,
-                    secondMinAmountOfFractionalFee,
-                    secondMaxAmountOfFractionalFee,
-                    true,
-                    secondFractionalFeeCollector,
-                    true);
     private final CustomFeeMeta tokenWithFractionalMeta =
             new CustomFeeMeta(
                     tokenWithFractionalFee,
@@ -519,6 +507,19 @@ class FractionalFeeAssessorTest {
     private final BalanceChange secondVanillaReclaim =
             BalanceChange.tokenAdjust(
                     secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
+    final AccountID aliasedAccountId =
+            AccountID.newBuilder().setAlias(ByteString.copyFrom("alias".getBytes())).build();
+    private final BalanceChange aliasedVanillaReclaim =
+            BalanceChange.changingFtUnits(
+                    tokenWithFractionalFee,
+                    tokenWithFractionalFee.asGrpcToken(),
+                    AccountAmount.newBuilder()
+                            .setAccountID(aliasedAccountId)
+                            .setAmount(+secondCreditAmount)
+                            .build(),
+                    payer.asGrpcAccount());
+    private final AccountID[] effPayerAccountNums =
+            new AccountID[] {AccountID.newBuilder().setAccountNum(8L).build(), aliasedAccountId};
     private final BalanceChange wildlyInsufficientChange =
             BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -1);
     private final BalanceChange someCredit =
