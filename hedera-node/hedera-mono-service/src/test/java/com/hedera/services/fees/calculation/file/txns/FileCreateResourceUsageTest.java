@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.TransactionBody;

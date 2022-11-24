@@ -15,12 +15,13 @@
  */
 package com.hedera.services.files.interceptors;
 
-import static com.hedera.services.files.interceptors.ConfigListUtils.isConfigList;
-import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
+import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.isConfigList;
+import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.uncheckedParse;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import org.junit.jupiter.api.Assertions;

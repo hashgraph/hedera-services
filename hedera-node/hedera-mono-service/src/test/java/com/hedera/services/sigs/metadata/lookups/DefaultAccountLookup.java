@@ -20,10 +20,10 @@ import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.metadata.AccountSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.function.Supplier;

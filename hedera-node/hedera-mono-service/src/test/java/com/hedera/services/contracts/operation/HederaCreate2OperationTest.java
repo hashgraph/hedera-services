@@ -21,8 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCreate2Operation;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.apache.tuweni.bytes.Bytes;

@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSign;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
 import dagger.Module;
 import dagger.Provides;

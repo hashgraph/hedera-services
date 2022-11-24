@@ -15,10 +15,10 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import java.util.List;

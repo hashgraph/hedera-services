@@ -28,9 +28,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;

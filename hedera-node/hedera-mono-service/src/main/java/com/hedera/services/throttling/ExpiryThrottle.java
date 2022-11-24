@@ -21,7 +21,7 @@ import static java.util.stream.Collectors.toMap;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.files.HybridResouceLoader;
+import com.hedera.node.app.service.mono.files.HybridResouceLoader;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.throttles.DeterministicThrottle;
 import java.time.Instant;

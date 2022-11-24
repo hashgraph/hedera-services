@@ -16,7 +16,7 @@
 package com.hedera.test.utils;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;

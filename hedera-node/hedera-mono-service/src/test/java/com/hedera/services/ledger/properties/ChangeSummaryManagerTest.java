@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.services.ledger.PropertyChangeObserver;
+import com.hedera.node.app.service.mono.ledger.PropertyChangeObserver;
+import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.accounts.TestAccount;
 import java.util.EnumMap;
 import org.junit.jupiter.api.BeforeEach;

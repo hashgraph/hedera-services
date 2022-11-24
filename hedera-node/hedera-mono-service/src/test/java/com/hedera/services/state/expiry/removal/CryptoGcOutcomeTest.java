@@ -17,9 +17,12 @@ package com.hedera.services.state.expiry.removal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.NftAdjustments;
+import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

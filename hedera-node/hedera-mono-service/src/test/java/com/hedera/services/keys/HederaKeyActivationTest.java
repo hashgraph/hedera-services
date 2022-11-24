@@ -15,9 +15,9 @@
  */
 package com.hedera.services.keys;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.isActive;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
@@ -39,11 +39,13 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
+import com.hedera.node.app.service.mono.keys.RevocationServiceCharacteristics;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;

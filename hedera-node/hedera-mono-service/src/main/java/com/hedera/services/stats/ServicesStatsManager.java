@@ -18,10 +18,10 @@ package com.hedera.services.stats;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.services.utils.Pause;
 import com.swirlds.common.system.Platform;
 import com.swirlds.virtualmap.VirtualMap;

@@ -22,10 +22,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.CallEvmTxProcessor;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;

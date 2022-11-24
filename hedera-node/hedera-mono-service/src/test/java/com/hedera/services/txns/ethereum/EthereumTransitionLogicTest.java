@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.ethereum;
 
-import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -39,14 +39,14 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.accounts.SynthCreationCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.contract.ContractCreateTransitionLogic;

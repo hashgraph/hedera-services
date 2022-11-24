@@ -32,10 +32,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;

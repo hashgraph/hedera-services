@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaSource;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

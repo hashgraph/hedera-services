@@ -15,17 +15,19 @@
  */
 package com.hedera.services.state.expiry.classification;
 
-import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
-import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
+import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
+import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;

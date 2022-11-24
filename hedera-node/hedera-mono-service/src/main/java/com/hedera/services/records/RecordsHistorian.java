@@ -15,9 +15,10 @@
  */
 package com.hedera.services.records;
 
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
+import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -142,7 +143,7 @@ public interface RecordsHistorian {
 
     /**
      * At the moment before committing the active transaction, takes the opportunity to track any
-     * new expiring entities with the {@link com.hedera.services.state.expiry.ExpiryManager}.
+     * new expiring entities with the {@link ExpiryManager}.
      */
     void noteNewExpirationEvents();
 

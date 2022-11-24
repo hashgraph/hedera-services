@@ -15,11 +15,13 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.VirtualBlobValueSupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.VirtualBlobValueSupplier.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobValueSupplier.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class VirtualBlobValueSupplierTest {

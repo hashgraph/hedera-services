@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.IterableStorageUtils.inPlaceUpsertMapping;
-import static com.hedera.services.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
-import static com.hedera.services.state.virtual.IterableStorageUtils.removeMapping;
+import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils.inPlaceUpsertMapping;
+import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
+import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils.removeMapping;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -27,7 +27,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.utility.CommonUtils;

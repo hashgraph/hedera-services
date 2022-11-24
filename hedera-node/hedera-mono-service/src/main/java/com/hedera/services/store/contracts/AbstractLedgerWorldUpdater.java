@@ -15,24 +15,24 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.ledger.properties.AccountProperty.ALIAS;
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

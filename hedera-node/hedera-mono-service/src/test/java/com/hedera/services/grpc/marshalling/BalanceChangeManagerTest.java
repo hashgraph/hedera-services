@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;

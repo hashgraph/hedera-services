@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils;
 
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;

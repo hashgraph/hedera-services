@@ -41,7 +41,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;

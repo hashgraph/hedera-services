@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,14 +28,14 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.token.impl.TokenStore;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Optional;

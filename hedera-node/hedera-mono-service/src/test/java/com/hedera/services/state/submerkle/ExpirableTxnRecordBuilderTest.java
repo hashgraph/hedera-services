@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,7 +30,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
+import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;

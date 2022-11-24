@@ -19,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.expiry.ExpiringEntity;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

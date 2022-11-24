@@ -16,15 +16,16 @@
 package com.hedera.services.state.migration;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.hedera.services.state.migration.StateChildIndices.UNIQUE_TOKENS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.UNIQUE_TOKENS;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.virtual.UniqueTokenKey;
-import com.hedera.services.state.virtual.UniqueTokenValue;
-import com.hedera.services.state.virtual.VirtualMapFactory;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.jasperdb.JasperDbBuilder;

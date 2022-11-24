@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.submerkle.FcAssessedCustomFee.assessedHbarFeeFrom;
+import static com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee.assessedHbarFeeFrom;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;

@@ -17,8 +17,8 @@ package com.hedera.services.sigs.metadata;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 

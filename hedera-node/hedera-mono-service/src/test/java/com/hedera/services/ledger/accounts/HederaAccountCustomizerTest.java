@@ -16,14 +16,15 @@
 package com.hedera.services.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import java.util.Arrays;
 import java.util.Map;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.state.logic.RecordStreaming.PENDING_USER_TXN_BLOCK_NO;
+import static com.hedera.node.app.service.mono.state.logic.RecordStreaming.PENDING_USER_TXN_BLOCK_NO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
+import com.hedera.node.app.service.mono.state.logic.RecordStreaming;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;

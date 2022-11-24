@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.submerkle;
 
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

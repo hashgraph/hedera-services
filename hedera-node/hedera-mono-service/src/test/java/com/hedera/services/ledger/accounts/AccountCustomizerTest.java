@@ -15,20 +15,20 @@
  */
 package com.hedera.services.ledger.accounts;
 
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRED_AND_PENDING_REMOVAL;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.EXPIRY;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.KEY;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.MEMO;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.PROXY;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
-import static com.hedera.services.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.AUTO_RENEW_PERIOD;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.DECLINE_REWARD;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.EXPIRED_AND_PENDING_REMOVAL;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.EXPIRY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.IS_DELETED;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.KEY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.MEMO;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.PROXY;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.STAKED_ID;
+import static com.hedera.node.app.service.mono.ledger.accounts.AccountCustomizer.Option.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.ledger.properties.TestAccountProperty.FLAG;
 import static com.hedera.services.ledger.properties.TestAccountProperty.OBJ;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,11 +41,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import java.util.EnumMap;
 import org.junit.jupiter.api.Test;
 

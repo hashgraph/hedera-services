@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,24 +28,24 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.evm.store.contracts.WorldStateAccount;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;
 import com.hedera.services.ledger.backing.HashMapBackingNfts;
 import com.hedera.services.ledger.backing.HashMapBackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingTokens;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.ledger.properties.NftProperty;
-import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;

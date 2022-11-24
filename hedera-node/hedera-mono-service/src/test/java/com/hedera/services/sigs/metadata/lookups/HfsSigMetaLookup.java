@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPT
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.services.files.HederaFs;
+import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;
 import com.hederahashgraph.api.proto.java.FileID;

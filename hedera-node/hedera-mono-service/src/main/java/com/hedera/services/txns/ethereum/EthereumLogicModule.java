@@ -17,7 +17,7 @@ package com.hedera.services.txns.ethereum;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
 import dagger.Module;
 import dagger.Provides;

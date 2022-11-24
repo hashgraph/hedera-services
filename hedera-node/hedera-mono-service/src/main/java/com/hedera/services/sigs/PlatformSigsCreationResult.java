@@ -17,7 +17,7 @@ package com.hedera.services.sigs;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.crypto.TransactionSignature;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.state.validation.AccountUsageTracking;
+import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

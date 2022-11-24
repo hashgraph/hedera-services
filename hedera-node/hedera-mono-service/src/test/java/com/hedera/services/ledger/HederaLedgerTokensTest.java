@@ -15,11 +15,11 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
-import static com.hedera.services.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -42,12 +42,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.operation;
 
-import static com.hedera.services.contracts.operation.HederaSStoreOperation.ILLEGAL_STATE_CHANGE_RESULT;
+import static com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation.ILLEGAL_STATE_CHANGE_RESULT;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
@@ -27,6 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Optional;

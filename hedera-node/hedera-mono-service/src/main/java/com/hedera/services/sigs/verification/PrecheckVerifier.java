@@ -15,12 +15,12 @@
  */
 package com.hedera.services.sigs.verification;
 
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.isActive;
-import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.isActive;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.PlatformSigsCreationResult;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

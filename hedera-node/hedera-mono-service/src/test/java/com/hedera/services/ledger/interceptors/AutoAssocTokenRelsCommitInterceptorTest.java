@@ -18,11 +18,12 @@ package com.hedera.services.ledger.interceptors;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.HederaTokenRel;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Map;

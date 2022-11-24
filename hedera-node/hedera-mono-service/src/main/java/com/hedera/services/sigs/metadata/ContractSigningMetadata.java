@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 
 /** Represents metadata about the signing activities of a Hedera smart contract. */
 public record ContractSigningMetadata(JKey key, boolean receiverSigRequired) {

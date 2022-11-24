@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
+import static com.hedera.node.app.service.mono.fees.calculation.AutoRenewCalcs.countSerials;
 import static com.hedera.services.pricing.BaseOperationUsage.CANONICAL_NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
@@ -34,11 +34,12 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.fees.calculation.AutoRenewCalcs;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.usage.crypto.ExtantCryptoContext;

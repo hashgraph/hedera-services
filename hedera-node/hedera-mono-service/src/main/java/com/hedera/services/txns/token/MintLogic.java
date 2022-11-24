@@ -15,16 +15,16 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Id;

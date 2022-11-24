@@ -17,6 +17,8 @@ package com.hedera.services.files;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.files.HybridResouceLoader;
+import com.hedera.node.app.service.mono.files.TieredHederaFs;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import java.nio.charset.StandardCharsets;

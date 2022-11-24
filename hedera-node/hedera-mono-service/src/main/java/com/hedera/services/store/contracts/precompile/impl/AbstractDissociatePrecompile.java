@@ -15,16 +15,16 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.DISSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.Precompile;

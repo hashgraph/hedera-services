@@ -44,7 +44,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;

@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.schedule;
 
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

@@ -19,17 +19,20 @@ import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a tracker of the usable consensus time space during a {@link
- * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+ * StandardProcessLogic#incorporateConsensusTxn} call.
  */
 @Singleton
 public class ConsensusTimeTracker {
@@ -54,21 +57,21 @@ public class ConsensusTimeTracker {
 
     /**
      * The max number of records that can be placed before transactions in a {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+     * StandardProcessLogic#incorporateConsensusTxn} call.
      */
     private long maxPrecedingRecords;
     /**
      * There is a special case. When the system first starts up, there are migrations that can
      * process that need unlimited preceding records. See {@link
-     * com.hedera.services.state.migration.MigrationRecordsManager}.
+     * MigrationRecordsManager}.
      *
      * <p>unlimitedPreceding should only ever true on the first transaction in an {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+     * StandardProcessLogic#incorporateConsensusTxn} call.
      */
     private boolean unlimitedPreceding;
     /**
      * The max number of records that can be placed after a transaction in a {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
+     * StandardProcessLogic#incorporateConsensusTxn} call
      */
     private long maxFollowingRecords;
 
@@ -123,7 +126,7 @@ public class ConsensusTimeTracker {
 
     /**
      * @return true if firstTransactionTime() cannot be used again in the current {@link
-     *     com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call
+     *     StandardProcessLogic#incorporateConsensusTxn} call
      */
     public boolean isFirstUsed() {
         return firstUsed;
@@ -139,7 +142,7 @@ public class ConsensusTimeTracker {
 
     /**
      * Resets this tracker, should be called at the beginning of {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn}
+     * StandardProcessLogic#incorporateConsensusTxn}
      *
      * @param consensusTime the consensusTime passed to incorporateConsensusTxn
      */
@@ -159,12 +162,12 @@ public class ConsensusTimeTracker {
 
     /**
      * The first transaction in a {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call can have
+     * StandardProcessLogic#incorporateConsensusTxn} call can have
      * more "preceding" transactions than normal, this method returns the first consensus time. If
      * it has already been used, and exception is thrown. See {@link #isFirstUsed()}.
      *
      * @return the consensus time to use for the first transaction in a {@link
-     *     com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn} call.
+     *     StandardProcessLogic#incorporateConsensusTxn} call.
      */
     public Instant firstTransactionTime() {
 
@@ -187,7 +190,7 @@ public class ConsensusTimeTracker {
      * <p>This _should not_ be called anywhere that could possibly be called during the handling of
      * a normal transaction. It resets the tracker to the "next" state. It should really only be
      * called by {@link
-     * com.hedera.services.state.logic.StandardProcessLogic#incorporateConsensusTxn}.
+     * StandardProcessLogic#incorporateConsensusTxn}.
      *
      * <p>Use {@link TxnAwareRecordsHistorian} for getting record consensus times that are
      * associated with a transaction.

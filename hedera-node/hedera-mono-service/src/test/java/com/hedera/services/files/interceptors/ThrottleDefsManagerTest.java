@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.files.interceptors.ThrottleDefsManager;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.test.utils.SerdeUtils;

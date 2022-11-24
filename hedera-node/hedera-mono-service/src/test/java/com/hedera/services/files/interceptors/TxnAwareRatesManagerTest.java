@@ -15,9 +15,9 @@
  */
 package com.hedera.services.files.interceptors;
 
-import static com.hedera.services.files.interceptors.TxnAwareRatesManager.INVALID_VERDICT;
-import static com.hedera.services.files.interceptors.TxnAwareRatesManager.LIMIT_EXCEEDED_VERDICT;
-import static com.hedera.services.files.interceptors.TxnAwareRatesManager.YES_VERDICT;
+import static com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager.INVALID_VERDICT;
+import static com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager.LIMIT_EXCEEDED_VERDICT;
+import static com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager.YES_VERDICT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,12 +29,13 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.files.interceptors.TxnAwareRatesManager;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

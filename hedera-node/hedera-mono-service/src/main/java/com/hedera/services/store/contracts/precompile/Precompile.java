@@ -15,14 +15,14 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
+import static com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.utils.accessors.TxnAccessor;

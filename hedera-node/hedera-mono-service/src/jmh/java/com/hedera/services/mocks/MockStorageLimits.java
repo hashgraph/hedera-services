@@ -15,7 +15,7 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.state.validation.ContractStorageLimits;
+import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
 
 public class MockStorageLimits implements ContractStorageLimits {
     @Override

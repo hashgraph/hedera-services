@@ -17,7 +17,7 @@ package com.hedera.services.txns.util;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
 import dagger.Module;
 import dagger.Provides;

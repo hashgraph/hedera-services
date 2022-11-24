@@ -17,7 +17,7 @@ package com.hedera.services.state.merkle;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
+import static com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils.getHashBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -31,8 +31,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.services.legacy.proto.utils.CommonUtils;
-import com.hedera.services.state.merkle.internals.ByteUtils;
+import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;

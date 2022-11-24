@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.submerkle.RichInstant.*;
+import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
 
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

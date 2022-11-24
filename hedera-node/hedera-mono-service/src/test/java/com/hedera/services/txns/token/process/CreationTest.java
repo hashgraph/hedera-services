@@ -31,9 +31,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;

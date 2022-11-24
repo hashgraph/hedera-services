@@ -16,9 +16,9 @@
 package com.hedera.services.fees.charging;
 
 import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
-import static com.hedera.services.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
-import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedAddition;
-import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedMultiplication;
+import static com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
+import static com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers.cappedAddition;
+import static com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers.cappedMultiplication;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.junit.jupiter.api.Test;

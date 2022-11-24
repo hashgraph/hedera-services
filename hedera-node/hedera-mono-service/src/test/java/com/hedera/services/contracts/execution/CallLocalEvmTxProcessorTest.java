@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,9 +30,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;

@@ -15,11 +15,12 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import static com.hedera.services.grpc.marshalling.AdjustmentUtils.adjustedChange;
+import static com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils.adjustedChange;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

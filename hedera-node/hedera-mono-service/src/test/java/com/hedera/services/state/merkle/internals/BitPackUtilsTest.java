@@ -15,16 +15,16 @@
  */
 package com.hedera.services.state.merkle.internals;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.isValidNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import org.junit.jupiter.api.Test;
 
 class BitPackUtilsTest {

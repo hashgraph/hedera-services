@@ -16,16 +16,16 @@
 package com.hedera.services.store.contracts;
 
 import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface EntityAccess extends HederaEvmEntityAccess {
     /**
-     * Provides a {@link WorldLedgers} whose {@link com.hedera.services.ledger.TransactionalLedger}
+     * Provides a {@link WorldLedgers} whose {@link TransactionalLedger}
      * instances commit directly to the Hedera world state. Only makes sense to return
      * non-degenerate ledgers for a mutable {@link EntityAccess} implementation (though both mutable
      * and static entity access do require the alias "ledger").

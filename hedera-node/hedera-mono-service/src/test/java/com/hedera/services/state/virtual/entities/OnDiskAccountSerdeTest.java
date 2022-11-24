@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.virtual.entities;
 
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.test.serde.VirtualValueDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

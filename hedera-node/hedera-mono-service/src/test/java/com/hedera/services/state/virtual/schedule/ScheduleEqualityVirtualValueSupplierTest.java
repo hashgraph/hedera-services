@@ -15,11 +15,13 @@
  */
 package com.hedera.services.state.virtual.schedule;
 
-import static com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class ScheduleEqualityVirtualValueSupplierTest {

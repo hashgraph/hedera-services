@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import java.math.BigInteger;
 import java.time.Instant;

@@ -21,8 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.BeforeEach;

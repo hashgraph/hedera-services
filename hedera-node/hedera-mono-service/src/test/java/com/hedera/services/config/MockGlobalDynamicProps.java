@@ -16,8 +16,8 @@
 package com.hedera.services.config;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.calculation.CongestionMultipliers;
-import com.hedera.services.fees.calculation.EntityScaleFactors;
+import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
+import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Set;

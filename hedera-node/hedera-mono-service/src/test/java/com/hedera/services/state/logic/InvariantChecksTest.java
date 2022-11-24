@@ -23,7 +23,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.logic.InvariantChecks;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;

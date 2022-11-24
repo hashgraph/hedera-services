@@ -23,8 +23,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenAssociateResourceUsage;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;

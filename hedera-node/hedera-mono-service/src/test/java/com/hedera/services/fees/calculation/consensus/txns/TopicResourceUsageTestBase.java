@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

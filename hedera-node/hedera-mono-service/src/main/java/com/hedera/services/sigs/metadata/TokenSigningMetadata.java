@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import java.util.Optional;
 
 /** Represents metadata about the signing attributes of a Hedera token. */

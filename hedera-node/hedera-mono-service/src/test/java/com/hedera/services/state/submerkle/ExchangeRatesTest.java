@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.submerkle.ExchangeRates.MERKLE_VERSION;
-import static com.hedera.services.state.submerkle.ExchangeRates.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.ExchangeRates.MERKLE_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExchangeRates.RUNTIME_CONSTRUCTABLE_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,6 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;

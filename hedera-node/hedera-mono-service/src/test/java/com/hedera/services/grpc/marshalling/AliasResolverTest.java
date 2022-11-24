@@ -25,7 +25,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;

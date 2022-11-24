@@ -22,10 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.node.app.service.mono.state.expiry.UniqueTokensListMutation;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.NftNumPair;
 import java.nio.charset.StandardCharsets;

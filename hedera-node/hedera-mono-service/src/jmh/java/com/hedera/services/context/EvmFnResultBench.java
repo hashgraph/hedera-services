@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.services.submerkle.RandomFactory;
 import java.util.Arrays;
 import java.util.SplittableRandom;

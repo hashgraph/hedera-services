@@ -15,15 +15,15 @@
  */
 package com.hedera.services.txns.token;
 
-import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.tokens.TokenStore;
 import com.hedera.services.store.tokens.annotations.AreTreasuryWildcardsEnabled;

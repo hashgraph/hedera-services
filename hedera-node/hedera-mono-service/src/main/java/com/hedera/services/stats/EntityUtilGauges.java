@@ -18,7 +18,7 @@ package com.hedera.services.stats;
 import static com.hedera.services.stats.ServicesStatsManager.GAUGE_FORMAT;
 import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;

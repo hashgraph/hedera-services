@@ -35,8 +35,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.services.sigs.factories.PlatformSigFactory;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;

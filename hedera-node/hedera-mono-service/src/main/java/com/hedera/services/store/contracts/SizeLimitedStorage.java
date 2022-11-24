@@ -16,21 +16,22 @@
 package com.hedera.services.store.contracts;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
-import static com.hedera.services.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FIRST_CONTRACT_STORAGE_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.utils.EntityNum.fromLong;
 import static org.apache.tuweni.units.bigints.UInt256.ZERO;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.charging.StorageFeeCharging;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.validation.ContractStorageLimits;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.fees.charging.StorageFeeCharging;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.HashMap;
@@ -115,7 +116,7 @@ public class SizeLimitedStorage {
      * Validates that the pending key/value changes will not exceed any storage limits, and then
      * commits them to the underlying data source.
      *
-     * @throws com.hedera.services.exceptions.InvalidTransactionException if a storage limit is
+     * @throws InvalidTransactionException if a storage limit is
      *     exceeded
      */
     public void validateAndCommit(

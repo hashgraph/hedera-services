@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.file.txns;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
 import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

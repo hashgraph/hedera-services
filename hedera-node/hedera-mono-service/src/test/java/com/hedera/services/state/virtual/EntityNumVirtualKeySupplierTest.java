@@ -15,11 +15,13 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.EntityNumVirtualKeySupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.EntityNumVirtualKeySupplier.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKeySupplier;
 import org.junit.jupiter.api.Test;
 
 class EntityNumVirtualKeySupplierTest {

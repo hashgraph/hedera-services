@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.sourcing;
 
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 
 /**
  * Defines a type that is a source of the cryptographic signatures associated to given public keys.

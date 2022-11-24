@@ -15,6 +15,7 @@
  */
 package com.hedera.services.throttling;
 
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.services.utils.MiscUtils;
 import java.util.List;
 
@@ -47,11 +48,11 @@ public enum MapAccessType {
      */
     NFTS_GET_FOR_MODIFY,
     /**
-     * To get the {@link com.hedera.services.state.virtual.IterableContractValue} for a storage key.
+     * To get the {@link IterableContractValue} for a storage key.
      */
     STORAGE_GET,
     /**
-     * To replace a {@link com.hedera.services.state.virtual.IterableContractValue} with modified
+     * To replace a {@link IterableContractValue} with modified
      * links.
      */
     STORAGE_PUT,

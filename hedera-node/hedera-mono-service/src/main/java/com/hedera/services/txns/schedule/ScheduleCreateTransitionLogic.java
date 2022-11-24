@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.schedule;
 
-import static com.hedera.services.state.submerkle.RichInstant.fromJava;
+import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -27,10 +27,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;

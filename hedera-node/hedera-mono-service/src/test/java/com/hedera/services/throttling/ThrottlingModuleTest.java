@@ -20,7 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.system.address.AddressBook;
 import org.hamcrest.Matchers;

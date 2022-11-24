@@ -15,10 +15,10 @@
  */
 package com.hedera.services.fees.calculation.utils;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
-import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.state.submerkle.FcCustomFee.royaltyFee;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.royaltyFee;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -31,19 +31,20 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FixedFeeSpec;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.removal.ContractGC.*;
-import static com.hedera.services.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
+import static com.hedera.node.app.service.mono.state.expiry.removal.ContractGC.*;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,14 +25,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractStorageListMutation;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.expiry.removal.ContractGC;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.ContractStorageListMutation;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;

@@ -15,14 +15,15 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.files.DataMapFactory.dataMapFrom;
-import static com.hedera.services.files.DataMapFactory.toFid;
-import static com.hedera.services.files.DataMapFactory.toKeyString;
+import static com.hedera.node.app.service.mono.files.DataMapFactory.dataMapFrom;
+import static com.hedera.node.app.service.mono.files.DataMapFactory.toFid;
+import static com.hedera.node.app.service.mono.files.DataMapFactory.toKeyString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.files.DataMapFactory;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.test.utils.IdUtils;
 import java.util.Comparator;

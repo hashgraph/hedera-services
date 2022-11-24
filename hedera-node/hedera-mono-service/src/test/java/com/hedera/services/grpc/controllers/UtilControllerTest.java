@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.grpc.controllers.UtilController;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;

@@ -22,8 +22,8 @@ import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;

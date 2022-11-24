@@ -15,7 +15,7 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -35,13 +35,13 @@ import static org.mockito.BDDMockito.verify;
 
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

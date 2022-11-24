@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -29,7 +29,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.inOrder;
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

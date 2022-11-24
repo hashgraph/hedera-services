@@ -16,7 +16,7 @@
 package com.hedera.services.utils;
 
 import com.google.protobuf.BytesValue;
-import com.hedera.services.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;

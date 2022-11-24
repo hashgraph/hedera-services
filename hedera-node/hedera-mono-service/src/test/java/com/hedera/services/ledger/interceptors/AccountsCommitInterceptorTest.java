@@ -15,18 +15,19 @@
  */
 package com.hedera.services.ledger.interceptors;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.validation.AccountUsageTracking;
-import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.interceptors.AccountsCommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import org.junit.jupiter.api.Assertions;

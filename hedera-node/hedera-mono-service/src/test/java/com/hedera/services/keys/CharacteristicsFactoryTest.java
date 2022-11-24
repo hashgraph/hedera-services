@@ -15,15 +15,18 @@
  */
 package com.hedera.services.keys;
 
-import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.HederaFs;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.keys.CharacteristicsFactory;
+import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;
+import com.hedera.node.app.service.mono.keys.RevocationServiceCharacteristics;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;

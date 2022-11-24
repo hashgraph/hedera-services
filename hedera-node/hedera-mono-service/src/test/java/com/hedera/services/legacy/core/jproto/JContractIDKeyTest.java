@@ -18,6 +18,7 @@ package com.hedera.services.legacy.core.jproto;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.junit.jupiter.api.Test;
 

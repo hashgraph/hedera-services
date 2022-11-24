@@ -15,12 +15,12 @@
  */
 package com.hedera.services.store.models;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.store.contracts.WorldLedgers.ECDSA_KEY_ALIAS_PREFIX;
 import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -32,10 +32,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.evm.store.models.HederaEvmAccount;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -58,7 +59,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Encapsulates the state and operations of a Hedera account.
  *
  * <p>Operations are validated, and throw a {@link
- * com.hedera.services.exceptions.InvalidTransactionException} with response code capturing the
+ * InvalidTransactionException} with response code capturing the
  * failure when one occurs.
  *
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support

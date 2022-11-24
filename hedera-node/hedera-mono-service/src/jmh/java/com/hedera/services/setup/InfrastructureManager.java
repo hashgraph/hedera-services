@@ -18,8 +18,8 @@ package com.hedera.services.setup;
 import static com.hedera.services.setup.InfrastructureBundle.allImplied;
 import static com.hedera.services.setup.InfrastructureInitializer.initializeBundle;
 
-import com.hedera.services.state.virtual.VirtualMapFactory;
-import com.hedera.services.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
+import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
+import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;

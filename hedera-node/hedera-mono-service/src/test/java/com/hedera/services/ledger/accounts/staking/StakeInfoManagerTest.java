@@ -17,12 +17,13 @@ package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;

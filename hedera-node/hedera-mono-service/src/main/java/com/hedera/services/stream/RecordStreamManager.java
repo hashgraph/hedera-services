@@ -21,7 +21,7 @@ import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.state.logic.StandardProcessLogic;
+import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

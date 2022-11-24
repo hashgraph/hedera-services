@@ -16,10 +16,10 @@
 package com.hedera.services.utils;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedNums;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.isValidNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedNums;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
 import static com.hedera.services.utils.EntityNum.areValidNums;
 
 import com.hedera.services.store.models.NftId;

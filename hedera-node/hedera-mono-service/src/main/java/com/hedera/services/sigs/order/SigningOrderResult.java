@@ -18,7 +18,7 @@ package com.hedera.services.sigs.order;
 import static java.util.Collections.EMPTY_LIST;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import java.util.List;
 
 /**

@@ -16,15 +16,15 @@
 package com.hedera.services.utils;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.isValidNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.realmFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

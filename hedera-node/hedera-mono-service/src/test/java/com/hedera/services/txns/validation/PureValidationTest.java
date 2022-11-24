@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.validation;
 
-import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
-import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.STAKED_NODE_ID_CASE;
+import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
+import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_NODE_ID_CASE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -27,8 +27,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.TxnUtils;

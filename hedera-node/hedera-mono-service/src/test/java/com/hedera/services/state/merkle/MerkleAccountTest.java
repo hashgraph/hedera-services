@@ -15,19 +15,21 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;

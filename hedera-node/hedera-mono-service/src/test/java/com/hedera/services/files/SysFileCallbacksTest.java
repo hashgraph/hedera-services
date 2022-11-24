@@ -17,9 +17,10 @@ package com.hedera.services.files;
 
 import static org.mockito.Mockito.inOrder;
 
-import com.hedera.services.files.sysfiles.ConfigCallbacks;
-import com.hedera.services.files.sysfiles.CurrencyCallbacks;
-import com.hedera.services.files.sysfiles.ThrottlesCallback;
+import com.hedera.node.app.service.mono.files.SysFileCallbacks;
+import com.hedera.node.app.service.mono.files.sysfiles.ConfigCallbacks;
+import com.hedera.node.app.service.mono.files.sysfiles.CurrencyCallbacks;
+import com.hedera.node.app.service.mono.files.sysfiles.ThrottlesCallback;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

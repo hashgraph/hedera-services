@@ -15,12 +15,13 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
-import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0320_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0230_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.RELEASE_0320_VERSION;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;

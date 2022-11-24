@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.proxy;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
@@ -33,8 +33,8 @@ import static com.hedera.services.utils.MiscUtils.asSecondsTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;

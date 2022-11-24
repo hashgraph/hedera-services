@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 
 public final class TokenMetaUtils {
     private TokenMetaUtils() {

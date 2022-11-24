@@ -15,6 +15,7 @@
  */
 package com.hedera.services.ledger.properties;
 
+import com.hedera.node.app.service.mono.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.accounts.TestAccount;
 import java.util.function.BiConsumer;
 import java.util.function.Function;

@@ -15,16 +15,16 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.ledger.properties.TokenProperty.ADMIN_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.FREEZE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.KYC_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.PAUSE_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.SUPPLY_KEY;
-import static com.hedera.services.ledger.properties.TokenProperty.WIPE_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.ADMIN_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.FEE_SCHEDULE_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.FREEZE_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.KYC_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.PAUSE_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.SUPPLY_KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.WIPE_KEY;
 
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 

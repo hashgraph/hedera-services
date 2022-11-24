@@ -15,8 +15,8 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
-import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CREATE2;
 import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.*;
 import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
@@ -28,14 +28,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.contracts.execution.traceability.CallOperationType;
-import com.hedera.services.contracts.execution.traceability.ContractActionType;
-import com.hedera.services.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.EvmFnResult;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;

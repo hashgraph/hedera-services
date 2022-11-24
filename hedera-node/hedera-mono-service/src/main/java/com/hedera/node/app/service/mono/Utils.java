@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono;
 
-import static com.hedera.services.legacy.core.jproto.JKey.mapKey;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.mapKey;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;

@@ -16,7 +16,7 @@
 package com.hedera.services.state.validation;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
@@ -24,10 +24,11 @@ import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.validation.BasedLedgerValidator;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;

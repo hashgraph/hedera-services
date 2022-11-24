@@ -15,16 +15,18 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.files.HFileMetaSerde.MEMO_VERSION;
-import static com.hedera.services.files.HFileMetaSerde.deserialize;
+import static com.hedera.node.app.service.mono.files.HFileMetaSerde.MEMO_VERSION;
+import static com.hedera.node.app.service.mono.files.HFileMetaSerde.deserialize;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JObjectType;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HFileMetaSerde;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JObjectType;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.SeededPropertySource;

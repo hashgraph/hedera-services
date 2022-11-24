@@ -15,19 +15,20 @@
  */
 package com.hedera.services.store;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.merkle.MerkleUniqueToken;
-import com.hedera.services.state.migration.HederaTokenRel;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;
 import com.hedera.services.store.models.Token;
@@ -82,7 +83,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
     /**
      * Persists the given token relationships to the Swirlds state, inviting the injected {@link
      * TransactionRecordService} to update the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction with these
+     * ExpirableTxnRecord} of the active transaction with these
      * changes.
      *
      * @param tokenRelationships the token relationships to save
@@ -127,7 +128,7 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
     /**
      * Persists the given token to the Swirlds state, inviting the injected {@link
      * TransactionRecordService} to update the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} of the active transaction with these
+     * ExpirableTxnRecord} of the active transaction with these
      * changes.
      *
      * @param token the token to save

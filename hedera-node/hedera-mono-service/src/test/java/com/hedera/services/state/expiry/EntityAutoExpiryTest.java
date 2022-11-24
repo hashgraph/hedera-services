@@ -15,21 +15,22 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.logic.NetworkCtxManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.state.tasks.SystemTaskManager;
+import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
+import com.hedera.node.app.service.mono.state.tasks.SystemTaskManager;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import java.time.Instant;

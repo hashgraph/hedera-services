@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

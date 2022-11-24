@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.schedule;
 
-import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes.beginsWith;
 import static com.hedera.services.txns.schedule.SigClassification.INVALID_SCHEDULED_TXN_MATCH;
 import static com.hedera.services.txns.schedule.SigClassification.NO_MATCH;
@@ -25,7 +25,7 @@ import static com.hedera.services.txns.schedule.SigClassification.VALID_SCHEDULE
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;

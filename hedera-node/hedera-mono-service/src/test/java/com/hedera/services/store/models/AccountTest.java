@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.models;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.txns.token.process.Dissociation;
 import com.hedera.services.txns.validation.ContextOptionValidator;

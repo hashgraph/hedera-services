@@ -15,11 +15,11 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
-import static com.hedera.services.state.virtual.VirtualBlobKey.Type.FILE_DATA;
-import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CLASS_ID;
-import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.CURRENT_VERSION;
-import static com.hedera.services.state.virtual.VirtualBlobKeySerializer.DATA_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.BYTES_IN_SERIALIZED_FORM;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type.FILE_DATA;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer.DATA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -28,6 +28,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySerializer;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 
 public record TopicSigningMetadata(JKey adminKey, JKey submitKey) {
     public boolean hasAdminKey() {

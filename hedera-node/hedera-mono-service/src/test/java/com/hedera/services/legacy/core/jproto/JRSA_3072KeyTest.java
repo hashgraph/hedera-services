@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JRSA_3072Key;
 import org.junit.jupiter.api.Test;
 
 class JRSA_3072KeyTest {

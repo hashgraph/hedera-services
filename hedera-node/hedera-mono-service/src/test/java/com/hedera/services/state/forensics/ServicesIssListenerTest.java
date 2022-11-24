@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
+import com.hedera.node.app.service.mono.state.forensics.ServicesIssListener;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

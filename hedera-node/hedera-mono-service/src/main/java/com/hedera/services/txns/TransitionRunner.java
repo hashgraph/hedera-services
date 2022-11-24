@@ -41,8 +41,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;

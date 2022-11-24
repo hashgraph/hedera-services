@@ -15,15 +15,18 @@
  */
 package com.hedera.services.state.tasks;
 
-import static com.hedera.services.state.merkle.MerkleNetworkContext.*;
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.*;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import java.util.Map;
+
+import com.hedera.node.app.service.mono.state.tasks.SystemTask;
+import com.hedera.node.app.service.mono.state.tasks.SystemTaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

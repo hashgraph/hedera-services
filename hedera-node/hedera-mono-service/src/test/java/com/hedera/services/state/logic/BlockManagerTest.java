@@ -16,7 +16,7 @@
 package com.hedera.services.state.logic;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD;
-import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,7 +29,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;

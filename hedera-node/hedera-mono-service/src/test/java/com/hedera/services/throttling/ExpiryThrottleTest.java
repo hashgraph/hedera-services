@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.hedera.services.files.HybridResouceLoader;
+import com.hedera.node.app.service.mono.files.HybridResouceLoader;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.services.throttles.DeterministicThrottle;
 import java.io.IOException;

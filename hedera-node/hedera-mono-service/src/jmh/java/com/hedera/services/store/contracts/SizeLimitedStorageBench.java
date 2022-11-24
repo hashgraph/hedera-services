@@ -15,14 +15,14 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.services.mocks.MockStorageLimits;
 import com.hedera.services.mocks.NoopStorageFeeCharging;
 import com.hedera.services.setup.Constructables;
@@ -30,8 +30,8 @@ import com.hedera.services.setup.EvmKeyValueSource;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
 import com.hedera.services.setup.KvMutationBatch;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.virtual.IterableStorageUtils;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import java.util.List;

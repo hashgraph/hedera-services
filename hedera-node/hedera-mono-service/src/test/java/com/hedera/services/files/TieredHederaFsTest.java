@@ -15,7 +15,7 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.files.TieredHederaFs.BYTES_PER_KB;
+import static com.hedera.node.app.service.mono.files.TieredHederaFs.BYTES_PER_KB;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
@@ -35,10 +35,13 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.files.TieredHederaFs.IllegalArgumentType;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.TieredHederaFs;
+import com.hedera.node.app.service.mono.files.TieredHederaFs.IllegalArgumentType;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

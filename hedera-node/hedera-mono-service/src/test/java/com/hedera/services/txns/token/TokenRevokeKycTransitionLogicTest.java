@@ -30,7 +30,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;

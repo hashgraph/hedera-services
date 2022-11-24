@@ -26,7 +26,8 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 
-import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

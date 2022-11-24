@@ -28,11 +28,11 @@ import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;

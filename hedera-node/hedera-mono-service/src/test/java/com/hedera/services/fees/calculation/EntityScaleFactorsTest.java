@@ -21,6 +21,7 @@ import static com.hedera.services.sysfiles.domain.throttling.ScaleFactor.ONE_TO_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import org.junit.jupiter.api.Test;
 

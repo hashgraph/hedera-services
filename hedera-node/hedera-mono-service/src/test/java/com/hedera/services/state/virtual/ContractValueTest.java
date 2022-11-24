@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.ContractValue.MERKLE_VERSION;
-import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.services.state.virtual.ContractValue.SERIALIZED_SIZE;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValue.MERKLE_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValue.SERIALIZED_SIZE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -31,6 +31,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.virtual.ContractValue;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;

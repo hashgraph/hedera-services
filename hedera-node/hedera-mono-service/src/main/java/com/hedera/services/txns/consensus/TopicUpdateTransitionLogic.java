@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.consensus;
 
-import static com.hedera.services.state.submerkle.RichInstant.fromGrpc;
+import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromGrpc;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
@@ -29,12 +29,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;

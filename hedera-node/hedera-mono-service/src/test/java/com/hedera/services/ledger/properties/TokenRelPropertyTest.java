@@ -15,13 +15,13 @@
  */
 package com.hedera.services.ledger.properties;
 
-import static com.hedera.services.ledger.properties.TokenRelProperty.IS_AUTOMATIC_ASSOCIATION;
-import static com.hedera.services.ledger.properties.TokenRelProperty.IS_FROZEN;
-import static com.hedera.services.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
-import static com.hedera.services.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_AUTOMATIC_ASSOCIATION;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_FROZEN;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.IS_KYC_GRANTED;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.utils.EntityNumPair;
 import org.junit.jupiter.api.Test;
 

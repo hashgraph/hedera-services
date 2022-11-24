@@ -25,8 +25,11 @@ import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
+import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;

@@ -17,10 +17,10 @@ package com.hedera.services.store.models;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.Test;
 

@@ -15,21 +15,22 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.ContractsModule.*;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.*;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.LivePricesSource;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.node.app.service.mono.contracts.ContractsModule;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import dagger.BindsInstance;
@@ -44,7 +45,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Singleton
-@Component(modules = {ContractsModule.class})
+@Component(modules = { ContractsModule.class})
 public interface ContractsTestComponent {
 
     @Singleton

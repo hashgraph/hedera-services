@@ -27,8 +27,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.services.usage.schedule.ExtantScheduleContext;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

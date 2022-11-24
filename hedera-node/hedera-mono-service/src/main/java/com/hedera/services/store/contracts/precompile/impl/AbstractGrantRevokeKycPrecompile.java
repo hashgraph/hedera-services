@@ -15,12 +15,12 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.contracts.WorldLedgers;

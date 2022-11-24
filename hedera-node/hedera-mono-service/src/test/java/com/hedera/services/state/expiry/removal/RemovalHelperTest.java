@@ -15,20 +15,26 @@
  */
 package com.hedera.services.state.expiry.removal;
 
-import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
+import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.state.expiry.removal.AccountGC;
+import com.hedera.node.app.service.mono.state.expiry.removal.ContractGC;
+import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.RemovalHelper;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.state.expiry.ExpiryRecordsHelper;
-import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.classification.EntityLookup;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.tasks.SystemTaskResult;
+import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
+import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
+import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;

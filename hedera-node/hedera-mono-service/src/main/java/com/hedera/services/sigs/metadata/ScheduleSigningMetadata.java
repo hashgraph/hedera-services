@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;

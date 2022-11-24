@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
@@ -51,13 +51,13 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
-import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
-import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.NftAdjustments;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import com.hedera.services.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.services.store.contracts.precompile.codec.Association;
 import com.hedera.services.store.contracts.precompile.codec.BurnWrapper;

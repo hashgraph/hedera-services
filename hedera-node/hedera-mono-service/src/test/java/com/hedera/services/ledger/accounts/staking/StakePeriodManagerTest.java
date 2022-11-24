@@ -17,8 +17,8 @@ package com.hedera.services.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
-import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -26,7 +26,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.Units;
 import java.time.Instant;
 import java.time.LocalDate;

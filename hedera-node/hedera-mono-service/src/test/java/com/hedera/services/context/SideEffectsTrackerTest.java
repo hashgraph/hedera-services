@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.services.state.enums.TokenType.FUNGIBLE_COMMON;
+import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.state.submerkle.FcTokenAllowance;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowance;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;

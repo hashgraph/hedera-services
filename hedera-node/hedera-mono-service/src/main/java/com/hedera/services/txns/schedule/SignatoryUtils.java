@@ -19,9 +19,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_S
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
-import com.hedera.services.keys.InHandleActivationHelper;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;

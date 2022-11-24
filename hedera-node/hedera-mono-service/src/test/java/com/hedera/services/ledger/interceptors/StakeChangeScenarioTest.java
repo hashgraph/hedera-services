@@ -15,10 +15,11 @@
  */
 package com.hedera.services.ledger.interceptors;
 
-import static com.hedera.services.ledger.interceptors.StakeChangeScenario.FROM_ABSENT_TO_ABSENT;
-import static com.hedera.services.ledger.interceptors.StakeChangeScenario.forCase;
+import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario.FROM_ABSENT_TO_ABSENT;
+import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario.forCase;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario;
 import org.junit.jupiter.api.Test;
 
 class StakeChangeScenarioTest {

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

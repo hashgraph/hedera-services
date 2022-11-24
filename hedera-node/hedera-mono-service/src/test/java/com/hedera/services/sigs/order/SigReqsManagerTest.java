@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.services.sigs.ExpansionHelper;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.state.migration.StateVersions;
+import com.hedera.node.app.service.mono.state.migration.StateVersions;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -17,6 +17,7 @@ package com.hedera.services.fees.calculation;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.fees.calculation.UtilizationScaleFactors;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
