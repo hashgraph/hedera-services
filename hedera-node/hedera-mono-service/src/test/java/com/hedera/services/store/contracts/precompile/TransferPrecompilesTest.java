@@ -2171,6 +2171,7 @@ class TransferPrecompilesTest {
                 .thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
 
         given(dynamicProperties.isAtomicCryptoTransferEnabled()).willReturn(true);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
@@ -2218,6 +2219,82 @@ class TransferPrecompilesTest {
         // then
         // 1 for hbars and 1 for fungible tokens
         assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
+
+        feeBuilder.close();
+    }
+
+    @Test
+    void minimumFeeInTinybarsWithLazyCreateButNotEnabled() {
+        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+
+        // given
+        givenMinFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
+        given(impliedTransfersMarshal.validityWithCurrentProps(any())).willReturn(OK);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(syntheticTxnFactory.createCryptoTransfer(any()))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        transferPrecompile
+                .when(() -> decodeCryptoTransfer(eq(input), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+
+        feeBuilder
+                .when(() -> getTinybarsFromTinyCents(any(), anyLong()))
+                .thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(false);
+
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+
+        // then 2 for 2 NFT exchanges and lazy creation not accounted for
+        assertEquals(2 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
+
+        feeBuilder.close();
+    }
+
+    @Test
+    void minimumFeeInTinybarsWithLazyCreateAttemptAndEnabled() {
+        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+
+        // given
+        givenMinFrameContext();
+        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(infrastructureFactory.newImpliedTransfersMarshal(any()))
+                .willReturn(impliedTransfersMarshal);
+        given(impliedTransfersMarshal.validityWithCurrentProps(any())).willReturn(OK);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(syntheticTxnFactory.createCryptoTransfer(any()))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setCryptoTransfer(CryptoTransferTransactionBody.newBuilder()));
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        transferPrecompile
+                .when(() -> decodeCryptoTransfer(eq(input), any(), any()))
+                .thenReturn(CRYPTO_TRANSFER_NFTS_WRAPPER_ALIAS_RECEIVER);
+
+        feeBuilder
+                .when(() -> getTinybarsFromTinyCents(any(), anyLong()))
+                .thenReturn(TEST_CRYPTO_TRANSFER_MIN_FEE);
+        given(dynamicProperties.isImplicitCreationEnabled()).willReturn(true);
+
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+
+        // 2 NFT Exchanges + 1 Lazy Creation (which is 2x the fee)
+        assertEquals(4 * TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
 
         feeBuilder.close();
     }

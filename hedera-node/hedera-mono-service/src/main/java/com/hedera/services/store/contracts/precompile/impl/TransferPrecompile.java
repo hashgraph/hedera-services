@@ -392,7 +392,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 PrecompilePricingUtils.GasCostType.TRANSFER_HBAR, consensusTime)
                         / 2;
         accumulatedCost += transferOp.transferWrapper().hbarTransfers().size() * hbarTxCost;
-        if (numLazyCreates > 0) {
+        if (isLazyCreationEnabled && numLazyCreates > 0) {
             final var lazyCreationFee =
                     pricingUtils.getMinimumPriceInTinybars(GasCostType.CRYPTO_CREATE, consensusTime)
                             + pricingUtils.getMinimumPriceInTinybars(
@@ -416,7 +416,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public static CryptoTransferWrapper decodeCryptoTransfer(
             final Bytes input,
             final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> isExisting) {
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples =
                 decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
@@ -424,7 +424,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
         for (final var tuple : decodedTuples) {
-            decodeTokenTransfer(aliasResolver, isExisting, tokenTransferWrappers, (Tuple[]) tuple);
+            decodeTokenTransfer(aliasResolver, exists, tokenTransferWrappers, (Tuple[]) tuple);
         }
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
