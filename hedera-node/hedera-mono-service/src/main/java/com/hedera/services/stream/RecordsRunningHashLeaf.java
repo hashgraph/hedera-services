@@ -15,7 +15,7 @@
  */
 package com.hedera.services.stream;
 
-import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.virtual.annotations.StateSetter;

@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.txns.contract.helpers.DeletionLogic;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;

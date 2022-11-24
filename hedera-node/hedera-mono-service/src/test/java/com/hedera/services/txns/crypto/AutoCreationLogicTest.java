@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -34,9 +34,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;

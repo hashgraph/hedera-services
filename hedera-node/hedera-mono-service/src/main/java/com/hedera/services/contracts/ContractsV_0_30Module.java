@@ -18,8 +18,8 @@ package com.hedera.services.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.ContractsModule.V_0_30;
 import com.hedera.services.contracts.operation.HederaCallCodeOperation;
 import com.hedera.services.contracts.operation.HederaCallOperation;

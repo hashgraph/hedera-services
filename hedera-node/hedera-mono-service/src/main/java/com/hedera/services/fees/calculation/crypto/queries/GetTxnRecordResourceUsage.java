@@ -20,7 +20,7 @@ import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECO
 import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.queries.answering.AnswerFunctions;

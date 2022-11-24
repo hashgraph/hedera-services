@@ -19,8 +19,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_R
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.common.math.LongMath;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;

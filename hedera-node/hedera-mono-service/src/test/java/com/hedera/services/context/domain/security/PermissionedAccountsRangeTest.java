@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.domain.security;
 
-import static com.hedera.services.context.domain.security.PermissionedAccountsRange.from;
+import static com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange.from;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 

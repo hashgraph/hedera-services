@@ -16,7 +16,7 @@
 package com.hedera.services.txns.contract;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.services.sigs.utils.ImmutableKeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.create1ContractAddress;
@@ -51,10 +51,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;

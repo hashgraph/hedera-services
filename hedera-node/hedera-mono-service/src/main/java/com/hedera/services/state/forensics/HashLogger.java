@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.forensics;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

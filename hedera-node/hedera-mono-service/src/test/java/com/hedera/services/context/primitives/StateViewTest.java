@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.primitives;
 
-import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
@@ -58,8 +58,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;

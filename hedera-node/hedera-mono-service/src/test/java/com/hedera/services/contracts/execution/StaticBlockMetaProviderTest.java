@@ -18,8 +18,8 @@ package com.hedera.services.contracts.execution;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.primitives.SignedStateViewFactory;
+import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

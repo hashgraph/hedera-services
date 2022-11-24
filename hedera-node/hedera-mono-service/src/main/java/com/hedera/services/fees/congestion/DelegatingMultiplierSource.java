@@ -16,6 +16,7 @@
 package com.hedera.services.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import java.time.Instant;
@@ -50,7 +51,7 @@ class DelegatingMultiplierSource implements FeeMultiplierSource {
      * throttle state snapshots that reflect the consensus of the entire network.
      *
      * <p>That is, the throttle states must be a child of the {@link
-     * com.hedera.services.ServicesState}.
+     * ServicesState}.
      */
     @Override
     public void updateMultiplier(final TxnAccessor accessor, final Instant consensusNow) {

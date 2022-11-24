@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.queries.schedule.GetScheduleInfoAnswer;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.usage.schedule.ExtantScheduleContext;

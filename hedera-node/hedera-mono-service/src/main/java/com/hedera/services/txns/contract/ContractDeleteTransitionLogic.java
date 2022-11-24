@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.contract;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.contract.helpers.DeletionLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

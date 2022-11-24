@@ -15,8 +15,8 @@
  */
 package com.hedera.services.queries.answering;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.QueryableRecords;

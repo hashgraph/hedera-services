@@ -20,8 +20,8 @@ import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;

@@ -20,10 +20,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTrans
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.StateChildren;
-import com.hedera.services.context.primitives.SignedStateViewFactory;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.MetadataMapFactory;

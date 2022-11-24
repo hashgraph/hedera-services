@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.hedera.services.exports.FileCompressionUtils.readUncompressedFileBytes;
 import static com.hedera.services.state.exports.SignedStateBalancesExporter.SINGLE_ACCOUNT_BALANCES_COMPARATOR;
@@ -36,9 +36,9 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;

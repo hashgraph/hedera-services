@@ -24,8 +24,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;

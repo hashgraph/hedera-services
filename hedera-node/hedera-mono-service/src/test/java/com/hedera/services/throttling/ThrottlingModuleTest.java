@@ -18,8 +18,8 @@ package com.hedera.services.throttling;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.system.address.AddressBook;

@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.ledger.backing.BackingStore;

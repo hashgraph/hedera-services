@@ -17,8 +17,8 @@ package com.hedera.services.state.expiry;
 
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
-import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;

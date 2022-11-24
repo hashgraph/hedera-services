@@ -26,7 +26,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_ACCOUNT_SAME_AS_DELETE_ACCOUNT;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.exceptions.DeletedAccountException;
 import com.hedera.services.exceptions.MissingEntityException;
 import com.hedera.services.ledger.HederaLedger;

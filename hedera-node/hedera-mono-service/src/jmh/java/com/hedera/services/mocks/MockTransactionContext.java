@@ -15,7 +15,7 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.setup.Constructables;

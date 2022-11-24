@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
 import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;

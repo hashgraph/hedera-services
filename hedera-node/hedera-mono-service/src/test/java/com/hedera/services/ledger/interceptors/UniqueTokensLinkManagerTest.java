@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.when;
 
-import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.AccountStorageAdapter;

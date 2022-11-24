@@ -15,6 +15,7 @@
  */
 package com.hedera.services.sigs;
 
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.order.SigRequirements;
@@ -40,7 +41,7 @@ import com.swirlds.common.system.SwirldDualState;
  * have active signatures for the wrapped gRPC txn to be valid; and creates the cryptographic
  * signatures at the bases of the signing hierarchies for these keys. This implicitly requests the
  * Platform to verify these cryptographic signatures, by setting them in the sigs list of the
- * platform txn, <b>before</b> {@link com.hedera.services.ServicesState#handleConsensusRound(Round,
+ * platform txn, <b>before</b> {@link ServicesState#handleConsensusRound(Round,
  * SwirldDualState)} is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {

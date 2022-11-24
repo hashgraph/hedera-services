@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app;
 
-import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -24,11 +24,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.token.impl.AccountStore;
+import com.hedera.node.app.service.mono.SigTransactionMetadata;
+import com.hedera.node.app.service.mono.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.utils.KeyUtils;

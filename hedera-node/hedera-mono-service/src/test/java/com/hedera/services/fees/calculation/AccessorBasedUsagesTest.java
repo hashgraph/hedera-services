@@ -44,7 +44,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.state.submerkle.EntityId;

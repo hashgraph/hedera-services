@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.state.submerkle.FcTokenAssociation;

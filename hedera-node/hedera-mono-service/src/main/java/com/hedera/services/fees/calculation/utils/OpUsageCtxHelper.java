@@ -26,8 +26,8 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.merkle.MerkleToken;

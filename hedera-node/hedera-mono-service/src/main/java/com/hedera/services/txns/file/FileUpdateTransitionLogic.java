@@ -29,8 +29,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Math.max;
 
-import com.hedera.services.config.EntityNumbers;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.files.TieredHederaFs;

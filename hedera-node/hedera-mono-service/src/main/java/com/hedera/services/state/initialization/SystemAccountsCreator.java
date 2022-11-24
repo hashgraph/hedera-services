@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.initialization;
 
+import com.hedera.node.app.service.mono.ServicesMain;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -24,10 +25,10 @@ import com.swirlds.common.system.address.AddressBook;
 
 public interface SystemAccountsCreator {
     /**
-     * Called in {@link com.hedera.services.ServicesMain#init(Platform, NodeId)} to ensure the
+     * Called in {@link ServicesMain#init(Platform, NodeId)} to ensure the
      * network has all expected system accounts, especially when starting from genesis; not really a
      * migration path, may be better placed in {@code
-     * com.hedera.services.ServicesState#internalInit()}.
+     * com.hedera.node.app.service.mono.ServicesState#internalInit()}.
      *
      * @param backingAccounts the ledger accounts
      * @param addressBook the current address book

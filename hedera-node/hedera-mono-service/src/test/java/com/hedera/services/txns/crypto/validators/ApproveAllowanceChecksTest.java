@@ -42,8 +42,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.ledger.backing.BackingNfts;

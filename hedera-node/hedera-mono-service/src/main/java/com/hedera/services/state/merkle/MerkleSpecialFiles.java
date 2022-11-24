@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 

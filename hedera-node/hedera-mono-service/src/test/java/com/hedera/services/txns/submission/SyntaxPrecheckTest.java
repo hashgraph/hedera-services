@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.longThat;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;

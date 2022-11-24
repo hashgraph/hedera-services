@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
@@ -25,12 +25,12 @@ import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;

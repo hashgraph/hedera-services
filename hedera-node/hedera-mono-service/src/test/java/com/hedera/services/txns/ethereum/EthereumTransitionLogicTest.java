@@ -35,8 +35,8 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.TransactionalLedger;

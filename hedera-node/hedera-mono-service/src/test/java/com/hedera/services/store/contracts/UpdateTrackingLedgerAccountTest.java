@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.WorldStateAccount;
 import com.hedera.services.ledger.TransactionalLedger;

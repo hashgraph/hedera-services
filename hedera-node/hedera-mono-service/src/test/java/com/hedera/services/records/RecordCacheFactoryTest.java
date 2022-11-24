@@ -15,7 +15,7 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

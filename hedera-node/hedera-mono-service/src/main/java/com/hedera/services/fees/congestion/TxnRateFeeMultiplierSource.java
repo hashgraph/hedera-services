@@ -15,10 +15,10 @@
  */
 package com.hedera.services.fees.congestion;
 
-import static com.hedera.services.context.properties.EntityType.*;
+import static com.hedera.node.app.service.mono.context.properties.EntityType.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.throttling.annotations.HandleThrottle;

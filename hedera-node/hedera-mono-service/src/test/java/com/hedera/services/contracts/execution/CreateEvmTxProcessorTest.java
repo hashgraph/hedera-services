@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;

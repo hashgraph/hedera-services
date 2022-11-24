@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.evm.store.contracts.WorldStateAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;

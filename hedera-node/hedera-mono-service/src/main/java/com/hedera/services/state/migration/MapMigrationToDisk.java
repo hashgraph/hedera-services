@@ -19,7 +19,7 @@ import static com.hedera.services.state.migration.StateChildIndices.*;
 import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerklePayerRecords;

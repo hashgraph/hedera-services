@@ -15,7 +15,7 @@
  */
 package com.hedera.services.queries.answering;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
 import static com.hedera.services.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -24,9 +24,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.AnswerFlow;

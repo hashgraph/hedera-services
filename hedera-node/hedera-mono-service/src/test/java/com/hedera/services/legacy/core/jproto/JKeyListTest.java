@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;

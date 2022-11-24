@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;

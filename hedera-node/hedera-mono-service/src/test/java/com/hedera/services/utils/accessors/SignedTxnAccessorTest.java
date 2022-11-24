@@ -32,8 +32,8 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.*;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;

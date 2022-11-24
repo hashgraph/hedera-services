@@ -53,8 +53,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willThrow;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.services.fees.congestion.FeeMultiplierSource;

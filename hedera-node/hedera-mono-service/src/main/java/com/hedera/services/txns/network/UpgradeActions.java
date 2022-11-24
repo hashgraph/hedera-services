@@ -15,11 +15,11 @@
  */
 package com.hedera.services.txns.network;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.swirlds.common.system.SwirldDualState;

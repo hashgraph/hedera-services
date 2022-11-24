@@ -17,8 +17,8 @@ package com.hedera.services.stats;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import javax.inject.Inject;
 import javax.inject.Singleton;

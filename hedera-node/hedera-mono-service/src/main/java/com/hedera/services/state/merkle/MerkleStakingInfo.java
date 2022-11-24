@@ -35,14 +35,14 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
-import static com.hedera.services.ServicesState.EMPTY_HASH;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

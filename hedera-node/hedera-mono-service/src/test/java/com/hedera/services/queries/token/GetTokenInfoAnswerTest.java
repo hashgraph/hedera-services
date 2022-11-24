@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;

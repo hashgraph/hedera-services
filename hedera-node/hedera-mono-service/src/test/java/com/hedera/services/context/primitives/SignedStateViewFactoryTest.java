@@ -25,10 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ServicesState;
-import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.StateChildren;
+import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.StateChildren;
+import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.services.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;

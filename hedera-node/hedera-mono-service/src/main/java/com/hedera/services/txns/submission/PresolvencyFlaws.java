@@ -17,7 +17,7 @@ package com.hedera.services.txns.submission;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.EnumMap;

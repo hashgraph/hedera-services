@@ -29,9 +29,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.TxnUtils;

@@ -19,8 +19,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.state.logic.StandardProcessLogic;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.swirlds.common.crypto.DigestType;

@@ -15,13 +15,17 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
+import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.BOOTSTRAP_PROP_NAMES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doCallRealMethod;
 
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps;
+import com.hedera.node.app.service.mono.context.properties.ScreenedSysFileProps;
+import com.hedera.node.app.service.mono.context.properties.StandardizedPropertySources;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.throttling.MapAccessType;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;

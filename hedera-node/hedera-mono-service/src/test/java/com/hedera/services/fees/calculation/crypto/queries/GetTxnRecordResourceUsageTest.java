@@ -29,8 +29,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hedera.services.queries.meta.GetTxnRecordAnswer;

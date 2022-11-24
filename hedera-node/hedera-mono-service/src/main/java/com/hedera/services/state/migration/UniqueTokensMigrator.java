@@ -17,7 +17,7 @@ package com.hedera.services.state.migration;
 
 import static com.hedera.services.utils.MiscUtils.forEach;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.virtual.UniqueTokenKey;
 import com.hedera.services.state.virtual.UniqueTokenValue;

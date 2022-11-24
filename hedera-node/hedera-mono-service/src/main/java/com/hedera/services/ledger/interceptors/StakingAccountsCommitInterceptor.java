@@ -31,10 +31,10 @@ import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;

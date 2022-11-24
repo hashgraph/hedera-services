@@ -18,7 +18,7 @@ package com.hedera.services.state.migration;
 import static com.google.common.truth.Truth.assertThat;
 import static com.hedera.services.state.migration.StateChildIndices.UNIQUE_TOKENS;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;

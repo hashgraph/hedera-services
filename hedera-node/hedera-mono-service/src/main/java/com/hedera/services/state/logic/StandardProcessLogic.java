@@ -18,8 +18,8 @@ package com.hedera.services.state.logic;
 import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoExpiry;

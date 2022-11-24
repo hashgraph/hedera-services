@@ -40,7 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.accessors.TxnAccessor;

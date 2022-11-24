@@ -21,7 +21,7 @@ import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.expiry.MonotonicFullQueueExpiries;
 import java.time.Instant;
 import java.util.HashMap;

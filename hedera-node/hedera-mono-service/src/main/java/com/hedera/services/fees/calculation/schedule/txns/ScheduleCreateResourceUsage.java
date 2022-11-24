@@ -15,8 +15,8 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;

@@ -52,7 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IM
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.submerkle.RichInstant;

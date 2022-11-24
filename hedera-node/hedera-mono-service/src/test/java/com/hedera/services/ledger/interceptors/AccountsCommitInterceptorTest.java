@@ -20,7 +20,7 @@ import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CON
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;

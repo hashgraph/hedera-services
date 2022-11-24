@@ -15,8 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
-import static com.hedera.services.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,8 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleAccount;

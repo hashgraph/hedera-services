@@ -18,7 +18,7 @@ package com.hedera.services.fees.calculation.schedule.queries;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.schedule.ExtantScheduleContext;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;

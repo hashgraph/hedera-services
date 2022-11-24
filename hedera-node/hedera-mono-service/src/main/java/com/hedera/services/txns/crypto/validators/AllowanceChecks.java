@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.ReadOnlyTokenStore;
@@ -49,7 +49,7 @@ public class AllowanceChecks {
      * Check if the allowance feature is enabled
      *
      * @return true if the feature is enabled in {@link
-     *     com.hedera.services.context.properties.GlobalDynamicProperties}
+     *     GlobalDynamicProperties}
      */
     public boolean isEnabled() {
         return dynamicProperties.areAllowancesEnabled();

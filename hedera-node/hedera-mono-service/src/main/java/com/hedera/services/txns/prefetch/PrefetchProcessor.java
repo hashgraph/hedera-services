@@ -16,7 +16,7 @@
 package com.hedera.services.txns.prefetch;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.txns.PreFetchableTransition;
 import com.hedera.services.txns.TransitionLogicLookup;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;

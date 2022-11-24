@@ -41,7 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;

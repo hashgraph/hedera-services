@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.HederaMutableWorldState;

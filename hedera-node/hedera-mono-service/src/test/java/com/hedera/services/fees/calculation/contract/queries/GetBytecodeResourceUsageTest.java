@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;

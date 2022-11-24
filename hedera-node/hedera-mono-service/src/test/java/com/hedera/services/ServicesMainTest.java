@@ -15,7 +15,7 @@
  */
 package com.hedera.services;
 
-import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static com.swirlds.common.system.PlatformStatus.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,10 +25,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.CurrentPlatformStatus;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.properties.SerializableSemVers;
+import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.mono.ServicesMain;
+import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.logic.StatusChangeListener;

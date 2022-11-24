@@ -15,13 +15,13 @@
  */
 package com.hedera.services.throttling;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;

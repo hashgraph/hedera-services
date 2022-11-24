@@ -49,7 +49,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;

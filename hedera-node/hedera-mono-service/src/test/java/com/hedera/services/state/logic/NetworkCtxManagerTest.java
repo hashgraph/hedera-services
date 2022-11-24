@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
@@ -30,11 +30,11 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
-import com.hedera.services.context.domain.trackers.IssEventStatus;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
+import com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;

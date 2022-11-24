@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.sysfiles.validation.ErrorCodeUtils;

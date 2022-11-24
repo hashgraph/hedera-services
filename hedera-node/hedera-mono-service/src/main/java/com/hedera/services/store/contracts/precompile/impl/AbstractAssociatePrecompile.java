@@ -20,8 +20,8 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.accounts.ContractAliases;

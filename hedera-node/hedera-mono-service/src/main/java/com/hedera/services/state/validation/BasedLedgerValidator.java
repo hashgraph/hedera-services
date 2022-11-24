@@ -15,10 +15,10 @@
  */
 package com.hedera.services.state.validation;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicReference;

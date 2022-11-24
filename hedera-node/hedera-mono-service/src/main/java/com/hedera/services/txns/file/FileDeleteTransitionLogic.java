@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.txns.TransitionLogic;

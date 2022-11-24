@@ -18,8 +18,8 @@ package com.hedera.services.ledger.interceptors;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.CommitInterceptor;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.TokenRelProperty;

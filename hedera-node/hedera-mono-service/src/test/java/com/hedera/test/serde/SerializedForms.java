@@ -20,7 +20,7 @@ import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_
 import static com.hedera.test.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import com.hedera.services.context.properties.SerializableSemVers;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.services.state.merkle.MerkleAccountState;

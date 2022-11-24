@@ -16,7 +16,7 @@
 package com.hedera.services.sigs;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.sigs.order.SigReqsManager;
 import com.hedera.services.txns.prefetch.PrefetchProcessor;
 import com.hedera.services.txns.span.ExpandHandleSpan;

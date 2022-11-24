@@ -19,7 +19,7 @@ import static com.hedera.services.txns.token.TokenOpsValidator.validateTokenOpsW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;

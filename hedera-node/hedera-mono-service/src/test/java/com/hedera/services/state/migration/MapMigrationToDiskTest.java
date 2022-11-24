@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.state.merkle.*;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;

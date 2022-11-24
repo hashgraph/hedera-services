@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;

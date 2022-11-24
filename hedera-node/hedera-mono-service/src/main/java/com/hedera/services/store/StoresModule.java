@@ -15,15 +15,15 @@
  */
 package com.hedera.services.store;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakeChangeManager;

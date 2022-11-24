@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;

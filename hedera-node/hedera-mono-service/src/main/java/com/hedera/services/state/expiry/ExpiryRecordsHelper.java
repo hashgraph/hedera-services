@@ -18,7 +18,7 @@ package com.hedera.services.state.expiry;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;

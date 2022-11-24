@@ -17,7 +17,7 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.file.ExtantFileContext;

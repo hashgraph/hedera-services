@@ -15,12 +15,12 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.config.HederaNumbers;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.test.utils.IdUtils;

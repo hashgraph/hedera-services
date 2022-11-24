@@ -15,13 +15,13 @@
  */
 package com.hedera.services.state.initialization;
 
-import static com.hedera.services.config.HederaNumbers.FIRST_POST_SYSTEM_FILE_ENTITY;
-import static com.hedera.services.config.HederaNumbers.FIRST_RESERVED_SYSTEM_CONTRACT;
-import static com.hedera.services.config.HederaNumbers.LAST_RESERVED_SYSTEM_CONTRACT;
-import static com.hedera.services.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_POST_SYSTEM_FILE_ENTITY;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.FIRST_RESERVED_SYSTEM_CONTRACT;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.LAST_RESERVED_SYSTEM_CONTRACT;
+import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED_SYSTEM_ENTITIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
-import com.hedera.services.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.migration.HederaAccount;

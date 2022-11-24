@@ -31,7 +31,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;

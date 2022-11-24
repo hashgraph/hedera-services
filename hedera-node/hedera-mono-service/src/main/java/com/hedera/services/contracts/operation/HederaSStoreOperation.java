@@ -21,7 +21,7 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import javax.inject.Inject;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.evm.EVM;

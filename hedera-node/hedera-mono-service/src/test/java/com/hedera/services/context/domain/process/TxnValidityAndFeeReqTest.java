@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import org.junit.jupiter.api.Test;
 
 class TxnValidityAndFeeReqTest {

@@ -28,7 +28,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.StringValue;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;

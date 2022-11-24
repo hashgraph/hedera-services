@@ -18,7 +18,7 @@ package com.hedera.services.txns.token;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;

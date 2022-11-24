@@ -32,8 +32,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;

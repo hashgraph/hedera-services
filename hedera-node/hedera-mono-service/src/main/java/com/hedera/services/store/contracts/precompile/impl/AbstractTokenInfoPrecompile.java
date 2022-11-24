@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;

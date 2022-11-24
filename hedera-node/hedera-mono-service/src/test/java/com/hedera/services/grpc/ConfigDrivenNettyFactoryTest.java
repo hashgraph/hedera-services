@@ -21,8 +21,8 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.context.properties.Profile;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import java.io.FileNotFoundException;
 import javax.net.ssl.SSLException;
 import org.junit.jupiter.api.BeforeEach;

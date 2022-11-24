@@ -15,12 +15,12 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;

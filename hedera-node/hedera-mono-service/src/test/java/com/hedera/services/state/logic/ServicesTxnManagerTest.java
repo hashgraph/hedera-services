@@ -24,7 +24,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;

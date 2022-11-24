@@ -15,15 +15,15 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
 import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.AccountStorageAdapter;

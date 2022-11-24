@@ -26,8 +26,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.ledger.SigImpactHistorian;

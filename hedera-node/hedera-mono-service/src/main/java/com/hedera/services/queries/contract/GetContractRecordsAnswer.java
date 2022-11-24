@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGet
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
 import com.hederahashgraph.api.proto.java.ContractGetRecordsResponse;

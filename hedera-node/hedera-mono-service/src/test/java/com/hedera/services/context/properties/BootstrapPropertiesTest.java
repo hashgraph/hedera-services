@@ -15,8 +15,8 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
-import static com.hedera.services.context.properties.PropertyNames.TOPICS_MAX_NUM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOPICS_MAX_NUM;
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
@@ -35,6 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;

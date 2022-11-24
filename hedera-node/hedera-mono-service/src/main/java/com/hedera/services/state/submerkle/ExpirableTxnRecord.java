@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
-import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
+import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
+import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MISSING_NUMBER;
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;

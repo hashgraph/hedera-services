@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;

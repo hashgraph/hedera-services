@@ -19,7 +19,7 @@ import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;

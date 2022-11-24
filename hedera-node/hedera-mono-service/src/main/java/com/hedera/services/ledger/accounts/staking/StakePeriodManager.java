@@ -15,17 +15,17 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.hedera.services.utils.Units.MINUTES_TO_SECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import java.time.LocalDate;

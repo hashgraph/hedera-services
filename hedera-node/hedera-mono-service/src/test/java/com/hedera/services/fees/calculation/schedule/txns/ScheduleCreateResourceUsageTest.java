@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;

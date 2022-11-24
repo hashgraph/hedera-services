@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.properties.ActiveVersions;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.node.app.service.mono.context.properties.ActiveVersions;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

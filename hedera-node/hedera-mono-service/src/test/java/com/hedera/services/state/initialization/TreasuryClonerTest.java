@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.initialization;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.services.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingStore;

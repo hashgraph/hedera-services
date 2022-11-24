@@ -20,7 +20,7 @@ import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.fees.congestion.MultiplierSources;

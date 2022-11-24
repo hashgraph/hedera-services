@@ -15,10 +15,10 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.ServicesApp;
+import com.hedera.node.app.service.mono.ServicesApp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -15,8 +15,8 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.context.properties.EntityType.ACCOUNT;
-import static com.hedera.services.context.properties.EntityType.FILE;
+import static com.hedera.node.app.service.mono.context.properties.EntityType.ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.EntityType.FILE;
 import static com.hedera.services.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;

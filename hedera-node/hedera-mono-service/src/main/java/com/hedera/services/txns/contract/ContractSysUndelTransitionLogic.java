@@ -15,17 +15,17 @@
  */
 package com.hedera.services.txns.contract;
 
-import static com.hedera.services.context.properties.EntityType.CONTRACT;
-import static com.hedera.services.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
+import static com.hedera.node.app.service.mono.context.properties.EntityType.CONTRACT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_SYSTEM_DELETABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.TransitionLogic;

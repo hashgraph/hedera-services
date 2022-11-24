@@ -15,8 +15,8 @@
  */
 package com.hedera.services.ledger;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.accounts.staking.EndOfStakingPeriodCalculator;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.accounts.staking.StakePeriodManager;

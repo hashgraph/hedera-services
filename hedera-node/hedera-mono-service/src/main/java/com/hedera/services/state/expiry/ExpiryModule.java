@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import com.hedera.services.context.properties.PropertiesModule;
+import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
 import com.hedera.services.state.expiry.removal.RemovalHelper;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalHelper;

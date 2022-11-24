@@ -24,7 +24,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.FileID;

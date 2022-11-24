@@ -22,8 +22,8 @@ import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.charging.NonHapiFeeCharging;
 import com.hedera.services.ledger.TransactionalLedger;

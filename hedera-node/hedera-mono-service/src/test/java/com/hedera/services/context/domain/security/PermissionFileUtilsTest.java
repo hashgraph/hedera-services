@@ -15,8 +15,8 @@
  */
 package com.hedera.services.context.domain.security;
 
-import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
-import static com.hedera.services.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
+import static com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils.permissionFileKeyForQuery;
+import static com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils.permissionFileKeyForTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;

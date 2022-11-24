@@ -17,7 +17,7 @@ package com.hedera.services.fees.calculation;
 
 import static com.hedera.services.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 
-import com.hedera.services.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import java.util.EnumMap;
 import java.util.Map;

@@ -28,9 +28,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordCache;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;

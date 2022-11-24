@@ -37,8 +37,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;

@@ -33,7 +33,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;

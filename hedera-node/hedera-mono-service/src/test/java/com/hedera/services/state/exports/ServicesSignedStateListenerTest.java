@@ -18,8 +18,8 @@ package com.hedera.services.state.exports;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.system.state.notifications.NewSignedStateNotification;

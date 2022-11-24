@@ -37,9 +37,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;

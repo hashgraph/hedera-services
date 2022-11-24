@@ -29,9 +29,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.primitives.SignedStateViewFactory;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.CustomFeeMeta;

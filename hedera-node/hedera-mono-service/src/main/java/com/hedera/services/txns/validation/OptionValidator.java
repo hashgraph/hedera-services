@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.validation;
 
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;

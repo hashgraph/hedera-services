@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import static com.hedera.services.context.primitives.StateView.EMPTY_WACL;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
@@ -31,8 +31,8 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 
-import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.StateChildren;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.files.store.FcBlobsBytesStore;

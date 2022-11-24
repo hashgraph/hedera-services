@@ -15,8 +15,8 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.services.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.EntityChangeSet;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;

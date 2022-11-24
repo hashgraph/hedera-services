@@ -21,7 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.usage.EstimatorFactory;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.TxnUsageEstimator;

@@ -29,8 +29,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.legacy.core.jproto.JKey;

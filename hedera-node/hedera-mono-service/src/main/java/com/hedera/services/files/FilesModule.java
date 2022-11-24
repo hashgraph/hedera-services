@@ -15,16 +15,16 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
-import static com.hedera.services.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
 import static com.hedera.services.files.DataMapFactory.dataMapFrom;
 import static com.hedera.services.files.MetadataMapFactory.metaMapFrom;
 import static com.hedera.services.files.interceptors.ConfigListUtils.uncheckedParse;
 import static com.hedera.services.files.interceptors.PureRatesValidation.isNormalIntradayChange;
 
-import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.files.interceptors.ConfigListUtils;
 import com.hedera.services.files.interceptors.FeeSchedulesManager;

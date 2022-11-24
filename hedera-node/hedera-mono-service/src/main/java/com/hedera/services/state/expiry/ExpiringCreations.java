@@ -19,8 +19,8 @@ import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;

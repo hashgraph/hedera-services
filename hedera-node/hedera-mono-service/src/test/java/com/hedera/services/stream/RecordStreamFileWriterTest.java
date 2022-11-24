@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;

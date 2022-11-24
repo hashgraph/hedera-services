@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;

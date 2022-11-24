@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.file.queries;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.usage.file.ExtantFileContext;
 import com.hedera.services.usage.file.FileOpsUsage;

@@ -17,7 +17,7 @@ package com.hedera.services.state.logic;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;

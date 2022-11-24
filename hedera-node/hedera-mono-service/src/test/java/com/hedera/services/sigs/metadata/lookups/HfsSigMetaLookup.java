@@ -15,10 +15,10 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import static com.hedera.services.context.primitives.StateView.EMPTY_WACL;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
 import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_FILE;
 
-import com.hedera.services.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
 import com.hedera.services.sigs.metadata.FileSigningMetadata;
 import com.hedera.services.sigs.metadata.SafeLookupResult;

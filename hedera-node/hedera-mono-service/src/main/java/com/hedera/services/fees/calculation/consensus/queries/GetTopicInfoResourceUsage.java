@@ -26,7 +26,7 @@ import static com.hederahashgraph.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hederahashgraph.fee.FeeBuilder.getStateProofSize;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.FeeComponents;

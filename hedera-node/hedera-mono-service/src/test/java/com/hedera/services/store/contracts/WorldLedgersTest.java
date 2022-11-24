@@ -45,7 +45,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;

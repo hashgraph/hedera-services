@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -42,6 +42,9 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.hedera.node.app.service.mono.context.BasicTransactionContext;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;

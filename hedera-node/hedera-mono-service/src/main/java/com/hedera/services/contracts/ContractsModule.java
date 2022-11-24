@@ -22,7 +22,7 @@ import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecomp
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.HederaLedger;

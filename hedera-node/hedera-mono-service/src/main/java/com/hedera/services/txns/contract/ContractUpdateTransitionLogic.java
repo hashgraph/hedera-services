@@ -30,9 +30,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;

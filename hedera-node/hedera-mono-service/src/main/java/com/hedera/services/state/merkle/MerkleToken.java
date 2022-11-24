@@ -26,7 +26,7 @@ import static java.util.Collections.unmodifiableList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
-import com.hedera.services.context.properties.StaticPropertiesHolder;
+import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.enums.TokenSupplyType;

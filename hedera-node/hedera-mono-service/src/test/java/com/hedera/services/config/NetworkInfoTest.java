@@ -15,12 +15,13 @@
  */
 package com.hedera.services.config;
 
-import static com.hedera.services.context.properties.PropertyNames.LEDGER_ID;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_ID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

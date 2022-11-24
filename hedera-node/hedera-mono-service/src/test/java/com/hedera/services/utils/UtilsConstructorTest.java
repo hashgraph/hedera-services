@@ -15,8 +15,8 @@
  */
 package com.hedera.services.utils;
 
-import com.hedera.services.context.domain.security.PermissionFileUtils;
-import com.hedera.services.context.properties.PropUtils;
+import com.hedera.node.app.service.mono.context.domain.security.PermissionFileUtils;
+import com.hedera.node.app.service.mono.context.properties.PropUtils;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaUtil;
 import com.hedera.services.contracts.operation.HederaOperationUtil;

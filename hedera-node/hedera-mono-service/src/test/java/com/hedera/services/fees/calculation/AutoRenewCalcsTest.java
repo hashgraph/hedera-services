@@ -31,9 +31,9 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;

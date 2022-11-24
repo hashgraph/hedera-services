@@ -17,10 +17,10 @@ package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.services.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.grpc.marshalling.BalanceChangeManager;

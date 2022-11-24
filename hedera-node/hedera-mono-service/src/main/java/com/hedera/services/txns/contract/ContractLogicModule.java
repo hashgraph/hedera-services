@@ -20,9 +20,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCre
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpdate;
 
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;

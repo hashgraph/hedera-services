@@ -35,10 +35,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.CreateEvmTxProcessor;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.InvalidTransactionException;

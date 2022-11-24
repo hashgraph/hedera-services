@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.usage.EstimatorFactory;

@@ -18,7 +18,7 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.store.AccountStore;

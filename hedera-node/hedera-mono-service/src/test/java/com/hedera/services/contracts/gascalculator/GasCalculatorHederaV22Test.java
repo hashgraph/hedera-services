@@ -39,7 +39,7 @@ package com.hedera.services.contracts.gascalculator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import org.apache.tuweni.bytes.Bytes;

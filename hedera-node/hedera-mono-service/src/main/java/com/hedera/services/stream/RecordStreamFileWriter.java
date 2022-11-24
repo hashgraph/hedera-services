@@ -27,7 +27,7 @@ import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;

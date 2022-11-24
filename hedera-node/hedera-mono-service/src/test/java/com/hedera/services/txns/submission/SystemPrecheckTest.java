@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hedera.services.txns.auth.SystemOpPolicies;

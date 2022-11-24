@@ -20,7 +20,7 @@ import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_
 import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;

@@ -19,7 +19,7 @@ import static com.hedera.services.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.services.store.tokens.TokenStore.MISSING_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.state.enums.TokenType;

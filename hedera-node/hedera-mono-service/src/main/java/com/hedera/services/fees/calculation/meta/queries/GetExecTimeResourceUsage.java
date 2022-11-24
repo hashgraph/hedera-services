@@ -21,7 +21,7 @@ import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
 import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

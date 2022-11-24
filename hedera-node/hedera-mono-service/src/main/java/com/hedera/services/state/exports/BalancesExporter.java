@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.swirlds.common.system.NodeId;
 import java.time.Instant;
 

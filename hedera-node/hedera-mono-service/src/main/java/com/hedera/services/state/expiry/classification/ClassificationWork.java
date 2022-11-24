@@ -19,7 +19,7 @@ import static com.hedera.services.state.expiry.classification.ClassificationResu
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;

@@ -18,7 +18,7 @@ package com.hedera.services.queries.answering;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.queries.AnswerFlow;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.throttling.FunctionalityThrottling;

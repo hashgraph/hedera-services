@@ -29,8 +29,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.records.TxnIdRecentHistory;

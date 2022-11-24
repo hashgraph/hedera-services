@@ -18,7 +18,7 @@ package com.hedera.services.fees.calculation.consensus.txns;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getConsensusUpdateTopicFee;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.getUpdateTopicRbsIncrease;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.EntityNum;

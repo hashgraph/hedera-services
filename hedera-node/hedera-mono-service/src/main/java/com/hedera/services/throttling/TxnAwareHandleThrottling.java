@@ -15,7 +15,7 @@
  */
 package com.hedera.services.throttling;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;

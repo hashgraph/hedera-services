@@ -17,7 +17,7 @@ package com.hedera.services.fees;
 
 import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
 
-import com.hedera.services.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import javax.inject.Inject;

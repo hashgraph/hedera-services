@@ -15,7 +15,7 @@
  */
 package com.hedera.services.grpc;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.address.AddressBook;
 import java.io.PrintStream;

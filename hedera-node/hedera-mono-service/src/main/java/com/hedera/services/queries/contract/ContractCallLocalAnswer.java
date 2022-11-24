@@ -24,9 +24,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.services.contracts.execution.CallLocalExecutor;
 import com.hedera.services.contracts.execution.StaticBlockMetaProvider;

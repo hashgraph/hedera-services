@@ -17,6 +17,7 @@ package com.hedera.services.context.properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 import java.util.Optional;

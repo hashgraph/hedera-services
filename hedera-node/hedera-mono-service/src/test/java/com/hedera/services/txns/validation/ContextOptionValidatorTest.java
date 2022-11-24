@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.validation;
 
-import static com.hedera.services.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ENTITIES_MAX_LIFETIME;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 import static com.hedera.test.utils.IdUtils.asAccount;
@@ -51,11 +51,11 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;

@@ -26,7 +26,7 @@ import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;

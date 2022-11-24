@@ -37,7 +37,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;

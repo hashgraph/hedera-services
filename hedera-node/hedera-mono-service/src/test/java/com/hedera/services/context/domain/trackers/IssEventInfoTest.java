@@ -15,14 +15,15 @@
  */
 package com.hedera.services.context.domain.trackers;
 
-import static com.hedera.services.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
-import static com.hedera.services.context.domain.trackers.IssEventStatus.ONGOING_ISS;
+import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.NO_KNOWN_ISS;
+import static com.hedera.node.app.service.mono.context.domain.trackers.IssEventStatus.ONGOING_ISS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;

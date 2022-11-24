@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -42,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;

@@ -15,15 +15,15 @@
  */
 package com.hedera.services.queries.crypto;
 
-import static com.hedera.services.context.primitives.StateView.doBoundedIteration;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.doBoundedIteration;
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.queries.AnswerService;
 import com.hedera.services.state.migration.AccountStorageAdapter;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;

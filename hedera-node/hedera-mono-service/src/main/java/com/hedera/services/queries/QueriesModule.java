@@ -15,10 +15,10 @@
  */
 package com.hedera.services.queries;
 
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.answering.QueryHeaderValidity;

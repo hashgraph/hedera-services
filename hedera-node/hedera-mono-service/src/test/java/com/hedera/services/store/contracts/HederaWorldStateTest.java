@@ -38,8 +38,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
 import com.hedera.services.evm.store.contracts.WorldStateAccount;

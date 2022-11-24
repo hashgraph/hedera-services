@@ -17,8 +17,12 @@ package com.hedera.services.context.init;
 
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ServicesState;
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.ServicesState;
+import com.hedera.node.app.service.mono.context.init.EntitiesInitializationFlow;
+import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
+import com.hedera.node.app.service.mono.context.init.StateInitializationFlow;
+import com.hedera.node.app.service.mono.context.init.StoreInitializationFlow;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

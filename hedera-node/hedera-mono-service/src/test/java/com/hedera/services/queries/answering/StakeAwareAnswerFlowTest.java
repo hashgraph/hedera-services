@@ -18,7 +18,7 @@ package com.hedera.services.queries.answering;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.services.queries.AnswerService;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

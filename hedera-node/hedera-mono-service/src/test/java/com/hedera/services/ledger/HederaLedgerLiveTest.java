@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.backing.BackingTokenRels;
 import com.hedera.services.ledger.backing.HashMapBackingAccounts;

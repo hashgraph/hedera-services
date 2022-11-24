@@ -15,13 +15,14 @@
  */
 package com.hedera.services.config;
 
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_REALM;
-import static com.hedera.services.context.properties.PropertyNames.HEDERA_SHARD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_SHARD;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

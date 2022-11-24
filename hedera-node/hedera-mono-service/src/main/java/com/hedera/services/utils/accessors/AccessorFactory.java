@@ -19,7 +19,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;

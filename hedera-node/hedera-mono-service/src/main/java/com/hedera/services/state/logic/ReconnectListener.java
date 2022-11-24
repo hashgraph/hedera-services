@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.services.txns.network.UpgradeActions;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;

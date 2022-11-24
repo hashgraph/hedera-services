@@ -20,8 +20,8 @@ import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;

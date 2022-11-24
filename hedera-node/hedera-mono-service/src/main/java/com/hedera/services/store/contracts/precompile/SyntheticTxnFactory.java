@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_PERIOD_MINS;
-import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
@@ -26,8 +26,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;

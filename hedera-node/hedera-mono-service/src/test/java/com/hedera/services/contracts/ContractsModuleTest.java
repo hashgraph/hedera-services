@@ -23,9 +23,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;

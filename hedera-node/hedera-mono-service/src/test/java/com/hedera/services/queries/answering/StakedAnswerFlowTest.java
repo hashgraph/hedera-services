@@ -33,11 +33,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.services.config.MockAccountNumbers;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.queries.AnswerService;

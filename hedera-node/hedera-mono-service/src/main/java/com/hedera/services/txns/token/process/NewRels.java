@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.token.process;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

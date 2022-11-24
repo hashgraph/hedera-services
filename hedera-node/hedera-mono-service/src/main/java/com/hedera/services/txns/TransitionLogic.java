@@ -17,6 +17,7 @@ package com.hedera.services.txns;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -70,7 +71,7 @@ public interface TransitionLogic {
 
     /**
      * Validate the transaction represented by the given {@link TxnAccessor}, returning a {@link
-     * ResponseCodeEnum}. The accessor has {@link com.hedera.services.context.primitives.StateView}
+     * ResponseCodeEnum}. The accessor has {@link StateView}
      * back by latest signed state
      *
      * @param accessor the transaction to be validated

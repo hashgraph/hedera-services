@@ -21,7 +21,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.hedera.services.config.HederaNumbers;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.config.MockHederaNumbers;
 import com.hedera.services.records.ConsensusTimeTracker;

@@ -15,15 +15,15 @@
  */
 package com.hedera.services.state;
 
-import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.ids.EntityIdSource;

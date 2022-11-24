@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleEntityId;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;

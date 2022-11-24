@@ -19,6 +19,7 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
@@ -78,7 +79,7 @@ public class RecordStreaming {
 
     /**
      * Streams all the records, both child and top-level, that resulted from handling the
-     * transaction in the current {@link com.hedera.services.context.TransactionContext}.
+     * transaction in the current {@link TransactionContext}.
      * <b>IMPORTANT:</b> this may have the side effect of increasing the block number.
      */
     public void streamUserTxnRecords() {

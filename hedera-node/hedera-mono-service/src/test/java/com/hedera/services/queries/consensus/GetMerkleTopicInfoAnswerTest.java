@@ -34,10 +34,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.NetworkInfo;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
