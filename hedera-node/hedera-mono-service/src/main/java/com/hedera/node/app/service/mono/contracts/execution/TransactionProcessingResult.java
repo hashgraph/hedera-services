@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
@@ -113,8 +113,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     }
 
     /**
-     * Adds a list of created contracts to be externalised as part of the {@link
-     * ExpirableTxnRecord}
+     * Adds a list of created contracts to be externalised as part of the {@link ExpirableTxnRecord}
      *
      * @param createdContracts the list of contractIDs created
      */

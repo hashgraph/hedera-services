@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.config;
 
-import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 
 public class MockFileNumbers extends FileNumbers {

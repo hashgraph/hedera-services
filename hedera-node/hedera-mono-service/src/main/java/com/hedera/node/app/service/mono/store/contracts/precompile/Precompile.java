@@ -22,8 +22,8 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -58,8 +58,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *       and {@link Precompile#addImplicitCostsIn(TxnAccessor)} to incorporate any hidden costs
  *       implied by the {@link TxnAccessor} created from the synthetic transaction.
  *   <li>Third, the executor invokes {@link Precompile#run(MessageFrame)}, which is expected to have
- *       side-effects on the {@link WorldLedgers} in the
- *       provided message frame.
+ *       side-effects on the {@link WorldLedgers} in the provided message frame.
  *   <li>Finally, if {@code run()} completes without an exception, the executor calls {@link
  *       Precompile#getSuccessResultFor(ExpirableTxnRecord.Builder)} to get the {@link Bytes} to
  *       return to the EVM; otherwise, {@link Precompile#getFailureResultFor(ResponseCodeEnum)} is

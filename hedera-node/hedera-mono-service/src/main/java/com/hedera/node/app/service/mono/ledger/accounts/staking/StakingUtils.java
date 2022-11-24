@@ -18,8 +18,8 @@ package com.hedera.node.app.service.mono.ledger.accounts.staking;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
-import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -107,7 +107,9 @@ public class StakingUtils {
                             pendingChanges) {
         final var mutableChanges = pendingChanges.changes(rewardAccountI);
         if (mutableChanges.containsKey(AccountProperty.BALANCE)) {
-            mutableChanges.put(AccountProperty.BALANCE, (long) mutableChanges.get(AccountProperty.BALANCE) + delta);
+            mutableChanges.put(
+                    AccountProperty.BALANCE,
+                    (long) mutableChanges.get(AccountProperty.BALANCE) + delta);
         } else {
             final var newBalance = pendingChanges.entity(rewardAccountI).getBalance() + delta;
             mutableChanges.put(AccountProperty.BALANCE, newBalance);
@@ -123,7 +125,8 @@ public class StakingUtils {
                                         != (boolean) changes.get(AccountProperty.DECLINE_REWARD)))
                 || (changes.containsKey(AccountProperty.STAKED_ID)
                         && (account == null
-                                || account.getStakedId() != (long) changes.get(AccountProperty.STAKED_ID)));
+                                || account.getStakedId()
+                                        != (long) changes.get(AccountProperty.STAKED_ID)));
     }
 
     public static long roundedToHbar(long value) {

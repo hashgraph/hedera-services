@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.contracts.ParsingConstants.BYTES32;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -48,7 +48,11 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_INFO_DECODER =
             TypeFactory.create(
-                    "(" + DecodingFacade.removeBrackets(BYTES32) + "," + DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER + ")");
+                    "("
+                            + DecodingFacade.removeBrackets(BYTES32)
+                            + ","
+                            + DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER
+                            + ")");
     private static final Function TOKEN_UPDATE_INFO_FUNCTION_V2 =
             new Function(UPDATE_TOKEN_INFO_STRING + DecodingFacade.HEDERA_TOKEN_STRUCT_V2 + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V2 =
@@ -157,17 +161,21 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
     private static TokenUpdateWrapper getTokenUpdateWrapper(
             Bytes input, UnaryOperator<byte[]> aliasResolver, Bytes tokenUpdateInfoSelector) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, tokenUpdateInfoSelector, TOKEN_UPDATE_INFO_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, tokenUpdateInfoSelector, TOKEN_UPDATE_INFO_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final Tuple hederaTokenStruct = decodedArguments.get(1);
         final var tokenName = (String) hederaTokenStruct.get(0);
         final var tokenSymbol = (String) hederaTokenStruct.get(1);
         final var tokenTreasury =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(hederaTokenStruct.get(2), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        hederaTokenStruct.get(2), aliasResolver);
         final var tokenMemo = (String) hederaTokenStruct.get(3);
-        final var tokenKeys = DecodingFacade.decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
-        final var tokenExpiry = DecodingFacade.decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
+        final var tokenKeys =
+                DecodingFacade.decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
+        final var tokenExpiry =
+                DecodingFacade.decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
                 tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
     }

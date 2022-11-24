@@ -116,8 +116,7 @@ public class SizeLimitedStorage {
      * Validates that the pending key/value changes will not exceed any storage limits, and then
      * commits them to the underlying data source.
      *
-     * @throws InvalidTransactionException if a storage limit is
-     *     exceeded
+     * @throws InvalidTransactionException if a storage limit is exceeded
      */
     public void validateAndCommit(
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {

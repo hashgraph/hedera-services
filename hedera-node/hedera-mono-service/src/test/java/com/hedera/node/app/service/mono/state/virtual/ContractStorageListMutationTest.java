@@ -21,9 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.state.virtual.ContractStorageListMutation;
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.swirlds.virtualmap.VirtualMap;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.BeforeEach;

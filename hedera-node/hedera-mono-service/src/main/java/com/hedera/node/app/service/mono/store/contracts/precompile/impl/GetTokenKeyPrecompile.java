@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -76,7 +76,8 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
 
     public static GetTokenKeyWrapper decodeGetTokenKey(Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
         return new GetTokenKeyWrapper(tokenID, tokenType);

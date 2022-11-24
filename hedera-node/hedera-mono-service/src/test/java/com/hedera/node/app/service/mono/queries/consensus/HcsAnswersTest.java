@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.queries.consensus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.node.app.service.mono.queries.consensus.GetTopicInfoAnswer;
-import com.hedera.node.app.service.mono.queries.consensus.HcsAnswers;
 import org.junit.jupiter.api.Test;
 
 class HcsAnswersTest {

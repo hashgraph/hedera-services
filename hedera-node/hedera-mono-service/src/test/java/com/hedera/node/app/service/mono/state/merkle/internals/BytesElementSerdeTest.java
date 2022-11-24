@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.state.merkle.internals;
 
-import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

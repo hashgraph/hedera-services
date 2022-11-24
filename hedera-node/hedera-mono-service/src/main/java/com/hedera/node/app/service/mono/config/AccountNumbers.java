@@ -27,9 +27,9 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_SYSTEM_UNDELETE_ADMIN;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_TREASURY;
 
-import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

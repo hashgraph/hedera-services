@@ -22,8 +22,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import org.junit.jupiter.api.Test;
 
 class CodeOrderResultFactoryTest {

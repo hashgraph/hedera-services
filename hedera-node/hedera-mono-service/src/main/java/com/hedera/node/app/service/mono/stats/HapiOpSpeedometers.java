@@ -126,7 +126,9 @@ public class HapiOpSpeedometers {
                             }
                         });
         receivedDeprecatedTxnsConfig =
-                new SpeedometerMetric.Config(ServicesStatsManager.STAT_CATEGORY, SPEEDOMETER_DEPRECATED_TXNS_NAME)
+                new SpeedometerMetric.Config(
+                                ServicesStatsManager.STAT_CATEGORY,
+                                SPEEDOMETER_DEPRECATED_TXNS_NAME)
                         .withDescription(SPEEDOMETER_DEPRECATED_TXNS_DESC)
                         .withFormat(ServicesStatsManager.SPEEDOMETER_FORMAT)
                         .withHalfLife(halfLife);

@@ -27,12 +27,14 @@ public class MiscSpeedometers {
 
     public MiscSpeedometers(final double halfLife) {
         syncVerificationsConfig =
-                new SpeedometerMetric.Config(ServicesStatsManager.STAT_CATEGORY, Names.SYNC_VERIFICATIONS)
+                new SpeedometerMetric.Config(
+                                ServicesStatsManager.STAT_CATEGORY, Names.SYNC_VERIFICATIONS)
                         .withDescription(Descriptions.SYNC_VERIFICATIONS)
                         .withFormat(ServicesStatsManager.SPEEDOMETER_FORMAT)
                         .withHalfLife(halfLife);
         platformTxnRejectionsConfig =
-                new SpeedometerMetric.Config(ServicesStatsManager.STAT_CATEGORY, Names.PLATFORM_TXN_REJECTIONS)
+                new SpeedometerMetric.Config(
+                                ServicesStatsManager.STAT_CATEGORY, Names.PLATFORM_TXN_REJECTIONS)
                         .withDescription(Descriptions.PLATFORM_TXN_REJECTIONS)
                         .withFormat(ServicesStatsManager.SPEEDOMETER_FORMAT)
                         .withHalfLife(halfLife);

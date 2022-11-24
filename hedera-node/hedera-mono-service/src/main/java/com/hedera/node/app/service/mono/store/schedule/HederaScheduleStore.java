@@ -159,7 +159,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
         if (properties.schedulingLongTermEnabled() && (schedule.expirationTimeProvided() != null)) {
 
             if (schedule.expirationTimeProvided().getSeconds() <= consensusTime.getSeconds()) {
-                return CreationResult.failure(SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME);
+                return CreationResult.failure(
+                        SCHEDULE_EXPIRATION_TIME_MUST_BE_HIGHER_THAN_CONSENSUS_TIME);
             }
 
             if (schedule.expirationTimeProvided()

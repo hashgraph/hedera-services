@@ -48,8 +48,7 @@ public class AllowanceChecks {
     /**
      * Check if the allowance feature is enabled
      *
-     * @return true if the feature is enabled in {@link
-     *     GlobalDynamicProperties}
+     * @return true if the feature is enabled in {@link GlobalDynamicProperties}
      */
     public boolean isEnabled() {
         return dynamicProperties.areAllowancesEnabled();

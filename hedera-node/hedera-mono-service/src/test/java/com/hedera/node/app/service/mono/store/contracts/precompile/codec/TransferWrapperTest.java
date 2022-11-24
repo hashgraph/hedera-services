@@ -15,50 +15,49 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransferList;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class TransferWrapperTest {
 
-	@Test
-	void translatesFungibleTransfersAsExpected() {
-		final var inputTransfers = wellKnownTransfers();
-		final var expectedAdjustments =
-				TransferList.newBuilder()
-						.addAccountAmounts(aaWith(anAccount, aChange))
-						.addAccountAmounts(aaWith(otherAccount, bChange))
-						.addAccountAmounts(aaWith(anotherAccount, cChange))
-						.build();
-		final var subject = new TransferWrapper(inputTransfers);
+    @Test
+    void translatesFungibleTransfersAsExpected() {
+        final var inputTransfers = wellKnownTransfers();
+        final var expectedAdjustments =
+                TransferList.newBuilder()
+                        .addAccountAmounts(aaWith(anAccount, aChange))
+                        .addAccountAmounts(aaWith(otherAccount, bChange))
+                        .addAccountAmounts(aaWith(anotherAccount, cChange))
+                        .build();
+        final var subject = new TransferWrapper(inputTransfers);
 
-		final var builder = subject.asGrpcBuilder();
-		assertEquals(expectedAdjustments, builder.build());
-	}
+        final var builder = subject.asGrpcBuilder();
+        assertEquals(expectedAdjustments, builder.build());
+    }
 
-	private AccountAmount aaWith(final AccountID account, final long amount) {
-		return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
-	}
+    private AccountAmount aaWith(final AccountID account, final long amount) {
+        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount).build();
+    }
 
-	private List<SyntheticTxnFactory.HbarTransfer> wellKnownTransfers() {
-		return List.of(
-				new SyntheticTxnFactory.HbarTransfer(Math.abs(aChange), false, anAccount, null),
-				new SyntheticTxnFactory.HbarTransfer(Math.abs(bChange), false, null, otherAccount),
-				new SyntheticTxnFactory.HbarTransfer(
-						Math.abs(cChange), false, null, anotherAccount));
-	}
+    private List<SyntheticTxnFactory.HbarTransfer> wellKnownTransfers() {
+        return List.of(
+                new SyntheticTxnFactory.HbarTransfer(Math.abs(aChange), false, anAccount, null),
+                new SyntheticTxnFactory.HbarTransfer(Math.abs(bChange), false, null, otherAccount),
+                new SyntheticTxnFactory.HbarTransfer(
+                        Math.abs(cChange), false, null, anotherAccount));
+    }
 
-	private final long aChange = -100L;
-	private final long bChange = +75;
-	private final long cChange = +25;
-	private final AccountID anAccount = new Id(0, 0, 1234).asGrpcAccount();
-	private final AccountID otherAccount = new Id(0, 0, 2345).asGrpcAccount();
-	private final AccountID anotherAccount = new Id(0, 0, 3456).asGrpcAccount();
+    private final long aChange = -100L;
+    private final long bChange = +75;
+    private final long cChange = +25;
+    private final AccountID anAccount = new Id(0, 0, 1234).asGrpcAccount();
+    private final AccountID otherAccount = new Id(0, 0, 2345).asGrpcAccount();
+    private final AccountID anotherAccount = new Id(0, 0, 3456).asGrpcAccount();
 }

@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtilsTest;
 import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

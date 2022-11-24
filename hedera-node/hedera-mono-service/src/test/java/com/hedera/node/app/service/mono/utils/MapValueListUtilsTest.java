@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
-import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.internalDetachFromMapValueList;
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.removeFromMapValueList;
 import static com.hedera.node.app.service.mono.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
@@ -30,113 +24,119 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.swirlds.merkle.map.MerkleMap;
+import org.junit.jupiter.api.Test;
+
 class MapValueListUtilsTest {
-	private final TokenRelStorageAdapter tokenRels =
-			TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private final TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
-	@Test
-	void sequentialRemovalWorksAsExpected() {
-		initializeRels();
+    @Test
+    void sequentialRemovalWorksAsExpected() {
+        initializeRels();
 
-		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+        final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = removeFromMapValueList(aRelKey, aRelKey, relsListRemoval);
-		assertEquals(bRelKey, k1);
-		assertFalse(tokenRels.containsKey(aRelKey));
+        final var k1 = removeFromMapValueList(aRelKey, aRelKey, relsListRemoval);
+        assertEquals(bRelKey, k1);
+        assertFalse(tokenRels.containsKey(aRelKey));
 
-		final var k2 = removeFromMapValueList(k1, k1, relsListRemoval);
-		assertEquals(cRelKey, k2);
-		assertFalse(tokenRels.containsKey(bRelKey));
+        final var k2 = removeFromMapValueList(k1, k1, relsListRemoval);
+        assertEquals(cRelKey, k2);
+        assertFalse(tokenRels.containsKey(bRelKey));
 
-		final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
-		assertNull(k3);
-		assertEquals(0L, tokenRels.size());
-	}
+        final var k3 = removeFromMapValueList(k2, k2, relsListRemoval);
+        assertNull(k3);
+        assertEquals(0L, tokenRels.size());
+    }
 
-	@Test
-	void interiorRemovalWorksAsExpected() {
-		initializeRels();
+    @Test
+    void interiorRemovalWorksAsExpected() {
+        initializeRels();
 
-		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+        final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = removeFromMapValueList(bRelKey, aRelKey, relsListRemoval);
-		assertEquals(aRelKey, k1);
-		assertFalse(tokenRels.containsKey(bRelKey));
-	}
+        final var k1 = removeFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+        assertEquals(aRelKey, k1);
+        assertFalse(tokenRels.containsKey(bRelKey));
+    }
 
-	@Test
-	void tailRemovalWorksAsExpected() {
-		initializeRels();
+    @Test
+    void tailRemovalWorksAsExpected() {
+        initializeRels();
 
-		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+        final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var k1 = removeFromMapValueList(cRelKey, aRelKey, relsListRemoval);
-		assertEquals(aRelKey, k1);
-		assertFalse(tokenRels.containsKey(cRelKey));
-	}
+        final var k1 = removeFromMapValueList(cRelKey, aRelKey, relsListRemoval);
+        assertEquals(aRelKey, k1);
+        assertFalse(tokenRels.containsKey(cRelKey));
+    }
 
-	@Test
-	void unlinkingWorksWithGetForModify() {
-		initializeRels();
+    @Test
+    void unlinkingWorksWithGetForModify() {
+        initializeRels();
 
-		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+        final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
-		assertSame(aRelKey, newRoot);
-		final var unlinkedValue = tokenRels.get(bRelKey);
-		assertEquals(0, unlinkedValue.getPrev());
-		assertEquals(0, unlinkedValue.getNext());
-		// and:
-		final var newRootValue = tokenRels.get(aRelKey);
-		assertEquals(c.longValue(), newRootValue.getNext());
-		// and:
-		final var newTailValue = tokenRels.get(cRelKey);
-		assertEquals(a.longValue(), newTailValue.getPrev());
-		// and:
-		assertTrue(tokenRels.containsKey(bRelKey));
-	}
+        final var newRoot = unlinkInPlaceFromMapValueList(bRelKey, aRelKey, relsListRemoval);
+        assertSame(aRelKey, newRoot);
+        final var unlinkedValue = tokenRels.get(bRelKey);
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
+        // and:
+        final var newRootValue = tokenRels.get(aRelKey);
+        assertEquals(c.longValue(), newRootValue.getNext());
+        // and:
+        final var newTailValue = tokenRels.get(cRelKey);
+        assertEquals(a.longValue(), newTailValue.getPrev());
+        // and:
+        assertTrue(tokenRels.containsKey(bRelKey));
+    }
 
-	@Test
-	void unlinkingWorksWithOverwriting() {
-		initializeRels();
+    @Test
+    void unlinkingWorksWithOverwriting() {
+        initializeRels();
 
-		final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+        final var relsListRemoval = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot =
-				internalDetachFromMapValueList(
-						bRelKey, aRelKey, relsListRemoval, false, false, true);
-		assertSame(aRelKey, newRoot);
-		final var unlinkedValue = tokenRels.get(bRelKey);
-		assertEquals(0, unlinkedValue.getPrev());
-		assertEquals(0, unlinkedValue.getNext());
-		// and:
-		final var newRootValue = tokenRels.get(aRelKey);
-		assertEquals(c.longValue(), newRootValue.getNext());
-		// and:
-		final var newTailValue = tokenRels.get(cRelKey);
-		assertEquals(a.longValue(), newTailValue.getPrev());
-		// and:
-		assertTrue(tokenRels.containsKey(bRelKey));
-	}
+        final var newRoot =
+                internalDetachFromMapValueList(
+                        bRelKey, aRelKey, relsListRemoval, false, false, true);
+        assertSame(aRelKey, newRoot);
+        final var unlinkedValue = tokenRels.get(bRelKey);
+        assertEquals(0, unlinkedValue.getPrev());
+        assertEquals(0, unlinkedValue.getNext());
+        // and:
+        final var newRootValue = tokenRels.get(aRelKey);
+        assertEquals(c.longValue(), newRootValue.getNext());
+        // and:
+        final var newTailValue = tokenRels.get(cRelKey);
+        assertEquals(a.longValue(), newTailValue.getPrev());
+        // and:
+        assertTrue(tokenRels.containsKey(bRelKey));
+    }
 
-	private void initializeRels() {
-		aRel.setNext(b.longValue());
-		tokenRels.put(aRelKey, aRel);
-		bRel.setPrev(a.longValue());
-		bRel.setNext(c.longValue());
-		tokenRels.put(bRelKey, bRel);
-		cRel.setPrev(b.longValue());
-		tokenRels.put(cRelKey, cRel);
-	}
+    private void initializeRels() {
+        aRel.setNext(b.longValue());
+        tokenRels.put(aRelKey, aRel);
+        bRel.setPrev(a.longValue());
+        bRel.setNext(c.longValue());
+        tokenRels.put(bRelKey, bRel);
+        cRel.setPrev(b.longValue());
+        tokenRels.put(cRelKey, cRel);
+    }
 
-	private static final EntityNum accountNum = EntityNum.fromLong(2);
-	private static final EntityNum a = EntityNum.fromLong(4);
-	private static final EntityNum b = EntityNum.fromLong(8);
-	private static final EntityNum c = EntityNum.fromLong(16);
-	private static final EntityNumPair aRelKey = EntityNumPair.fromNums(accountNum, a);
-	private static final EntityNumPair bRelKey = EntityNumPair.fromNums(accountNum, b);
-	private static final EntityNumPair cRelKey = EntityNumPair.fromNums(accountNum, c);
-	private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(1L, true, false, true);
-	private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(2L, true, false, true);
-	private final MerkleTokenRelStatus cRel = new MerkleTokenRelStatus(3L, true, false, true);
+    private static final EntityNum accountNum = EntityNum.fromLong(2);
+    private static final EntityNum a = EntityNum.fromLong(4);
+    private static final EntityNum b = EntityNum.fromLong(8);
+    private static final EntityNum c = EntityNum.fromLong(16);
+    private static final EntityNumPair aRelKey = EntityNumPair.fromNums(accountNum, a);
+    private static final EntityNumPair bRelKey = EntityNumPair.fromNums(accountNum, b);
+    private static final EntityNumPair cRelKey = EntityNumPair.fromNums(accountNum, c);
+    private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(1L, true, false, true);
+    private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(2L, true, false, true);
+    private final MerkleTokenRelStatus cRel = new MerkleTokenRelStatus(3L, true, false, true);
 }

@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.state.expiry;
 
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asLiteralString;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.*;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.test.utils.TxnUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toList;
@@ -27,7 +27,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
@@ -40,6 +39,7 @@ import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;

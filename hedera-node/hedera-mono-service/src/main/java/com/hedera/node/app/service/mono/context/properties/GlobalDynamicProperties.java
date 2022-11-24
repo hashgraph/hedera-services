@@ -22,14 +22,14 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

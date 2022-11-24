@@ -555,13 +555,15 @@ public class SigRequirements {
 
         for (final var allowance : cryptoAllowancesList) {
             final var owner = allowance.getOwner();
-            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != KeyOrderingFailure.NONE) {
+            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)
+                    != KeyOrderingFailure.NONE) {
                 return factory.forInvalidAllowanceOwner();
             }
         }
         for (final var allowance : tokenAllowancesList) {
             final var owner = allowance.getOwner();
-            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != KeyOrderingFailure.NONE) {
+            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)
+                    != KeyOrderingFailure.NONE) {
                 return factory.forInvalidAllowanceOwner();
             }
         }
@@ -573,7 +575,8 @@ public class SigRequirements {
             if (allowance.getApprovedForAll().getValue()) {
                 operatorId = ownerId;
             }
-            if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs) != KeyOrderingFailure.NONE) {
+            if (includeOwnerIfNecessary(payer, operatorId, requiredKeys, linkedRefs)
+                    != KeyOrderingFailure.NONE) {
                 if (operatorId == ownerId) {
                     return factory.forInvalidAllowanceOwner();
                 } else {
@@ -593,7 +596,8 @@ public class SigRequirements {
         List<JKey> requiredKeys = new ArrayList<>();
         for (final var allowance : nftAllowancesList) {
             final var owner = allowance.getOwner();
-            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs) != KeyOrderingFailure.NONE) {
+            if (includeOwnerIfNecessary(payer, owner, requiredKeys, linkedRefs)
+                    != KeyOrderingFailure.NONE) {
                 return factory.forInvalidAllowanceOwner();
             }
         }
@@ -736,7 +740,8 @@ public class SigRequirements {
 
     private <T> SigningOrderResult<T> accountFailure(
             KeyOrderingFailure type, SigningOrderResultFactory<T> factory) {
-        if (type == KeyOrderingFailure.INVALID_ACCOUNT || type == KeyOrderingFailure.IMMUTABLE_ACCOUNT) {
+        if (type == KeyOrderingFailure.INVALID_ACCOUNT
+                || type == KeyOrderingFailure.IMMUTABLE_ACCOUNT) {
             return factory.forInvalidAccount();
         } else if (type == KeyOrderingFailure.MISSING_ACCOUNT) {
             return factory.forMissingAccount();
@@ -845,10 +850,12 @@ public class SigRequirements {
                         fixedFee.hasDenominatingTokenId()
                                 && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
                 couldAddCollector =
-                        addAccount(payer, collector, required, alwaysAdd, linkedRefs) == KeyOrderingFailure.NONE;
+                        addAccount(payer, collector, required, alwaysAdd, linkedRefs)
+                                == KeyOrderingFailure.NONE;
             } else if (customFee.hasFractionalFee()) {
                 couldAddCollector =
-                        addAccount(payer, collector, required, true, linkedRefs) == KeyOrderingFailure.NONE;
+                        addAccount(payer, collector, required, true, linkedRefs)
+                                == KeyOrderingFailure.NONE;
             } else {
                 final var royaltyFee = customFee.getRoyaltyFee();
                 var alwaysAdd = false;
@@ -859,7 +866,8 @@ public class SigRequirements {
                                     && fFee.getDenominatingTokenId().getTokenNum() == 0;
                 }
                 couldAddCollector =
-                        addAccount(payer, collector, required, alwaysAdd, linkedRefs) == KeyOrderingFailure.NONE;
+                        addAccount(payer, collector, required, alwaysAdd, linkedRefs)
+                                == KeyOrderingFailure.NONE;
             }
             if (!couldAddCollector) {
                 return factory.forInvalidFeeCollector();
@@ -1291,7 +1299,9 @@ public class SigRequirements {
                     return KeyOrderingFailure.NONE;
                 } else {
                     // These response codes can be refined in a future release
-                    return INVALID_ACCOUNT_CODES.contains(reason) ? KeyOrderingFailure.INVALID_ACCOUNT : reason;
+                    return INVALID_ACCOUNT_CODES.contains(reason)
+                            ? KeyOrderingFailure.INVALID_ACCOUNT
+                            : reason;
                 }
             }
         }

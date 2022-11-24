@@ -25,8 +25,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.logic.PayerSigValidity;
-import com.hedera.node.app.service.mono.state.logic.SigsAndPayerKeyScreen;
 import com.hedera.node.app.service.mono.sigs.Rationalization;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;

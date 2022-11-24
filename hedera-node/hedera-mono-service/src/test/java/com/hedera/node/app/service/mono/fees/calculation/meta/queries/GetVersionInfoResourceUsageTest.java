@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
-import com.hedera.node.app.service.mono.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import org.junit.jupiter.api.BeforeEach;

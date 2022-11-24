@@ -15,13 +15,13 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.services.contracts.ParsingConstants.UINT256;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.services.contracts.ParsingConstants.UINT256;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 

@@ -20,6 +20,7 @@ import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMU
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperatio
 import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperation;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
 import com.hedera.services.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.services.evm.contracts.operations.HederaExtCodeCopyOperation;

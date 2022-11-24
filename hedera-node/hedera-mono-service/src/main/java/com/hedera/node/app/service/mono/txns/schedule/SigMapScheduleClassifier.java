@@ -99,10 +99,12 @@ public class SigMapScheduleClassifier {
                     final var pk = key.primitiveKeyIfPresent();
                     if (beginsWith(pk, prefix) && sig != INVALID_MISSING_SIG) {
                         if (sig.getSignatureStatus() == VALID) {
-                            classification.considerSetting(SigClassification.VALID_SCHEDULED_TXN_MATCH);
+                            classification.considerSetting(
+                                    SigClassification.VALID_SCHEDULED_TXN_MATCH);
                             valid.add(key);
                         } else {
-                            classification.considerSetting(SigClassification.INVALID_SCHEDULED_TXN_MATCH);
+                            classification.considerSetting(
+                                    SigClassification.INVALID_SCHEDULED_TXN_MATCH);
                         }
                     }
                 });

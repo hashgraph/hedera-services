@@ -26,8 +26,6 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager;
-import com.hedera.node.app.service.mono.files.interceptors.ValidatingCallbackInterceptor;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.FileID;
 import java.time.Instant;

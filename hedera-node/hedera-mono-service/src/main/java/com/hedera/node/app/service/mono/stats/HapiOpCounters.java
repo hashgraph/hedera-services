@@ -98,14 +98,17 @@ public class HapiOpCounters {
                             }
                         });
         deprecatedTxnsConfig =
-                new Config(ServicesStatsManager.STAT_CATEGORY, ServicesStatsConfig.COUNTER_DEPRECATED_TXNS_NAME)
+                new Config(
+                                ServicesStatsManager.STAT_CATEGORY,
+                                ServicesStatsConfig.COUNTER_DEPRECATED_TXNS_NAME)
                         .withDescription(ServicesStatsConfig.COUNTER_RECEIVED_DEPRECATED_DESC);
     }
 
     private Counter.Config counterConfigFor(
             final HederaFunctionality function, final String nameTpl, final String descTpl) {
         final var baseName = statNameFn.apply(function);
-        return new Counter.Config(ServicesStatsManager.STAT_CATEGORY, String.format(nameTpl, baseName))
+        return new Counter.Config(
+                        ServicesStatsManager.STAT_CATEGORY, String.format(nameTpl, baseName))
                 .withDescription(String.format(descTpl, baseName));
     }
 
@@ -145,7 +148,9 @@ public class HapiOpCounters {
     }
 
     public long submittedSoFar(final HederaFunctionality txn) {
-        return ServicesStatsConfig.IGNORED_FUNCTIONS.contains(txn) ? 0 : submittedTxns.get(txn).get();
+        return ServicesStatsConfig.IGNORED_FUNCTIONS.contains(txn)
+                ? 0
+                : submittedTxns.get(txn).get();
     }
 
     public void countHandled(final HederaFunctionality txn) {
@@ -165,7 +170,9 @@ public class HapiOpCounters {
     }
 
     public long answeredSoFar(final HederaFunctionality query) {
-        return ServicesStatsConfig.IGNORED_FUNCTIONS.contains(query) ? 0 : answeredQueries.get(query).get();
+        return ServicesStatsConfig.IGNORED_FUNCTIONS.contains(query)
+                ? 0
+                : answeredQueries.get(query).get();
     }
 
     private void safeIncrement(

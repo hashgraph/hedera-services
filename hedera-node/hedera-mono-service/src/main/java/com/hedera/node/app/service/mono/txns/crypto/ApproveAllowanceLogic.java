@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -97,7 +96,8 @@ public class ApproveAllowanceLogic {
         for (final var allowance : cryptoAllowances) {
             final var owner = allowance.getOwner();
             final var accountToApprove =
-                    AllowanceHelpers.fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+                    AllowanceHelpers.fetchOwnerAccount(
+                            owner, payerAccount, accountStore, entitiesChanged);
             final var cryptoMap = accountToApprove.getMutableCryptoAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -142,7 +142,8 @@ public class ApproveAllowanceLogic {
         for (var allowance : tokenAllowances) {
             final var owner = allowance.getOwner();
             final var accountToApprove =
-                    AllowanceHelpers.fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+                    AllowanceHelpers.fetchOwnerAccount(
+                            owner, payerAccount, accountStore, entitiesChanged);
             final var tokensMap = accountToApprove.getMutableFungibleTokenAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -181,7 +182,8 @@ public class ApproveAllowanceLogic {
         for (var allowance : nftAllowances) {
             final var owner = allowance.getOwner();
             final var approvingAccount =
-                    AllowanceHelpers.fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
+                    AllowanceHelpers.fetchOwnerAccount(
+                            owner, payerAccount, accountStore, entitiesChanged);
             final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
             accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 

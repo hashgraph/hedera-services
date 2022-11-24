@@ -29,8 +29,7 @@ import com.swirlds.common.system.transaction.Transaction;
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
  * EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
- * ServicesState#handleConsensusRound(Round, SwirldDualState)} platform
- * callbacks.
+ * ServicesState#handleConsensusRound(Round, SwirldDualState)} platform callbacks.
  *
  * <p>At first this span only tracks the {@link PlatformTxnAccessor} parsed from the transaction
  * contents in an expiring cache. Since the parsing is a pure function of the contents, this is a

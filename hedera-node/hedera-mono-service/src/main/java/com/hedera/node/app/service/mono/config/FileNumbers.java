@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.config;
 
 import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
 
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.inject.Inject;
 import javax.inject.Singleton;

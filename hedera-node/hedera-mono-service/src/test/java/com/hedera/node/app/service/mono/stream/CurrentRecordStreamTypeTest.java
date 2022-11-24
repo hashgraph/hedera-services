@@ -24,7 +24,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.context.properties.ActiveVersions;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
-import com.hedera.node.app.service.mono.stream.CurrentRecordStreamType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

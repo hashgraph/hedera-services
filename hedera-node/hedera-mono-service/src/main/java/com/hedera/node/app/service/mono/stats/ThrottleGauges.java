@@ -16,11 +16,11 @@
 package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
+import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
 import java.time.Instant;

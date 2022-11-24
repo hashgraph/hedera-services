@@ -19,17 +19,17 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.mocks.MockStorageLimits;
+import com.hedera.node.app.service.mono.mocks.NoopStorageFeeCharging;
 import com.hedera.node.app.service.mono.setup.Constructables;
 import com.hedera.node.app.service.mono.setup.EvmKeyValueSource;
 import com.hedera.node.app.service.mono.setup.InfrastructureBundle;
 import com.hedera.node.app.service.mono.setup.InfrastructureManager;
 import com.hedera.node.app.service.mono.setup.InfrastructureType;
 import com.hedera.node.app.service.mono.setup.KvMutationBatch;
-import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
-import com.hedera.node.app.service.mono.mocks.MockStorageLimits;
-import com.hedera.node.app.service.mono.mocks.NoopStorageFeeCharging;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils;
+import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import java.util.List;
@@ -149,6 +149,8 @@ public class SizeLimitedStorageBench {
 
     private List<InfrastructureType> requiredInfra() {
         return List.of(
-				InfrastructureType.ACCOUNTS_MM, InfrastructureType.CONTRACT_STORAGE_VM, InfrastructureType.ACCOUNTS_LEDGER);
+                InfrastructureType.ACCOUNTS_MM,
+                InfrastructureType.CONTRACT_STORAGE_VM,
+                InfrastructureType.ACCOUNTS_LEDGER);
     }
 }

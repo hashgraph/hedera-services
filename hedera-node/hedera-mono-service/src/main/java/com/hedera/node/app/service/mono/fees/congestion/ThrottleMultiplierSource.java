@@ -17,8 +17,8 @@ package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
-import com.hedera.services.throttles.CongestibleThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.services.throttles.CongestibleThrottle;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;

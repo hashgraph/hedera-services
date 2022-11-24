@@ -20,12 +20,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.store.models.Topic;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
+import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

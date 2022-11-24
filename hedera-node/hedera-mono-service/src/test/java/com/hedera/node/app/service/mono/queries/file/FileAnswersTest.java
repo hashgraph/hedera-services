@@ -17,9 +17,6 @@ package com.hedera.node.app.service.mono.queries.file;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.queries.file.FileAnswers;
-import com.hedera.node.app.service.mono.queries.file.GetFileContentsAnswer;
-import com.hedera.node.app.service.mono.queries.file.GetFileInfoAnswer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,10 +24,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class FileAnswersTest {
-    @Mock
-	GetFileInfoAnswer getFileInfo;
-    @Mock
-	GetFileContentsAnswer getFileContents;
+    @Mock GetFileInfoAnswer getFileInfo;
+    @Mock GetFileContentsAnswer getFileContents;
 
     @Test
     void assertGetters() {

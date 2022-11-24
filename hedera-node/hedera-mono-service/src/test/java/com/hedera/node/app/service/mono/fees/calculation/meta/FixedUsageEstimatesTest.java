@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.fees.calculation.meta;
 import static com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import org.junit.jupiter.api.Test;
 

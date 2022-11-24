@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.queries.contract;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.queries.contract.GetBySolidityIdAnswer;
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;

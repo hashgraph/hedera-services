@@ -58,18 +58,30 @@ public final class ScreenedSysFileProps implements PropertySource {
                     entry("maxFileSize", PropertyNames.FILES_MAX_SIZE_KB),
                     entry("defaultFeeCollectionAccount", PropertyNames.LEDGER_FUNDING_ACCOUNT),
                     entry("txReceiptTTL", PropertyNames.CACHE_RECORDS_TTL),
-                    entry("exchangeRateAllowedPercentage", PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
-                    entry("accountBalanceExportPeriodMinutes", PropertyNames.BALANCES_EXPORT_PERIOD_SECS),
+                    entry(
+                            "exchangeRateAllowedPercentage",
+                            PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
+                    entry(
+                            "accountBalanceExportPeriodMinutes",
+                            PropertyNames.BALANCES_EXPORT_PERIOD_SECS),
                     entry("accountBalanceExportEnabled", PropertyNames.BALANCES_EXPORT_ENABLED),
-                    entry("nodeAccountBalanceValidity", PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD),
+                    entry(
+                            "nodeAccountBalanceValidity",
+                            PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD),
                     entry("accountBalanceExportDir", PropertyNames.BALANCES_EXPORT_DIR_PATH),
                     entry("transferListSizeLimit", PropertyNames.LEDGER_TRANSFERS_MAX_LEN),
                     entry("txMaximumDuration", PropertyNames.HEDERA_TXN_MAX_VALID_DURATION),
                     entry("txMinimumDuration", PropertyNames.HEDERA_TXN_MIN_VALID_DURATION),
                     entry("txMinimumRemaining", PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
-                    entry("maximumAutoRenewDuration", PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
-                    entry("minimumAutoRenewDuration", PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
-                    entry("localCallEstReturnBytes", PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
+                    entry(
+                            "maximumAutoRenewDuration",
+                            PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
+                    entry(
+                            "minimumAutoRenewDuration",
+                            PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
+                    entry(
+                            "localCallEstReturnBytes",
+                            PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
             Map.ofEntries(
                     entry(
@@ -103,7 +115,9 @@ public final class ScreenedSysFileProps implements PropertySource {
                                     (int) maxUtf8Bytes
                                             <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
                     entry(PropertyNames.LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
-                    entry(PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(
+                            PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN,
+                            maxLen -> (int) maxLen >= 2),
                     entry(
                             PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
                             maxRefundPercentage ->

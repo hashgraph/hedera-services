@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.google.common.base.Preconditions;
-import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.services.evm.store.models.UpdatedHederaEvmAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import java.util.NavigableMap;

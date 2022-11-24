@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;

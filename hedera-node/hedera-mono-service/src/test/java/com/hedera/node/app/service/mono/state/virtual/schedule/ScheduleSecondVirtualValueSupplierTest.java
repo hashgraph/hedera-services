@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSe
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class ScheduleSecondVirtualValueSupplierTest {

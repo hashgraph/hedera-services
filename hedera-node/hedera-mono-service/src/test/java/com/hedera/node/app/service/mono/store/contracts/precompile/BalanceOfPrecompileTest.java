@@ -15,25 +15,25 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile.decodeBalanceOf;
+import static java.util.function.UnaryOperator.identity;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile.decodeBalanceOf;
-import static java.util.function.UnaryOperator.identity;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(MockitoExtension.class)
 class BalanceOfPrecompileTest {
-	private static final Bytes BALANCE_INPUT =
-			Bytes.fromHexString(
-					"0x70a08231000000000000000000000000000000000000000000000000000000000000059f");
+    private static final Bytes BALANCE_INPUT =
+            Bytes.fromHexString(
+                    "0x70a08231000000000000000000000000000000000000000000000000000000000000059f");
 
-	@Test
-	void decodeBalanceInput() {
-		final var decodedInput = decodeBalanceOf(BALANCE_INPUT, identity());
+    @Test
+    void decodeBalanceInput() {
+        final var decodedInput = decodeBalanceOf(BALANCE_INPUT, identity());
 
-		assertTrue(decodedInput.accountId().getAccountNum() > 0);
-	}
+        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -433,11 +433,15 @@ public final class BootstrapProperties implements PropertySource {
                     entry(PropertyNames.HEDERA_RECORD_STREAM_SIG_FILE_VERSION, AS_INT),
                     entry(PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY, AS_INT),
                     entry(PropertyNames.HEDERA_RECORD_STREAM_SIDECAR_MAX_SIZE_MB, AS_INT),
-                    entry(PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION, AS_BOOLEAN),
+                    entry(
+                            PropertyNames.HEDERA_RECORD_STREAM_ENABLE_TRACEABILITY_MIGRATION,
+                            AS_BOOLEAN),
                     entry(PropertyNames.TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO, AS_LONG),
                     entry(PropertyNames.TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC, AS_LONG),
                     entry(PropertyNames.HEDERA_RECORD_STREAM_LOG_EVERY_TRANSACTION, AS_BOOLEAN),
-                    entry(PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION, AS_BOOLEAN),
+                    entry(
+                            PropertyNames.HEDERA_RECORD_STREAM_COMPRESS_FILES_ON_CREATION,
+                            AS_BOOLEAN),
                     entry(PropertyNames.HEDERA_SHARD, AS_LONG),
                     entry(PropertyNames.HEDERA_TXN_MAX_MEMO_UTF8_BYTES, AS_INT),
                     entry(PropertyNames.HEDERA_TXN_MAX_VALID_DURATION, AS_LONG),
@@ -466,8 +470,12 @@ public final class BootstrapProperties implements PropertySource {
                     entry(PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY, AS_LONG),
                     entry(PropertyNames.FEES_MIN_CONGESTION_PERIOD, AS_INT),
                     entry(PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, AS_INT),
-                    entry(PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS, AS_CONGESTION_MULTIPLIERS),
-                    entry(PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS, AS_ENTITY_SCALE_FACTORS),
+                    entry(
+                            PropertyNames.FEES_PERCENT_CONGESTION_MULTIPLIERS,
+                            AS_CONGESTION_MULTIPLIERS),
+                    entry(
+                            PropertyNames.FEES_PERCENT_UTILIZATION_SCALE_FACTORS,
+                            AS_ENTITY_SCALE_FACTORS),
                     entry(PropertyNames.LEDGER_CHANGE_HIST_MEM_SECS, AS_INT),
                     entry(PropertyNames.LEDGER_XFER_BAL_CHANGES_MAX_LEN, AS_INT),
                     entry(PropertyNames.LEDGER_FUNDING_ACCOUNT, AS_LONG),
@@ -506,7 +514,9 @@ public final class BootstrapProperties implements PropertySource {
                     entry(PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES, AS_INT),
                     entry(PropertyNames.TOKENS_NFTS_MAX_METADATA_BYTES, AS_INT),
                     entry(PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_BURN, AS_INT),
-                    entry(PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR, AS_THROTTLE_SCALE_FACTOR),
+                    entry(
+                            PropertyNames.TOKENS_NFTS_MINT_THORTTLE_SCALE_FACTOR,
+                            AS_THROTTLE_SCALE_FACTOR),
                     entry(PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_WIPE, AS_INT),
                     entry(PropertyNames.TOKENS_NFTS_MAX_BATCH_SIZE_MINT, AS_INT),
                     entry(PropertyNames.TOKENS_NFTS_MAX_ALLOWED_MINTS, AS_LONG),
@@ -536,7 +546,9 @@ public final class BootstrapProperties implements PropertySource {
                     entry(PropertyNames.CONTRACTS_PRECOMPILE_HTS_DEFAULT_GAS_COST, AS_LONG),
                     entry(PropertyNames.CONTRACTS_PRECOMPILE_EXPORT_RECORD_RESULTS, AS_BOOLEAN),
                     entry(PropertyNames.CONTRACTS_PRECOMPILE_HTS_ENABLE_TOKEN_CREATE, AS_BOOLEAN),
-                    entry(PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED, AS_BOOLEAN),
+                    entry(
+                            PropertyNames.CONTRACTS_PRECOMPILE_ATOMIC_CRYPTO_TRANSFER_ENABLED,
+                            AS_BOOLEAN),
                     entry(PropertyNames.CONTRACTS_THROTTLE_THROTTLE_BY_GAS, AS_BOOLEAN),
                     entry(PropertyNames.CONTRACTS_EVM_VERSION, AS_STRING),
                     entry(PropertyNames.CONTRACTS_DYNAMIC_EVM_VERSION, AS_BOOLEAN),

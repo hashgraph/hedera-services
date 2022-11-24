@@ -24,9 +24,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.keys.CharacteristicsFactory;
-import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
-import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;

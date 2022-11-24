@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -125,7 +125,8 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
                         ? impliedTokenId
                         : DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var owner =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset), aliasResolver);
         final var spender =
                 DecodingFacade.convertLeftPaddedAddressToAccountId(
                         decodedArguments.get(offset + 1), aliasResolver);

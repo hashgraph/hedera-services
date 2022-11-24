@@ -36,8 +36,6 @@ import static org.mockito.BDDMockito.verify;
 import com.google.common.cache.Cache;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.records.RecordCache;
-import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;

@@ -32,38 +32,37 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import dagger.BindsInstance;
 import dagger.Component;
-
-import javax.inject.Singleton;
 import java.util.function.Supplier;
+import javax.inject.Singleton;
 
 @Singleton
 @Component(modules = StakingActivityModule.class)
 public interface StakingActivityApp {
-	RewardCalculator rewardCalculator();
+    RewardCalculator rewardCalculator();
 
-	StakePeriodManager periodManager();
+    StakePeriodManager periodManager();
 
-	TransactionContext txnCtx();
+    TransactionContext txnCtx();
 
-	SideEffectsTracker sideEffects();
+    SideEffectsTracker sideEffects();
 
-	EndOfStakingPeriodCalculator endOfPeriodCalcs();
+    EndOfStakingPeriodCalculator endOfPeriodCalcs();
 
-	Supplier<MerkleNetworkContext> networkCtx();
+    Supplier<MerkleNetworkContext> networkCtx();
 
-	BackingStore<AccountID, HederaAccount> backingAccounts();
+    BackingStore<AccountID, HederaAccount> backingAccounts();
 
-	Supplier<AccountStorageAdapter> accounts();
+    Supplier<AccountStorageAdapter> accounts();
 
-	Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
+    Supplier<MerkleMap<EntityNum, MerkleStakingInfo>> stakingInfos();
 
-	TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger();
+    TransactionalLedger<AccountID, AccountProperty, HederaAccount> stakingLedger();
 
-	@Component.Builder
-	interface Builder {
-		@BindsInstance
-		Builder bundle(InfrastructureBundle bundle);
+    @Component.Builder
+    interface Builder {
+        @BindsInstance
+        Builder bundle(InfrastructureBundle bundle);
 
-		StakingActivityApp build();
-	}
+        StakingActivityApp build();
+    }
 }

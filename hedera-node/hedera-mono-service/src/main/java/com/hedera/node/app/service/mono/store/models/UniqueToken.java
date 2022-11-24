@@ -22,9 +22,8 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
  *
- * <p>Operations are validated, and throw a {@link
- * InvalidTransactionException} with response code capturing the
- * failure when one occurs.
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
  */
 public class UniqueToken {
     private Id tokenId;

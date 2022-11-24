@@ -15,20 +15,6 @@
  */
 package com.hedera.node.app.service.mono.stats;
 
-import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.metrics.SpeedometerMetric;
-import com.swirlds.common.system.Platform;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.function.Function;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,119 +26,122 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.metrics.SpeedometerMetric;
+import com.swirlds.common.system.Platform;
+import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class HapiOpSpeedometersTest {
-	@Mock
-	private Platform platform;
-	@Mock
-	private HapiOpCounters counters;
-	@Mock
-	private NodeLocalProperties properties;
-	@Mock
-	private Metrics metrics;
-	@Mock
-	private SpeedometerMetric xferReceived;
-	@Mock
-	private SpeedometerMetric xferSubmitted;
-	@Mock
-	private SpeedometerMetric xferHandled;
-	@Mock
-	private SpeedometerMetric infoReceived;
-	@Mock
-	private SpeedometerMetric infoAnswered;
-	@Mock
-	private SpeedometerMetric xferDeprecatedRcvd;
+    @Mock private Platform platform;
+    @Mock private HapiOpCounters counters;
+    @Mock private NodeLocalProperties properties;
+    @Mock private Metrics metrics;
+    @Mock private SpeedometerMetric xferReceived;
+    @Mock private SpeedometerMetric xferSubmitted;
+    @Mock private SpeedometerMetric xferHandled;
+    @Mock private SpeedometerMetric infoReceived;
+    @Mock private SpeedometerMetric infoAnswered;
+    @Mock private SpeedometerMetric xferDeprecatedRcvd;
 
-	private Function<HederaFunctionality, String> statNameFn;
-	private HapiOpSpeedometers subject;
+    private Function<HederaFunctionality, String> statNameFn;
+    private HapiOpSpeedometers subject;
 
-	@BeforeEach
-	void setup() {
-		HapiOpSpeedometers.allFunctions =
-				() -> new HederaFunctionality[] { CryptoTransfer, TokenGetInfo };
+    @BeforeEach
+    void setup() {
+        HapiOpSpeedometers.allFunctions =
+                () -> new HederaFunctionality[] {CryptoTransfer, TokenGetInfo};
 
-		statNameFn = HederaFunctionality::toString;
+        statNameFn = HederaFunctionality::toString;
 
-		properties = mock(NodeLocalProperties.class);
+        properties = mock(NodeLocalProperties.class);
 
-		subject = new HapiOpSpeedometers(counters, properties, statNameFn);
-	}
+        subject = new HapiOpSpeedometers(counters, properties, statNameFn);
+    }
 
-	@AfterEach
-	public void cleanup() {
-		HapiOpSpeedometers.allFunctions = HederaFunctionality.class::getEnumConstants;
-	}
+    @AfterEach
+    public void cleanup() {
+        HapiOpSpeedometers.allFunctions = HederaFunctionality.class::getEnumConstants;
+    }
 
-	@Test
-	void beginsRationally() {
-		given(platform.getMetrics()).willReturn(metrics);
+    @Test
+    void beginsRationally() {
+        given(platform.getMetrics()).willReturn(metrics);
 
-		subject.registerWith(platform);
+        subject.registerWith(platform);
 
-		// expect:
-		assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
-		assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
-		assertTrue(subject.getHandledTxns().containsKey(CryptoTransfer));
-		assertFalse(subject.getAnsweredQueries().containsKey(CryptoTransfer));
+        // expect:
+        assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
+        assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
+        assertTrue(subject.getHandledTxns().containsKey(CryptoTransfer));
+        assertFalse(subject.getAnsweredQueries().containsKey(CryptoTransfer));
 
-		// and:
-		assertTrue(subject.getReceivedOps().containsKey(TokenGetInfo));
-		assertTrue(subject.getAnsweredQueries().containsKey(TokenGetInfo));
-		assertFalse(subject.getSubmittedTxns().containsKey(TokenGetInfo));
-		assertFalse(subject.getHandledTxns().containsKey(TokenGetInfo));
-	}
+        // and:
+        assertTrue(subject.getReceivedOps().containsKey(TokenGetInfo));
+        assertTrue(subject.getAnsweredQueries().containsKey(TokenGetInfo));
+        assertFalse(subject.getSubmittedTxns().containsKey(TokenGetInfo));
+        assertFalse(subject.getHandledTxns().containsKey(TokenGetInfo));
+    }
 
-	@Test
-	void registersExpectedStatEntries() {
-		given(platform.getMetrics()).willReturn(metrics);
+    @Test
+    void registersExpectedStatEntries() {
+        given(platform.getMetrics()).willReturn(metrics);
 
-		subject.registerWith(platform);
+        subject.registerWith(platform);
 
-		// then:
-		verify(metrics, times(6)).getOrCreate(any());
-	}
+        // then:
+        verify(metrics, times(6)).getOrCreate(any());
+    }
 
-	@Test
-	void updatesSpeedometersAsExpected() {
-		// setup:
-		subject.getLastReceivedOpsCount().put(CryptoTransfer, 1L);
-		subject.getLastSubmittedTxnsCount().put(CryptoTransfer, 2L);
-		subject.getLastHandledTxnsCount().put(CryptoTransfer, 3L);
-		subject.setLastReceivedDeprecatedTxnCount(4L);
-		// and:
-		subject.getLastReceivedOpsCount().put(TokenGetInfo, 4L);
-		subject.getLastAnsweredQueriesCount().put(TokenGetInfo, 5L);
-		// and:
+    @Test
+    void updatesSpeedometersAsExpected() {
+        // setup:
+        subject.getLastReceivedOpsCount().put(CryptoTransfer, 1L);
+        subject.getLastSubmittedTxnsCount().put(CryptoTransfer, 2L);
+        subject.getLastHandledTxnsCount().put(CryptoTransfer, 3L);
+        subject.setLastReceivedDeprecatedTxnCount(4L);
+        // and:
+        subject.getLastReceivedOpsCount().put(TokenGetInfo, 4L);
+        subject.getLastAnsweredQueriesCount().put(TokenGetInfo, 5L);
+        // and:
 
-		given(counters.receivedSoFar(CryptoTransfer)).willReturn(2L);
-		given(counters.submittedSoFar(CryptoTransfer)).willReturn(4L);
-		given(counters.handledSoFar(CryptoTransfer)).willReturn(6L);
-		given(counters.receivedSoFar(TokenGetInfo)).willReturn(8L);
-		given(counters.answeredSoFar(TokenGetInfo)).willReturn(10L);
-		given(counters.receivedDeprecatedTxnSoFar()).willReturn(12L);
-		// and:
-		subject.getReceivedOps().put(CryptoTransfer, xferReceived);
-		subject.getSubmittedTxns().put(CryptoTransfer, xferSubmitted);
-		subject.getHandledTxns().put(CryptoTransfer, xferHandled);
-		subject.getReceivedOps().put(TokenGetInfo, infoReceived);
-		subject.getAnsweredQueries().put(TokenGetInfo, infoAnswered);
-		subject.setReceivedDeprecatedTxns(xferDeprecatedRcvd);
+        given(counters.receivedSoFar(CryptoTransfer)).willReturn(2L);
+        given(counters.submittedSoFar(CryptoTransfer)).willReturn(4L);
+        given(counters.handledSoFar(CryptoTransfer)).willReturn(6L);
+        given(counters.receivedSoFar(TokenGetInfo)).willReturn(8L);
+        given(counters.answeredSoFar(TokenGetInfo)).willReturn(10L);
+        given(counters.receivedDeprecatedTxnSoFar()).willReturn(12L);
+        // and:
+        subject.getReceivedOps().put(CryptoTransfer, xferReceived);
+        subject.getSubmittedTxns().put(CryptoTransfer, xferSubmitted);
+        subject.getHandledTxns().put(CryptoTransfer, xferHandled);
+        subject.getReceivedOps().put(TokenGetInfo, infoReceived);
+        subject.getAnsweredQueries().put(TokenGetInfo, infoAnswered);
+        subject.setReceivedDeprecatedTxns(xferDeprecatedRcvd);
 
-		// when:
-		subject.updateAll();
+        // when:
+        subject.updateAll();
 
-		// then:
-		assertEquals(2L, subject.getLastReceivedOpsCount().get(CryptoTransfer));
-		assertEquals(4L, subject.getLastSubmittedTxnsCount().get(CryptoTransfer));
-		assertEquals(6L, subject.getLastHandledTxnsCount().get(CryptoTransfer));
-		assertEquals(8L, subject.getLastReceivedOpsCount().get(TokenGetInfo));
-		assertEquals(10L, subject.getLastAnsweredQueriesCount().get(TokenGetInfo));
-		assertEquals(12L, subject.getLastReceivedDeprecatedTxnCount());
-		// and:
-		verify(xferReceived).update(1);
-		verify(xferSubmitted).update(2);
-		verify(xferHandled).update(3);
-		verify(infoReceived).update(4);
-		verify(infoAnswered).update(5);
-	}
+        // then:
+        assertEquals(2L, subject.getLastReceivedOpsCount().get(CryptoTransfer));
+        assertEquals(4L, subject.getLastSubmittedTxnsCount().get(CryptoTransfer));
+        assertEquals(6L, subject.getLastHandledTxnsCount().get(CryptoTransfer));
+        assertEquals(8L, subject.getLastReceivedOpsCount().get(TokenGetInfo));
+        assertEquals(10L, subject.getLastAnsweredQueriesCount().get(TokenGetInfo));
+        assertEquals(12L, subject.getLastReceivedDeprecatedTxnCount());
+        // and:
+        verify(xferReceived).update(1);
+        verify(xferSubmitted).update(2);
+        verify(xferHandled).update(3);
+        verify(infoReceived).update(4);
+        verify(infoAnswered).update(5);
+    }
 }

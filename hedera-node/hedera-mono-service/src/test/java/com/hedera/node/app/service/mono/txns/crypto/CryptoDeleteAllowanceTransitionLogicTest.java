@@ -32,8 +32,6 @@ import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
-import com.hedera.node.app.service.mono.txns.crypto.CryptoDeleteAllowanceTransitionLogic;
-import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;

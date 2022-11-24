@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.files;
 
 import static org.mockito.Mockito.inOrder;
 
-import com.hedera.node.app.service.mono.files.SysFileCallbacks;
 import com.hedera.node.app.service.mono.files.sysfiles.ConfigCallbacks;
 import com.hedera.node.app.service.mono.files.sysfiles.CurrencyCallbacks;
 import com.hedera.node.app.service.mono.files.sysfiles.ThrottlesCallback;

@@ -275,8 +275,10 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         } else {
             // Legacy representation from 0.18
             final var autoAssociationMetadata = in.readInt();
-            maxAutoAssociations = BitPackUtils.getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
-            usedAutoAssociations = BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
+            maxAutoAssociations =
+                    BitPackUtils.getMaxAutomaticAssociationsFrom(autoAssociationMetadata);
+            usedAutoAssociations =
+                    BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
         }
         // Added in 0.18
         number = in.readInt();

@@ -26,8 +26,8 @@ import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
@@ -113,8 +113,7 @@ public class MigrationRecordsManager {
     /**
      * If appropriate, publish the migration records for this upgrade. Only needs to be called once
      * per restart, but that call must be made from {@code handleTransaction} inside an active
-     * {@link TransactionContext} (because the record running hash is in
-     * state).
+     * {@link TransactionContext} (because the record running hash is in state).
      */
     public void publishMigrationRecords(final Instant now) {
         final var curNetworkCtx = networkCtx.get();

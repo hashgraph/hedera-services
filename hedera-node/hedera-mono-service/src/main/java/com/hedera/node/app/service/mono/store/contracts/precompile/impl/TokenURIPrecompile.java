@@ -78,7 +78,8 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
     public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 
         final var tokenId = (BigInteger) decodedArguments.get(0);
 

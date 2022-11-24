@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.ServicesState.EMPTY_HASH;
-import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.NEVER_USED_SNAPSHOT;
@@ -25,8 +24,9 @@ import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.ethHashFrom;
-import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -48,15 +48,13 @@ import static org.mockito.Mockito.times;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.state.DualStateAccessor;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.services.throttles.DeterministicThrottle;
+import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

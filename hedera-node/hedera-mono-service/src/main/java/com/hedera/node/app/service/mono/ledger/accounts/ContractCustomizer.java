@@ -37,8 +37,8 @@ import javax.annotation.Nullable;
 
 /**
  * Encapsulates a set of customizations to a smart contract. Primarily delegates to an {@link
- * HederaAccountCustomizer}, but with a bit of extra logic to deal with {@link
- * JContractIDKey} management.
+ * HederaAccountCustomizer}, but with a bit of extra logic to deal with {@link JContractIDKey}
+ * management.
  */
 public class ContractCustomizer {
     // Null if the contract is immutable; then its key derives from its entity id

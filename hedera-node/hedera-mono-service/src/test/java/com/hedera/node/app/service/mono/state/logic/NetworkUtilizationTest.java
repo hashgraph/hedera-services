@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.state.logic.NetworkUtilization;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

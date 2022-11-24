@@ -175,7 +175,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
     @VisibleForTesting
     long calculateGas(final Instant now) {
-        final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PrecompilePricingUtils.GasCostType.PRNG);
+        final var feesInTinyCents =
+                pricingUtils.getCanonicalPriceInTinyCents(PrecompilePricingUtils.GasCostType.PRNG);
         final var currentGasPriceInTinyCents =
                 livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;

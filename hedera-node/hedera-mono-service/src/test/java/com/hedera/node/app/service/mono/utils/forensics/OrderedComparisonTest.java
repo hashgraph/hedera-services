@@ -15,25 +15,6 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.statusHistograms;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
@@ -44,87 +25,103 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class OrderedComparisonTest {
-	private static final Path STREAMS_DIR =
-			Paths.get("src", "test", "resources", "forensics", "CaseOfTheObviouslyWrongNonce");
-	private static final TransactionRecord MOCK_RECORD = TransactionRecord.getDefaultInstance();
-	private static final Instant THEN = Instant.ofEpochSecond(1_234_567, 890);
-	private static final Instant NOW = Instant.ofEpochSecond(9_999_999, 001);
+    private static final Path STREAMS_DIR =
+            Paths.get("src", "test", "resources", "forensics", "CaseOfTheObviouslyWrongNonce");
+    private static final TransactionRecord MOCK_RECORD = TransactionRecord.getDefaultInstance();
+    private static final Instant THEN = Instant.ofEpochSecond(1_234_567, 890);
+    private static final Instant NOW = Instant.ofEpochSecond(9_999_999, 001);
 
-	@Mock
-	private TxnAccessor aAccessor;
-	@Mock
-	private TxnAccessor bAccessor;
+    @Mock private TxnAccessor aAccessor;
+    @Mock private TxnAccessor bAccessor;
 
-	@Test
-	void detectsDifferenceInCaseOfObviouslyWrongNonce() throws IOException {
-		final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
-		final var consensusStreamLoc = STREAMS_DIR + File.separator + "node0";
+    @Test
+    void detectsDifferenceInCaseOfObviouslyWrongNonce() throws IOException {
+        final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
+        final var consensusStreamLoc = STREAMS_DIR + File.separator + "node0";
 
-		final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc);
-		assertEquals(1, diffs.size());
-		final var soleDiff = diffs.get(0);
-		final var issEntry = soleDiff.firstEntry();
-		final var consensusEntry = soleDiff.secondEntry();
+        final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc);
+        assertEquals(1, diffs.size());
+        final var soleDiff = diffs.get(0);
+        final var issEntry = soleDiff.firstEntry();
+        final var consensusEntry = soleDiff.secondEntry();
 
-		final var issResolvedStatus = issEntry.finalStatus();
-		final var consensusResolvedStatus = consensusEntry.finalStatus();
-		assertEquals(INVALID_ACCOUNT_ID, issResolvedStatus);
-		assertEquals(WRONG_NONCE, consensusResolvedStatus);
-	}
+        final var issResolvedStatus = issEntry.finalStatus();
+        final var consensusResolvedStatus = consensusEntry.finalStatus();
+        assertEquals(INVALID_ACCOUNT_ID, issResolvedStatus);
+        assertEquals(WRONG_NONCE, consensusResolvedStatus);
+    }
 
-	@Test
-	void onlyEqualLengthsCanBeDiffed() {
-		final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, NOW);
-		final var firstList = Collections.<RecordStreamEntry>emptyList();
-		final var secondList = List.of(aEntry);
-		assertThrows(
-				IllegalArgumentException.class,
-				() -> OrderedComparison.diff(firstList, secondList));
-	}
+    @Test
+    void onlyEqualLengthsCanBeDiffed() {
+        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, NOW);
+        final var firstList = Collections.<RecordStreamEntry>emptyList();
+        final var secondList = List.of(aEntry);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OrderedComparison.diff(firstList, secondList));
+    }
 
-	@Test
-	void allTimestampsMustMatch() {
-		final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
-		final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, NOW);
-		final var firstList = List.of(aEntry);
-		final var secondList = List.of(bEntry);
-		assertThrows(
-				IllegalArgumentException.class,
-				() -> OrderedComparison.diff(firstList, secondList));
-	}
+    @Test
+    void allTimestampsMustMatch() {
+        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
+        final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, NOW);
+        final var firstList = List.of(aEntry);
+        final var secondList = List.of(bEntry);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OrderedComparison.diff(firstList, secondList));
+    }
 
-	@Test
-	void allTransactionsMustMatch() {
-		final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
-		final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, THEN);
-		final var aMockTxn = Transaction.getDefaultInstance();
-		final var bMockTxn =
-				Transaction.newBuilder()
-						.setSignedTransactionBytes(ByteString.copyFromUtf8("ABCDEFG"))
-						.build();
-		given(aAccessor.getSignedTxnWrapper()).willReturn(aMockTxn);
-		given(bAccessor.getSignedTxnWrapper()).willReturn(bMockTxn);
-		final var firstList = List.of(aEntry);
-		final var secondList = List.of(bEntry);
-		assertThrows(
-				IllegalArgumentException.class,
-				() -> OrderedComparison.diff(firstList, secondList));
-	}
+    @Test
+    void allTransactionsMustMatch() {
+        final var aEntry = new RecordStreamEntry(aAccessor, MOCK_RECORD, THEN);
+        final var bEntry = new RecordStreamEntry(bAccessor, MOCK_RECORD, THEN);
+        final var aMockTxn = Transaction.getDefaultInstance();
+        final var bMockTxn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFromUtf8("ABCDEFG"))
+                        .build();
+        given(aAccessor.getSignedTxnWrapper()).willReturn(aMockTxn);
+        given(bAccessor.getSignedTxnWrapper()).willReturn(bMockTxn);
+        final var firstList = List.of(aEntry);
+        final var secondList = List.of(bEntry);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> OrderedComparison.diff(firstList, secondList));
+    }
 
-	@Test
-	void auxInvestigationMethodsWork() throws IOException {
-		final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
-		final var entries = parseV6RecordStreamEntriesIn(issStreamLoc);
+    @Test
+    void auxInvestigationMethodsWork() throws IOException {
+        final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
+        final var entries = parseV6RecordStreamEntriesIn(issStreamLoc);
 
-		final var histograms = statusHistograms(entries);
-		final var expectedEthTxHist = Map.of(INVALID_ACCOUNT_ID, 1);
-		assertEquals(expectedEthTxHist, histograms.get(HederaFunctionality.EthereumTransaction));
+        final var histograms = statusHistograms(entries);
+        final var expectedEthTxHist = Map.of(INVALID_ACCOUNT_ID, 1);
+        assertEquals(expectedEthTxHist, histograms.get(HederaFunctionality.EthereumTransaction));
 
-		final var fileAppends = OrderedComparison.filterByFunction(entries, FileAppend);
-		assertEquals(3, fileAppends.size());
-		final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
-		assertEquals(48287857L, appendTarget.getFileNum());
-	}
+        final var fileAppends = OrderedComparison.filterByFunction(entries, FileAppend);
+        assertEquals(3, fileAppends.size());
+        final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
+        assertEquals(48287857L, appendTarget.getFileNum());
+    }
 }

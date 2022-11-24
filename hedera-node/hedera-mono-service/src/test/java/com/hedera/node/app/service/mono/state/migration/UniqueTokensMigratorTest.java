@@ -20,7 +20,6 @@ import static com.hedera.node.app.service.mono.state.migration.StateChildIndices
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
-import com.hedera.node.app.service.mono.state.migration.UniqueTokensMigrator;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;

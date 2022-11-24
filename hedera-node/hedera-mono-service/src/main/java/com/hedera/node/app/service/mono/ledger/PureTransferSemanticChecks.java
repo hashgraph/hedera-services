@@ -51,8 +51,7 @@ import javax.inject.Singleton;
  * actual transfers requested in such a transaction.
  *
  * <p>Since in the normal transaction lifecycle, this logic will be performed during {@link
- * SpanMapManager#expandSpan(TxnAccessor)}, we can accept some
- * inefficient use of gRPC types.
+ * SpanMapManager#expandSpan(TxnAccessor)}, we can accept some inefficient use of gRPC types.
  */
 @Singleton
 public class PureTransferSemanticChecks {

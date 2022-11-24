@@ -41,10 +41,10 @@ import javax.inject.Singleton;
  * or auto-removal. For a schedule, an impact can be creation, deletion, or auto-removal. And for an
  * alias, a impact can only be a creation or auto-removal. (Note that non-system deletion
  * <i>actually</i> only has a sig impact for contracts, given the details of the {@link
- * StateChildrenSigMetadataLookup} implementation; but for
- * consistency we treat it has an impactful change for all entity types, since the amortized
- * performance penalty is virtually zero, and it is quite possible we will want to extend this sig
- * impact historian to a generalized change historian in the future.)
+ * StateChildrenSigMetadataLookup} implementation; but for consistency we treat it has an impactful
+ * change for all entity types, since the amortized performance penalty is virtually zero, and it is
+ * quite possible we will want to extend this sig impact historian to a generalized change historian
+ * in the future.)
  *
  * <p>We need to track these changes to safely re-use in {@code handleTransaction} the signatures
  * created during {@code expandSignatures}. The signatures are created in {@code expandSignatures}

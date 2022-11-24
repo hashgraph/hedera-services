@@ -33,9 +33,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /**
  * Encapsulates the state and operations of a Hedera account-token relationship.
  *
- * <p>Operations are validated, and throw a {@link
- * InvalidTransactionException} with response code capturing the
- * failure when one occurs.
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
  *
  * <p><b>NOTE:</b> Some operations will likely be moved to specializations of this class as NFTs are
  * fully supported. For example, a {@link TokenRelationship#getBalanceChange()} signature only makes

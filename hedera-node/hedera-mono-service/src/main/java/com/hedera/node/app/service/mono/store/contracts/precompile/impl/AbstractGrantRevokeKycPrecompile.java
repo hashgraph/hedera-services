@@ -30,7 +30,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRe
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 

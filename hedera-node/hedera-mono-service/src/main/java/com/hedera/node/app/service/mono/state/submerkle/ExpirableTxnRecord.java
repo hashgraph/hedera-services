@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MISSING_NUMBER;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullable;
@@ -26,15 +25,16 @@ import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullabl
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableString;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionRecord;

@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;

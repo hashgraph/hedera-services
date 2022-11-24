@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,7 @@ class DelegatingMultiplierSource implements FeeMultiplierSource {
      * multiplier. Thus the {@link FunctionalityThrottling} implementation must provide a list of
      * throttle state snapshots that reflect the consensus of the entire network.
      *
-     * <p>That is, the throttle states must be a child of the {@link
-     * ServicesState}.
+     * <p>That is, the throttle states must be a child of the {@link ServicesState}.
      */
     @Override
     public void updateMultiplier(final TxnAccessor accessor, final Instant consensusNow) {

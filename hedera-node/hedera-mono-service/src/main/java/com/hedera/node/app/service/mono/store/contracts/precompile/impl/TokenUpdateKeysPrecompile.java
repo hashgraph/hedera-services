@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -48,7 +48,12 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
             TypeFactory.create(
-                    "(" + DecodingFacade.removeBrackets(BYTES32) + "," + DecodingFacade.TOKEN_KEY_DECODER + ARRAY_BRACKETS + ")");
+                    "("
+                            + DecodingFacade.removeBrackets(BYTES32)
+                            + ","
+                            + DecodingFacade.TOKEN_KEY_DECODER
+                            + ARRAY_BRACKETS
+                            + ")");
     TokenUpdateKeysWrapper updateOp;
 
     public TokenUpdateKeysPrecompile(
@@ -88,9 +93,11 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     public static TokenUpdateKeysWrapper decodeUpdateTokenKeys(
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var tokenKeys = DecodingFacade.decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+        final var tokenKeys =
+                DecodingFacade.decodeTokenKeys(decodedArguments.get(1), aliasResolver);
         return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
     }
 }

@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.contracts.ParsingConstants.TOKEN_KEY;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;

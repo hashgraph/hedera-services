@@ -100,7 +100,9 @@ public class ClassificationWork {
             // The effective payer for the expired crypto account has zero balance
             final long gracePeriodEnd = expiry + dynamicProperties.autoRenewGracePeriod();
             if (gracePeriodEnd > longNow) {
-                return isContract ? ClassificationResult.DETACHED_CONTRACT : ClassificationResult.DETACHED_ACCOUNT;
+                return isContract
+                        ? ClassificationResult.DETACHED_CONTRACT
+                        : ClassificationResult.DETACHED_ACCOUNT;
             }
             if (lastClassified.isTokenTreasury()) {
                 return ClassificationResult.DETACHED_TREASURY_GRACE_PERIOD_OVER_BEFORE_TOKEN;

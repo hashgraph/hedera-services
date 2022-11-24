@@ -75,7 +75,8 @@ public class NodeLocalProperties {
         tlsPort = properties.getIntProperty(PropertyNames.GRPC_TLS_PORT);
         activeProfile = properties.getProfileProperty(PropertyNames.HEDERA_PROFILES_ACTIVE);
         hapiOpStatsUpdateIntervalMs =
-                properties.getLongProperty(PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
+                properties.getLongProperty(
+                        PropertyNames.STATS_HAPI_OPS_SPEEDOMETER_UPDATE_INTERVAL_MS);
         statsSpeedometerHalfLifeSecs =
                 properties.getDoubleProperty(PropertyNames.STATS_SPEEDOMETER_HALF_LIFE_SECS);
         statsRunningAvgHalfLifeSecs =
@@ -83,38 +84,60 @@ public class NodeLocalProperties {
         recordLogDir = properties.getStringProperty(PropertyNames.HEDERA_RECORD_STREAM_LOG_DIR);
         sidecarDir = properties.getStringProperty(PropertyNames.HEDERA_RECORD_STREAM_SIDE_CAR_DIR);
         recordLogPeriod = properties.getLongProperty(PropertyNames.HEDERA_RECORD_STREAM_LOG_PERIOD);
-        recordStreamEnabled = properties.getBooleanProperty(PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED);
-        recordStreamQueueCapacity = properties.getIntProperty(PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY);
-        queryBlobLookupRetries = properties.getIntProperty(PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES);
-        nettyProdKeepAliveTime = properties.getLongProperty(PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME);
+        recordStreamEnabled =
+                properties.getBooleanProperty(PropertyNames.HEDERA_RECORD_STREAM_IS_ENABLED);
+        recordStreamQueueCapacity =
+                properties.getIntProperty(PropertyNames.HEDERA_RECORD_STREAM_QUEUE_CAPACITY);
+        queryBlobLookupRetries =
+                properties.getIntProperty(PropertyNames.QUERIES_BLOB_LOOK_UP_RETRIES);
+        nettyProdKeepAliveTime =
+                properties.getLongProperty(PropertyNames.NETTY_PROD_KEEP_ALIVE_TIME);
         nettyTlsCrtPath = properties.getStringProperty(PropertyNames.NETTY_TLS_CERT_PATH);
         nettyTlsKeyPath = properties.getStringProperty(PropertyNames.NETTY_TLS_KEY_PATH);
-        nettyProdKeepAliveTimeout = properties.getLongProperty(PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT);
-        nettyMaxConnectionAge = properties.getLongProperty(PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE);
+        nettyProdKeepAliveTimeout =
+                properties.getLongProperty(PropertyNames.NETTY_PROD_KEEP_ALIVE_TIMEOUT);
+        nettyMaxConnectionAge =
+                properties.getLongProperty(PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE);
         nettyMaxConnectionAgeGrace =
                 properties.getLongProperty(PropertyNames.NETTY_PROD_MAX_CONNECTION_AGE_GRACE);
-        nettyMaxConnectionIdle = properties.getLongProperty(PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE);
-        nettyMaxConcurrentCalls = properties.getIntProperty(PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS);
-        nettyFlowControlWindow = properties.getIntProperty(PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW);
-        devListeningAccount = properties.getStringProperty(PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT);
-        devOnlyDefaultNodeListens = properties.getBooleanProperty(PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS);
-        accountsExportPath = properties.getStringProperty(PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH);
-        exportAccountsOnStartup = properties.getBooleanProperty(PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP);
+        nettyMaxConnectionIdle =
+                properties.getLongProperty(PropertyNames.NETTY_PROD_MAX_CONNECTION_IDLE);
+        nettyMaxConcurrentCalls =
+                properties.getIntProperty(PropertyNames.NETTY_PROD_MAX_CONCURRENT_CALLS);
+        nettyFlowControlWindow =
+                properties.getIntProperty(PropertyNames.NETTY_PROD_FLOW_CONTROL_WINDOW);
+        devListeningAccount =
+                properties.getStringProperty(PropertyNames.DEV_DEFAULT_LISTENING_NODE_ACCOUNT);
+        devOnlyDefaultNodeListens =
+                properties.getBooleanProperty(PropertyNames.DEV_ONLY_DEFAULT_NODE_LISTENS);
+        accountsExportPath =
+                properties.getStringProperty(PropertyNames.HEDERA_ACCOUNTS_EXPORT_PATH);
+        exportAccountsOnStartup =
+                properties.getBooleanProperty(PropertyNames.HEDERA_EXPORT_ACCOUNTS_ON_STARTUP);
         nettyMode = properties.getProfileProperty(PropertyNames.NETTY_MODE);
         nettyStartRetries = properties.getIntProperty(PropertyNames.NETTY_START_RETRIES);
-        nettyStartRetryIntervalMs = properties.getLongProperty(PropertyNames.NETTY_START_RETRY_INTERVAL_MS);
-        numExecutionTimesToTrack = properties.getIntProperty(PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK);
+        nettyStartRetryIntervalMs =
+                properties.getLongProperty(PropertyNames.NETTY_START_RETRY_INTERVAL_MS);
+        numExecutionTimesToTrack =
+                properties.getIntProperty(PropertyNames.STATS_EXECUTION_TIMES_TO_TRACK);
         issResetPeriod = properties.getIntProperty(PropertyNames.ISS_RESET_PERIOD);
         issRoundsToLog = properties.getIntProperty(PropertyNames.ISS_ROUNDS_TO_LOG);
-        prefetchQueueCapacity = properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY);
-        prefetchThreadPoolSize = properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE);
-        prefetchCodeCacheTtlSecs = properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS);
-        consThrottlesToSample = properties.getStringsProperty(PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE);
-        hapiThrottlesToSample = properties.getStringsProperty(PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE);
+        prefetchQueueCapacity =
+                properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_QUEUE_CAPACITY);
+        prefetchThreadPoolSize =
+                properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_THREAD_POOL_SIZE);
+        prefetchCodeCacheTtlSecs =
+                properties.getIntProperty(PropertyNames.HEDERA_PREFETCH_CODE_CACHE_TTL_SECS);
+        consThrottlesToSample =
+                properties.getStringsProperty(PropertyNames.STATS_CONS_THROTTLES_TO_SAMPLE);
+        hapiThrottlesToSample =
+                properties.getStringsProperty(PropertyNames.STATS_HAPI_THROTTLES_TO_SAMPLE);
         entityUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+                properties.getLongProperty(
+                        PropertyNames.STATS_ENTITY_UTILS_GAUGE_UPDATE_INTERVAL_MS);
         throttleUtilStatsUpdateIntervalMs =
-                properties.getLongProperty(PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
+                properties.getLongProperty(
+                        PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS);
     }
 
     public int port() {

@@ -59,9 +59,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /**
  * Encapsulates the state and operations of a Hedera token.
  *
- * <p>Operations are validated, and throw a {@link
- * InvalidTransactionException} with response code capturing the
- * failure when one occurs.
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
  *
  * <p><b>NOTE:</b> Some operations only apply to specific token types. For example, a {@link
  * Token#mint(TokenRelationship, long, boolean)} call only makes sense for a token of type {@code

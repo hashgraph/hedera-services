@@ -31,10 +31,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

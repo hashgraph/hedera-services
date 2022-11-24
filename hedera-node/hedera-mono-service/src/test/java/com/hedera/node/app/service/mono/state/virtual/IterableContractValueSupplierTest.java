@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.state.virtual.IterableContractVal
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.IterableContractValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class IterableContractValueSupplierTest {

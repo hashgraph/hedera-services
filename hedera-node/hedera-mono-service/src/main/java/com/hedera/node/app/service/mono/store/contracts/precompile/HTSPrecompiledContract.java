@@ -42,29 +42,42 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DecimalsPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DeleteTokenPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FreezeTokenPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenDefaultKycStatus;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenTypePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GrantKycPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsFrozenPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsKycPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiAssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MultiDissociatePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NamePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.PausePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.RevokeKycPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SymbolPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TotalSupplyPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TransferPrecompile;
@@ -72,23 +85,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.Unfreeze
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UnpausePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.UpdateTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeFungiblePrecompile;
+import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.FreezeTokenPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsKycPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NamePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.PausePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.SetApprovalForAllPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdateKeysPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -183,7 +183,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
     public Pair<Long, Bytes> computeCosted(final Bytes input, final MessageFrame frame) {
         if (frame.isStatic()) {
-            if (!DescriptorUtils.isTokenProxyRedirect(input) && !DescriptorUtils.isViewFunction(input)) {
+            if (!DescriptorUtils.isTokenProxyRedirect(input)
+                    && !DescriptorUtils.isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
             }

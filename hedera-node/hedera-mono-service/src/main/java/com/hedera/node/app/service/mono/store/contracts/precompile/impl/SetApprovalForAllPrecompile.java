@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -151,7 +151,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.APPROVE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.APPROVE, consensusTime);
     }
 
     private Log getLogForSetApprovalForAll(final Address logger) {
@@ -185,7 +186,8 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                         : DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var to =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset), aliasResolver);
         final var approved = (boolean) decodedArguments.get(offset + 1);
 
         return new SetApprovalForAllWrapper(tokenId, to, approved);

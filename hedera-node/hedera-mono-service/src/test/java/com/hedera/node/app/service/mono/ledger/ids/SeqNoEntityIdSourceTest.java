@@ -28,7 +28,6 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.hedera.node.app.service.mono.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;

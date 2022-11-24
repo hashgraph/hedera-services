@@ -54,7 +54,8 @@ class ReusableBodySigningFactoryTest {
 
         subject = new ReusableBodySigningFactory(accessor);
 
-        final var actualSig = subject.signBodyWithEd25519(PlatformSigFactoryTest.pk, PlatformSigFactoryTest.sig);
+        final var actualSig =
+                subject.signBodyWithEd25519(PlatformSigFactoryTest.pk, PlatformSigFactoryTest.sig);
 
         Assertions.assertEquals(PlatformSigFactoryTest.EXPECTED_SIG, actualSig);
     }
@@ -66,7 +67,8 @@ class ReusableBodySigningFactoryTest {
         // when:
         subject.resetFor(accessor);
         // and:
-        final var actualSig = subject.signBodyWithEd25519(PlatformSigFactoryTest.pk, PlatformSigFactoryTest.sig);
+        final var actualSig =
+                subject.signBodyWithEd25519(PlatformSigFactoryTest.pk, PlatformSigFactoryTest.sig);
 
         // then:
         Assertions.assertEquals(PlatformSigFactoryTest.EXPECTED_SIG, actualSig);
@@ -86,7 +88,8 @@ class ReusableBodySigningFactoryTest {
         final var expectedSig = expectedEcdsaSecp256k1Sig(uncompressed);
 
         subject.resetFor(accessor);
-        final var actualSig = subject.signKeccak256DigestWithSecp256k1(compressed, PlatformSigFactoryTest.sig);
+        final var actualSig =
+                subject.signKeccak256DigestWithSecp256k1(compressed, PlatformSigFactoryTest.sig);
 
         Assertions.assertEquals(expectedSig, actualSig);
 
@@ -98,8 +101,14 @@ class ReusableBodySigningFactoryTest {
     private TransactionSignature expectedEcdsaSecp256k1Sig(final byte[] pk) {
         final var digest = MiscCryptoUtils.keccak256DigestOf(PlatformSigFactoryTest.data);
         final var expectedContents = new byte[digest.length + PlatformSigFactoryTest.sig.length];
-        System.arraycopy(PlatformSigFactoryTest.sig, 0, expectedContents, 0, PlatformSigFactoryTest.sig.length);
-        System.arraycopy(digest, 0, expectedContents, PlatformSigFactoryTest.sig.length, digest.length);
+        System.arraycopy(
+                PlatformSigFactoryTest.sig,
+                0,
+                expectedContents,
+                0,
+                PlatformSigFactoryTest.sig.length);
+        System.arraycopy(
+                digest, 0, expectedContents, PlatformSigFactoryTest.sig.length, digest.length);
         return new TransactionSignature(
                 expectedContents,
                 0,

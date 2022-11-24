@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
 import static com.hedera.node.app.service.mono.txns.span.SpanMapManager.reCalculateXferMeta;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -45,8 +45,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTr
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.*;
@@ -339,7 +339,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedTuples =
-                DecodingFacade.decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, CRYPTO_TRANSFER_SELECTOR, CRYPTO_TRANSFER_DECODER);
 
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
@@ -365,7 +366,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     public static CryptoTransferWrapper decodeCryptoTransferV2(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedTuples =
-                DecodingFacade.decodeFunctionCall(input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
+                DecodingFacade.decodeFunctionCall(
+                        input, CRYPTO_TRANSFER_SELECTOR_V2, CRYPTO_TRANSFER_DECODER_V2);
         List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         final List<TokenTransferWrapper> tokenTransferWrappers = new ArrayList<>();
 
@@ -402,11 +404,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var abiAdjustments = (Tuple[]) tupleNested.get(1);
             if (abiAdjustments.length > 0) {
                 fungibleTransfers =
-                        DecodingFacade.bindFungibleTransfersFrom(tokenType, abiAdjustments, aliasResolver);
+                        DecodingFacade.bindFungibleTransfersFrom(
+                                tokenType, abiAdjustments, aliasResolver);
             }
             final var abiNftExchanges = (Tuple[]) tupleNested.get(2);
             if (abiNftExchanges.length > 0) {
-                nftExchanges = DecodingFacade.bindNftExchangesFrom(tokenType, abiNftExchanges, aliasResolver);
+                nftExchanges =
+                        DecodingFacade.bindNftExchangesFrom(
+                                tokenType, abiNftExchanges, aliasResolver);
             }
 
             tokenTransferWrappers.add(new TokenTransferWrapper(nftExchanges, fungibleTransfers));
@@ -417,10 +422,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TRANSFER_TOKENS_SELECTOR, TRANSFER_TOKENS_DECODER);
 
         final var tokenType = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountIDs = DecodingFacade.decodeAccountIds(decodedArguments.get(1), aliasResolver);
+        final var accountIDs =
+                DecodingFacade.decodeAccountIds(decodedArguments.get(1), aliasResolver);
         final var amounts = (long[]) decodedArguments.get(2);
 
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -428,12 +435,14 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var accountID = accountIDs.get(i);
             final var amount = amounts[i];
 
-            DecodingFacade.addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, false);
+            DecodingFacade.addSignedAdjustment(
+                    fungibleTransfers, tokenType, accountID, amount, false);
         }
 
         final var tokenTransferWrappers =
                 Collections.singletonList(
-                        new TokenTransferWrapper(DecodingFacade.NO_NFT_EXCHANGES, fungibleTransfers));
+                        new TokenTransferWrapper(
+                                DecodingFacade.NO_NFT_EXCHANGES, fungibleTransfers));
 
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
@@ -442,13 +451,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TRANSFER_TOKEN_SELECTOR, TRANSFER_TOKEN_DECODER);
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var sender =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
         final var receiver =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(2), aliasResolver);
         final var amount = (long) decodedArguments.get(3);
 
         final var tokenTransferWrappers =
@@ -465,11 +477,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var senders = DecodingFacade.decodeAccountIds(decodedArguments.get(1), aliasResolver);
-        final var receivers = DecodingFacade.decodeAccountIds(decodedArguments.get(2), aliasResolver);
+        final var receivers =
+                DecodingFacade.decodeAccountIds(decodedArguments.get(2), aliasResolver);
         final var serialNumbers = ((long[]) decodedArguments.get(3));
 
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
@@ -482,7 +496,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
         final var tokenTransferWrappers =
                 Collections.singletonList(
-                        new TokenTransferWrapper(nftExchanges, DecodingFacade.NO_FUNGIBLE_TRANSFERS));
+                        new TokenTransferWrapper(
+                                nftExchanges, DecodingFacade.NO_FUNGIBLE_TRANSFERS));
         return new CryptoTransferWrapper(new TransferWrapper(hbarTransfers), tokenTransferWrappers);
     }
 
@@ -490,13 +505,16 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = Collections.emptyList();
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TRANSFER_NFT_SELECTOR, TRANSFER_NFT_DECODER);
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var sender =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
         final var receiver =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(2), aliasResolver);
         final var serialNumber = (long) decodedArguments.get(3);
 
         final var tokenTransferWrappers =

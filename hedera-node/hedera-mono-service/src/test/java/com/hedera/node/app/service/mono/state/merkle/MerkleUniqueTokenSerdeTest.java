@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.merkle;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
 import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.test.serde.SelfSerializableDataTest;

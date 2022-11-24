@@ -40,7 +40,7 @@ import javax.inject.Singleton;
 public interface LedgerModule {
     @Binds
     @Singleton
-	BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
+    BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
 
     @Provides
     @Singleton

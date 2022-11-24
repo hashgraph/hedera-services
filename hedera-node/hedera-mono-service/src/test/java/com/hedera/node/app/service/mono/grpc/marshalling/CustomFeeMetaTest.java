@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.grpc.marshalling;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import java.util.Collections;

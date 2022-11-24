@@ -15,67 +15,67 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 class InPlaceHeadInsertionTest {
-	private final TokenRelStorageAdapter tokenRels =
-			TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+    private final TokenRelStorageAdapter tokenRels =
+            TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
 
-	@Test
-	void canInsertToEmptyList() {
-		final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+    @Test
+    void canInsertToEmptyList() {
+        final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot =
-				insertInPlaceAtMapValueListHead(aRelKey, aRel, null, null, listInsertion);
+        final var newRoot =
+                insertInPlaceAtMapValueListHead(aRelKey, aRel, null, null, listInsertion);
 
-		assertSame(aRelKey, newRoot);
-		assertSame(aRel, tokenRels.get(aRelKey));
-	}
+        assertSame(aRelKey, newRoot);
+        assertSame(aRel, tokenRels.get(aRelKey));
+    }
 
-	@Test
-	void canInsertToNonEmptyListWithNullValue() {
-		tokenRels.put(bRelKey, bRel);
-		final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+    @Test
+    void canInsertToNonEmptyListWithNullValue() {
+        tokenRels.put(bRelKey, bRel);
+        final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot =
-				insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, null, listInsertion);
+        final var newRoot =
+                insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, null, listInsertion);
 
-		assertSame(aRelKey, newRoot);
-		final var newRootValue = tokenRels.get(aRelKey);
-		assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
-		final var newNextValue = tokenRels.get(bRelKey);
-		assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
-	}
+        assertSame(aRelKey, newRoot);
+        final var newRootValue = tokenRels.get(aRelKey);
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
+        final var newNextValue = tokenRels.get(bRelKey);
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
+    }
 
-	@Test
-	void canInsertToNonEmptyListWithNonNullValue() {
-		tokenRels.put(bRelKey, bRel);
-		final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
+    @Test
+    void canInsertToNonEmptyListWithNonNullValue() {
+        tokenRels.put(bRelKey, bRel);
+        final var listInsertion = new TokenRelsListMutation(accountNum.longValue(), tokenRels);
 
-		final var newRoot =
-				insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, bRel, listInsertion);
+        final var newRoot =
+                insertInPlaceAtMapValueListHead(aRelKey, aRel, bRelKey, bRel, listInsertion);
 
-		assertSame(aRelKey, newRoot);
-		final var newRootValue = tokenRels.get(aRelKey);
-		assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
-		final var newNextValue = tokenRels.get(bRelKey);
-		assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
-	}
+        assertSame(aRelKey, newRoot);
+        final var newRootValue = tokenRels.get(aRelKey);
+        assertEquals(bRelKey.getLowOrderAsLong(), newRootValue.getNext());
+        final var newNextValue = tokenRels.get(bRelKey);
+        assertEquals(aRelKey.getLowOrderAsLong(), newNextValue.getPrev());
+    }
 
-	private static final EntityNum accountNum = EntityNum.fromLong(2);
-	private static final EntityNum a = EntityNum.fromLong(4);
-	private static final EntityNum b = EntityNum.fromLong(8);
-	private static final EntityNum c = EntityNum.fromLong(16);
-	private static final EntityNumPair aRelKey = EntityNumPair.fromNums(accountNum, a);
-	private static final EntityNumPair bRelKey = EntityNumPair.fromNums(accountNum, b);
-	private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(1L, true, false, true);
-	private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(2L, true, false, true);
+    private static final EntityNum accountNum = EntityNum.fromLong(2);
+    private static final EntityNum a = EntityNum.fromLong(4);
+    private static final EntityNum b = EntityNum.fromLong(8);
+    private static final EntityNum c = EntityNum.fromLong(16);
+    private static final EntityNumPair aRelKey = EntityNumPair.fromNums(accountNum, a);
+    private static final EntityNumPair bRelKey = EntityNumPair.fromNums(accountNum, b);
+    private final MerkleTokenRelStatus aRel = new MerkleTokenRelStatus(1L, true, false, true);
+    private final MerkleTokenRelStatus bRel = new MerkleTokenRelStatus(2L, true, false, true);
 }

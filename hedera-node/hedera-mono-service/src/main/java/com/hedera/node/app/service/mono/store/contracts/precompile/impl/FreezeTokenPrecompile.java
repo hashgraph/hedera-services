@@ -77,7 +77,8 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
         Objects.requireNonNull(
                 freezeUnfreezeOp,
                 "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.FREEZE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.FREEZE, consensusTime);
     }
 
     public static TokenFreezeUnfreezeWrapper decodeFreeze(
@@ -88,7 +89,8 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
         return TokenFreezeUnfreezeWrapper.forFreeze(tokenID, accountID);
     }
 }

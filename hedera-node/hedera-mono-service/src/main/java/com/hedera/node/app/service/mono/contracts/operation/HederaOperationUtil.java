@@ -39,9 +39,9 @@ package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiPredicate;
@@ -68,10 +68,9 @@ public final class HederaOperationUtil {
      * HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist, or it is
      * deleted.
      *
-     * <p>If the target {@link Address} has {@link
-     * MerkleAccount#isReceiverSigRequired()} set to true,
-     * verification of the provided signature is performed. If the signature is not active, the
-     * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
+     * <p>If the target {@link Address} has {@link MerkleAccount#isReceiverSigRequired()} set to
+     * true, verification of the provided signature is performed. If the signature is not active,
+     * the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *
      * @param sigsVerifier The signature
      * @param frame The current message frame

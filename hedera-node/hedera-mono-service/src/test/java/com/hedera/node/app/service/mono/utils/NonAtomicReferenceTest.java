@@ -15,26 +15,26 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import org.junit.jupiter.api.Test;
+
 class NonAtomicReferenceTest {
-	@Test
-	void accessorsWork() {
-		final NonAtomicReference<String> subject = new NonAtomicReference<>();
+    @Test
+    void accessorsWork() {
+        final NonAtomicReference<String> subject = new NonAtomicReference<>();
 
-		assertNull(subject.get());
-		subject.set("HELLO");
-		assertEquals("HELLO", subject.get());
-	}
+        assertNull(subject.get());
+        subject.set("HELLO");
+        assertEquals("HELLO", subject.get());
+    }
 
-	@Test
-	void constructorWithValueWorks() {
-		final NonAtomicReference<String> subject = new NonAtomicReference<>("hello");
-		assertEquals("hello", subject.get());
-		subject.set("HELLO");
-		assertEquals("HELLO", subject.get());
-	}
+    @Test
+    void constructorWithValueWorks() {
+        final NonAtomicReference<String> subject = new NonAtomicReference<>("hello");
+        assertEquals("hello", subject.get());
+        subject.set("HELLO");
+        assertEquals("HELLO", subject.get());
+    }
 }

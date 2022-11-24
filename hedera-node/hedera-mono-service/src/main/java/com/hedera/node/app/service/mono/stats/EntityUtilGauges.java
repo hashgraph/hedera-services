@@ -92,7 +92,8 @@ public class EntityUtilGauges {
 
     private static DoubleGauge.Config gaugeConfigFor(
             final String utilType, @Nullable final String forDesc) {
-        return new DoubleGauge.Config(ServicesStatsManager.STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
+        return new DoubleGauge.Config(
+                        ServicesStatsManager.STAT_CATEGORY, String.format(UTIL_NAME_TPL, utilType))
                 .withDescription(
                         String.format(
                                 UTIL_DESCRIPTION_TPL,

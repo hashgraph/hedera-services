@@ -30,7 +30,6 @@ import static org.mockito.BDDMockito.willThrow;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.hedera.node.app.service.mono.context.domain.trackers.ConsensusStatusCounts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -32,15 +32,15 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.store.TypedTokenStore;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.services.ethereum.EthTxSigs;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.txns.token.process.Dissociation;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,9 +58,8 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Encapsulates the state and operations of a Hedera account.
  *
- * <p>Operations are validated, and throw a {@link
- * InvalidTransactionException} with response code capturing the
- * failure when one occurs.
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
  *
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support
  * the Hedera Token Service. The memo field, for example, is not yet present.

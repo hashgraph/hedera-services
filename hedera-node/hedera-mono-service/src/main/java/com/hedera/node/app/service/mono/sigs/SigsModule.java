@@ -23,14 +23,14 @@ import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifie
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
 import com.hedera.node.app.service.mono.keys.OnlyIfSigVerifiableValid;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenMetaUtils;
+import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
-import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
-import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
-import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.node.app.service.mono.sigs.utils.PrecheckUtils;
+import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.state.logic.PayerSigValidity;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
@@ -50,7 +50,7 @@ public interface SigsModule {
 
     @Binds
     @Singleton
-	SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
+    SignatureWaivers provideSignatureWaivers(PolicyBasedSigWaivers policyBasedSigWaivers);
 
     @Provides
     @Singleton

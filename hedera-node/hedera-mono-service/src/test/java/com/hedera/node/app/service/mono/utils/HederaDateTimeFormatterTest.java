@@ -15,23 +15,22 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class HederaDateTimeFormatterTest {
-	@Test
-	void shouldFormatInstantCorrectly() {
-		final var instant =
-				Instant.EPOCH
-						.plus(18500, ChronoUnit.DAYS)
-						.plus(12, ChronoUnit.HOURS)
-						.plus(34, ChronoUnit.MINUTES)
-						.plus(56, ChronoUnit.SECONDS)
-						.plusNanos(78900);
-		assertEquals("2020-08-26T12_34_56.000078900Z", HederaDateTimeFormatter.format(instant));
-	}
+    @Test
+    void shouldFormatInstantCorrectly() {
+        final var instant =
+                Instant.EPOCH
+                        .plus(18500, ChronoUnit.DAYS)
+                        .plus(12, ChronoUnit.HOURS)
+                        .plus(34, ChronoUnit.MINUTES)
+                        .plus(56, ChronoUnit.SECONDS)
+                        .plusNanos(78900);
+        assertEquals("2020-08-26T12_34_56.000078900Z", HederaDateTimeFormatter.format(instant));
+    }
 }

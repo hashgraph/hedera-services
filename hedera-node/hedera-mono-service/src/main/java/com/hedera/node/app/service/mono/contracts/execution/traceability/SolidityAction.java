@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.ContractAction;
 
 public class SolidityAction {

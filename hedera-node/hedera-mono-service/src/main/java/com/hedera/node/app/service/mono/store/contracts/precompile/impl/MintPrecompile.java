@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -30,6 +30,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
@@ -41,8 +43,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActi
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -151,7 +151,10 @@ public class MintPrecompile extends AbstractWritePrecompile {
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         final var isNftMint = Objects.requireNonNull(mintOp).type() == NON_FUNGIBLE_UNIQUE;
         return pricingUtils.getMinimumPriceInTinybars(
-                isNftMint ? PrecompilePricingUtils.GasCostType.MINT_NFT : PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE, consensusTime);
+                isNftMint
+                        ? PrecompilePricingUtils.GasCostType.MINT_NFT
+                        : PrecompilePricingUtils.GasCostType.MINT_FUNGIBLE,
+                consensusTime);
     }
 
     @Override

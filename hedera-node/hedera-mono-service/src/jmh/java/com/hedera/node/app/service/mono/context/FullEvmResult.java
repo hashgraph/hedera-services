@@ -16,8 +16,6 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-
 import javax.annotation.Nullable;
 
-public record FullEvmResult(TransactionProcessingResult result, @Nullable byte[] evmAddress) {
-}
+public record FullEvmResult(TransactionProcessingResult result, @Nullable byte[] evmAddress) {}

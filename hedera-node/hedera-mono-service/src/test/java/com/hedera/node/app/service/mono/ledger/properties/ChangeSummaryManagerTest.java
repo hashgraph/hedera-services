@@ -21,7 +21,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.mono.ledger.PropertyChangeObserver;
 import com.hedera.node.app.service.mono.ledger.accounts.TestAccount;
-
 import java.util.EnumMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

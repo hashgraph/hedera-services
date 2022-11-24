@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.hedera.node.app.service.mono.queries.crypto.GetStakersAnswer;
 import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetStakersResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

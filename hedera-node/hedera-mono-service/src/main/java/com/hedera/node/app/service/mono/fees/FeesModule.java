@@ -28,21 +28,21 @@ import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstim
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.UsageBasedFeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
+import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.CryptoFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountDetailsResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
+import com.hedera.node.app.service.mono.fees.calculation.ethereum.EthereumFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.file.FileFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.SystemDeleteFileResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.SystemUndeleteFileResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.meta.queries.GetExecTimeResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.meta.queries.GetVersionInfoResourceUsage;
+import com.hedera.node.app.service.mono.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.node.app.service.mono.fees.calculation.system.txns.FreezeResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.system.txns.UncheckedSubmitResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.token.TokenFeesModule;
-import com.hedera.node.app.service.mono.fees.calculation.consensus.ConsensusFeesModule;
-import com.hedera.node.app.service.mono.fees.calculation.contract.ContractFeesModule;
-import com.hedera.node.app.service.mono.fees.calculation.ethereum.EthereumFeesModule;
-import com.hedera.node.app.service.mono.fees.calculation.schedule.ScheduleFeesModule;
 import com.hedera.node.app.service.mono.fees.charging.NarratedCharging;
 import com.hedera.node.app.service.mono.fees.charging.NarratedLedgerCharging;
 import com.hedera.node.app.service.mono.fees.charging.RecordedStorageFeeCharging;
@@ -82,7 +82,7 @@ public interface FeesModule {
 
     @Binds
     @Singleton
-	UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
+    UsagePricesProvider bindUsagePricesProvider(BasicFcfsUsagePrices basicFcfsUsagePrices);
 
     @Binds
     @Singleton

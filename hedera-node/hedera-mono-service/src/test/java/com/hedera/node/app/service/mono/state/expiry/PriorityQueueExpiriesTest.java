@@ -23,9 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
-import com.hedera.node.app.service.mono.state.expiry.ExpiryEvent;
-import com.hedera.node.app.service.mono.state.expiry.PriorityQueueExpiries;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

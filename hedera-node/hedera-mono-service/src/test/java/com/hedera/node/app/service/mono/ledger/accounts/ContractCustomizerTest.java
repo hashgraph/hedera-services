@@ -38,8 +38,6 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
-import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
-import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;

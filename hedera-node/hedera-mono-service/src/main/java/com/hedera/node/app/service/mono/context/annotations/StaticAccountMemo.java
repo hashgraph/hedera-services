@@ -30,10 +30,9 @@ import javax.inject.Qualifier;
 
 /**
  * Distinguishes a bound {@code String} instance that represents the address book memo of the node
- * during {@link ServicesState#init(Platform, AddressBook, SwirldDualState,
- * InitTrigger, SoftwareVersion)}. The "static" qualifier is meant to emphasize the current system
- * does not allow for the possibility of the node's account changing dynamically (i.e., without a
- * network restart).
+ * during {@link ServicesState#init(Platform, AddressBook, SwirldDualState, InitTrigger,
+ * SoftwareVersion)}. The "static" qualifier is meant to emphasize the current system does not allow
+ * for the possibility of the node's account changing dynamically (i.e., without a network restart).
  */
 @Target({ElementType.METHOD, ElementType.PARAMETER})
 @Qualifier

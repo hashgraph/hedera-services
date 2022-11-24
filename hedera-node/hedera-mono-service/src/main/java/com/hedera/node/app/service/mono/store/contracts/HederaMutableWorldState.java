@@ -37,8 +37,8 @@ package com.hedera.node.app.service.mono.store.contracts;
  *
  */
 
-import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
+import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;

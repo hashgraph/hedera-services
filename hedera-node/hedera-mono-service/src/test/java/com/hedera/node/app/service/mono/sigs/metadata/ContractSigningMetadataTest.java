@@ -20,8 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import java.nio.charset.StandardCharsets;
-
-import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
 import org.junit.jupiter.api.Test;
 
 class ContractSigningMetadataTest {

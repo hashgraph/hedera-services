@@ -19,7 +19,6 @@ import static org.mockito.BDDMockito.argThat;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.node.app.service.mono.files.sysfiles.ThrottlesCallback;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.test.utils.SerdeUtils;
 import java.io.IOException;

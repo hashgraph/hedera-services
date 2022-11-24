@@ -53,7 +53,8 @@ public class ExpiryStats {
                 platform.getMetrics()
                         .getOrCreate(
                                 new RunningAverageMetric.Config(
-                                                ServicesStatsManager.STAT_CATEGORY, Names.IDS_SCANNED_PER_CONSENSUS_SEC)
+                                                ServicesStatsManager.STAT_CATEGORY,
+                                                Names.IDS_SCANNED_PER_CONSENSUS_SEC)
                                         .withDescription(Descriptions.IDS_SCANNED_PER_CONSENSUS_SEC)
                                         .withFormat(ServicesStatsManager.RUNNING_AVG_FORMAT)
                                         .withHalfLife(halfLife));

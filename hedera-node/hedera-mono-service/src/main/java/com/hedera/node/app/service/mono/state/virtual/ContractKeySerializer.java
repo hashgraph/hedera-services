@@ -113,11 +113,14 @@ public class ContractKeySerializer implements KeySerializer<ContractKey> {
     @Override
     public boolean equals(ByteBuffer buf, int version, ContractKey contractKey) throws IOException {
         byte packedSize = buf.get();
-        final byte contractIdNonZeroBytes = ContractKey.getContractIdNonZeroBytesFromPacked(packedSize);
+        final byte contractIdNonZeroBytes =
+                ContractKey.getContractIdNonZeroBytesFromPacked(packedSize);
         if (contractIdNonZeroBytes != contractKey.getContractIdNonZeroBytes()) return false;
-        final byte uint256KeyNonZeroBytes = ContractKey.getUint256KeyNonZeroBytesFromPacked(packedSize);
+        final byte uint256KeyNonZeroBytes =
+                ContractKey.getUint256KeyNonZeroBytesFromPacked(packedSize);
         if (uint256KeyNonZeroBytes != contractKey.getUint256KeyNonZeroBytes()) return false;
-        final long contractId = ContractKey.deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
+        final long contractId =
+                ContractKey.deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
         if (contractId != contractKey.getContractId()) return false;
         final int[] uint256Key =
                 KeyPackingUtils.deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);

@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Longs;

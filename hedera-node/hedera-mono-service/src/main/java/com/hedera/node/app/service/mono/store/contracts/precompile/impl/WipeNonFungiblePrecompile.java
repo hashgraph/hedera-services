@@ -74,7 +74,8 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         Objects.requireNonNull(
                 wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.WIPE_NFT, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.WIPE_NFT, consensusTime);
     }
 
     public static WipeWrapper decodeWipeNFT(
@@ -85,7 +86,8 @@ public class WipeNonFungiblePrecompile extends AbstractWipePrecompile {
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
         final var serialNumbers = ((long[]) decodedArguments.get(2));
 
         return WipeWrapper.forNonFungible(

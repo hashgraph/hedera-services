@@ -111,6 +111,7 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.ASSOCIATE, consensusTime);
     }
 }

@@ -15,28 +15,28 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
+
 class KvUsageInfoTest {
 
-	@Test
-	void hasExpectedSemantics() {
-		final var initUsage = 123;
-		final var subject = new KvUsageInfo(initUsage);
+    @Test
+    void hasExpectedSemantics() {
+        final var initUsage = 123;
+        final var subject = new KvUsageInfo(initUsage);
 
-		assertEquals(initUsage, subject.pendingUsage());
-		assertEquals(0, subject.pendingUsageDelta());
+        assertEquals(initUsage, subject.pendingUsage());
+        assertEquals(0, subject.pendingUsageDelta());
 
-		assertFalse(subject.hasPositiveUsageDelta());
-		subject.updatePendingBy(5);
-		assertTrue(subject.hasPositiveUsageDelta());
-		subject.updatePendingBy(-2);
+        assertFalse(subject.hasPositiveUsageDelta());
+        subject.updatePendingBy(5);
+        assertTrue(subject.hasPositiveUsageDelta());
+        subject.updatePendingBy(-2);
 
-		assertEquals(initUsage + 3, subject.pendingUsage());
-		assertEquals(3, subject.pendingUsageDelta());
-	}
+        assertEquals(initUsage + 3, subject.pendingUsage());
+        assertEquals(3, subject.pendingUsageDelta());
+    }
 }

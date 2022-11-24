@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.state.logic.ReconnectListener;
 import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;

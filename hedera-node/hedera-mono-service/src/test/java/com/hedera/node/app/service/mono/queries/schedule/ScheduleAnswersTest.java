@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.queries.schedule;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.mono.queries.schedule.GetScheduleInfoAnswer;
-import com.hedera.node.app.service.mono.queries.schedule.ScheduleAnswers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

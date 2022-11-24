@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
-import static com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -153,7 +152,8 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        return StaticEntityAccess.explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
+        return StaticEntityAccess.explicitCodeFetch(
+                bytecode.get(), accountIdFromEvmAddress(address));
     }
 
     @Override

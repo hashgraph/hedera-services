@@ -19,58 +19,58 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-
 import java.io.IOException;
 
 public class FcLong implements SelfSerializable, FastCopyable {
-	private static final long CLASS_ID = 0x1d8fc60c62dc8982L;
+    private static final long CLASS_ID = 0x1d8fc60c62dc8982L;
 
-	private long value;
+    private long value;
 
-	public FcLong(final long value) {
-		this.value = value;
-	}
+    public FcLong(final long value) {
+        this.value = value;
+    }
 
-	@Override
-	public FcLong copy() {
-		return new FcLong(value);
-	}
+    @Override
+    public FcLong copy() {
+        return new FcLong(value);
+    }
 
-	@Override
-	public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-		value = in.readLong();
-	}
+    @Override
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
+        value = in.readLong();
+    }
 
-	@Override
-	public void serialize(final SerializableDataOutputStream out) throws IOException {
-		out.writeLong(value);
-	}
+    @Override
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(value);
+    }
 
-	@Override
-	public long getClassId() {
-		return CLASS_ID;
-	}
+    @Override
+    public long getClassId() {
+        return CLASS_ID;
+    }
 
-	@Override
-	public int getVersion() {
-		return 1;
-	}
+    @Override
+    public int getVersion() {
+        return 1;
+    }
 
-	@Override
-	public int hashCode() {
-		return Long.hashCode(value);
-	}
+    @Override
+    public int hashCode() {
+        return Long.hashCode(value);
+    }
 
-	@Override
-	public boolean equals(final Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || FcLong.class != o.getClass()) {
-			return false;
-		}
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || FcLong.class != o.getClass()) {
+            return false;
+        }
 
-		final var that = (FcLong) o;
-		return this.value == that.value;
-	}
+        final var that = (FcLong) o;
+        return this.value == that.value;
+    }
 }

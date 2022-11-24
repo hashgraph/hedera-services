@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.state.expiry;
 
 import com.hedera.node.app.service.mono.context.properties.PropertiesModule;
-import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalHelper;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalHelper;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
+import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalHelper;
 import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalWork;
 import dagger.Binds;
 import dagger.Module;

@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.evm.store.contracts.WorldStateAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -23,40 +29,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {
-	@Mock
-	private MessageFrame messageFrame;
-	@Mock
-	private WorldStateAccount worldStateAccount;
-	@Mock
-	private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock private MessageFrame messageFrame;
+    @Mock private WorldStateAccount worldStateAccount;
+    @Mock private HederaStackedWorldStateUpdater worldUpdater;
 
-	@Test
-	void testsAccountIsToken() {
-		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.get(any())).willReturn(worldStateAccount);
-		given(worldStateAccount.getNonce()).willReturn(-1L);
+    @Test
+    void testsAccountIsToken() {
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(worldStateAccount);
+        given(worldStateAccount.getNonce()).willReturn(-1L);
 
-		final var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
+        final var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
 
-		assertTrue(result);
-	}
+        assertTrue(result);
+    }
 
-	@Test
-	void testsAccountIsNotToken() {
-		given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
-		given(worldUpdater.get(any())).willReturn(worldStateAccount);
-		given(worldStateAccount.getNonce()).willReturn(1L);
+    @Test
+    void testsAccountIsNotToken() {
+        given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.get(any())).willReturn(worldStateAccount);
+        given(worldStateAccount.getNonce()).willReturn(1L);
 
-		final var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
+        final var result = KeyActivationUtils.isToken(messageFrame, fungibleTokenAddr);
 
-		assertFalse(result);
-	}
+        assertFalse(result);
+    }
 }

@@ -16,24 +16,23 @@
 package com.hedera.node.app.service.mono.mocks;
 
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class MockAccountTracking implements AccountUsageTracking {
-	@Inject
-	public MockAccountTracking() {
-		// Dagger2
-	}
+    @Inject
+    public MockAccountTracking() {
+        // Dagger2
+    }
 
-	@Override
-	public void refreshAccounts() {
-		// No-op
-	}
+    @Override
+    public void refreshAccounts() {
+        // No-op
+    }
 
-	@Override
-	public void recordContracts(final int n) {
-		// No-op
-	}
+    @Override
+    public void recordContracts(final int n) {
+        // No-op
+    }
 }

@@ -21,10 +21,10 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigM
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
-import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.services.evm.store.contracts.utils.BytesKey;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Arrays;
 import java.util.HashSet;

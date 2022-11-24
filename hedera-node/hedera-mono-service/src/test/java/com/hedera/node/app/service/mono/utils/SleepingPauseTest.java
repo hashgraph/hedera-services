@@ -15,46 +15,45 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.Test;
+
 class SleepingPauseTest {
-	final Pause subject = SleepingPause.SLEEPING_PAUSE;
+    final Pause subject = SleepingPause.SLEEPING_PAUSE;
 
-	@Test
-	void returnsTrueWhenNotInterrupted() {
-		// expect:
-		assertTrue(subject.forMs(1L));
-	}
+    @Test
+    void returnsTrueWhenNotInterrupted() {
+        // expect:
+        assertTrue(subject.forMs(1L));
+    }
 
-	@Test
-	void returnsFalseWhenInterrupted() {
-		// setup:
-		final AtomicBoolean retValue = new AtomicBoolean(true);
-		final Thread sleepingThread = new Thread(() -> retValue.set(subject.forMs(5_000L)));
-		final Thread wakingThread =
-				new Thread(
-						() -> {
-							try {
-								Thread.sleep(100L);
-							} catch (final InterruptedException ignore) {
-							}
-							sleepingThread.interrupt();
-						});
+    @Test
+    void returnsFalseWhenInterrupted() {
+        // setup:
+        final AtomicBoolean retValue = new AtomicBoolean(true);
+        final Thread sleepingThread = new Thread(() -> retValue.set(subject.forMs(5_000L)));
+        final Thread wakingThread =
+                new Thread(
+                        () -> {
+                            try {
+                                Thread.sleep(100L);
+                            } catch (final InterruptedException ignore) {
+                            }
+                            sleepingThread.interrupt();
+                        });
 
-		// when:
-		sleepingThread.start();
-		wakingThread.start();
-		try {
-			sleepingThread.join();
-		} catch (final InterruptedException ignore) {
-		}
+        // when:
+        sleepingThread.start();
+        wakingThread.start();
+        try {
+            sleepingThread.join();
+        } catch (final InterruptedException ignore) {
+        }
 
-		// then:
-		assertFalse(retValue.get());
-	}
+        // then:
+        assertFalse(retValue.get());
+    }
 }

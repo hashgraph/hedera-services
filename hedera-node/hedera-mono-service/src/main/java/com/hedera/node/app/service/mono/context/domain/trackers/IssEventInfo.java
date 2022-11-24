@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.context.domain.trackers;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Inject;

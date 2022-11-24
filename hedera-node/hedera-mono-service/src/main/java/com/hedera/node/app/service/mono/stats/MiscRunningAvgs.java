@@ -35,7 +35,8 @@ public class MiscRunningAvgs {
                 platform.getMetrics()
                         .getOrCreate(
                                 new RunningAverageMetric.Config(
-                                                ServicesStatsManager.STAT_CATEGORY, Names.GAS_PER_CONSENSUS_SEC)
+                                                ServicesStatsManager.STAT_CATEGORY,
+                                                Names.GAS_PER_CONSENSUS_SEC)
                                         .withDescription(Descriptions.GAS_PER_CONSENSUS_SEC)
                                         .withFormat(ServicesStatsManager.RUNNING_AVG_FORMAT)
                                         .withHalfLife(halfLife));
@@ -43,7 +44,8 @@ public class MiscRunningAvgs {
                 platform.getMetrics()
                         .getOrCreate(
                                 new RunningAverageMetric.Config(
-                                                ServicesStatsManager.STAT_CATEGORY, Names.HANDLED_SUBMIT_MESSAGE_SIZE)
+                                                ServicesStatsManager.STAT_CATEGORY,
+                                                Names.HANDLED_SUBMIT_MESSAGE_SIZE)
                                         .withDescription(Descriptions.HANDLED_SUBMIT_MESSAGE_SIZE)
                                         .withFormat(ServicesStatsManager.RUNNING_AVG_FORMAT)
                                         .withHalfLife(halfLife));
@@ -51,7 +53,8 @@ public class MiscRunningAvgs {
                 platform.getMetrics()
                         .getOrCreate(
                                 new RunningAverageMetric.Config(
-                                                ServicesStatsManager.STAT_CATEGORY, Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
+                                                ServicesStatsManager.STAT_CATEGORY,
+                                                Names.WRITE_QUEUE_SIZE_RECORD_STREAM)
                                         .withDescription(
                                                 Descriptions.WRITE_QUEUE_SIZE_RECORD_STREAM)
                                         .withFormat(ServicesStatsManager.RUNNING_AVG_FORMAT)
@@ -60,7 +63,8 @@ public class MiscRunningAvgs {
                 platform.getMetrics()
                         .getOrCreate(
                                 new RunningAverageMetric.Config(
-                                                ServicesStatsManager.STAT_CATEGORY, Names.HASH_QUEUE_SIZE_RECORD_STREAM)
+                                                ServicesStatsManager.STAT_CATEGORY,
+                                                Names.HASH_QUEUE_SIZE_RECORD_STREAM)
                                         .withDescription(Descriptions.HASH_QUEUE_SIZE_RECORD_STREAM)
                                         .withFormat(ServicesStatsManager.RUNNING_AVG_FORMAT)
                                         .withHalfLife(halfLife));

@@ -39,9 +39,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.service.mono.store.contracts.precompile.TokenKeyType;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;

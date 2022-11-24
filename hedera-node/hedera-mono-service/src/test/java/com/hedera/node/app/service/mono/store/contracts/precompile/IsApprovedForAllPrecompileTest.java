@@ -15,49 +15,49 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile.decodeIsApprovedForAll;
+import static java.util.function.UnaryOperator.identity;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile.decodeIsApprovedForAll;
-import static java.util.function.UnaryOperator.identity;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(MockitoExtension.class)
 class IsApprovedForAllPrecompileTest {
-	public static final Bytes IS_APPROVED_FOR_ALL_INPUT_ERC =
-			Bytes.fromHexString(
-					"0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
-	public static final Bytes IS_APPROVED_FOR_ALL_INPUT_HAPI =
-			Bytes.fromHexString(
-					"0xf49f40db0000000000000000000000000000000000000000000000000000000000001234000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
-	private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
-	private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER = 0x65b;
-	private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR = 0x65c;
-	private static final TokenID TOKEN_ID =
-			TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
+    public static final Bytes IS_APPROVED_FOR_ALL_INPUT_ERC =
+            Bytes.fromHexString(
+                    "0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+    public static final Bytes IS_APPROVED_FOR_ALL_INPUT_HAPI =
+            Bytes.fromHexString(
+                    "0xf49f40db0000000000000000000000000000000000000000000000000000000000001234000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+    private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
+    private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER = 0x65b;
+    private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR = 0x65c;
+    private static final TokenID TOKEN_ID =
+            TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
 
-	@Test
-	void decodeIsApprovedForAllERC() {
-		final var decodedInput =
-				decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
+    @Test
+    void decodeIsApprovedForAllERC() {
+        final var decodedInput =
+                decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
-		assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
-		assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
-		assertEquals(
-				ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
-	}
+        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
+        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
+        assertEquals(
+                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
+    }
 
-	@Test
-	void decodeIsApprovedForAllHAPI() {
-		final var decodedInput =
-				decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_HAPI, null, identity());
+    @Test
+    void decodeIsApprovedForAllHAPI() {
+        final var decodedInput =
+                decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_HAPI, null, identity());
 
-		assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
-		assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
-		assertEquals(
-				ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
-	}
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
+        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
+        assertEquals(
+                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
+    }
 }

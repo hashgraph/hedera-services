@@ -22,7 +22,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.state.impl.OnDiskStateImpl;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.swirlds.virtualmap.VirtualMap;

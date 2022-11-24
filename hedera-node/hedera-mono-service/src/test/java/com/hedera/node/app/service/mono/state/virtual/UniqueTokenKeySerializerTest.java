@@ -19,8 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Longs;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKeySerializer;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;

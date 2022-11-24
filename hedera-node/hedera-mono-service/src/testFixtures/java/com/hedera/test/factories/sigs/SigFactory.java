@@ -15,9 +15,9 @@
  */
 package com.hedera.test.factories.sigs;
 
+import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
 import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
-import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.legacy.proto.utils.SignatureGenerator;

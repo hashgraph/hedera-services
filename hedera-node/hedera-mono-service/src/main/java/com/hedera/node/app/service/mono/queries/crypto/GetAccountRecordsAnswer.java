@@ -20,9 +20,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer;
-import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
@@ -115,7 +115,9 @@ public class GetAccountRecordsAnswer implements AnswerService {
         response.setHeader(answerOnlyHeader(OK));
         response.setAccountID(op.getAccountID());
         if (queryCtx != null && queryCtx.containsKey(GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY)) {
-            response.addAllRecords((List<TransactionRecord>) queryCtx.get(GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY));
+            response.addAllRecords(
+                    (List<TransactionRecord>)
+                            queryCtx.get(GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY));
         } else {
             response.addAllRecords(answerFunctions.mostRecentRecords(view, op));
         }

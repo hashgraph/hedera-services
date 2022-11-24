@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.service.mono.files.HFileMetaSerde;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JObjectType;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

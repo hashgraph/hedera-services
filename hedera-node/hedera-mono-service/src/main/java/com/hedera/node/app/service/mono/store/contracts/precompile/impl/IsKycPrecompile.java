@@ -75,7 +75,8 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile {
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
 
         return new GrantRevokeKycWrapper(tokenID, accountID);
     }

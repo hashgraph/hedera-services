@@ -18,12 +18,6 @@ package com.hedera.node.app.service.mono.queries.contract;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.node.app.service.mono.queries.contract.ContractAnswers;
-import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
-import com.hedera.node.app.service.mono.queries.contract.GetBySolidityIdAnswer;
-import com.hedera.node.app.service.mono.queries.contract.GetBytecodeAnswer;
-import com.hedera.node.app.service.mono.queries.contract.GetContractInfoAnswer;
-import com.hedera.node.app.service.mono.queries.contract.GetContractRecordsAnswer;
 import org.junit.jupiter.api.Test;
 
 class ContractAnswersTest {

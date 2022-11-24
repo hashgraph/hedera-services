@@ -22,7 +22,6 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.files.sysfiles.CurrencyCallbacks;
 import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import java.util.function.Supplier;

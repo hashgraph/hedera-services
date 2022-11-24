@@ -30,7 +30,6 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.ActiveVersions;
 import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
-import com.hedera.node.app.service.mono.queries.meta.GetVersionInfoAnswer;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;

@@ -79,8 +79,8 @@ public class RecordStreaming {
 
     /**
      * Streams all the records, both child and top-level, that resulted from handling the
-     * transaction in the current {@link TransactionContext}.
-     * <b>IMPORTANT:</b> this may have the side effect of increasing the block number.
+     * transaction in the current {@link TransactionContext}. <b>IMPORTANT:</b> this may have the
+     * side effect of increasing the block number.
      */
     public void streamUserTxnRecords() {
         blockNo =

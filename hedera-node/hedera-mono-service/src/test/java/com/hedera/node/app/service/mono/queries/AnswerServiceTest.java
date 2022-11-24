@@ -23,8 +23,6 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.verify;
 
 import java.util.Collections;
-
-import com.hedera.node.app.service.mono.queries.AnswerService;
 import org.junit.jupiter.api.Test;
 
 class AnswerServiceTest {

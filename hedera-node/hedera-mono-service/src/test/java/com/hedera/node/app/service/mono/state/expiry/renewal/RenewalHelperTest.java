@@ -28,7 +28,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalHelper;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;

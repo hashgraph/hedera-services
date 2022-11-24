@@ -17,12 +17,12 @@ package com.hedera.node.app.service.mono.state.virtual.entities;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.SerializationUtils.*;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
@@ -34,10 +34,10 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.state.virtual.utils.EntityIoUtils;
-import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
@@ -243,7 +243,8 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
                 serializeFungibleAllowances(out, fungibleAllowances);
                 serializeNftOperatorApprovals(out, nftOperatorApprovals);
                 if (isContract()) {
-                    KeyPackingUtils.serializePossiblyMissingKey(firstStorageKey, firstStorageKeyNonZeroBytes, out);
+                    KeyPackingUtils.serializePossiblyMissingKey(
+                            firstStorageKey, firstStorageKeyNonZeroBytes, out);
                 }
                 out.flush();
             }

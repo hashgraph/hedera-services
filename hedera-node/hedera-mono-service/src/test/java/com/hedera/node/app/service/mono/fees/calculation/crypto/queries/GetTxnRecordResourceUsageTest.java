@@ -32,7 +32,6 @@ import static org.mockito.Mockito.mockStatic;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetTxnRecordResourceUsage;
 import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer;
 import com.hedera.node.app.service.mono.records.RecordCache;

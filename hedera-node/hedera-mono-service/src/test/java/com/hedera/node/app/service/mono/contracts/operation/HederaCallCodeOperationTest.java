@@ -43,8 +43,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;

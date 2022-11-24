@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,32 +22,35 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
+
 class InvalidTransactionExceptionTest {
-	@Test
-	void canBuildRevertingExceptionWithDetail() {
-		final var reason = "I don't like it!";
-		final var frameReason = Bytes.of(reason.getBytes());
-		final var revertingEx =
-				new InvalidTransactionException(reason, INVALID_ALLOWANCE_OWNER_ID, true);
+    @Test
+    void canBuildRevertingExceptionWithDetail() {
+        final var reason = "I don't like it!";
+        final var frameReason = Bytes.of(reason.getBytes());
+        final var revertingEx =
+                new InvalidTransactionException(reason, INVALID_ALLOWANCE_OWNER_ID, true);
 
-		assertTrue(revertingEx.isReverting());
-		assertEquals(frameReason, revertingEx.getRevertReason());
-	}
+        assertTrue(revertingEx.isReverting());
+        assertEquals(frameReason, revertingEx.getRevertReason());
+    }
 
-	@Test
-	void canBuildRevertingExceptionNoDetail() {
-		final var frameReason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
-		final var revertingEx = new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true);
+    @Test
+    void canBuildRevertingExceptionNoDetail() {
+        final var frameReason = Bytes.of(INVALID_ALLOWANCE_OWNER_ID.name().getBytes());
+        final var revertingEx = new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true);
 
-		assertTrue(revertingEx.isReverting());
-		assertEquals(frameReason, revertingEx.getRevertReason());
-	}
+        assertTrue(revertingEx.isReverting());
+        assertEquals(frameReason, revertingEx.getRevertReason());
+    }
 
-	@Test
-	void mostExceptionsArentReverting() {
-		final var otherEx = new InvalidTransactionException(INVALID_TRANSACTION_BODY);
+    @Test
+    void mostExceptionsArentReverting() {
+        final var otherEx = new InvalidTransactionException(INVALID_TRANSACTION_BODY);
 
-		assertFalse(otherEx.isReverting());
-		assertThrows(IllegalStateException.class, otherEx::getRevertReason);
-	}
+        assertFalse(otherEx.isReverting());
+        assertThrows(IllegalStateException.class, otherEx::getRevertReason);
+    }
 }

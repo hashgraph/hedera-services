@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
-import com.hedera.node.app.service.mono.txns.submission.SemanticPrecheck;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;

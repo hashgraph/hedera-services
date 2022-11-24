@@ -41,9 +41,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Used by {@link EventExpansion#expandAllSigs(Event, ServicesState)} to
- * expand the cryptographic signatures <i>linked</i> to a given transaction. Linked signatures are
- * derived from two pieces of information:
+ * Used by {@link EventExpansion#expandAllSigs(Event, ServicesState)} to expand the cryptographic
+ * signatures <i>linked</i> to a given transaction. Linked signatures are derived from two pieces of
+ * information:
  *
  * <ol>
  *   <li>The list of Hedera keys required to sign the transaction for it to be valid; and,

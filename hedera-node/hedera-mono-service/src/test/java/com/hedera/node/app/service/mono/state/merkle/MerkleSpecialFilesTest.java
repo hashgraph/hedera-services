@@ -27,9 +27,8 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.primitives.Longs;
-import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
+import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.constructable.ClassConstructorPair;

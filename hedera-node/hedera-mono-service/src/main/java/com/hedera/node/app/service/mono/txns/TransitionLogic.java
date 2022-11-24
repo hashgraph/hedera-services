@@ -71,8 +71,7 @@ public interface TransitionLogic {
 
     /**
      * Validate the transaction represented by the given {@link TxnAccessor}, returning a {@link
-     * ResponseCodeEnum}. The accessor has {@link StateView}
-     * back by latest signed state
+     * ResponseCodeEnum}. The accessor has {@link StateView} back by latest signed state
      *
      * @param accessor the transaction to be validated
      * @return {@code OK} if the transaction is valid, otherwise an appropriate error code

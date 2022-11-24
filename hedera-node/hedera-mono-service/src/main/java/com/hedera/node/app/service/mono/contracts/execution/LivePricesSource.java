@@ -18,10 +18,10 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
+import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;

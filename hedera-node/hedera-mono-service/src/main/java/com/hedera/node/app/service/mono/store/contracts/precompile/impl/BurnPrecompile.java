@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -141,8 +141,10 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(
                 burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(
-                (burnOp.type() == NON_FUNGIBLE_UNIQUE) ? PrecompilePricingUtils.GasCostType.BURN_NFT :
-						PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE, consensusTime);
+                (burnOp.type() == NON_FUNGIBLE_UNIQUE)
+                        ? PrecompilePricingUtils.GasCostType.BURN_NFT
+                        : PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE,
+                consensusTime);
     }
 
     @Override

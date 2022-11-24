@@ -15,18 +15,18 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.token.util.AliasUtils;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Optional;
 import javax.annotation.Nonnull;

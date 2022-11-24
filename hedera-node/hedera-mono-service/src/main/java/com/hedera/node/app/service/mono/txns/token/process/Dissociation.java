@@ -30,7 +30,6 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;

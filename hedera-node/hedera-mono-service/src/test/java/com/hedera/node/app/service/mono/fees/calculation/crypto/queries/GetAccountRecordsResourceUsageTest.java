@@ -30,7 +30,6 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
 import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;

@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeSc
 import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario.forCase;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario;
 import org.junit.jupiter.api.Test;
 
 class StakeChangeScenarioTest {

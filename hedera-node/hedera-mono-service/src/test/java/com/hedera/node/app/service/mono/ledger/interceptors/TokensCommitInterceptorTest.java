@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
-import com.hedera.node.app.service.mono.ledger.interceptors.TokensCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;

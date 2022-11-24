@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.state.forensics;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.node.app.service.mono.state.forensics.HashLogger;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;

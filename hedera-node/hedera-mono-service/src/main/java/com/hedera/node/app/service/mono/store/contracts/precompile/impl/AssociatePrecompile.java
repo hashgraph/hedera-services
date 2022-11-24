@@ -84,10 +84,12 @@ public class AssociatePrecompile extends AbstractAssociatePrecompile {
     public static Association decodeAssociation(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, ASSOCIATE_TOKEN_SELECTOR, ASSOCIATE_TOKEN_DECODER);
 
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(0), aliasResolver);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(1));
 
         return Association.singleAssociation(accountID, tokenID);

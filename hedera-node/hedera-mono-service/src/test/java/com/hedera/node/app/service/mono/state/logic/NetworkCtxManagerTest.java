@@ -29,7 +29,6 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
-import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;

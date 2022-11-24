@@ -15,41 +15,41 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class TokenTypesMapperTest {
-	@Test
-	void grpcTokenTypeToModelType() {
-		assertEquals(
-				TokenType.FUNGIBLE_COMMON,
-				TokenTypesMapper.mapToDomain(
-						com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
-		assertEquals(
-				TokenType.NON_FUNGIBLE_UNIQUE,
-				TokenTypesMapper.mapToDomain(
-						com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
-	}
+    @Test
+    void grpcTokenTypeToModelType() {
+        assertEquals(
+                TokenType.FUNGIBLE_COMMON,
+                TokenTypesMapper.mapToDomain(
+                        com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON));
+        assertEquals(
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenTypesMapper.mapToDomain(
+                        com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE));
+    }
 
-	@Test
-	void grpcTokenSupplyTypeToModelSupplyType() {
-		assertEquals(
-				TokenSupplyType.FINITE,
-				TokenTypesMapper.mapToDomain(
-						com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
+    @Test
+    void grpcTokenSupplyTypeToModelSupplyType() {
+        assertEquals(
+                TokenSupplyType.FINITE,
+                TokenTypesMapper.mapToDomain(
+                        com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE));
 
-		assertEquals(
-				TokenSupplyType.INFINITE,
-				TokenTypesMapper.mapToDomain(
-						com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
+        assertEquals(
+                TokenSupplyType.INFINITE,
+                TokenTypesMapper.mapToDomain(
+                        com.hederahashgraph.api.proto.java.TokenSupplyType.INFINITE));
 
-		/* ensure default is infinite */
-		assertEquals(
-				TokenSupplyType.INFINITE,
-				TokenTypesMapper.mapToDomain(
-						com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
-	}
+        /* ensure default is infinite */
+        assertEquals(
+                TokenSupplyType.INFINITE,
+                TokenTypesMapper.mapToDomain(
+                        com.hederahashgraph.api.proto.java.TokenSupplyType.UNRECOGNIZED));
+    }
 }

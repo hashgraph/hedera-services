@@ -112,7 +112,8 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         if (!usageLimits.areCreatableFiles(1)) {
             return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
         }
-        if (op.hasKeys() && !validator.hasGoodEncoding(FileUpdateTransitionLogic.wrapped(op.getKeys()))) {
+        if (op.hasKeys()
+                && !validator.hasGoodEncoding(FileUpdateTransitionLogic.wrapped(op.getKeys()))) {
             return INVALID_FILE_WACL;
         }
 
@@ -120,7 +121,10 @@ public class FileCreateTransitionLogic implements TransitionLogic {
     }
 
     private HFileMeta asAttr(FileCreateTransactionBody op) {
-        JKey wacl = op.hasKeys() ? asFcKeyUnchecked(FileUpdateTransitionLogic.wrapped(op.getKeys())) : StateView.EMPTY_WACL;
+        JKey wacl =
+                op.hasKeys()
+                        ? asFcKeyUnchecked(FileUpdateTransitionLogic.wrapped(op.getKeys()))
+                        : StateView.EMPTY_WACL;
 
         return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
     }

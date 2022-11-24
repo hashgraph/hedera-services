@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.fees;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.service.mono.fees.StandardCustomPayerExemptions;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;

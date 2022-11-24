@@ -19,7 +19,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.fees.calculation.utils.ResourceUsageSubtypeHelper;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

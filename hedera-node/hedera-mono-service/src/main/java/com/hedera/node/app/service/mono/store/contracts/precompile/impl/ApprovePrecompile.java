@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS_ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.services.contracts.ParsingConstants.BOOL;
 import static com.hedera.services.contracts.ParsingConstants.INT;
 import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -233,9 +233,11 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         if (isNftApprovalRevocation()) {
-            return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE, consensusTime);
+            return pricingUtils.getMinimumPriceInTinybars(
+                    PrecompilePricingUtils.GasCostType.DELETE_NFT_APPROVE, consensusTime);
         } else {
-            return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.APPROVE, consensusTime);
+            return pricingUtils.getMinimumPriceInTinybars(
+                    PrecompilePricingUtils.GasCostType.APPROVE, consensusTime);
         }
     }
 
@@ -273,13 +275,15 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             tokenId = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         } else {
             decodedArguments =
-                    DecodingFacade.decodeFunctionCall(input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
+                    DecodingFacade.decodeFunctionCall(
+                            input, HAPI_APPROVE_NFT_SELECTOR, HAPI_APPROVE_NFT_DECODER);
             tokenId = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         }
 
         final var ledgerFungible = TokenType.FUNGIBLE_COMMON.equals(ledgers.typeOf(tokenId));
         final var spender =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset), aliasResolver);
 
         if (isFungible) {
             if (!ledgerFungible) {

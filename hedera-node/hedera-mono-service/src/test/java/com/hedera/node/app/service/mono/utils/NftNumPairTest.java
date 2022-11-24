@@ -15,30 +15,30 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import org.junit.jupiter.api.Test;
+
 class NftNumPairTest {
-	@Test
-	void toStringWorks() {
-		final var subject = NftNumPair.fromLongs(1001L, 1L);
-		final var expected = "0.0.1001.1";
+    @Test
+    void toStringWorks() {
+        final var subject = NftNumPair.fromLongs(1001L, 1L);
+        final var expected = "0.0.1001.1";
 
-		assertEquals(expected, subject.toString());
-	}
+        assertEquals(expected, subject.toString());
+    }
 
-	@Test
-	void equalsWorks() {
-		final var subject = NftNumPair.fromLongs(1001L, 1L);
-		final var subject2 = NftNumPair.fromLongs(1002L, 1L);
-		final var subject3 = NftNumPair.fromLongs(1001L, 2L);
-		final var identical = NftNumPair.fromLongs(1001L, 1L);
+    @Test
+    void equalsWorks() {
+        final var subject = NftNumPair.fromLongs(1001L, 1L);
+        final var subject2 = NftNumPair.fromLongs(1002L, 1L);
+        final var subject3 = NftNumPair.fromLongs(1001L, 2L);
+        final var identical = NftNumPair.fromLongs(1001L, 1L);
 
-		assertEquals(subject, identical);
-		assertNotEquals(subject, subject2);
-		assertNotEquals(subject, subject3);
-		assertNotEquals(null, subject);
-	}
+        assertEquals(subject, identical);
+        assertNotEquals(subject, subject2);
+        assertNotEquals(subject, subject3);
+        assertNotEquals(null, subject);
+    }
 }

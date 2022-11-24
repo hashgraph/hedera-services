@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -28,34 +33,27 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class TopicStoreTest {
-	@Mock
-	private MerkleMap<EntityNum, MerkleTopic> topics;
-	@Mock
-	private TransactionRecordService transactionRecordService;
+    @Mock private MerkleMap<EntityNum, MerkleTopic> topics;
+    @Mock private TransactionRecordService transactionRecordService;
 
-	private TopicStore subject;
+    private TopicStore subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new TopicStore(() -> topics, transactionRecordService);
-	}
+    @BeforeEach
+    void setup() {
+        subject = new TopicStore(() -> topics, transactionRecordService);
+    }
 
-	@Test
-	void persistNewAsExpected() {
-		final var mockAutoRenewId = mock(Id.class);
-		final var topic = new Topic(Id.DEFAULT);
-		topic.setAutoRenewAccountId(mockAutoRenewId);
-		given(mockAutoRenewId.asEntityId()).willReturn(EntityId.MISSING_ENTITY_ID);
-		subject.persistNew(topic);
+    @Test
+    void persistNewAsExpected() {
+        final var mockAutoRenewId = mock(Id.class);
+        final var topic = new Topic(Id.DEFAULT);
+        topic.setAutoRenewAccountId(mockAutoRenewId);
+        given(mockAutoRenewId.asEntityId()).willReturn(EntityId.MISSING_ENTITY_ID);
+        subject.persistNew(topic);
 
-		verify(topics).put(any(), any());
-		verify(mockAutoRenewId).asEntityId();
-	}
+        verify(topics).put(any(), any());
+        verify(mockAutoRenewId).asEntityId();
+    }
 }

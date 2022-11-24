@@ -15,31 +15,30 @@
  */
 package com.hedera.node.app.service.mono.utils;
 
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.Collections;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.common.io.streams.SerializableDataInputStream;
+import java.io.IOException;
+import java.util.Collections;
+import org.junit.jupiter.api.Test;
+
 class SerializationUtilsTest {
-	@Test
-	void deserializesEmptyFungibleAllowancesAsSingletonEmptyMap() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		assertSame(Collections.emptyMap(), SerializationUtils.deserializeFungibleAllowances(in));
-	}
+    @Test
+    void deserializesEmptyFungibleAllowancesAsSingletonEmptyMap() throws IOException {
+        final var in = mock(SerializableDataInputStream.class);
+        assertSame(Collections.emptyMap(), SerializationUtils.deserializeFungibleAllowances(in));
+    }
 
-	@Test
-	void deserializesEmptyCryptoAllowancesAsSingletonEmptyMap() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		assertSame(Collections.emptyMap(), SerializationUtils.deserializeHbarAllowances(in));
-	}
+    @Test
+    void deserializesEmptyCryptoAllowancesAsSingletonEmptyMap() throws IOException {
+        final var in = mock(SerializableDataInputStream.class);
+        assertSame(Collections.emptyMap(), SerializationUtils.deserializeHbarAllowances(in));
+    }
 
-	@Test
-	void deserializesEmptyNftAllowancesAsSingletonEmptyMap() throws IOException {
-		final var in = mock(SerializableDataInputStream.class);
-		assertSame(Collections.emptySet(), SerializationUtils.deserializeNftOperatorApprovals(in));
-	}
+    @Test
+    void deserializesEmptyNftAllowancesAsSingletonEmptyMap() throws IOException {
+        final var in = mock(SerializableDataInputStream.class);
+        assertSame(Collections.emptySet(), SerializationUtils.deserializeNftOperatorApprovals(in));
+    }
 }

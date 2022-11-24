@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.mono.utils.accessors;
 
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -32,88 +37,82 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(MockitoExtension.class)
 class AccessorFactoryTest {
-	private static final AccountID payerId = IdUtils.asAccount("0.0.456");
-	private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
+    private static final AccountID payerId = IdUtils.asAccount("0.0.456");
+    private static final ScheduleID scheduleId = IdUtils.asSchedule("0.0.333333");
 
-	@Mock
-	private GlobalDynamicProperties properties;
+    @Mock private GlobalDynamicProperties properties;
 
-	AccessorFactory subject;
+    AccessorFactory subject;
 
-	TransactionBody someTxn =
-			TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-					.setMemo("Hi!")
-					.build();
-	TransactionBody tokenWipeTxn =
-			TransactionBody.newBuilder()
-					.setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
-					.setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
-					.setMemo("Hi!")
-					.build();
+    TransactionBody someTxn =
+            TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+                    .setMemo("Hi!")
+                    .build();
+    TransactionBody tokenWipeTxn =
+            TransactionBody.newBuilder()
+                    .setTransactionID(TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
+                    .setTokenWipe(TokenWipeAccountTransactionBody.getDefaultInstance())
+                    .setMemo("Hi!")
+                    .build();
 
-	@BeforeEach
-	void setUp() {
-		subject = new AccessorFactory(properties);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new AccessorFactory(properties);
+    }
 
-	@Test
-	void constructsCorrectly() throws InvalidProtocolBufferException {
-		final SwirldTransaction platformTxn =
-				new SwirldTransaction(
-						Transaction.newBuilder()
-								.setBodyBytes(someTxn.toByteString())
-								.build()
-								.toByteArray());
-		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
+    @Test
+    void constructsCorrectly() throws InvalidProtocolBufferException {
+        final SwirldTransaction platformTxn =
+                new SwirldTransaction(
+                        Transaction.newBuilder()
+                                .setBodyBytes(someTxn.toByteString())
+                                .build()
+                                .toByteArray());
+        assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-		final SwirldTransaction wipeTxn =
-				new SwirldTransaction(
-						Transaction.newBuilder()
-								.setBodyBytes(tokenWipeTxn.toByteString())
-								.build()
-								.toByteArray());
-		assertTrue(subject.nonTriggeredTxn(wipeTxn.getContents()) instanceof SignedTxnAccessor);
-	}
+        final SwirldTransaction wipeTxn =
+                new SwirldTransaction(
+                        Transaction.newBuilder()
+                                .setBodyBytes(tokenWipeTxn.toByteString())
+                                .build()
+                                .toByteArray());
+        assertTrue(subject.nonTriggeredTxn(wipeTxn.getContents()) instanceof SignedTxnAccessor);
+    }
 
-	@Test
-	void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
-		final SwirldTransaction platformTxn =
-				new SwirldTransaction(
-						Transaction.newBuilder()
-								.setBodyBytes(someTxn.toByteString())
-								.build()
-								.toByteArray());
-		assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
+    @Test
+    void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
+        final SwirldTransaction platformTxn =
+                new SwirldTransaction(
+                        Transaction.newBuilder()
+                                .setBodyBytes(someTxn.toByteString())
+                                .build()
+                                .toByteArray());
+        assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
 
-		final var grpcWipeTxn =
-				Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
+        final var grpcWipeTxn =
+                Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
 
-		final var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
+        final var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
-		assertTrue(triggered instanceof SignedTxnAccessor);
+        assertTrue(triggered instanceof SignedTxnAccessor);
 
-		assertTrue(triggered.congestionExempt());
-		assertTrue(triggered.throttleExempt());
-		assertEquals(payerId, triggered.getPayer());
-		assertEquals(scheduleId, triggered.getScheduleRef());
-	}
+        assertTrue(triggered.congestionExempt());
+        assertTrue(triggered.throttleExempt());
+        assertEquals(payerId, triggered.getPayer());
+        assertEquals(scheduleId, triggered.getScheduleRef());
+    }
 
-	@Test
-	void uncheckedSpecializedAccessorThrows() {
-		final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
-		final var txn =
-				Transaction.newBuilder()
-						.setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
-						.build();
-		assertThrows(
-				IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
-	}
+    @Test
+    void uncheckedSpecializedAccessorThrows() {
+        final var invalidTxnBytes = "InvalidTxnBytes".getBytes();
+        final var txn =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(ByteString.copyFrom(invalidTxnBytes))
+                        .build();
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.uncheckedSpecializedAccessor(txn));
+    }
 }

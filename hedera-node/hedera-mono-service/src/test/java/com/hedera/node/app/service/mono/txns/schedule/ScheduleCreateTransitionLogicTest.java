@@ -97,10 +97,15 @@ class ScheduleCreateTransitionLogicTest {
                                     .build())
                     .build();
 
-    private static final JKey payerKey = new JEd25519Key(SigMapScheduleClassifierTest.pretendKeyStartingWith("payer"));
+    private static final JKey payerKey =
+            new JEd25519Key(SigMapScheduleClassifierTest.pretendKeyStartingWith("payer"));
     private static final Optional<JKey> jAdminKey = asUsableFcKey(key);
     private static final Optional<List<JKey>> validScheduleKeys =
-            Optional.of(List.of(new JEd25519Key(SigMapScheduleClassifierTest.pretendKeyStartingWith("scheduled"))));
+            Optional.of(
+                    List.of(
+                            new JEd25519Key(
+                                    SigMapScheduleClassifierTest.pretendKeyStartingWith(
+                                            "scheduled"))));
     private static final SignatureMap sigMap = SigMapScheduleClassifierTest.sigMap;
 
     private boolean adminKeyActuallySkipped = false;

@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.mono.state.virtual.ContractValueSuppli
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.ContractValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class ContractValueSupplierTest {

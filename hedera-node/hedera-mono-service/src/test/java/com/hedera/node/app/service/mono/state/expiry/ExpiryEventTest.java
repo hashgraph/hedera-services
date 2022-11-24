@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state.expiry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.expiry.ExpiryEvent;
 import org.junit.jupiter.api.Test;
 
 class ExpiryEventTest {

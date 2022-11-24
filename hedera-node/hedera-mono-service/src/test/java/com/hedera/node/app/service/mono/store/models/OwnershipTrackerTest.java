@@ -15,76 +15,76 @@
  */
 package com.hedera.node.app.service.mono.store.models;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class OwnershipTrackerTest {
 
-	private OwnershipTracker subject = new OwnershipTracker();
-	private final Id treasury = new Id(1, 2, 3);
-	private final Id account = new Id(4, 5, 6);
-	private final Id token = new Id(0, 0, 1);
+    private OwnershipTracker subject = new OwnershipTracker();
+    private final Id treasury = new Id(1, 2, 3);
+    private final Id account = new Id(4, 5, 6);
+    private final Id token = new Id(0, 0, 1);
 
-	@BeforeEach
-	void setup() {
-		// setup the getter/setter test
-		subject = new OwnershipTracker();
-	}
+    @BeforeEach
+    void setup() {
+        // setup the getter/setter test
+        subject = new OwnershipTracker();
+    }
 
-	@Test
-	void add() {
-		final var burn = OwnershipTracker.forRemoving(treasury, 1L);
+    @Test
+    void add() {
+        final var burn = OwnershipTracker.forRemoving(treasury, 1L);
 
-		subject.add(token, burn);
-		assertEquals(1, subject.getChanges().size());
+        subject.add(token, burn);
+        assertEquals(1, subject.getChanges().size());
 
-		subject.add(token, burn);
-		assertEquals(1, subject.getChanges().size());
-		assertFalse(subject.isEmpty());
-	}
+        subject.add(token, burn);
+        assertEquals(1, subject.getChanges().size());
+        assertFalse(subject.isEmpty());
+    }
 
-	@Test
-	void fromMinting() {
-		final var change = OwnershipTracker.forMinting(treasury, 2L);
+    @Test
+    void fromMinting() {
+        final var change = OwnershipTracker.forMinting(treasury, 2L);
 
-		assertEquals(treasury, change.getNewOwner());
-		assertEquals(Id.DEFAULT, change.getPreviousOwner());
-		assertEquals(2L, change.getSerialNumber());
-	}
+        assertEquals(treasury, change.getNewOwner());
+        assertEquals(Id.DEFAULT, change.getPreviousOwner());
+        assertEquals(2L, change.getSerialNumber());
+    }
 
-	@Test
-	void fromWiping() {
-		final var change = OwnershipTracker.forRemoving(account, 2L);
+    @Test
+    void fromWiping() {
+        final var change = OwnershipTracker.forRemoving(account, 2L);
 
-		assertEquals(Id.DEFAULT, change.getNewOwner());
-		assertEquals(account, change.getPreviousOwner());
-		assertEquals(2L, change.getSerialNumber());
-	}
+        assertEquals(Id.DEFAULT, change.getNewOwner());
+        assertEquals(account, change.getPreviousOwner());
+        assertEquals(2L, change.getSerialNumber());
+    }
 
-	@Test
-	void newChange() {
-		final var change = new OwnershipTracker.Change(treasury, Id.DEFAULT, 1L);
+    @Test
+    void newChange() {
+        final var change = new OwnershipTracker.Change(treasury, Id.DEFAULT, 1L);
 
-		assertEquals(1L, change.getSerialNumber());
-		assertEquals(Id.DEFAULT, change.getNewOwner());
-		assertEquals(treasury, change.getPreviousOwner());
-	}
+        assertEquals(1L, change.getSerialNumber());
+        assertEquals(Id.DEFAULT, change.getNewOwner());
+        assertEquals(treasury, change.getPreviousOwner());
+    }
 
-	@Test
-	void compareChanges() {
-		final var change = new OwnershipTracker.Change(treasury, account, 7L);
-		final var otherChange = new OwnershipTracker.Change(treasury, account, 7L);
-		final var refChange = change;
+    @Test
+    void compareChanges() {
+        final var change = new OwnershipTracker.Change(treasury, account, 7L);
+        final var otherChange = new OwnershipTracker.Change(treasury, account, 7L);
+        final var refChange = change;
 
-		boolean result = change.equals(null);
-		assertFalse(result);
-		result = change.equals(treasury);
-		assertFalse(result);
-		assertEquals(change, refChange);
-		assertEquals(change, otherChange);
-		assertEquals(change.hashCode(), otherChange.hashCode());
-	}
+        boolean result = change.equals(null);
+        assertFalse(result);
+        result = change.equals(treasury);
+        assertFalse(result);
+        assertEquals(change, refChange);
+        assertEquals(change, otherChange);
+        assertEquals(change.hashCode(), otherChange.hashCode());
+    }
 }

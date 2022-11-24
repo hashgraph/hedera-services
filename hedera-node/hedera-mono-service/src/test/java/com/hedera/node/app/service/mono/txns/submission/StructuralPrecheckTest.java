@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactor
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
-import com.hedera.node.app.service.mono.txns.submission.StructuralPrecheck;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

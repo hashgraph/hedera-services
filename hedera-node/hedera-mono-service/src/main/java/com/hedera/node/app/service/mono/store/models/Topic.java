@@ -20,7 +20,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.store.TopicStore;
 import com.hedera.node.app.service.mono.txns.consensus.SubmitMessageTransitionLogic;
-
 import java.time.Instant;
 import javax.annotation.Nullable;
 
@@ -48,8 +47,7 @@ public final class Topic {
 
     /**
      * Creates a new {@link Topic} from the given body. Note: The created model is not added to
-     * state, and must be explicitly persisted via {@link
-     * TopicStore#persistNew(Topic)}
+     * state, and must be explicitly persisted via {@link TopicStore#persistNew(Topic)}
      *
      * @param id - the id generated in the transition logic
      * @param submitKey - the key which permits submitting messages

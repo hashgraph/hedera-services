@@ -15,6 +15,17 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile.decodeGetTokenKey;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -41,6 +52,11 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenID;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -55,354 +71,316 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile.decodeGetTokenKey;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class GetTokenKeyPrecompileTest {
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private GasCalculator gasCalculator;
-	@Mock
-	private MessageFrame frame;
-	@Mock
-	private TxnAwareEvmSigsVerifier sigsVerifier;
-	@Mock
-	private RecordsHistorian recordsHistorian;
-	@Mock
-	private EncodingFacade encoder;
-	@Mock
-	private SyntheticTxnFactory syntheticTxnFactory;
-	@Mock
-	private ExpiringCreations creator;
-	@Mock
-	private FeeCalculator feeCalculator;
-	@Mock
-	private StateView stateView;
-	@Mock
-	private HederaStackedWorldStateUpdater worldUpdater;
-	@Mock
-	private WorldLedgers wrappedLedgers;
-	@Mock
-	private UsagePricesProvider resourceCosts;
-	@Mock
-	private HbarCentExchange exchange;
-	@Mock
-	private InfrastructureFactory infrastructureFactory;
-	@Mock
-	private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
-	@Mock
-	private AssetsLoader assetLoader;
-	@Mock
-	private JKey key;
-	@Mock
-	private JContractIDKey jContractIDKey;
-	@Mock
-	private JDelegatableContractIDKey jDelegatableContractIDKey;
-	@Mock
-	private AccessorFactory accessorFactory;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private GasCalculator gasCalculator;
+    @Mock private MessageFrame frame;
+    @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
+    @Mock private RecordsHistorian recordsHistorian;
+    @Mock private EncodingFacade encoder;
+    @Mock private SyntheticTxnFactory syntheticTxnFactory;
+    @Mock private ExpiringCreations creator;
+    @Mock private FeeCalculator feeCalculator;
+    @Mock private StateView stateView;
+    @Mock private HederaStackedWorldStateUpdater worldUpdater;
+    @Mock private WorldLedgers wrappedLedgers;
+    @Mock private UsagePricesProvider resourceCosts;
+    @Mock private HbarCentExchange exchange;
+    @Mock private InfrastructureFactory infrastructureFactory;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
+    @Mock private AssetsLoader assetLoader;
+    @Mock private JKey key;
+    @Mock private JContractIDKey jContractIDKey;
+    @Mock private JDelegatableContractIDKey jDelegatableContractIDKey;
+    @Mock private AccessorFactory accessorFactory;
 
-	private static final Bytes GET_TOKEN_KEY_INPUT =
-			Bytes.fromHexString(
-					"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-	private HTSPrecompiledContract subject;
-	private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
-	private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
-	private final byte[] ed25519Key =
-			new byte[] {
-					-98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
-					-120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19, 98
-			};
+    private static final Bytes GET_TOKEN_KEY_INPUT =
+            Bytes.fromHexString(
+                    "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+    private HTSPrecompiledContract subject;
+    private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
+    private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
+    private final byte[] ed25519Key =
+            new byte[] {
+                -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
+                -120, 75, -58, -87, -62, 50, 52, -102, -13, 94, -112, 96, -19, 98
+            };
 
-	@BeforeEach
-	void setUp() throws IOException {
-		final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-		canonicalPrices.put(
-				HederaFunctionality.TokenGetInfo, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
-		given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-		final PrecompilePricingUtils precompilePricingUtils =
-				new PrecompilePricingUtils(
-						assetLoader,
-						exchange,
-						() -> feeCalculator,
-						resourceCosts,
-						stateView,
-						accessorFactory);
-		subject =
-				new HTSPrecompiledContract(
-						dynamicProperties,
-						gasCalculator,
-						recordsHistorian,
-						sigsVerifier,
-						encoder,
-						syntheticTxnFactory,
-						creator,
-						() -> feeCalculator,
-						stateView,
-						precompilePricingUtils,
-						infrastructureFactory);
-		getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
-	}
+    @BeforeEach
+    void setUp() throws IOException {
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        canonicalPrices.put(
+                HederaFunctionality.TokenGetInfo, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
+        final PrecompilePricingUtils precompilePricingUtils =
+                new PrecompilePricingUtils(
+                        assetLoader,
+                        exchange,
+                        () -> feeCalculator,
+                        resourceCosts,
+                        stateView,
+                        accessorFactory);
+        subject =
+                new HTSPrecompiledContract(
+                        dynamicProperties,
+                        gasCalculator,
+                        recordsHistorian,
+                        sigsVerifier,
+                        encoder,
+                        syntheticTxnFactory,
+                        creator,
+                        () -> feeCalculator,
+                        stateView,
+                        precompilePricingUtils,
+                        infrastructureFactory);
+        getTokenKeyPrecompile = Mockito.mockStatic(GetTokenKeyPrecompile.class);
+    }
 
-	@AfterEach
-	void closeMocks() {
-		getTokenKeyPrecompile.close();
-	}
+    @AfterEach
+    void closeMocks() {
+        getTokenKeyPrecompile.close();
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithDelegateContractKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		givenJKeyContractAndDelegateContext();
-		wrapper = new GetTokenKeyWrapper(fungible, 16L);
-		given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithDelegateContractKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        givenJKeyContractAndDelegateContext();
+        wrapper = new GetTokenKeyWrapper(fungible, 16L);
+        given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithFreezeKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 4L);
-		given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithFreezeKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 4L);
+        given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithWipeKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 8L);
-		given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithWipeKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 8L);
+        given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithPauseKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 64L);
-		given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithPauseKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 64L);
+        given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithFeeScheduleKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 32L);
-		given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithFeeScheduleKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 32L);
+        given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void successfulCallForGetFungibleTokenKeyWithKycKey() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 2L);
-		given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
-		given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
-		given(key.getEd25519()).willReturn(ed25519Key);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(successResult, result);
-	}
+    @Test
+    void successfulCallForGetFungibleTokenKeyWithKycKey() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 2L);
+        given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
+        given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
+        given(key.getEd25519()).willReturn(ed25519Key);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(successResult, result);
+    }
 
-	@Test
-	void callForGetFungibleTokenKeyWithInvalidKeyFails() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		wrapper = new GetTokenKeyWrapper(fungible, 200L);
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		given(tokens.exists(any())).willReturn(true);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(failResult, result);
-	}
+    @Test
+    void callForGetFungibleTokenKeyWithInvalidKeyFails() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        wrapper = new GetTokenKeyWrapper(fungible, 200L);
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        given(tokens.exists(any())).willReturn(true);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(failResult, result);
+    }
 
-	@Test
-	void getTokenKeyCallForInvalidTokenIds() {
-		// given
-		final var input =
-				Bytes.fromHexString(
-						"0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
-		givenMinimalFrameContext();
-		givenMinimalContextForCall();
-		given(wrappedLedgers.tokens()).willReturn(tokens);
-		given(tokens.exists(any())).willReturn(false);
-		getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-		// when
-		subject.prepareFields(frame);
-		subject.prepareComputation(input, a -> a);
-		final var result = subject.computeInternal(frame);
-		// then
-		assertEquals(invalidTokenIdResult, result);
-	}
+    @Test
+    void getTokenKeyCallForInvalidTokenIds() {
+        // given
+        final var input =
+                Bytes.fromHexString(
+                        "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
+        givenMinimalFrameContext();
+        givenMinimalContextForCall();
+        given(wrappedLedgers.tokens()).willReturn(tokens);
+        given(tokens.exists(any())).willReturn(false);
+        getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(invalidTokenIdResult, result);
+    }
 
-	@Test
-	void decodeFungibleTokenGetKey() {
-		getTokenKeyPrecompile
-				.when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT))
-				.thenCallRealMethod();
-		final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
-		assertTrue(decodedInput.tokenID().getTokenNum() > 0);
-		assertEquals(1L, decodedInput.keyType());
-		assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
-	}
+    @Test
+    void decodeFungibleTokenGetKey() {
+        getTokenKeyPrecompile
+                .when(() -> decodeGetTokenKey(GET_TOKEN_KEY_INPUT))
+                .thenCallRealMethod();
+        final var decodedInput = decodeGetTokenKey(GET_TOKEN_KEY_INPUT);
+        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertEquals(1L, decodedInput.keyType());
+        assertEquals(TokenProperty.ADMIN_KEY, decodedInput.tokenKeyType());
+    }
 
-	private void givenMinimalFrameContext() {
-		given(frame.getSenderAddress()).willReturn(contractAddress);
-		given(frame.getValue()).willReturn(Wei.ZERO);
-		given(frame.getWorldUpdater()).willReturn(worldUpdater);
-	}
+    private void givenMinimalFrameContext() {
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+    }
 
-	private void givenMinimalContextForCall() {
-		final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
-		given(worldUpdater.parentUpdater()).willReturn(parent);
-		given(worldUpdater.permissivelyUnaliased(any()))
-				.willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-		given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-	}
+    private void givenMinimalContextForCall() {
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+    }
 
-	private void givenJKeyContractAndDelegateContext() {
-		given(key.hasContractID()).willReturn(true);
-		given(key.getContractIDKey()).willReturn(jContractIDKey);
-		given(jContractIDKey.getContractID()).willReturn(ContractID.getDefaultInstance());
-		given(key.hasDelegatableContractId()).willReturn(true);
-		given(key.getDelegatableContractIdKey()).willReturn(jDelegatableContractIDKey);
-		given(jDelegatableContractIDKey.getContractID())
-				.willReturn(ContractID.getDefaultInstance());
-	}
+    private void givenJKeyContractAndDelegateContext() {
+        given(key.hasContractID()).willReturn(true);
+        given(key.getContractIDKey()).willReturn(jContractIDKey);
+        given(jContractIDKey.getContractID()).willReturn(ContractID.getDefaultInstance());
+        given(key.hasDelegatableContractId()).willReturn(true);
+        given(key.getDelegatableContractIdKey()).willReturn(jDelegatableContractIDKey);
+        given(jDelegatableContractIDKey.getContractID())
+                .willReturn(ContractID.getDefaultInstance());
+    }
 }
