@@ -46,7 +46,7 @@ public class ImpliedTransfers {
 
     private final ImpliedTransfersMeta meta;
     private final List<BalanceChange> changes;
-    private List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper;
+    private final List<AssessedCustomFeeWrapper> assessedCustomFeesWrapper;
 
     private ImpliedTransfers(
             ImpliedTransfersMeta meta,
