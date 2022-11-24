@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTrea
 import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
 import static com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 import static com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
-import static com.hedera.services.throttling.MapAccessType.*;
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
@@ -34,11 +34,11 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListUtils;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.MapValueListUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.List;

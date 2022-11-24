@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.files.sysfiles;
 
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.annotations.HandleThrottle;
-import com.hedera.services.throttling.annotations.HapiThrottle;
-import com.hedera.services.throttling.annotations.ScheduleThrottle;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
+import com.hedera.node.app.service.mono.throttling.annotations.HapiThrottle;
+import com.hedera.node.app.service.mono.throttling.annotations.ScheduleThrottle;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.util.function.Consumer;
 import javax.inject.Inject;

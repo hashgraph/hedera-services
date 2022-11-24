@@ -22,12 +22,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.EntityAccess;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.ResponseCodeUtil;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.ResponseCodeUtil;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.builder.RequestBuilder;
@@ -37,7 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Utility class for executing static EVM calls for {@link
- * com.hedera.services.queries.contract.ContractCallLocalAnswer} and {@link
+ * ContractCallLocalAnswer} and {@link
  * ContractCallLocalResourceUsage}
  */
 @Singleton

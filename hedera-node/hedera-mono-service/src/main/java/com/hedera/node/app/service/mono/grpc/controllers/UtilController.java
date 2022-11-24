@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.grpc.controllers;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.service.proto.java.UtilServiceGrpc;

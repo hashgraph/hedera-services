@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.FastCopyable;
 
 public interface HederaTokenRel extends FastCopyable {

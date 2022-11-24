@@ -23,7 +23,7 @@ import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
-import com.hedera.services.store.models.NftId;
+import com.hedera.node.app.service.mono.store.models.NftId;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

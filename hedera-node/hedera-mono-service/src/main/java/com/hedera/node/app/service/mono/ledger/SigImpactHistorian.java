@@ -22,6 +22,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.node.app.service.mono.state.expiry.MonotonicFullQueueExpiries;
 import java.time.Instant;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ import javax.inject.Singleton;
  * or auto-removal. For a schedule, an impact can be creation, deletion, or auto-removal. And for an
  * alias, a impact can only be a creation or auto-removal. (Note that non-system deletion
  * <i>actually</i> only has a sig impact for contracts, given the details of the {@link
- * com.hedera.services.sigs.metadata.StateChildrenSigMetadataLookup} implementation; but for
+ * StateChildrenSigMetadataLookup} implementation; but for
  * consistency we treat it has an impactful change for all entity types, since the amortized
  * performance penalty is virtually zero, and it is quite possible we will want to extend this sig
  * impact historian to a generalized change historian in the future.)

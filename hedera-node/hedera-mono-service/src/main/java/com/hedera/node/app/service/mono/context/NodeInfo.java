@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.context;
 
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.address.AddressBook;
 import java.util.function.Supplier;

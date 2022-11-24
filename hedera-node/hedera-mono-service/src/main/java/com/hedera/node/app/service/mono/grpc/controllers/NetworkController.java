@@ -20,9 +20,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionI
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetExecutionTime;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.meta.MetaAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;

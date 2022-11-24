@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.state.org;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ServicesApp;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.fchashmap.FCHashMap;
 import java.util.Map;

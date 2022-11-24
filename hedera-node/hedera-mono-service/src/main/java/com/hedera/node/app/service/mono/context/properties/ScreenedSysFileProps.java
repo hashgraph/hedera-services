@@ -17,11 +17,11 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
 import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.transformFor;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;

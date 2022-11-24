@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;

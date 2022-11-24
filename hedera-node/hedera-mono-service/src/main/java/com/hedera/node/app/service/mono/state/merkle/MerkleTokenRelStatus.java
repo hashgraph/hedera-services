@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.state.merkle;
 
-import static com.hedera.services.utils.EntityIdUtils.asRelationshipLiteral;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asRelationshipLiteral;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

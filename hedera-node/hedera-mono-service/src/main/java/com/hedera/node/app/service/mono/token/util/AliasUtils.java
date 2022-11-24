@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.token.util;
 
-import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numFromEvmAddress;
 
 /** Utility class needed for resolving aliases */
 public final class AliasUtils {

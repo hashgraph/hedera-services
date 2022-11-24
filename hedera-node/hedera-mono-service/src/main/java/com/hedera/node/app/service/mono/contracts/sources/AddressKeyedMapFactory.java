@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.contracts.sources;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 import static java.lang.Long.parseLong;
 
 import com.hedera.node.app.service.mono.files.store.BytesStoreAdapter;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;

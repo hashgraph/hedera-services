@@ -25,7 +25,7 @@ import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullable
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableString;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;

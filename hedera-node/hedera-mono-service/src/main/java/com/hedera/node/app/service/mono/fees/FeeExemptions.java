@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees;
 
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 
 /**
  * Defines a type able to judge if an account or txn (more specifically, the txn's payer) is exempt

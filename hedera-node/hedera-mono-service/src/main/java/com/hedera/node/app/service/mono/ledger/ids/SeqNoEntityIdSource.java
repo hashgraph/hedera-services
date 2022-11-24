@@ -17,6 +17,8 @@ package com.hedera.node.app.service.mono.ledger.ids;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.SequenceNumber;
+import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.service.mono.txns.token.TokenCreateTransitionLogic;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -30,9 +32,9 @@ public class SeqNoEntityIdSource implements EntityIdSource {
 
     /**
      * Tracks the newly created {@link EntityId} during the
-     * {@link com.hedera.services.txns.TransitionLogic} of an operation Utilised only in refactored
+     * {@link TransitionLogic} of an operation Utilised only in refactored
      * Transition Logics - currently only {@link
-     * com.hedera.services.txns.token.TokenCreateTransitionLogic}
+     * TokenCreateTransitionLogic}
      */
     private int provisionalIds = 0;
 

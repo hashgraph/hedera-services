@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;

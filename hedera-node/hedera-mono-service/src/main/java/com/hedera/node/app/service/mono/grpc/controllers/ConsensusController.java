@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGe
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusUpdateTopic;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.consensus.HcsAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.consensus.HcsAnswers;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;

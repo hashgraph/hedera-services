@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.services.evm.contracts.execution.StaticProperties;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.annotations.HandleThrottle;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;

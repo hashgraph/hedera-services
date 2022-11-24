@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import javax.inject.Inject;

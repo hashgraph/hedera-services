@@ -19,11 +19,11 @@ import static java.util.Comparator.comparing;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.fcqueue.FCQueue;

@@ -25,7 +25,7 @@ import static com.hedera.test.factories.txns.TokenCreateFactory.newSignedTokenCr
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenCreateScenarios implements TxnHandlingScenario {
     TOKEN_CREATE_WITH_ADMIN_ONLY {

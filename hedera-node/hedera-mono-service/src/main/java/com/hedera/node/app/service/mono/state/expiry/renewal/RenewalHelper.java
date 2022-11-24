@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state.expiry.renewal;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -33,10 +33,10 @@ import com.hedera.node.app.service.mono.state.expiry.classification.Classificati
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
-import com.hedera.services.stats.ExpiryStats;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.stats.ExpiryStats;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.time.Instant;
 import java.util.List;

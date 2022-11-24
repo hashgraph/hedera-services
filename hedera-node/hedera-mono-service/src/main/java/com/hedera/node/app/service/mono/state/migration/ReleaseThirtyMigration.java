@@ -15,16 +15,16 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
+import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
+import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
 import org.apache.logging.log4j.LogManager;

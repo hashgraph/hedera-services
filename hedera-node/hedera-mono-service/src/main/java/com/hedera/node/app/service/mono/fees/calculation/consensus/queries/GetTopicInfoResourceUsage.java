@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.consensus.queries;
 
-import static com.hedera.services.utils.EntityNum.fromTopicId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.fee.ConsensusServiceFeeBuilder.computeVariableSizedFieldsUsage;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
 import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;

@@ -37,11 +37,11 @@ package com.hedera.node.app.service.mono.contracts.operation;
  *
  */
 
-import static com.hedera.services.utils.EntityIdUtils.numOfMirror;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.numOfMirror;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 import org.hyperledger.besu.datatypes.Address;

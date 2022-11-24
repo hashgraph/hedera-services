@@ -17,8 +17,8 @@ package com.hedera.node.app.service.mono.fees.congestion;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.ServicesState;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import java.time.Instant;
 
 class DelegatingMultiplierSource implements FeeMultiplierSource {

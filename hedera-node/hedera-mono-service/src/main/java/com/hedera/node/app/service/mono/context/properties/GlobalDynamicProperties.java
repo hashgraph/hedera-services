@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

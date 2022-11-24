@@ -21,8 +21,8 @@ import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsaf
 import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.SerializationUtils.*;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.SerializationUtils.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
@@ -38,8 +38,8 @@ import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.state.virtual.utils.EntityIoUtils;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

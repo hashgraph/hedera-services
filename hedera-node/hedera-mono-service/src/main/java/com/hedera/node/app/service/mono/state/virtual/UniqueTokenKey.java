@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.state.virtual;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;

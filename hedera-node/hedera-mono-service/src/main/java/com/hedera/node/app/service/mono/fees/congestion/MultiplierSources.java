@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.congestion;
 
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import java.time.Instant;
 
 public class MultiplierSources {

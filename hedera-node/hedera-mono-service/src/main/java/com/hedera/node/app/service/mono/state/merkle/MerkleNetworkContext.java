@@ -22,8 +22,8 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384Ha
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullable;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.safeResetThrottles;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
@@ -36,8 +36,8 @@ import com.hedera.node.app.service.mono.state.tasks.SystemTaskManager;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.throttles.GasLimitDeterministicThrottle;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;

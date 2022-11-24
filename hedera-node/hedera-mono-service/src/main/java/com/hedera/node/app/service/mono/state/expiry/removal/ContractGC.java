@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey.Type.CONTRACT_BYTECODE;
-import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -26,10 +26,10 @@ import com.hedera.node.app.service.mono.state.virtual.ContractStorageListMutatio
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MapValueListUtils;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.MapValueListUtils;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.List;
 import java.util.function.Supplier;

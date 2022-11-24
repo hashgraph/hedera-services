@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.*;
-import static com.hedera.services.utils.MiscUtils.forEach;
-import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -28,9 +28,9 @@ import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NonAtomicReference;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;

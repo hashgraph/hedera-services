@@ -16,16 +16,16 @@
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProtoKey;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;

@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.logic;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -24,7 +24,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.charging.FeeChargingPolicy;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

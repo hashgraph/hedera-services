@@ -16,15 +16,15 @@
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
-import com.hedera.services.stats.ExpiryStats;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.stats.ExpiryStats;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

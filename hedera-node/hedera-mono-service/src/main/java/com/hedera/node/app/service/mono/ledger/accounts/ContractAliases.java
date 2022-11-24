@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hederahashgraph.api.proto.java.ContractID;

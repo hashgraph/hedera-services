@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.ledger.backing;
 
-import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;

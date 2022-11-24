@@ -19,7 +19,7 @@ import static com.hedera.test.factories.txns.ConsensusUpdateTopicFactory.newSign
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;
 
 public enum ConsensusUpdateTopicScenarios implements TxnHandlingScenario {

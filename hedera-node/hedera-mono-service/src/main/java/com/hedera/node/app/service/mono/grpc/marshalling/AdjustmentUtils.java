@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 import java.math.BigInteger;
 
 public final class AdjustmentUtils {

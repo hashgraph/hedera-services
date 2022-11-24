@@ -16,12 +16,12 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
-import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.BiConsumer;

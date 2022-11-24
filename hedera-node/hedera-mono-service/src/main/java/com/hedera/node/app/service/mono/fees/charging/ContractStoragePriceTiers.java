@@ -19,7 +19,7 @@ import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
 
-import com.hedera.services.store.contracts.KvUsageInfo;
+import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import java.util.Arrays;
 import java.util.List;

@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.legacy.handler;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_SYSTEM_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;

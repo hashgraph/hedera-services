@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.STAKED_ACCOUNT_ID_CASE;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;

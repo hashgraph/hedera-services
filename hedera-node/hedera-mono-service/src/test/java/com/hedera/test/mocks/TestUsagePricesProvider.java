@@ -19,8 +19,8 @@ import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePr
 
 import com.google.common.io.Files;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
-import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;

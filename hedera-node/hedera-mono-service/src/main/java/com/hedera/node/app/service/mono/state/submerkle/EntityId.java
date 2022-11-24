@@ -17,14 +17,14 @@ package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

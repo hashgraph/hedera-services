@@ -28,7 +28,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
 import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.address.Address.ipString;
 
 import com.google.protobuf.ByteString;

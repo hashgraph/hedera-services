@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
-import com.hedera.services.store.models.Id;
-import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import java.util.ArrayList;
 import java.util.List;
 

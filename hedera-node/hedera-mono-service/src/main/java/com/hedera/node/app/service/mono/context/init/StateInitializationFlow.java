@@ -24,7 +24,7 @@ import com.hedera.node.app.service.mono.context.properties.PropertyNames;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
 import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;

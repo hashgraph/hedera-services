@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;

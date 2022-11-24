@@ -20,8 +20,8 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.txns.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;

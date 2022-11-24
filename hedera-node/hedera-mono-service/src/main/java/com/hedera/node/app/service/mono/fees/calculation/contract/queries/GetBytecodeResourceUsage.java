@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;

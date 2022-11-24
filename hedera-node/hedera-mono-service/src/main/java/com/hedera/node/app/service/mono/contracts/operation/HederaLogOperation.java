@@ -19,8 +19,8 @@ import static org.apache.tuweni.bytes.Bytes32.leftPad;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.google.common.collect.ImmutableList;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;

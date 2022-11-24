@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
-import static com.hedera.services.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
@@ -28,11 +28,11 @@ import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvi
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.StaticEntityAccess;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;

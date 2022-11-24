@@ -19,7 +19,7 @@ import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;
 import com.swirlds.common.system.NodeId;

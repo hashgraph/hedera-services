@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.fees.charging;
 
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.fee.FeeObject;
 
 /** Defines the checks and charging actions we need to apply the Services fee policy. */

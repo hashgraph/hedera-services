@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.state.submerkle;
 
-import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.readableNftTransferList;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.swirlds.common.io.SelfSerializable;

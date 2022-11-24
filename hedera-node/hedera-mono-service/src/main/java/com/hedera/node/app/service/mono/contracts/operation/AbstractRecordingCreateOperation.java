@@ -22,12 +22,12 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.utils.SidecarUtils;
+import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;

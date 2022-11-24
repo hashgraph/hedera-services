@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;

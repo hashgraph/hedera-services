@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.context;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.ethereum.EthTxData;
@@ -35,8 +35,8 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

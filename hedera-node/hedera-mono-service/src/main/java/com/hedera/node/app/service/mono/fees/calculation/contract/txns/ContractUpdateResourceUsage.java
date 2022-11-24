@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
-import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;

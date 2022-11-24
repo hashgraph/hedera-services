@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.FastCopyable;
 import javax.annotation.Nullable;
 

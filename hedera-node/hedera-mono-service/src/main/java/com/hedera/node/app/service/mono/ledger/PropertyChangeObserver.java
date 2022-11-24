@@ -15,10 +15,12 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
+import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
+
 /**
  * Defines a type able to receive information about changes to properties; used by {@link
  * TransactionalLedger} as a commit interceptor to allow a parent {@link
- * com.hedera.services.store.contracts.AbstractLedgerWorldUpdater} to keep its {@code
+ * AbstractLedgerWorldUpdater} to keep its {@code
  * updateAccounts} map in sync with changes made by an HTS precompile.
  *
  * @param <K> the key that identifies a changeable entity

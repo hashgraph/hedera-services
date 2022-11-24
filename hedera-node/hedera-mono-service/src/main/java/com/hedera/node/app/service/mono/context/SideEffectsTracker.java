@@ -23,11 +23,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.OwnershipTracker;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.store.models.OwnershipTracker;
+import com.hedera.node.app.service.mono.store.models.Token;
+import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -48,7 +49,7 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Extracts the side-effect tracking logic previously squashed into {@link
  * HederaLedger} and the {@link
- * com.hedera.services.store.TypedTokenStore}. Despite all the well-known opportunities for
+ * TypedTokenStore}. Despite all the well-known opportunities for
  * performance improvements here, this implementation changes nothing...yet. 😉
  */
 @Singleton

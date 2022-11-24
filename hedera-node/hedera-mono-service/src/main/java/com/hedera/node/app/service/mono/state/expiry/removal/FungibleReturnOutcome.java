@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 
 public record FungibleReturnOutcome(
         FungibleTreasuryReturns fungibleReturns,

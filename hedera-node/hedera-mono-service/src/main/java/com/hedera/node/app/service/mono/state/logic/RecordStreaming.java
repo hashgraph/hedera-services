@@ -20,9 +20,9 @@ import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransact
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.stream.NonBlockingHandoff;
-import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.stream.NonBlockingHandoff;
+import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

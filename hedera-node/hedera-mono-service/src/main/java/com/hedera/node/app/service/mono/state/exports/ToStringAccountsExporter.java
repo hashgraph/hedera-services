@@ -20,7 +20,7 @@ import static java.util.Comparator.comparing;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

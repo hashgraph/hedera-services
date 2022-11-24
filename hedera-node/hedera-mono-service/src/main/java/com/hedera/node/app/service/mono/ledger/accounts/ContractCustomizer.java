@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;

@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.state.expiry;
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.MapValueListMutation;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.utils.MapValueListMutation;
 import org.jetbrains.annotations.Nullable;
 
 public class UniqueTokensListMutation implements MapValueListMutation<NftId, UniqueTokenAdapter> {

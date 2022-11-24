@@ -19,7 +19,7 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenDissociateFactory.newSignedTokenDissociate;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenDissociateScenarios implements TxnHandlingScenario {
     TOKEN_DISSOCIATE_WITH_KNOWN_TARGET {

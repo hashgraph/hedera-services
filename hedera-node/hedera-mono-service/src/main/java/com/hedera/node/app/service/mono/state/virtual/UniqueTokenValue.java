@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state.virtual;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 import static java.lang.Math.min;
 
 import com.google.common.base.MoreObjects;
@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;

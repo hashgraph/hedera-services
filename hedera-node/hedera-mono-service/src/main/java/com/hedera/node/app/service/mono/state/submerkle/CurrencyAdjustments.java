@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.readableTransferList;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountAmount;

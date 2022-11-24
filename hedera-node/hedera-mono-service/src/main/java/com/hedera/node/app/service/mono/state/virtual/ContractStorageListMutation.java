@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import com.hedera.services.utils.MapValueListMutation;
+import com.hedera.node.app.service.mono.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
 import org.jetbrains.annotations.Nullable;
 

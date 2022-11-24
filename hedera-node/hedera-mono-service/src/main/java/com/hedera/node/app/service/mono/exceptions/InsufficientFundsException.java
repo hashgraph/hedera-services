@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 
 public class InsufficientFundsException extends IllegalArgumentException {
     public InsufficientFundsException(Object id, long amount) {

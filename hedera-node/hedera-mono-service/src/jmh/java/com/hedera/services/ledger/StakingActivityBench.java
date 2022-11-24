@@ -38,7 +38,7 @@ import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.List;

@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_ROYALTY
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ROYALTY_FRACTION_CANNOT_EXCEED_ONE;
 
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Token;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Token;
 
 public record RoyaltyFeeSpec(long numerator, long denominator, FixedFeeSpec fallbackFee) {
     public RoyaltyFeeSpec {

@@ -15,16 +15,16 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
-import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.removeInPlaceFromMapValueList;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.removeInPlaceFromMapValueList;
 
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;

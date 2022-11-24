@@ -34,7 +34,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpaus
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.ConsensusOpsUsage;
@@ -43,7 +43,7 @@ import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.util.UtilOpsUsage;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;
 import javax.inject.Inject;

@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.models.Account;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
+import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
