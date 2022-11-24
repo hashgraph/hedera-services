@@ -71,8 +71,6 @@ public class BalanceChange {
     private int expectedDecimals = -1;
     private boolean isApprovedAllowance = false;
     private AccountID payerID = null;
-    // set only when the change was to an auto created account in the same txn
-    private Pair<ByteString, AccountID> aliasToNewId;
 
     public static BalanceChange changingHbar(final AccountAmount aa, final AccountID payerID) {
         return new BalanceChange(null, aa, INSUFFICIENT_ACCOUNT_BALANCE, payerID);
@@ -202,18 +200,20 @@ public class BalanceChange {
         if (isAlias(accountId)) {
             accountId = createdId.toGrpcAccountId();
             account = Id.fromGrpcAccount(accountId);
-            aliasToNewId = Pair.of(alias, accountId);
-            alias = ByteString.EMPTY;
         } else if (hasNonEmptyCounterPartyAlias()) {
             counterPartyAccountId = createdId.toGrpcAccountId();
-            aliasToNewId = Pair.of(counterPartyAlias, accountId);
-            counterPartyAlias = ByteString.EMPTY;
         }
     }
 
     @Nullable
     public Pair<ByteString, AccountID> getAliasToNewId() {
-        return aliasToNewId;
+        if (accountId != null && !alias.isEmpty()) {
+            return Pair.of(alias, accountId);
+        } else if (counterPartyAccountId != null && counterPartyAlias != null) {
+            return Pair.of(counterPartyAlias, counterPartyAccountId);
+        } else {
+            return null;
+        }
     }
 
     public boolean isForHbar() {

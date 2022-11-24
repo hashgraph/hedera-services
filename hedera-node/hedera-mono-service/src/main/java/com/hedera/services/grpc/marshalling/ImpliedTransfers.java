@@ -137,7 +137,7 @@ public class ImpliedTransfers {
                 aliasToId.put(aliasToNewId.getKey(), aliasToNewId.getValue());
             }
         }
-        List<FcAssessedCustomFee> fcAssessedCustomFeeList =
+        final List<FcAssessedCustomFee> fcAssessedCustomFeeList =
                 new ArrayList<>(assessedCustomFeesWrapper.size());
         for (final var assessedFee : assessedCustomFeesWrapper) {
             fcAssessedCustomFeeList.add(assessedFee.toFcAssessedCustomFee(aliasToId));
