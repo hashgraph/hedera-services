@@ -357,6 +357,7 @@ public class ContractCreateSuite extends HapiApiSuite {
                         resetToDefault(LAZY_CREATION_ENABLED));
     }
 
+    @SuppressWarnings("java:S5960")
     HapiApiSpec canCreateViaFungibleWithFractionalFee() {
         final var ft = "ft";
         final var ftKey = NFT_KEY;
