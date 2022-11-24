@@ -41,7 +41,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,13 +80,7 @@ class HederaEvmMessageCallProcessorTest {
                 new HederaEvmMessageCallProcessor(
                         evm,
                         precompiles,
-                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile)) {
-                    @Override
-                    protected void executeLazyCreate(
-                            MessageFrame frame, OperationTracer operationTracer) {
-                        // no-op
-                    }
-                };
+                        Map.of(HEDERA_PRECOMPILE_ADDRESS_STRING, nonHtsPrecompile));
     }
 
     @Test
