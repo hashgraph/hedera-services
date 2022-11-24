@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.file;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
@@ -35,7 +36,8 @@ public interface FileService extends Service {
      */
     @NonNull
     @Override
-    FilePreTransactionHandler createPreTransactionHandler(@NonNull States states);
+    FilePreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service
