@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.stats;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+package com.hedera.node.app.service.mono.stats;
 
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
-import com.hedera.node.app.service.mono.stats.EntityUtilGauges;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;
@@ -31,38 +25,47 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class EntityUtilGaugesTest {
 
-    @Mock private UsageLimits usageLimits;
-    @Mock private Platform platform;
-    @Mock private DoubleGauge pretendGauge;
-    @Mock private Metrics metrics;
+	@Mock
+	private UsageLimits usageLimits;
+	@Mock
+	private Platform platform;
+	@Mock
+	private DoubleGauge pretendGauge;
+	@Mock
+	private Metrics metrics;
 
-    private EntityUtilGauges subject;
+	private EntityUtilGauges subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new EntityUtilGauges(usageLimits);
-    }
+	@BeforeEach
+	void setUp() {
+		subject = new EntityUtilGauges(usageLimits);
+	}
 
-    @Test
-    void registersAndUpdatesExpectedGauges() {
-        given(platform.getMetrics()).willReturn(metrics);
-        given(metrics.getOrCreate(any())).willReturn(pretendGauge);
-        given(usageLimits.percentAccountsUsed()).willReturn(2.0);
-        given(usageLimits.percentContractsUsed()).willReturn(3.0);
-        given(usageLimits.percentFilesUsed()).willReturn(4.0);
-        given(usageLimits.percentNftsUsed()).willReturn(5.0);
-        given(usageLimits.percentTokensUsed()).willReturn(6.0);
-        given(usageLimits.percentTopicsUsed()).willReturn(7.0);
-        given(usageLimits.percentStorageSlotsUsed()).willReturn(8.0);
-        given(usageLimits.percentTokenRelsUsed()).willReturn(9.0);
-        given(usageLimits.percentSchedulesUsed()).willReturn(10.0);
+	@Test
+	void registersAndUpdatesExpectedGauges() {
+		given(platform.getMetrics()).willReturn(metrics);
+		given(metrics.getOrCreate(any())).willReturn(pretendGauge);
+		given(usageLimits.percentAccountsUsed()).willReturn(2.0);
+		given(usageLimits.percentContractsUsed()).willReturn(3.0);
+		given(usageLimits.percentFilesUsed()).willReturn(4.0);
+		given(usageLimits.percentNftsUsed()).willReturn(5.0);
+		given(usageLimits.percentTokensUsed()).willReturn(6.0);
+		given(usageLimits.percentTopicsUsed()).willReturn(7.0);
+		given(usageLimits.percentStorageSlotsUsed()).willReturn(8.0);
+		given(usageLimits.percentTokenRelsUsed()).willReturn(9.0);
+		given(usageLimits.percentSchedulesUsed()).willReturn(10.0);
 
-        subject.registerWith(platform);
-        subject.updateAll();
+		subject.registerWith(platform);
+		subject.updateAll();
 
-        verify(metrics, times(9)).getOrCreate(any(DoubleGauge.Config.class));
-    }
+		verify(metrics, times(9)).getOrCreate(any(DoubleGauge.Config.class));
+	}
 }

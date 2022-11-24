@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.stats;
+package com.hedera.node.app.service.mono.stats;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import com.hedera.node.app.service.mono.stats.ExpiryStats;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
@@ -31,49 +25,59 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class ExpiryStatsTest {
-    private static final double halfLife = 10.0;
+	private static final double halfLife = 10.0;
 
-    @Mock private Platform platform;
-    @Mock private RunningAverageMetric idsScannedPerConsSec;
-    @Mock private Counter contractsRemoved;
-    @Mock private Counter contractsRenewed;
-    @Mock private Metrics metrics;
+	@Mock
+	private Platform platform;
+	@Mock
+	private RunningAverageMetric idsScannedPerConsSec;
+	@Mock
+	private Counter contractsRemoved;
+	@Mock
+	private Counter contractsRenewed;
+	@Mock
+	private Metrics metrics;
 
-    private ExpiryStats subject;
+	private ExpiryStats subject;
 
-    @BeforeEach
-    void setup() {
-        subject = new ExpiryStats(halfLife);
-    }
+	@BeforeEach
+	void setup() {
+		subject = new ExpiryStats(halfLife);
+	}
 
-    @Test
-    void registersExpectedStatEntries() {
-        setMocks();
-        given(platform.getMetrics()).willReturn(metrics);
+	@Test
+	void registersExpectedStatEntries() {
+		setMocks();
+		given(platform.getMetrics()).willReturn(metrics);
 
-        subject.registerWith(platform);
+		subject.registerWith(platform);
 
-        verify(metrics, times(3)).getOrCreate(any());
-    }
+		verify(metrics, times(3)).getOrCreate(any());
+	}
 
-    @Test
-    void recordsToExpectedMetrics() {
-        setMocks();
+	@Test
+	void recordsToExpectedMetrics() {
+		setMocks();
 
-        subject.countRemovedContract();
-        subject.countRenewedContract();
-        subject.includeIdsScannedInLastConsSec(5L);
+		subject.countRemovedContract();
+		subject.countRenewedContract();
+		subject.includeIdsScannedInLastConsSec(5L);
 
-        verify(contractsRemoved).increment();
-        verify(contractsRenewed).increment();
-        verify(idsScannedPerConsSec).update(5.0);
-    }
+		verify(contractsRemoved).increment();
+		verify(contractsRenewed).increment();
+		verify(idsScannedPerConsSec).update(5.0);
+	}
 
-    private void setMocks() {
-        subject.setIdsScannedPerConsSec(idsScannedPerConsSec);
-        subject.setContractsRemoved(contractsRemoved);
-        subject.setContractsRenewed(contractsRenewed);
-    }
+	private void setMocks() {
+		subject.setIdsScannedPerConsSec(idsScannedPerConsSec);
+		subject.setContractsRemoved(contractsRemoved);
+		subject.setContractsRenewed(contractsRenewed);
+	}
 }

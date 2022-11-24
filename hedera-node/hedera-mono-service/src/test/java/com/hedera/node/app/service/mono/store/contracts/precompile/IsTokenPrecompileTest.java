@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenPrecompile.decodeIsToken;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.tuweni.bytes.Bytes;
@@ -24,16 +21,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenPrecompile.decodeIsToken;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @ExtendWith(MockitoExtension.class)
 class IsTokenPrecompileTest {
-    private static final Bytes IS_TOKEN_INPUT =
-            Bytes.fromHexString(
-                    "0x19f373610000000000000000000000000000000000000000000000000000000000000b03");
+	private static final Bytes IS_TOKEN_INPUT =
+			Bytes.fromHexString(
+					"0x19f373610000000000000000000000000000000000000000000000000000000000000b03");
 
-    @Test
-    void decodeIsTokenAsExpected() {
-        final var decodedInput = decodeIsToken(IS_TOKEN_INPUT);
-        assertEquals(TokenID.newBuilder().setTokenNum(2819).build(), decodedInput.tokenID());
-        assertEquals(-1, decodedInput.serialNumber());
-    }
+	@Test
+	void decodeIsTokenAsExpected() {
+		final var decodedInput = decodeIsToken(IS_TOKEN_INPUT);
+		assertEquals(TokenID.newBuilder().setTokenNum(2819).build(), decodedInput.tokenID());
+		assertEquals(-1, decodedInput.serialNumber());
+	}
 }

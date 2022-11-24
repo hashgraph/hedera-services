@@ -13,91 +13,98 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile.utils;
+package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
+
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
+import com.hedera.services.pricing.AssetsLoader;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.inject.Provider;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Map;
 
 import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.fees.HbarCentExchange;
-import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.pricing.AssetsLoader;
-import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Map;
-import javax.inject.Provider;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 @ExtendWith(MockitoExtension.class)
 class PrecompilePricingUtilsTest {
 
-    private static final long COST = 36;
-    private static final int CENTS_RATE = 12;
-    private static final int HBAR_RATE = 1;
-    @Mock private AssetsLoader assetLoader;
-    @Mock private HbarCentExchange exchange;
-    @Mock private ExchangeRate exchangeRate;
-    @Mock private Provider<FeeCalculator> feeCalculator;
-    @Mock private UsagePricesProvider resourceCosts;
-    @Mock private StateView stateView;
-    @Mock private AccessorFactory accessorFactory;
+	private static final long COST = 36;
+	private static final int CENTS_RATE = 12;
+	private static final int HBAR_RATE = 1;
+	@Mock
+	private AssetsLoader assetLoader;
+	@Mock
+	private HbarCentExchange exchange;
+	@Mock
+	private ExchangeRate exchangeRate;
+	@Mock
+	private Provider<FeeCalculator> feeCalculator;
+	@Mock
+	private UsagePricesProvider resourceCosts;
+	@Mock
+	private StateView stateView;
+	@Mock
+	private AccessorFactory accessorFactory;
 
-    @Test
-    void failsToLoadCanonicalPrices() throws IOException {
-        given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
-        assertThrows(
-                PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
-                () ->
-                        new PrecompilePricingUtils(
-                                assetLoader,
-                                exchange,
-                                feeCalculator,
-                                resourceCosts,
-                                stateView,
-                                accessorFactory));
-    }
+	@Test
+	void failsToLoadCanonicalPrices() throws IOException {
+		given(assetLoader.loadCanonicalPrices()).willThrow(IOException.class);
+		assertThrows(
+				PrecompilePricingUtils.CanonicalOperationsUnloadableException.class,
+				() ->
+						new PrecompilePricingUtils(
+								assetLoader,
+								exchange,
+								feeCalculator,
+								resourceCosts,
+								stateView,
+								accessorFactory));
+	}
 
-    @Test
-    void calculatesMinimumPrice() throws IOException {
-        Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
-        given(exchange.rate(timestamp)).willReturn(exchangeRate);
-        given(assetLoader.loadCanonicalPrices())
-                .willReturn(
-                        Map.of(
-                                HederaFunctionality.TokenAssociateToAccount,
-                                Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
-        given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
-        given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
+	@Test
+	void calculatesMinimumPrice() throws IOException {
+		final Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
+		given(exchange.rate(timestamp)).willReturn(exchangeRate);
+		given(assetLoader.loadCanonicalPrices())
+				.willReturn(
+						Map.of(
+								HederaFunctionality.TokenAssociateToAccount,
+								Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
+		given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
+		given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        PrecompilePricingUtils subject =
-                new PrecompilePricingUtils(
-                        assetLoader,
-                        exchange,
-                        feeCalculator,
-                        resourceCosts,
-                        stateView,
-                        accessorFactory);
+		final PrecompilePricingUtils subject =
+				new PrecompilePricingUtils(
+						assetLoader,
+						exchange,
+						feeCalculator,
+						resourceCosts,
+						stateView,
+						accessorFactory);
 
-        long price =
-                subject.getMinimumPriceInTinybars(
-                        PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
+		final long price =
+				subject.getMinimumPriceInTinybars(
+						PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 
-        assertEquals(
-                USD_TO_TINYCENTS
-                        .multiply(BigDecimal.valueOf(COST * HBAR_RATE / CENTS_RATE))
-                        .longValue(),
-                price);
-    }
+		assertEquals(
+				USD_TO_TINYCENTS
+						.multiply(BigDecimal.valueOf(COST * HBAR_RATE / CENTS_RATE))
+						.longValue(),
+				price);
+	}
 }

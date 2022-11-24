@@ -13,36 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile.decodeTokenUriNFT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile.decodeTokenUriNFT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @ExtendWith(MockitoExtension.class)
 class TokenURIPrecompileTest {
 
-    private static final Bytes TOKEN_URI_INPUT =
-            Bytes.fromHexString(
-                    "0xc87b56dd0000000000000000000000000000000000000000000000000000000000000001");
-    private static final Bytes TOKEN_URI_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0xc87b56dd0000000000000000000000000000000000000000000000010000000000000001");
+	private static final Bytes TOKEN_URI_INPUT =
+			Bytes.fromHexString(
+					"0xc87b56dd0000000000000000000000000000000000000000000000000000000000000001");
+	private static final Bytes TOKEN_URI_LONG_OVERFLOWN =
+			Bytes.fromHexString(
+					"0xc87b56dd0000000000000000000000000000000000000000000000010000000000000001");
 
-    @Test
-    void decodeTokenUriInput() {
-        final var decodedInput = decodeTokenUriNFT(TOKEN_URI_INPUT);
+	@Test
+	void decodeTokenUriInput() {
+		final var decodedInput = decodeTokenUriNFT(TOKEN_URI_INPUT);
 
-        assertEquals(1, decodedInput.serialNo());
-    }
+		assertEquals(1, decodedInput.serialNo());
+	}
 
-    @Test
-    void decodeTokenUriShouldThrowOnTokenIdOverflown() {
-        assertThrows(ArithmeticException.class, () -> decodeTokenUriNFT(TOKEN_URI_LONG_OVERFLOWN));
-    }
+	@Test
+	void decodeTokenUriShouldThrowOnTokenIdOverflown() {
+		assertThrows(ArithmeticException.class, () -> decodeTokenUriNFT(TOKEN_URI_LONG_OVERFLOWN));
+	}
 }

@@ -13,15 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.stats;
+package com.hedera.node.app.service.mono.stats;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
-
-import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;
@@ -31,44 +24,54 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
+
 @ExtendWith(MockitoExtension.class)
 class MiscSpeedometersTest {
-    private static final double halfLife = 10.0;
+	private static final double halfLife = 10.0;
 
-    @Mock private Platform platform;
-    @Mock private SpeedometerMetric syncVerifies;
-    @Mock private SpeedometerMetric txnRejections;
-    @Mock private Metrics metrics;
+	@Mock
+	private Platform platform;
+	@Mock
+	private SpeedometerMetric syncVerifies;
+	@Mock
+	private SpeedometerMetric txnRejections;
+	@Mock
+	private Metrics metrics;
 
-    private MiscSpeedometers subject;
+	private MiscSpeedometers subject;
 
-    @BeforeEach
-    void setup() {
-        platform = mock(Platform.class);
-        given(platform.getMetrics()).willReturn(metrics);
-        given(metrics.getOrCreate(any())).willReturn(syncVerifies).willReturn(txnRejections);
+	@BeforeEach
+	void setup() {
+		platform = mock(Platform.class);
+		given(platform.getMetrics()).willReturn(metrics);
+		given(metrics.getOrCreate(any())).willReturn(syncVerifies).willReturn(txnRejections);
 
-        subject = new MiscSpeedometers(halfLife);
-    }
+		subject = new MiscSpeedometers(halfLife);
+	}
 
-    @Test
-    void registersExpectedStatEntries() {
-        subject.setSyncVerifications(syncVerifies);
-        subject.setPlatformTxnRejections(txnRejections);
+	@Test
+	void registersExpectedStatEntries() {
+		subject.setSyncVerifications(syncVerifies);
+		subject.setPlatformTxnRejections(txnRejections);
 
-        subject.registerWith(platform);
+		subject.registerWith(platform);
 
-        verify(metrics, times(2)).getOrCreate(any());
-    }
+		verify(metrics, times(2)).getOrCreate(any());
+	}
 
-    @Test
-    void cyclesExpectedSpeedometers() {
-        subject.registerWith(platform);
+	@Test
+	void cyclesExpectedSpeedometers() {
+		subject.registerWith(platform);
 
-        subject.cycleSyncVerifications();
-        subject.cyclePlatformTxnRejections();
+		subject.cycleSyncVerifications();
+		subject.cyclePlatformTxnRejections();
 
-        verify(syncVerifies).cycle();
-        verify(txnRejections).cycle();
-    }
+		verify(syncVerifies).cycle();
+		verify(txnRejections).cycle();
+	}
 }

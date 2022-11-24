@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile;
+package com.hedera.node.app.service.mono.store.contracts.precompile;
+
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 @ExtendWith(MockitoExtension.class)
 class PrecompileDefaultsTest {
-    @Mock private WorldLedgers worldLedgers;
+	@Mock
+	private WorldLedgers worldLedgers;
 
-    @Test
-    void customizationIsNoop() {
-        final var subject = mock(Precompile.class);
+	@Test
+	void customizationIsNoop() {
+		final var subject = mock(Precompile.class);
 
-        doCallRealMethod().when(subject).customizeTrackingLedgers(worldLedgers);
+		doCallRealMethod().when(subject).customizeTrackingLedgers(worldLedgers);
 
-        assertDoesNotThrow(() -> subject.customizeTrackingLedgers(worldLedgers));
+		assertDoesNotThrow(() -> subject.customizeTrackingLedgers(worldLedgers));
 
-        verifyNoInteractions(worldLedgers);
-    }
+		verifyNoInteractions(worldLedgers);
+	}
 }

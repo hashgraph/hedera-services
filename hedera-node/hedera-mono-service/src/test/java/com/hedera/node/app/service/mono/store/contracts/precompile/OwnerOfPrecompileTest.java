@@ -13,36 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.store.contracts.precompile;
-
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile.decodeOwnerOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile.decodeOwnerOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @ExtendWith(MockitoExtension.class)
 class OwnerOfPrecompileTest {
 
-    private static final Bytes OWNER_OF_INPUT =
-            Bytes.fromHexString(
-                    "0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
-    private static final Bytes OWNER_OF_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0x6352211e0000000000000000000000000000000000000000000000010000000000000001");
+	private static final Bytes OWNER_OF_INPUT =
+			Bytes.fromHexString(
+					"0x6352211e0000000000000000000000000000000000000000000000000000000000000001");
+	private static final Bytes OWNER_OF_LONG_OVERFLOWN =
+			Bytes.fromHexString(
+					"0x6352211e0000000000000000000000000000000000000000000000010000000000000001");
 
-    @Test
-    void decodeOwnerOfInput() {
-        final var decodedInput = decodeOwnerOf(OWNER_OF_INPUT);
+	@Test
+	void decodeOwnerOfInput() {
+		final var decodedInput = decodeOwnerOf(OWNER_OF_INPUT);
 
-        assertEquals(1, decodedInput.serialNo());
-    }
+		assertEquals(1, decodedInput.serialNo());
+	}
 
-    @Test
-    void decodeOwnerOfShouldThrowOnTokenIdOverflown() {
-        assertThrows(ArithmeticException.class, () -> decodeOwnerOf(OWNER_OF_LONG_OVERFLOWN));
-    }
+	@Test
+	void decodeOwnerOfShouldThrowOnTokenIdOverflown() {
+		assertThrows(ArithmeticException.class, () -> decodeOwnerOf(OWNER_OF_LONG_OVERFLOWN));
+	}
 }

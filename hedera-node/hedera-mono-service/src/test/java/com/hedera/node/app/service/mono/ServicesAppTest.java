@@ -48,7 +48,6 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.JvmSystemExits;
-import com.hedera.services.DaggerServicesApp;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.NodeId;
 import com.swirlds.common.system.Platform;
