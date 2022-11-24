@@ -226,12 +226,12 @@ public class DecodingFacade {
             final TokenID tokenType,
             @NotNull final Tuple[] abiTransfers,
             final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> isExisting) {
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
             final long amount = transfer.get(1);
-            if (amount > 0 && !isExisting.test(accountID)) {
+            if (amount > 0 && !exists.test(accountID)) {
                 accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
             }
             // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
