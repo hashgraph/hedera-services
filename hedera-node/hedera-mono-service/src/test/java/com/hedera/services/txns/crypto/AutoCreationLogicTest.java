@@ -415,8 +415,10 @@ class AutoCreationLogicTest {
     void happyPathWithFungibleTokenChangeWorksWithCustomRecordSubmissions() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
-                .willReturn(mockSyntheticCreation);
+        final var cryptoCreateAccount =
+                TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+                .willReturn(cryptoCreateAccount);
 
         final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -435,7 +437,7 @@ class AutoCreationLogicTest {
         verify(sigImpactHistorian, never()).markAliasChanged(edKeyAlias);
         verify(sigImpactHistorian, never()).markEntityChanged(createdNum.longValue());
         verify(recordsHistorian)
-                .trackPrecedingChildRecord(sourceId, mockSyntheticCreation, mockBuilder);
+                .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
 
         verify(aliasManager).link(edKeyAlias, createdNum);
         verify(accountsLedger).create(createdNum.toGrpcAccountId());

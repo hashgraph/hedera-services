@@ -1684,11 +1684,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)),
                                             childRecordsCheck(
                                                     TRANSFER_TXN2,
@@ -1697,7 +1693,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
@@ -1826,16 +1822,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
@@ -1923,10 +1915,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     successfulTransferFromTxn,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .memo(LAZY_MEMO)
-                                                            .alias(alias),
+                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                                     recordWith()
                                                             .status(SUCCESS)
                                                             .contractCallResult(
@@ -1942,7 +1931,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -2021,10 +2010,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .memo(LAZY_MEMO)
-                                                            .alias(alias),
+                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                                     recordWith()
                                                             .status(SUCCESS)
                                                             .contractCallResult(
@@ -2040,7 +2026,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)

@@ -173,13 +173,14 @@ public class AutoCreationLogic {
         for (final var pendingCreation : pendingCreations) {
             final var syntheticCreation = pendingCreation.syntheticBody();
             final var childRecord = pendingCreation.recordBuilder();
-        if (trackSigImpact) {
-            final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
-            if (alias != ByteString.EMPTY) {
-              sigImpactHistorian.markAliasChanged(alias);
+            if (trackSigImpact) {
+                final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
+                if (alias != ByteString.EMPTY) {
+                    sigImpactHistorian.markAliasChanged(alias);
+                }
+                sigImpactHistorian.markEntityChanged(
+                        childRecord.getReceiptBuilder().getAccountId().num());
             }
-            sigImpactHistorian.markEntityChanged(childRecord.getReceiptBuilder().getAccountId().num());
-        }
             recordSubmissions.submitForTracking(syntheticCreation, childRecord);
         }
     }

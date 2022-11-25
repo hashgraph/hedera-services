@@ -791,7 +791,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -807,11 +807,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)));
                                 }))
                 .then(resetToDefault(LAZY_CREATION_ENABLED));
@@ -5426,7 +5422,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -5442,11 +5438,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_FROM_ACCOUNT_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)));
                                 }))
                 .then(resetToDefault(LAZY_CREATION_ENABLED));
