@@ -441,8 +441,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, SPONSOR, VALID_ALIAS)
                                 .via(TRANSFER_TXN),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1),
@@ -590,8 +589,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, VALID_ALIAS)
                                 .logged(),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
                         getTxnRecord(multiTokenXfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
@@ -922,10 +920,8 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                  * ed25519 auto-creation). */
                                 .payingWith(GENESIS)
                                 .via(autoCreation),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, ed25519SourceKey)),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, secp256k1SourceKey)))
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ed25519SourceKey)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, secp256k1SourceKey)))
                 .then(
                         getTxnRecord(autoCreation)
                                 .andAllChildRecords()
@@ -1037,8 +1033,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged())
                 .then(
                         cryptoDeleteAliased(ALIAS)
@@ -1071,8 +1066,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         tinyBarsFromToWithAlias(
                                                 PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord("txn").andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
@@ -1107,8 +1101,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, alias)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, alias)),
                         getTxnRecord("txn").andAllChildRecords().logged(),
                         getAliasedAccountInfo(alias)
                                 .has(
@@ -1141,8 +1134,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         tinyBarsFromToWithAlias(
                                                 PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
-                        withOpContext(
-                                (spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
                         getTxnRecord("txn").andAllChildRecords().logged())
                 .then(
                         /* get the account associated with alias and transfer */
