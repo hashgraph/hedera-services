@@ -120,7 +120,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenRelationship;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.crypto.CryptoFactory;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
@@ -1170,7 +1170,7 @@ class StateViewTest {
     void specialFileMemoIsHexedHash() {
         FileID file150 = asFile("0.0.150");
         final var expectedMemo =
-                CommonUtils.hex(CryptoFactory.getInstance().digestSync(data).getValue());
+                CommonUtils.hex(CryptographyHolder.get().digestSync(data).getValue());
 
         given(specialFiles.get(file150)).willReturn(data);
         given(specialFiles.contains(file150)).willReturn(true);
@@ -1272,24 +1272,24 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
     }
 
     @Test
     void tokenCustomFeesFailsGracefully() {
         given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
-        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(missingTokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesWorksForMissing() {
         subject = new StateView(null, null, null);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

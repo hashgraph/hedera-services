@@ -31,7 +31,6 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -64,7 +63,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var token = stateView.tokens().getOrDefault(EntityNum.fromTokenId(tokenId), null);
+        final var token = ledgers.tokens().getImmutableRef(tokenId);
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenType = token.tokenType().ordinal();
         return encoder.encodeGetTokenType(tokenType);
