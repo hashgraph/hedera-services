@@ -29,8 +29,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
@@ -78,11 +80,12 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
-                        /* validate child record has alias set and has fields as expected */
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
+                        /* validate child record has no alias set and has fields as expected */
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
-                                .hasAliasInChildRecord(ALIAS, 0)
+                                .hasNoAliasInChildRecord(0)
                                 .logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
@@ -139,6 +142,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                         /* auto account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
@@ -189,6 +193,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .payingWith(PAYER)
                                 .via(TRANSFER_TXN),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(

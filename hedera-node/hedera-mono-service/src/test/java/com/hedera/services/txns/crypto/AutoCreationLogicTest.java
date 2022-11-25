@@ -64,6 +64,7 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -96,6 +97,7 @@ class AutoCreationLogicTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private GlobalDynamicProperties properties;
+    @Mock private CryptoCreateTransactionBody mockCryptoCreate;
 
     private AutoCreationLogic subject;
     private final HashMap<ByteString, Integer> tokenAliasMap = new HashMap<>();
@@ -161,10 +163,10 @@ class AutoCreationLogicTest {
     }
 
     @Test
-    void happyPathWithHbarChangeWorks() {
+    void happyPathEDKeyAliasWithHbarChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
-                .willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 0))
+                .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -183,7 +185,45 @@ class AutoCreationLogicTest {
         verify(accountsLedger, never())
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian)
-                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
+        assertEquals(totalFee, mockBuilder.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
+        assertTrue(subject.getTokenAliasMap().isEmpty());
+    }
+
+    @Test
+    void happyPathECKeyAliasWithHbarChangeWorks()
+            throws InvalidProtocolBufferException, DecoderException {
+        givenCollaborators(mockBuilder, AUTO_MEMO);
+        final var key = Key.parseFrom(ecdsaKeyBytes);
+        final var evmAddress =
+                ByteString.copyFrom(
+                        EthTxSigs.recoverAddressFromPubKey(
+                                JKey.mapKey(key).getECDSASecp256k1Key()));
+
+        given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
+                .willReturn(syntheticECAliasCreation);
+
+        final var input = wellKnownChange(ecKeyAlias);
+        final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
+        final var changes = List.of(input);
+
+        final var result = subject.create(input, accountsLedger, changes);
+        subject.submitRecordsTo(recordsHistorian);
+
+        assertEquals(initialTransfer, input.getAggregatedUnits());
+        assertEquals(initialTransfer, input.getNewBalance());
+        verify(aliasManager).link(ecKeyAlias, createdNum);
+        verify(sigImpactHistorian).markAliasChanged(ecKeyAlias);
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(accountsLedger)
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+        verify(accountsLedger, never())
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+        verify(recordsHistorian)
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticECAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
@@ -206,7 +246,7 @@ class AutoCreationLogicTest {
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
-                .willReturn(mockSyntheticCreation);
+                .willReturn(syntheticHollowCreation);
 
         final var input = wellKnownChange(evmAddressAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -218,7 +258,7 @@ class AutoCreationLogicTest {
         assertEquals(initialTransfer, input.getAggregatedUnits());
         assertEquals(initialTransfer, input.getNewBalance());
         verify(aliasManager).link(evmAddressAlias, createdNum);
-        verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
+        verify(sigImpactHistorian, never()).markAliasChanged(any());
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger, never())
                 .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
@@ -231,7 +271,7 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
-                        DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
+                        DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
         assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
@@ -253,7 +293,7 @@ class AutoCreationLogicTest {
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
-                .willReturn(mockSyntheticCreation);
+                .willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
 
         final var input = wellKnownTokenChange(evmAddressAlias);
@@ -265,7 +305,7 @@ class AutoCreationLogicTest {
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         verify(aliasManager).link(evmAddressAlias, createdNum);
-        verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
+        verify(sigImpactHistorian, never()).markAliasChanged(any());
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger, never())
                 .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
@@ -278,7 +318,7 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
-                        DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
+                        DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
         assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
     }
@@ -299,7 +339,7 @@ class AutoCreationLogicTest {
 
         givenCollaborators(mockBuilderWithEVMAlias, LAZY_MEMO);
         given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L))
-                .willReturn(mockSyntheticCreation);
+                .willReturn(syntheticHollowCreation);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
 
         final var input = wellKnownNftChange(evmAddressAlias);
@@ -311,7 +351,7 @@ class AutoCreationLogicTest {
 
         assertEquals(20L, input.getAggregatedUnits());
         verify(aliasManager).link(evmAddressAlias, createdNum);
-        verify(sigImpactHistorian).markAliasChanged(evmAddressAlias);
+        verify(sigImpactHistorian, never()).markAliasChanged(any());
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger, never())
                 .set(createdNum.toGrpcAccountId(), AccountProperty.KEY, null);
@@ -324,7 +364,7 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
-                        DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilderWithEVMAlias);
+                        DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
         assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
     }
@@ -333,8 +373,8 @@ class AutoCreationLogicTest {
     void happyPathWithFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
-                .willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+                .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -365,7 +405,8 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
 
         verify(recordsHistorian)
-                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
     }
@@ -420,8 +461,8 @@ class AutoCreationLogicTest {
     void happyPathWithNonFungibleTokenChangeWorks() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 1))
-                .willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
+                .willReturn(syntheticEDAliasCreation);
 
         final var input = wellKnownNftChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -452,7 +493,8 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
 
         verify(recordsHistorian)
-                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
         assertEquals(1, subject.getPendingCreations().size());
@@ -466,8 +508,8 @@ class AutoCreationLogicTest {
     void analyzesTokenTransfersInChangesForAutoCreation() {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 2))
-                .willReturn(mockSyntheticCreation);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 2))
+                .willReturn(syntheticEDAliasCreation);
 
         final var input1 = wellKnownTokenChange(edKeyAlias);
         final var input2 = anotherTokenChange();
@@ -489,7 +531,8 @@ class AutoCreationLogicTest {
                 .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 2);
 
         verify(recordsHistorian)
-                .trackPrecedingChildRecord(DEFAULT_SOURCE_ID, mockSyntheticCreation, mockBuilder);
+                .trackPrecedingChildRecord(
+                        DEFAULT_SOURCE_ID, syntheticEDAliasCreation, mockBuilder);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
 
@@ -588,8 +631,20 @@ class AutoCreationLogicTest {
         verify(aliasManager, never()).forgetEvmAddress(alias);
     }
 
-    private static final TransactionBody.Builder mockSyntheticCreation =
-            TransactionBody.newBuilder();
+    private final TransactionBody.Builder syntheticEDAliasCreation =
+            TransactionBody.newBuilder()
+                    .setCryptoCreateAccount(
+                            CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
+
+    private final TransactionBody.Builder syntheticECAliasCreation =
+            TransactionBody.newBuilder()
+                    .setCryptoCreateAccount(
+                            CryptoCreateTransactionBody.newBuilder().setAlias(ecKeyAlias));
+
+    private final TransactionBody.Builder syntheticHollowCreation =
+            TransactionBody.newBuilder()
+                    .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
+
     private static final long initialTransfer = 16L;
     private static final Key aPrimitiveKey =
             Key.newBuilder()
@@ -598,6 +653,8 @@ class AutoCreationLogicTest {
     private static final ByteString edKeyAlias = aPrimitiveKey.toByteString();
     private static final byte[] ecdsaKeyBytes =
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+
+    private static final ByteString ecKeyAlias = ByteString.copyFrom(ecdsaKeyBytes);
     private static final AccountID created = IdUtils.asAccount("0.0.1234");
     public static final AccountID payer = IdUtils.asAccount("0.0.12345");
     private static final EntityNum createdNum = EntityNum.fromAccountId(created);

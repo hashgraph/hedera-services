@@ -24,7 +24,6 @@ import static com.hedera.services.state.initialization.BackedSystemAccountsCreat
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -202,7 +201,7 @@ public class MigrationRecordsManager {
             final String description,
             final long balance) {
         final var tracker = sideEffectsFactory.get();
-        tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
+        tracker.trackAutoCreation(num.toGrpcAccountId());
         final var synthBody =
                 synthCreation(
                         autoRenewPeriod,

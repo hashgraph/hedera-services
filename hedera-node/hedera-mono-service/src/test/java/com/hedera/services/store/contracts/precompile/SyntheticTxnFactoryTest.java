@@ -54,7 +54,9 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;
@@ -90,6 +92,7 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -436,10 +439,11 @@ class SyntheticTxnFactoryTest {
     }
 
     @Test
-    void createsExpectedCryptoCreate() {
+    void createsExpectedCryptoCreateWithEDKeyAlias() {
         final var balance = 10L;
-        final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result = subject.createAccount(alias, balance, 0);
+        final var key = KeyFactory.getDefaultInstance().newEd25519();
+        final var alias = key.toByteString();
+        final var result = subject.createAccount(alias, key, null, balance, 0);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -449,8 +453,35 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
+    }
+
+    @Test
+    void createsExpectedCryptoCreateWithECKeyAlias() throws DecoderException {
+        final var balance = 10L;
+        final var key = KeyFactory.getDefaultInstance().newEcdsaSecp256k1();
+        final var alias = key.toByteString();
+        final var evmAddress =
+                ByteString.copyFrom(
+                        EthTxSigs.recoverAddressFromPubKey(
+                                JKey.mapKey(key).getECDSASecp256k1Key()));
+        final var result = subject.createAccount(alias, key, evmAddress, balance, 0);
+        final var txnBody = result.build();
+
+        assertTrue(txnBody.hasCryptoCreateAccount());
+        assertEquals(AUTO_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
-                alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+                THREE_MONTHS_IN_SECONDS,
+                txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
+        assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
+        assertEquals(0L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
+        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
+        assertEquals(evmAddress, txnBody.getCryptoCreateAccount().getEvmAddress());
+        assertEquals(
+                EntityIdUtils.EVM_ADDRESS_SIZE,
+                txnBody.getCryptoCreateAccount().getEvmAddress().size());
     }
 
     @Test
@@ -463,8 +494,11 @@ class SyntheticTxnFactoryTest {
 
         assertTrue(txnBody.hasCryptoCreateAccount());
         assertEquals(asKeyUnchecked(EMPTY_KEY), txnBody.getCryptoCreateAccount().getKey());
+        assertEquals(ByteString.EMPTY, txnBody.getCryptoCreateAccount().getAlias());
+        assertEquals(evmAddressAlias, txnBody.getCryptoCreateAccount().getEvmAddress());
         assertEquals(
-                EntityIdUtils.EVM_ADDRESS_SIZE, txnBody.getCryptoCreateAccount().getAlias().size());
+                EntityIdUtils.EVM_ADDRESS_SIZE,
+                txnBody.getCryptoCreateAccount().getEvmAddress().size());
         assertEquals(LAZY_MEMO, txnBody.getCryptoCreateAccount().getMemo());
         assertEquals(
                 THREE_MONTHS_IN_SECONDS,
@@ -476,8 +510,9 @@ class SyntheticTxnFactoryTest {
     @Test
     void fungibleTokenChangeAddsAutoAssociations() {
         final var balance = 10L;
-        final var alias = KeyFactory.getDefaultInstance().newEd25519();
-        final var result = subject.createAccount(alias, balance, 1);
+        final var key = KeyFactory.getDefaultInstance().newEd25519();
+        final var alias = key.toByteString();
+        final var result = subject.createAccount(alias, key, null, balance, 1);
         final var txnBody = result.build();
 
         assertTrue(txnBody.hasCryptoCreateAccount());
@@ -487,14 +522,15 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(1, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(
-                alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
     @Test
     void nftOwnershipChangeAddsAutoAssociations() {
         final var balance = 10L;
-        final var alias = KeyFactory.getDefaultInstance().newEd25519();
+        final var key = KeyFactory.getDefaultInstance().newEd25519();
+        final var alias = key.toByteString();
         final var xfer =
                 NftTransfer.newBuilder()
                         .setSenderAccountID(asAliasAccount(ByteString.copyFromUtf8("somebody")))
@@ -505,7 +541,7 @@ class SyntheticTxnFactoryTest {
 
         final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
-        final var result = subject.createAccount(alias, balance, 1);
+        final var result = subject.createAccount(alias, key, null, balance, 1);
 
         final var txnBody = result.build();
 
@@ -516,8 +552,8 @@ class SyntheticTxnFactoryTest {
                 txnBody.getCryptoCreateAccount().getAutoRenewPeriod().getSeconds());
         assertEquals(10L, txnBody.getCryptoCreateAccount().getInitialBalance());
         assertEquals(1L, txnBody.getCryptoCreateAccount().getMaxAutomaticTokenAssociations());
-        assertEquals(
-                alias.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(key.toByteString(), txnBody.getCryptoCreateAccount().getKey().toByteString());
+        assertEquals(alias, txnBody.getCryptoCreateAccount().getAlias());
     }
 
     @Test
