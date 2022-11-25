@@ -113,27 +113,36 @@ public class EthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return Stream.concat(
-                        Stream.of(setChainId()),
-                        Stream.concat(
-                                feePaymentMatrix().stream(),
-                                Stream.of(
-                                        invalidTxData(),
-                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        ETX_010_transferToCryptoAccountSucceeds(),
-                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                        ETX_014_contractCreateInheritsSignerProperties(),
-                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        originAndSenderAreEthereumSigner(),
-                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
-                                        sendingLargerBalanceThanAvailableFailsGracefully())))
-                .toList();
+        return List.of(sendingLargerBalanceThanAvailableFailsGracefully());
+        //        return Stream.concat(
+        //                        Stream.of(setChainId()),
+        //                        Stream.concat(
+        //                                feePaymentMatrix().stream(),
+        //                                Stream.of(
+        //                                        invalidTxData(),
+        //                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+        //
+        // ETX_008_contractCreateExecutesWithExpectedRecord(),
+        //                                        ETX_009_callsToTokenAddresses(),
+        //                                        ETX_010_transferToCryptoAccountSucceeds(),
+        //
+        // ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+        //
+        // ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+        //
+        // ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+        //                                        ETX_014_contractCreateInheritsSignerProperties(),
+        //
+        // accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+        //                                        ETX_009_callsToTokenAddresses(),
+        //                                        originAndSenderAreEthereumSigner(),
+        //
+        // ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+        //
+        // ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+        //
+        // sendingLargerBalanceThanAvailableFailsGracefully())))
+        //                .toList();
     }
 
     HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
@@ -975,12 +984,10 @@ public class EthereumSuite extends HapiApiSuite {
 
     HapiApiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
 
-        final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
 
         return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
                 .given(
-                        //                        UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC,
-                        // "100000000"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -1000,7 +1007,12 @@ public class EthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatusFrom(SUCCESS)
-                                .via("deployTokenCreateContract"))
+                                .via("deployTokenCreateContract"),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(
+                                        cb ->
+                                                tokenCreateContractAddress.set(
+                                                        asHeadlongAddress(cb))))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -1008,8 +1020,7 @@ public class EthereumSuite extends HapiApiSuite {
                                             ethereumCall(
                                                             TOKEN_CREATE_CONTRACT,
                                                             "createNonFungibleTokenPublic",
-                                                            asHeadlongAddress(
-                                                                    tokenCreateContractID.get()))
+                                                            tokenCreateContractAddress.get())
                                                     .type(EthTxData.EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
