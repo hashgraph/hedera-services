@@ -37,6 +37,8 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -92,6 +94,7 @@ class TokenPrecompileReadOperationsTest {
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private MerkleMap<EntityNum, MerkleToken> tokenMerkleMap;
     @Mock private AssetsLoader assetLoader;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     private MerkleToken merkleToken;
     private final TokenID tokenID = asToken("0.0.5");
 
@@ -153,7 +156,8 @@ class TokenPrecompileReadOperationsTest {
                         Id.fromGrpcToken(tokenID).asEvmAddress());
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        given(stateView.tokenExists(any())).willReturn(true);
+        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.contains(any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -183,7 +187,8 @@ class TokenPrecompileReadOperationsTest {
                         Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), nonFungibleTokenAddr);
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        given(stateView.tokenExists(any())).willReturn(true);
+        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.contains(any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
         Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN));
         isTokenPrecompile
@@ -217,9 +222,8 @@ class TokenPrecompileReadOperationsTest {
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         final var wrapper = TokenInfoWrapper.forToken(tokenID);
 
-        given(stateView.tokens()).willReturn(tokenMerkleMap);
-        given(tokenMerkleMap.getOrDefault(EntityNum.fromTokenId(tokenID), null))
-                .willReturn(merkleToken);
+        given(wrappedLedgers.tokens()).willReturn(tokensLedger);
+        given(tokensLedger.getImmutableRef(tokenID)).willReturn(merkleToken);
         givenMinimalContextForSuccessfulCall();
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);

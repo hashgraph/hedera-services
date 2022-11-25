@@ -736,12 +736,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                            null,
-                            syntheticTxnFactory,
-                            ledgers,
-                            encoder,
-                            precompilePricingUtils,
-                            currentView);
+                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
                             null,
