@@ -41,10 +41,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoT
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -69,6 +71,7 @@ import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -102,6 +105,7 @@ public class EthereumSuite extends HapiApiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
+    private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteSync();
@@ -127,7 +131,8 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        sendingLargerBalanceThanAvailableFailsGracefully())))
                 .toList();
     }
 
@@ -966,6 +971,59 @@ public class EthereumSuite extends HapiApiSuite {
                                                     originalBytecode, 29, originalBytecode.length);
                                     Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
                                 }));
+    }
+
+    HapiApiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
+
+        final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
+
+        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+                .given(
+                        //                        UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC,
+                        // "100000000"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                tinyBarsFromAccountToAlias(
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS)
+                                .via("deployTokenCreateContract"))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var call =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            asHeadlongAddress(
+                                                                    tokenCreateContractID.get()))
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .gasPrice(10L)
+                                                    .sending(1000000000000000000L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatus(SUCCESS);
+                                    allRunFor(spec, call);
+                                }))
+                .then(
+                        // todo verify createTokenTxn has status: insufficient_fee
+                        );
     }
 
     @Override
