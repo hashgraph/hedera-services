@@ -16,6 +16,7 @@
 package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.services.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -30,6 +31,7 @@ import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.SigImpactHistorian;
@@ -39,6 +41,7 @@ import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.InProgressChildRecord;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -159,7 +162,10 @@ public class AutoCreationLogic {
         for (final var pendingCreation : pendingCreations) {
             final var syntheticCreation = pendingCreation.syntheticBody();
             final var childRecord = pendingCreation.recordBuilder();
-            sigImpactHistorian.markAliasChanged(childRecord.getAlias());
+            final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
+            if (alias != ByteString.EMPTY) {
+                sigImpactHistorian.markAliasChanged(alias);
+            }
             sigImpactHistorian.markEntityChanged(
                     childRecord.getReceiptBuilder().getAccountId().num());
             recordsHistorian.trackPrecedingChildRecord(
@@ -217,8 +223,17 @@ public class AutoCreationLogic {
             memo = LAZY_MEMO;
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
-            syntheticCreation = syntheticTxnFactory.createAccount(key, 0L, maxAutoAssociations);
             JKey jKey = asFcKeyUnchecked(key);
+            ByteString evmAddress = null;
+            if (jKey.hasECDSAsecp256k1Key()) {
+                evmAddress =
+                        ByteStringUtils.wrapUnsafely(
+                                tryAddressRecovery(jKey, EthTxSigs::recoverAddressFromPubKey));
+            }
+
+            syntheticCreation =
+                    syntheticTxnFactory.createAccount(
+                            alias, key, evmAddress, 0L, maxAutoAssociations);
             customizer.key(jKey);
             memo = AUTO_MEMO;
         }
