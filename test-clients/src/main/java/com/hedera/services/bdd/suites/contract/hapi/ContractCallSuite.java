@@ -81,6 +81,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.b
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -248,7 +249,8 @@ public class ContractCallSuite extends HapiApiSuite {
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
                 workingHoursDemo(),
-                lpFarmSimulation());
+                lpFarmSimulation(),
+                depositMoreThanBalanceFailsGracefully());
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
@@ -3037,6 +3039,20 @@ public class ContractCallSuite extends HapiApiSuite {
                                                         BigInteger.valueOf(200_000))
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)));
+    }
+
+    HapiApiSpec depositMoreThanBalanceFailsGracefully() {
+        return defaultHapiSpec("Deposit More Than Balance Fails Gracefully")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
+                .when(contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .then(
+                        contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(ONE_HBAR))
+                                .via(PAY_TXN)
+                                .payingWith(ACCOUNT)
+                                .sending(ONE_HBAR)
+                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
     }
 
     private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
