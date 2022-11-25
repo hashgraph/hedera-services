@@ -233,7 +233,6 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
         final var expectedNonce =
                 (long) accountsLedger.get(callerNum.toGrpcAccountId(), ETHEREUM_NONCE);
         validateTrue(expectedNonce == ethTxData.nonce(), WRONG_NONCE);
-
         return callerNum;
     }
 }

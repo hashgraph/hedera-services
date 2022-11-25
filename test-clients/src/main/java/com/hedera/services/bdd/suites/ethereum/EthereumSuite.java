@@ -58,6 +58,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -113,36 +114,27 @@ public class EthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(sendingLargerBalanceThanAvailableFailsGracefully());
-        //        return Stream.concat(
-        //                        Stream.of(setChainId()),
-        //                        Stream.concat(
-        //                                feePaymentMatrix().stream(),
-        //                                Stream.of(
-        //                                        invalidTxData(),
-        //                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-        //
-        // ETX_008_contractCreateExecutesWithExpectedRecord(),
-        //                                        ETX_009_callsToTokenAddresses(),
-        //                                        ETX_010_transferToCryptoAccountSucceeds(),
-        //
-        // ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-        //
-        // ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-        //
-        // ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-        //                                        ETX_014_contractCreateInheritsSignerProperties(),
-        //
-        // accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-        //                                        ETX_009_callsToTokenAddresses(),
-        //                                        originAndSenderAreEthereumSigner(),
-        //
-        // ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-        //
-        // ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
-        //
-        // sendingLargerBalanceThanAvailableFailsGracefully())))
-        //                .toList();
+        return Stream.concat(
+                        Stream.of(setChainId()),
+                        Stream.concat(
+                                feePaymentMatrix().stream(),
+                                Stream.of(
+                                        invalidTxData(),
+                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        ETX_010_transferToCryptoAccountSucceeds(),
+                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                        ETX_014_contractCreateInheritsSignerProperties(),
+                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        originAndSenderAreEthereumSigner(),
+                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        sendingLargerBalanceThanAvailableFailsGracefully())))
+                .toList();
     }
 
     HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
@@ -992,11 +984,12 @@ public class EthereumSuite extends HapiApiSuite {
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
                                 tinyBarsFromAccountToAlias(
-                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS - 1)),
                         createLargeFile(
                                 GENESIS,
                                 TOKEN_CREATE_CONTRACT,
-                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)))
+                .when(
                         ethereumContractCreate(TOKEN_CREATE_CONTRACT)
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -1013,7 +1006,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         cb ->
                                                 tokenCreateContractAddress.set(
                                                         asHeadlongAddress(cb))))
-                .when(
+                .then(
                         withOpContext(
                                 (spec, opLog) -> {
                                     var call =
@@ -1026,15 +1019,12 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .payingWith(RELAYER)
                                                     .nonce(1)
                                                     .gasPrice(10L)
-                                                    .sending(1000000000000000000L)
+                                                    .sending(ONE_HUNDRED_HBARS)
                                                     .gasLimit(1_000_000L)
                                                     .via("createTokenTxn")
-                                                    .hasKnownStatus(SUCCESS);
+                                                    .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE);
                                     allRunFor(spec, call);
-                                }))
-                .then(
-                        // todo verify createTokenTxn has status: insufficient_fee
-                        );
+                                }));
     }
 
     @Override
