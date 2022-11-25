@@ -81,9 +81,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
                         withOpContext(
-                                (spec, opLog) -> {
-                                    updateSpecFor(spec, ALIAS);
-                                }),
+                                (spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         /* validate child record has no alias set and has fields as expected */
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
@@ -146,9 +144,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
                         withOpContext(
-                                (spec, opLog) -> {
-                                    updateSpecFor(spec, ALIAS);
-                                }),
+                                (spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
@@ -200,9 +196,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                 .payingWith(PAYER)
                                 .via(TRANSFER_TXN),
                         withOpContext(
-                                (spec, opLog) -> {
-                                    updateSpecFor(spec, ALIAS);
-                                }),
+                                (spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord(TRANSFER_TXN).andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
