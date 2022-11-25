@@ -16,9 +16,14 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -29,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -36,11 +42,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,6 +60,13 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
+    private static final String ACCOUNT = "account";
+    private static final String TOKEN_MISC_OPERATIONS_CONTRACT = "TokenMiscOperations";
+    private static final String CREATE_AND_TRANSFER_TXN = "createAndTransferTxn";
+    private static final long DEFAULT_AMOUNT_TO_SEND = 20 * ONE_HBAR;
+    private static final String ED25519KEY = "ed25519key";
+    private static final String AUTO_RENEW_ACCOUNT = "autoRenewAccount";
+    private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
 
     public static void main(String... args) {
         new MixedHTSPrecompileTestsSuite().runSuiteSync();
@@ -61,7 +79,9 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile());
+        return List.of(
+                HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile(),
+                createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
     private HapiApiSpec HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile() {
@@ -127,6 +147,133 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
                         getAccountInfo(theAccount).hasToken(relationshipWith(token)),
                         cryptoTransfer(moving(200, token).between(TOKEN_TREASURY, theAccount))
                                 .hasKnownStatus(SUCCESS));
+    }
+
+    private HapiApiSpec createTokenWithFixedFeeThenTransferAndAssessFee() {
+        final var createTokenNum = new AtomicLong();
+        final var CONTRACT_ADMIN_KEY = "contractAdminKey";
+        final var FEE_COLLECTOR = "feeCollector";
+        final var RECIPIENT = "recipient";
+        final var SECOND_RECIPIENT = "secondRecipient";
+        final var TREASURY = "treasury";
+        final var FEE_COLLECTOR_KEY = "feeCollectorKey";
+        final var TREASURY_KEY = "treasuryKey";
+        final var RECIPIENT_KEY = "recipientKey";
+        final var SECOND_RECIPIENT_KEY = "secondRecipientKey";
+        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+                .given(
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(FEE_COLLECTOR_KEY),
+                        newKeyNamed(TREASURY_KEY),
+                        newKeyNamed(RECIPIENT_KEY),
+                        newKeyNamed(SECOND_RECIPIENT_KEY),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519KEY),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(ONE_HUNDRED_HBARS).key(ED25519KEY),
+                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS).key(RECIPIENT_KEY),
+                        cryptoCreate(SECOND_RECIPIENT).key(SECOND_RECIPIENT_KEY),
+                        cryptoCreate(TREASURY).balance(ONE_MILLION_HBARS).key(TREASURY_KEY),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L).key(FEE_COLLECTOR_KEY),
+                        uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
+                        contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .gas(GAS_TO_OFFER)
+                                .adminKey(CONTRACT_ADMIN_KEY)
+                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT)
+                                .signedBy(CONTRACT_ADMIN_KEY, DEFAULT_PAYER, AUTO_RENEW_ACCOUNT),
+                        cryptoTransfer(
+                                TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
+                                        .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
+                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .has(
+                                        ContractInfoAsserts.contractWith()
+                                                .autoRenewAccountId(AUTO_RENEW_ACCOUNT))
+                                .logged())
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_MISC_OPERATIONS_CONTRACT,
+                                                                "createTokenWithHbarsFixedFeeAndTransferIt",
+                                                                10L,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                FEE_COLLECTOR))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECIPIENT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SECOND_RECIPIENT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                TREASURY))))
+                                                        .via(CREATE_AND_TRANSFER_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(
+                                                                TREASURY_KEY,
+                                                                FEE_COLLECTOR_KEY,
+                                                                RECIPIENT_KEY,
+                                                                SECOND_RECIPIENT_KEY)
+                                                        .exposingResultTo(
+                                                                result -> {
+                                                                    log.info(
+                                                                            EXPLICIT_CREATE_RESULT,
+                                                                            result[0]);
+                                                                    final var res =
+                                                                            (Address) result[0];
+                                                                    createTokenNum.set(
+                                                                            res.value()
+                                                                                    .longValueExact());
+                                                                }))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                getTxnRecord(CREATE_AND_TRANSFER_TXN)
+                                                        .andAllChildRecords()
+                                                        .logged(),
+                                                getAccountBalance(RECIPIENT)
+                                                        .hasTokenBalance(
+                                                                asTokenString(
+                                                                        TokenID.newBuilder()
+                                                                                .setTokenNum(
+                                                                                        createTokenNum
+                                                                                                .get())
+                                                                                .build()),
+                                                                0L),
+                                                getAccountBalance(SECOND_RECIPIENT)
+                                                        .hasTokenBalance(
+                                                                asTokenString(
+                                                                        TokenID.newBuilder()
+                                                                                .setTokenNum(
+                                                                                        createTokenNum
+                                                                                                .get())
+                                                                                .build()),
+                                                                1L),
+                                                getAccountBalance(TREASURY)
+                                                        .hasTokenBalance(
+                                                                asTokenString(
+                                                                        TokenID.newBuilder()
+                                                                                .setTokenNum(
+                                                                                        createTokenNum
+                                                                                                .get())
+                                                                                .build()),
+                                                                199L),
+                                                getAccountBalance(FEE_COLLECTOR)
+                                                        .hasTinyBars(10L))));
     }
 
     @Override

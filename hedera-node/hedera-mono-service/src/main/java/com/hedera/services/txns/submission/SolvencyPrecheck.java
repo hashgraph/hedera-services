@@ -140,7 +140,7 @@ public class SolvencyPrecheck {
                 final var expiryStatus =
                         validator.expiryStatusGiven(
                                 payerBalance,
-                                payerAccount.getExpiry(),
+                                payerAccount.isExpiredAndPendingRemoval(),
                                 payerAccount.isSmartContract());
                 finalStatus = expiryStatus != OK ? expiryStatus : INSUFFICIENT_PAYER_BALANCE;
             }

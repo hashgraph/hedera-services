@@ -41,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoT
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall.ETH_HASH_KEY;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
@@ -55,6 +54,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -71,6 +71,7 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
@@ -102,7 +103,6 @@ public class EthereumSuite extends HapiApiSuite {
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
 
     public static void main(String... args) {
         new EthereumSuite().runSuiteSync();
@@ -124,7 +124,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
                                         ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
                                         ETX_014_contractCreateInheritsSignerProperties(),
-                                        ETX_026_accountWithoutAliasCannotMakeEthTxns(),
+                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
@@ -144,6 +144,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords())
                 .when(
                         balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
@@ -321,7 +322,6 @@ public class EthereumSuite extends HapiApiSuite {
     HapiApiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
-                        overriding(CHAIN_ID_PROP, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -360,6 +360,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         cryptoCreate(PROXY))
                 .when(
@@ -396,7 +397,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                 .logged()
                                                 .has(
                                                         ContractInfoAsserts.contractWith()
-                                                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                                                .defaultAdminKey()
                                                                 .autoRenew(AUTO_RENEW_PERIOD)
                                                                 .balance(INITIAL_BALANCE)
                                                                 .memo(MEMO))));
@@ -458,10 +459,12 @@ public class EthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-    HapiApiSpec ETX_026_accountWithoutAliasCannotMakeEthTxns() {
+    HapiApiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
-        return defaultHapiSpec("accountWithoutAliasCannotMakeEthTxns")
+        return defaultHapiSpec(
+                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
@@ -473,7 +476,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then();
+                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
@@ -488,6 +491,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -556,6 +560,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -626,6 +631,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -749,6 +755,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(EMIT_SENDER_ORIGIN_CONTRACT),
                         contractCreate(EMIT_SENDER_ORIGIN_CONTRACT))

@@ -132,6 +132,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private boolean noPseudoRandomData = false;
     private List<Pair<String, Long>> paidStakingRewards = new ArrayList<>();
+    private int numStakingRewardsPaid = -1;
 
     private Consumer<List<?>> eventDataObserver;
     private String eventName;
@@ -146,7 +147,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
     }
 
-    private record ExpectedChildInfo(String aliasingKey, long pendingRewards) {}
+    private record ExpectedChildInfo(long pendingRewards) {}
 
     private Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
 
@@ -237,9 +238,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
+    public HapiGetTxnRecord hasPaidStakingRewardsCount(final int n) {
+        numStakingRewardsPaid = n;
+        return this;
+    }
+
+    public HapiGetTxnRecord hasNoAliasInChildRecord(final int childIndex) {
         requestChildRecords = true;
-        childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey, 0L));
+        childExpectations.put(childIndex, new ExpectedChildInfo(0L));
         return this;
     }
 
@@ -591,15 +597,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         if (!childExpectations.isEmpty()) {
             for (final var index : childExpectations.entrySet()) {
-                final var expectations = index.getValue();
-                if (expectations.aliasingKey() != null) {
-                    final var childRecord = childRecords.get(index.getKey());
-                    final var literalKey = spec.registry().getKey(expectations.aliasingKey());
-                    assertEquals(
-                            literalKey.toByteString().toStringUtf8(),
-                            childRecord.getAlias().toStringUtf8());
-                }
+                final var childRecord = childRecords.get(index.getKey());
+                assertEquals(ByteString.EMPTY, childRecord.getAlias());
             }
+        }
+        if (numStakingRewardsPaid != -1) {
+            assertEquals(
+                    numStakingRewardsPaid,
+                    actualRecord.getPaidStakingRewardsCount(),
+                    "Wrong # of staking rewards paid");
         }
         if (!paidStakingRewards.isEmpty()) {
             if (actualRecord.getPaidStakingRewardsList().isEmpty()) {

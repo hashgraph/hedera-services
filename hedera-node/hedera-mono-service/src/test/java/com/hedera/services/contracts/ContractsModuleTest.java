@@ -15,9 +15,10 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
@@ -38,8 +39,6 @@ import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -141,9 +140,9 @@ class ContractsModuleTest {
 
         var result = prngOperation.execute(messageFrame, evm);
         assertEquals("PRNGSEED", prngOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
     }
 
@@ -171,9 +170,9 @@ class ContractsModuleTest {
 
         var result = prngOperation.execute(messageFrame, evm);
         assertEquals("PRNGSEED", prngOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(testBytes, bytesCaptor.getValue().toArray());
     }
 
@@ -186,7 +185,7 @@ class ContractsModuleTest {
         given(messageFrame.getRemainingGas()).willReturn(0L);
 
         var result = prngOperation.execute(messageFrame, evm);
-        assertEquals(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+        assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, result.getHaltReason());
     }
 
     @Test
@@ -210,9 +209,9 @@ class ContractsModuleTest {
 
         var result = difficultyOperation.execute(messageFrame, evm);
         assertEquals("DIFFICULTY", difficultyOperation.getName());
-        assertEquals(OptionalLong.of(2L), result.getGasCost());
+        assertEquals(2L, result.getGasCost());
         assertEquals(1, result.getPcIncrement());
-        assertEquals(Optional.empty(), result.getHaltReason());
+        assertNull(result.getHaltReason());
         assertArrayEquals(new byte[32], bytesCaptor.getValue().toArray());
     }
 
@@ -231,9 +230,9 @@ class ContractsModuleTest {
 
             var result = chainIdOperation.execute(messageFrame, evm);
             assertEquals("CHAINID", chainIdOperation.getName());
-            assertEquals(OptionalLong.of(2L), result.getGasCost());
+            assertEquals(2L, result.getGasCost());
             assertEquals(1, result.getPcIncrement());
-            assertEquals(Optional.empty(), result.getHaltReason());
+            assertNull(result.getHaltReason());
             assertArrayEquals(chainIdBytes.toArray(), bytesCaptor.getValue().toArray());
         }
     }
@@ -245,8 +244,7 @@ class ContractsModuleTest {
                     evm.operationAtOffset(Code.createLegacyCode(Bytes.of(0x46), Hash.ZERO), 0);
             given(messageFrame.getRemainingGas()).willReturn(0L);
             var result = chainIdOperation.execute(messageFrame, evm);
-            assertEquals(
-                    Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS), result.getHaltReason());
+            assertEquals(ExceptionalHaltReason.INSUFFICIENT_GAS, result.getHaltReason());
         }
     }
 
@@ -261,7 +259,7 @@ class ContractsModuleTest {
         given(worldUpdater.get(any())).willReturn(null);
         var result = balanceOperation.execute(messageFrame, evm);
         assertEquals("BALANCE", balanceOperation.getName());
-        assertEquals(Optional.of(INVALID_SOLIDITY_ADDRESS), result.getHaltReason());
+        assertEquals(INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
     }
 
     @Test
@@ -280,8 +278,8 @@ class ContractsModuleTest {
 
         var result = balanceOperation.execute(messageFrame, evm);
         assertEquals("BALANCE", balanceOperation.getName());
-        assertEquals(Optional.empty(), result.getHaltReason());
-        assertEquals(OptionalLong.of(2600), result.getGasCost());
+        assertNull(result.getHaltReason());
+        assertEquals(2600, result.getGasCost());
         assertEquals(UInt256.ZERO, bytesCaptor.getValue());
     }
 

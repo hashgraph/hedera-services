@@ -181,7 +181,7 @@ class EthereumTransitionLogicTest {
     @Test
     void transitionDelegatesToCustomContractCreateForSynthCreate() {
         givenValidlyCalled(createTxn);
-        given(creationCustomizer.customize(createTxn, callerId)).willReturn(createTxn);
+        given(creationCustomizer.customize(createTxn, callerId, false)).willReturn(createTxn);
         givenOfferedPrice();
 
         subject.doStateTransition();
@@ -279,6 +279,17 @@ class EthereumTransitionLogicTest {
         willThrow(IllegalStateException.class).given(spanMapManager).expandEthereumSpan(accessor);
 
         assertDoesNotThrow(() -> subject.preFetch(accessor));
+    }
+
+    @Test
+    void dealsWithRecoveryEdgeCase() {
+        given(spanMapAccessor.getEthTxExpansion(accessor))
+                .willReturn(null)
+                .willReturn(notOkExpansion);
+
+        assertFailsWith(() -> subject.validatedCallerOf(accessor), INVALID_ETHEREUM_TRANSACTION);
+
+        verify(spanMapManager).rationalizeEthereumSpan(accessor);
     }
 
     private void givenReasonableSemantics() {

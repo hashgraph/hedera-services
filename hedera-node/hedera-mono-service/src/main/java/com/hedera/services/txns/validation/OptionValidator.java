@@ -58,7 +58,7 @@ public interface OptionValidator {
 
     JKey attemptDecodeOrThrow(Key k);
 
-    ResponseCodeEnum expiryStatusGiven(long balance, long expiry, boolean isContract);
+    ResponseCodeEnum expiryStatusGiven(long balance, boolean isDetached, boolean isContract);
     // This variant is to avoid unnecessary TransactionalLedger.get() calls
     ResponseCodeEnum expiryStatusGiven(
             TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts, AccountID id);

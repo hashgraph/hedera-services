@@ -40,9 +40,8 @@ package com.hedera.services.contracts.operation;
 import static com.hedera.services.utils.EntityIdUtils.numOfMirror;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 import org.hyperledger.besu.datatypes.Address;
@@ -60,7 +59,7 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  *
  * <p>Performs an existence check on the beneficiary {@link Address} Halts the execution of the EVM
  * transaction with {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does
- * not exist or it is deleted.
+ * not exist, or it is deleted.
  *
  * <p>Halts the execution of the EVM transaction with {@link
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
@@ -125,6 +124,6 @@ public class HederaSelfDestructOperation extends SelfDestructOperation {
     private OperationResult reversionWith(
             final Account beneficiary, final ExceptionalHaltReason reason) {
         final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
-        return new OperationResult(OptionalLong.of(cost), Optional.of(reason));
+        return new OperationResult(cost, reason);
     }
 }

@@ -94,9 +94,8 @@ public class SideEffectsTracker {
         newEntityAlias = ByteString.copyFrom(evmAddress.toArrayUnsafe());
     }
 
-    public void trackAutoCreation(final AccountID accountID, final ByteString alias) {
+    public void trackAutoCreation(final AccountID accountID) {
         this.newAccountId = accountID;
-        this.newEntityAlias = alias;
     }
 
     public void trackHollowAccountUpdate(final AccountID accountID) {

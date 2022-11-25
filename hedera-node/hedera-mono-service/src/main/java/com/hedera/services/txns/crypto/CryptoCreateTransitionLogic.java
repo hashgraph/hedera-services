@@ -351,8 +351,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
     private ResponseCodeEnum validateAliasIsEVMAddressCase(final CryptoCreateTransactionBody op) {
         var alias = op.getAlias();
         if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()
-                    || !dynamicProperties.isLazyCreationEnabled()) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
                 return NOT_SUPPORTED;
             }
 
@@ -372,6 +371,8 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 if (!Arrays.equals(recoveredEvmAddress, alias.toByteArray())) {
                     return INVALID_ALIAS_KEY;
                 }
+            } else if (!dynamicProperties.isLazyCreationEnabled()) {
+                return NOT_SUPPORTED;
             }
         }
         return OK;
