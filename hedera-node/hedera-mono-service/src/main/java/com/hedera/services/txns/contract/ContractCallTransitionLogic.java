@@ -138,6 +138,7 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             accountStore.commitAccount(sender);
 
             validateTrue(sender.getBalance() >= op.getAmount(), INSUFFICIENT_ACCOUNT_BALANCE);
+
             result =
                     evmTxProcessor.executeEth(
                             sender,
