@@ -15,7 +15,7 @@
  */
 package com.hedera.services.usage.util;
 
-import static com.hederahashgraph.fee.FeeBuilder.INT_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.INT_SIZE;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;

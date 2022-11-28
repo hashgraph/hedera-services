@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;

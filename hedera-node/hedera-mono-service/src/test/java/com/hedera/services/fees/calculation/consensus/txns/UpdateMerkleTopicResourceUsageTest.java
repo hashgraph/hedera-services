@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.StringValue;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleTopic;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.exception.InvalidTxBodyException;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
 import javax.annotation.Nullable;

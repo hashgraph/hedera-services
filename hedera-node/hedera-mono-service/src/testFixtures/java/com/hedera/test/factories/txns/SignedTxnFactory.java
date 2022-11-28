@@ -22,6 +22,7 @@ import static java.util.Collections.EMPTY_LIST;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.sigs.SigFactory;
@@ -32,7 +33,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeBuilder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

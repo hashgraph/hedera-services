@@ -15,21 +15,38 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.MiscUtils.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
+import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hedera.services.utils.MiscUtils.hasUnknownFields;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFeeScheduleUpdate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenFreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenPause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.grpc.marshalling.AliasResolver;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
@@ -38,13 +55,26 @@ import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.usage.BaseTransactionMeta;
 import com.hedera.services.usage.SigUsage;
 import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.*;
+import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoCreateMeta;
+import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.services.usage.crypto.CryptoTransferMeta;
+import com.hedera.services.usage.crypto.CryptoUpdateMeta;
 import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
 import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ScheduleID;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -67,25 +97,25 @@ public class SignedTxnAccessor implements TxnAccessor {
 
     private Map<String, Object> spanMap = new HashMap<>();
 
-    private int sigMapSize;
-    private int numSigPairs;
+    private final int sigMapSize;
+    private final int numSigPairs;
     private int numAutoCreations = UNKNOWN_NUM_AUTO_CREATIONS;
-    private byte[] hash;
-    private byte[] txnBytes;
-    private byte[] utf8MemoBytes;
-    private byte[] signedTxnWrapperBytes;
-    private String memo;
-    private boolean memoHasZeroByte;
-    private Transaction signedTxnWrapper;
-    private SignatureMap sigMap;
-    private TransactionID txnId;
-    private TransactionBody txn;
+    private final byte[] hash;
+    private final byte[] txnBytes;
+    private final byte[] utf8MemoBytes;
+    private final byte[] signedTxnWrapperBytes;
+    private final String memo;
+    private final boolean memoHasZeroByte;
+    private final Transaction signedTxnWrapper;
+    private final SignatureMap sigMap;
+    private final TransactionID txnId;
+    private final TransactionBody txn;
     private SubmitMessageMeta submitMessageMeta;
     private CryptoTransferMeta xferUsageMeta;
     private BaseTransactionMeta txnUsageMeta;
     private HederaFunctionality function;
     private ResponseCodeEnum expandedSigStatus;
-    private PubKeyToSigBytes pubKeyToSigBytes;
+    private final PubKeyToSigBytes pubKeyToSigBytes;
     private boolean throttleExempt;
     private boolean congestionExempt;
     private boolean usesUnknownFields = false;
@@ -94,29 +124,29 @@ public class SignedTxnAccessor implements TxnAccessor {
     private ScheduleID scheduleRef;
     private StateView view;
 
-    public static SignedTxnAccessor uncheckedFrom(Transaction validSignedTxn) {
+    public static SignedTxnAccessor uncheckedFrom(final Transaction validSignedTxn) {
         try {
             return SignedTxnAccessor.from(validSignedTxn.toByteArray());
-        } catch (Exception illegal) {
+        } catch (final Exception illegal) {
             log.warn("Unexpected use of factory with invalid gRPC transaction", illegal);
             throw new IllegalArgumentException(
                     "Argument 'validSignedTxn' must be a valid signed txn");
         }
     }
 
-    public static SignedTxnAccessor from(byte[] signedTxnWrapperBytes)
+    public static SignedTxnAccessor from(final byte[] signedTxnWrapperBytes)
             throws InvalidProtocolBufferException {
         return new SignedTxnAccessor(signedTxnWrapperBytes, null);
     }
 
     public static SignedTxnAccessor from(
-            byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
+            final byte[] signedTxnWrapperBytes, final Transaction signedTxnWrapper)
             throws InvalidProtocolBufferException {
         return new SignedTxnAccessor(signedTxnWrapperBytes, signedTxnWrapper);
     }
 
     protected SignedTxnAccessor(
-            byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
+            final byte[] signedTxnWrapperBytes, @Nullable final Transaction transaction)
             throws InvalidProtocolBufferException {
         this.signedTxnWrapperBytes = signedTxnWrapperBytes;
 
@@ -291,7 +321,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         if (throttleExempt) {
             return true;
         }
-        var p = getPayer();
+        final var p = getPayer();
         if (p != null) {
             return STATIC_PROPERTIES.isThrottleExempt(p.getAccountNum());
         }
@@ -416,7 +446,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         this.view = view;
     }
 
-    protected EntityNum lookUpAlias(ByteString alias) {
+    protected EntityNum lookUpAlias(final ByteString alias) {
         return view.aliases().get(alias);
     }
 
@@ -478,7 +508,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         var totalTokenTransfers = 0;
         var numNftOwnershipChanges = 0;
         final var op = txn.getCryptoTransfer();
-        for (var tokenTransfers : op.getTokenTransfersList()) {
+        for (final var tokenTransfers : op.getTokenTransfersList()) {
             totalTokensInvolved++;
             totalTokenTransfers += tokenTransfers.getTransfersCount();
             numNftOwnershipChanges += tokenTransfers.getNftTransfersCount();

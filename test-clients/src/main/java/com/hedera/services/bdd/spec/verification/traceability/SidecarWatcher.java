@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.verification.traceability;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.hedera.services.exports.recordstreaming.RecordStreamingUtils;
+import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils;
 import com.hedera.services.stream.proto.SidecarFile;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.File;

@@ -35,9 +35,9 @@ package com.hedera.services.state.merkle;
  * ‍
  */
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.ByteUtils.getHashBytes;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -331,7 +331,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -339,7 +339,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             return false;
         }
 
-        var that = (MerkleStakingInfo) o;
+        final var that = (MerkleStakingInfo) o;
         return this.number == that.number
                 && this.minStake == that.minStake
                 && this.maxStake == that.maxStake
@@ -391,7 +391,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             ensureHistoryHashIsKnown();
             serializeNonHistoryData(out);
             out.write(historyHash);
-        } catch (IOException | UncheckedIOException e) {
+        } catch (final IOException | UncheckedIOException e) {
             log.error(String.format("Hash computation failed on node %d", number), e);
             return EMPTY_HASH;
         }
@@ -399,7 +399,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     // Internal helpers
-    private void assertMutable(String proximalField) {
+    private void assertMutable(final String proximalField) {
         if (isImmutable()) {
             throw new MutabilityException(
                     "Cannot set " + proximalField + " on an immutable StakingInfo!");

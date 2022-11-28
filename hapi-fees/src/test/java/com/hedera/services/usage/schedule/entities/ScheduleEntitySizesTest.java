@@ -35,7 +35,7 @@ package com.hedera.services.usage.schedule.entities;
  * ‍
  */
 
-import static com.hederahashgraph.fee.FeeBuilder.KEY_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.KEY_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.usage.SigUsage;

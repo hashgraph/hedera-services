@@ -47,6 +47,7 @@ import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
@@ -251,9 +252,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             } else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
                 stakeAtStartOfLastRewardedPeriodUpdates[i] = roundedToHbar(account.totalStake());
             }
+            final var wasRewarded =
+                    rewardsEarned[i] > 0
+                            || (rewardsEarned[i] == 0
+                                    && earnedZeroRewardsBecauseOfZeroStake(account));
             stakePeriodStartUpdates[i] =
                     stakePeriodManager.startUpdateFor(
-                            curStakedId, newStakedId, rewardsEarned[i] > 0, stakeMetaChanged);
+                            curStakedId, newStakedId, wasRewarded, stakeMetaChanged);
         }
     }
 
@@ -309,6 +314,25 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }
+    }
+
+    /**
+     * Given an existing account that was in a reward situation and earned zero rewards, checks if
+     * this was because the account had effective stake of zero whole hbars during the rewardable
+     * periods. (The alternative is that it had zero rewardable periods; i.e., it started staking
+     * this period, or the last.)
+     *
+     * <p>This distinction matters because in the case of zero stake, we still want to update the
+     * account's {@code stakePeriodStart} and {@code stakeAtStartOfLastRewardedPeriod}. Otherwise,
+     * we don't want to update {@code stakePeriodStart}; and only want to update {@code
+     * stakeAtStartOfLastRewardedPeriod} if the account began staking in exactly the last period.
+     *
+     * @param account an account presumed to have just earned zero rewards
+     * @return whether the zero rewards were due to having zero stake
+     */
+    private boolean earnedZeroRewardsBecauseOfZeroStake(final HederaAccount account) {
+        return Objects.requireNonNull(account).getStakePeriodStart()
+                < stakePeriodManager.firstNonRewardableStakePeriod();
     }
 
     private void alterStakedToMe(
@@ -484,8 +508,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
             // preserve an already-recorded memory of her stake at the beginning of this period;
             // while in scenario 4 there is no point in recording anything---it will go unused.)
-            if (account.getStakePeriodStart()
-                    < stakePeriodManager.firstNonRewardableStakePeriod()) {
+            if (earnedZeroRewardsBecauseOfZeroStake(account)) {
                 return true;
             }
             if (account.totalStakeAtStartOfLastRewardedPeriod()

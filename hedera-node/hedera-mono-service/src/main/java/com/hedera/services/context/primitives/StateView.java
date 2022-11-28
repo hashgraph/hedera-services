@@ -34,10 +34,10 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.contracts.sources.AddressKeyedMapFactory;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.DataMapFactory;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
@@ -125,13 +125,15 @@ public class StateView {
 
     private final ScheduleStore scheduleStore;
     private final StateChildren stateChildren;
+
     private final NetworkInfo networkInfo;
 
     Map<byte[], byte[]> contractBytecode;
+
     Map<FileID, byte[]> fileContents;
     Map<FileID, HFileMeta> fileAttrs;
-
     private BackingStore<TokenID, MerkleToken> backingTokens = null;
+
     private BackingStore<AccountID, HederaAccount> backingAccounts = null;
     private BackingStore<NftId, UniqueTokenAdapter> backingNfts = null;
     private BackingStore<Pair<AccountID, TokenID>, HederaTokenRel> backingRels = null;
@@ -149,6 +151,10 @@ public class StateView {
         fileContents = DataMapFactory.dataMapFrom(blobStore);
         fileAttrs = MetadataMapFactory.metaMapFrom(blobStore);
         contractBytecode = AddressKeyedMapFactory.bytecodeMapFrom(blobStore);
+    }
+
+    public NetworkInfo getNetworkInfo() {
+        return networkInfo;
     }
 
     public Optional<HFileMeta> attrOf(final FileID id) {
@@ -179,64 +185,7 @@ public class StateView {
             if (token == null) {
                 return Optional.empty();
             }
-            final var info =
-                    TokenInfo.newBuilder()
-                            .setLedgerId(networkInfo.ledgerId())
-                            .setTokenTypeValue(token.tokenType().ordinal())
-                            .setSupplyTypeValue(token.supplyType().ordinal())
-                            .setTokenId(tokenId)
-                            .setDeleted(token.isDeleted())
-                            .setSymbol(token.symbol())
-                            .setName(token.name())
-                            .setMemo(token.memo())
-                            .setTreasury(token.treasury().toGrpcAccountId())
-                            .setTotalSupply(token.totalSupply())
-                            .setMaxSupply(token.maxSupply())
-                            .setDecimals(token.decimals())
-                            .setExpiry(Timestamp.newBuilder().setSeconds(token.expiry()));
-
-            final var adminCandidate = token.adminKey();
-            adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
-
-            final var freezeCandidate = token.freezeKey();
-            freezeCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setDefaultFreezeStatus(tfsFor(token.accountsAreFrozenByDefault()));
-                        info.setFreezeKey(asKeyUnchecked(k));
-                    },
-                    () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
-
-            final var kycCandidate = token.kycKey();
-            kycCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setDefaultKycStatus(tksFor(token.accountsKycGrantedByDefault()));
-                        info.setKycKey(asKeyUnchecked(k));
-                    },
-                    () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
-
-            final var supplyCandidate = token.supplyKey();
-            supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
-            final var wipeCandidate = token.wipeKey();
-            wipeCandidate.ifPresent(k -> info.setWipeKey(asKeyUnchecked(k)));
-            final var feeScheduleCandidate = token.feeScheduleKey();
-            feeScheduleCandidate.ifPresent(k -> info.setFeeScheduleKey(asKeyUnchecked(k)));
-
-            final var pauseCandidate = token.pauseKey();
-            pauseCandidate.ifPresentOrElse(
-                    k -> {
-                        info.setPauseKey(asKeyUnchecked(k));
-                        info.setPauseStatus(tokenPauseStatusOf(token.isPaused()));
-                    },
-                    () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
-
-            if (token.hasAutoRenewAccount()) {
-                info.setAutoRenewAccount(token.autoRenewAccount().toGrpcAccountId());
-                info.setAutoRenewPeriod(Duration.newBuilder().setSeconds(token.autoRenewPeriod()));
-            }
-
-            info.addAllCustomFees(token.grpcFeeSchedule());
-
-            return Optional.of(info.build());
+            return Optional.of(token.asTokenInfo(tokenId, networkInfo.ledgerId()));
         } catch (Exception unexpected) {
             log.warn(
                     "Unexpected failure getting info for token {}!",
@@ -512,7 +461,7 @@ public class StateView {
         return stakingInfo.build();
     }
 
-    public List<CustomFee> tokenCustomFees(final TokenID tokenId) {
+    public List<CustomFee> infoForTokenCustomFees(final TokenID tokenId) {
         try {
             final var tokens = stateChildren.tokens();
             final var token = tokens.get(EntityNum.fromTokenId(tokenId));
@@ -720,15 +669,15 @@ public class StateView {
         return backingRels;
     }
 
-    private TokenFreezeStatus tfsFor(final boolean flag) {
+    public static TokenFreezeStatus tokenFreeStatusFor(final boolean flag) {
         return flag ? TokenFreezeStatus.Frozen : TokenFreezeStatus.Unfrozen;
     }
 
-    private TokenKycStatus tksFor(final boolean flag) {
+    public static TokenKycStatus tokenKycStatusFor(final boolean flag) {
         return flag ? TokenKycStatus.Granted : TokenKycStatus.Revoked;
     }
 
-    private TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
+    public static TokenPauseStatus tokenPauseStatusOf(final boolean flag) {
         return flag ? TokenPauseStatus.Paused : TokenPauseStatus.Unpaused;
     }
 
