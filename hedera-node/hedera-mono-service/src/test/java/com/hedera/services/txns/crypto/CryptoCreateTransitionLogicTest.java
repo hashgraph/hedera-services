@@ -78,6 +78,8 @@ import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
+import com.hedera.services.txns.crypto.validators.CryptoCreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
@@ -96,6 +98,7 @@ import org.apache.commons.codec.DecoderException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 class CryptoCreateTransitionLogicTest {
     private static final Key KEY = SignedTxnFactory.DEFAULT_PAYER_KT.asKey();
@@ -140,6 +143,7 @@ class CryptoCreateTransitionLogicTest {
     private NodeInfo nodeInfo;
     private UsageLimits usageLimits;
     private AliasManager aliasManager;
+    private CryptoCreateChecks cryptoCreateChecks;
 
     @BeforeEach
     void setup() {
@@ -155,6 +159,7 @@ class CryptoCreateTransitionLogicTest {
         accounts = mock(MerkleMap.class);
         accountsLedger = mock(TransactionalLedger.class);
         nodeInfo = mock(NodeInfo.class);
+        cryptoCreateChecks = mock(CryptoCreateChecks.class);
         given(dynamicProperties.maxTokensPerAccount()).willReturn(MAX_TOKEN_ASSOCIATIONS);
         withRubberstampingValidator();
 
@@ -162,13 +167,13 @@ class CryptoCreateTransitionLogicTest {
                 new CryptoCreateTransitionLogic(
                         usageLimits,
                         ledger,
-                        validator,
                         sigImpactHistorian,
                         txnCtx,
                         dynamicProperties,
                         () -> AccountStorageAdapter.fromInMemory(accounts),
                         nodeInfo,
-                        aliasManager);
+                        aliasManager,
+                    cryptoCreateChecks);
     }
 
     @Test
