@@ -41,8 +41,8 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -110,7 +110,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
         try {
             final var op = query.getContractCallLocal();
 
-            ContractCallLocalResponse response;
+            final ContractCallLocalResponse response;
             if (null == queryCtx) {
                 response = dummyResponse(op.getContractID());
             } else {

@@ -51,6 +51,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +62,6 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class EncodingFacade {
@@ -73,7 +73,7 @@ public class EncodingFacade {
         /* For Dagger2 */
     }
 
-    public static Bytes resultFrom(@NotNull final ResponseCodeEnum status) {
+    public static Bytes resultFrom(@NonNull final ResponseCodeEnum status) {
         return UInt256.valueOf(status.getNumber());
     }
 
@@ -192,7 +192,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeMintFailure(@NotNull final ResponseCodeEnum status) {
+    public Bytes encodeMintFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(HAPI_MINT)
                 .withStatus(status.getNumber())
@@ -209,7 +209,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeBurnFailure(@NotNull final ResponseCodeEnum status) {
+    public Bytes encodeBurnFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_BURN)
                 .withStatus(status.getNumber())
@@ -232,7 +232,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeCreateFailure(@NotNull final ResponseCodeEnum status) {
+    public Bytes encodeCreateFailure(@NonNull final ResponseCodeEnum status) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_CREATE)
                 .withStatus(status.getNumber())
@@ -313,7 +313,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeGetTokenKey(KeyValueWrapper keyValue) {
+    public Bytes encodeGetTokenKey(final KeyValueWrapper keyValue) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
                 .withStatus(SUCCESS.getNumber())
@@ -548,7 +548,7 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withKey(KeyValueWrapper wrapper) {
+        private FunctionResultBuilder withKey(final KeyValueWrapper wrapper) {
             this.keyValue =
                     Tuple.of(
                             wrapper.isShouldInheritAccountKeySet(),
@@ -684,7 +684,7 @@ public class EncodingFacade {
                 final ArrayList<Tuple> fixedFees,
                 final ArrayList<Tuple> fractionalFees,
                 final ArrayList<Tuple> royaltyFees,
-                @NotNull final CustomFee customFee) {
+                @NonNull final CustomFee customFee) {
             final var feeCollector =
                     convertBesuAddressToHeadlongAddress(
                             EntityIdUtils.asTypedEvmAddress(customFee.getFeeCollectorAccountId()));
@@ -699,7 +699,7 @@ public class EncodingFacade {
         }
 
         private Tuple getFixedFeeTuple(
-                @NotNull final FixedFee fixedFee,
+                @NonNull final FixedFee fixedFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fixedFee.getAmount(),
@@ -711,7 +711,7 @@ public class EncodingFacade {
         }
 
         private Tuple getFractionalFeeTuple(
-                @NotNull final FractionalFee fractionalFee,
+                @NonNull final FractionalFee fractionalFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     fractionalFee.getFractionalAmount().getNumerator(),
@@ -723,7 +723,7 @@ public class EncodingFacade {
         }
 
         private Tuple getRoyaltyFeeTuple(
-                @NotNull final RoyaltyFee royaltyFee,
+                @NonNull final RoyaltyFee royaltyFee,
                 final com.esaulpaugh.headlong.abi.Address feeCollector) {
             return Tuple.of(
                     royaltyFee.getExchangeValueFraction().getNumerator(),
@@ -790,7 +790,7 @@ public class EncodingFacade {
             return tokenKeysTuples;
         }
 
-        private static Tuple getKeyTuple(final BigInteger keyType, @NotNull final Key key) {
+        private static Tuple getKeyTuple(final BigInteger keyType, @NonNull final Key key) {
             return Tuple.of(
                     keyType,
                     Tuple.of(
@@ -902,7 +902,7 @@ public class EncodingFacade {
         }
 
         private static byte[] expandByteArrayTo32Length(final byte[] bytesToExpand) {
-            byte[] expandedArray = new byte[32];
+            final byte[] expandedArray = new byte[32];
 
             System.arraycopy(
                     bytesToExpand,
@@ -915,7 +915,7 @@ public class EncodingFacade {
     }
 
     static com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-            @NotNull final Address address) {
+            @NonNull final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(
                 com.esaulpaugh.headlong.abi.Address.toChecksumAddress(
                         address.toUnsignedBigInteger()));

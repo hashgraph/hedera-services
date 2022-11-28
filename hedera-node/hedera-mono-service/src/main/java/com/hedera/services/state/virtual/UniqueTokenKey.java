@@ -22,9 +22,9 @@ import com.hedera.services.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.jetbrains.annotations.NotNull;
 
 /** Represents a key for a unique token (NFT). */
 public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
@@ -102,7 +102,7 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
     }
 
     @Override
-    public int compareTo(@NotNull final UniqueTokenKey other) {
+    public int compareTo(@NonNull final UniqueTokenKey other) {
         if (this == other) {
             return 0;
         }
@@ -145,7 +145,8 @@ public class UniqueTokenKey implements VirtualKey<UniqueTokenKey> {
      * @param byteBuffer the ByteBuffer to fetch data from.
      * @return the number of bytes the key occupies (including the byte for the length field).
      */
-    /* package */ static int deserializeKeySize(final ByteBuffer byteBuffer) {
+    /* package */
+    static int deserializeKeySize(final ByteBuffer byteBuffer) {
         final byte packedLength = byteBuffer.get();
         return 1 + unpackLowerLength(packedLength) + unpackUpperLength(packedLength);
     }

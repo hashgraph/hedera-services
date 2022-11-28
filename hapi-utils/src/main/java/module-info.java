@@ -23,6 +23,5 @@ module com.hedera.node.app.hapi.utils {
     requires com.sun.jna;
     requires org.apache.commons.lang3;
     requires net.i2p.crypto.eddsa;
-    requires static annotations;
     requires javax.inject;
 }

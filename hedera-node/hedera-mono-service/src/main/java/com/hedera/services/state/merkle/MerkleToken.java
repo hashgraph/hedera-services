@@ -55,13 +55,13 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 
 public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     static final int RELEASE_0160_VERSION = 3;
@@ -110,14 +110,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public MerkleToken(
-            long expiry,
-            long totalSupply,
-            int decimals,
-            String symbol,
-            String name,
-            boolean accountsFrozenByDefault,
-            boolean accountKycGrantedByDefault,
-            EntityId treasury) {
+            final long expiry,
+            final long totalSupply,
+            final int decimals,
+            final String symbol,
+            final String name,
+            final boolean accountsFrozenByDefault,
+            final boolean accountKycGrantedByDefault,
+            final EntityId treasury) {
         this.expiry = expiry;
         this.totalSupply = totalSupply;
         this.decimals = decimals;
@@ -129,15 +129,15 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public MerkleToken(
-            long expiry,
-            long totalSupply,
-            int decimals,
-            String symbol,
-            String name,
-            boolean accountsFrozenByDefault,
-            boolean accountKycGrantedByDefault,
-            EntityId treasury,
-            int number) {
+            final long expiry,
+            final long totalSupply,
+            final int decimals,
+            final String symbol,
+            final String name,
+            final boolean accountsFrozenByDefault,
+            final boolean accountKycGrantedByDefault,
+            final EntityId treasury,
+            final int number) {
         this.expiry = expiry;
         this.totalSupply = totalSupply;
         this.decimals = decimals;
@@ -151,7 +151,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
     /* Object */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -159,7 +159,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
             return false;
         }
 
-        var that = (MerkleToken) o;
+        final var that = (MerkleToken) o;
         return this.tokenType == that.tokenType
                 && this.supplyType == that.supplyType
                 && this.expiry == that.expiry
@@ -274,7 +274,8 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         deleted = in.readBoolean();
         expiry = in.readLong();
         autoRenewAccount = readNullableSerializable(in);
@@ -349,7 +350,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     @Override
     public MerkleToken copy() {
         setImmutable(true);
-        var fc =
+        final var fc =
                 new MerkleToken(
                         expiry,
                         totalSupply,
@@ -439,17 +440,17 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return pauseKey != UNUSED_KEY;
     }
 
-    public void setPauseKey(JKey pauseKey) {
+    public void setPauseKey(final JKey pauseKey) {
         throwIfImmutable("Cannot change this token's pause key if it's immutable.");
         this.pauseKey = pauseKey;
     }
 
-    public void setFreezeKey(JKey freezeKey) {
+    public void setFreezeKey(final JKey freezeKey) {
         throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
         this.freezeKey = freezeKey;
     }
 
-    public void setKycKey(JKey kycKey) {
+    public void setKycKey(final JKey kycKey) {
         throwIfImmutable("Cannot change this token's kyc key if it's immutable.");
         this.kycKey = kycKey;
     }
@@ -466,7 +467,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return supplyKey != UNUSED_KEY;
     }
 
-    public void setSupplyKey(JKey supplyKey) {
+    public void setSupplyKey(final JKey supplyKey) {
         throwIfImmutable("Cannot change this token's supply key if it's immutable.");
         this.supplyKey = supplyKey;
     }
@@ -479,7 +480,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return wipeKey != UNUSED_KEY;
     }
 
-    public void setWipeKey(JKey wipeKey) {
+    public void setWipeKey(final JKey wipeKey) {
         throwIfImmutable("Cannot change this token's wipe key if it's immutable.");
         this.wipeKey = wipeKey;
     }
@@ -488,7 +489,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return deleted;
     }
 
-    public void setDeleted(boolean deleted) {
+    public void setDeleted(final boolean deleted) {
         throwIfImmutable("Cannot change this token's to be deleted if it's immutable.");
         this.deleted = deleted;
     }
@@ -497,7 +498,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return paused;
     }
 
-    public void setPaused(boolean paused) {
+    public void setPaused(final boolean paused) {
         throwIfImmutable("Cannot change this token's freeze key if it's immutable.");
         this.paused = paused;
     }
@@ -506,7 +507,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return symbol;
     }
 
-    public void setSymbol(String symbol) {
+    public void setSymbol(final String symbol) {
         throwIfImmutable("Cannot change this token's symbol if it's immutable.");
         this.symbol = symbol;
     }
@@ -515,22 +516,22 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         throwIfImmutable("Cannot change this token's name if it's immutable.");
         this.name = name;
     }
 
-    public void setDecimals(int decimals) {
+    public void setDecimals(final int decimals) {
         throwIfImmutable("Cannot change this token's decimals if it's immutable.");
         this.decimals = decimals;
     }
 
-    public void setTreasury(EntityId treasury) {
+    public void setTreasury(final EntityId treasury) {
         throwIfImmutable("Cannot change this token's treasure account if it's immutable.");
         this.treasury = treasury;
     }
 
-    public void setAdminKey(JKey adminKey) {
+    public void setAdminKey(final JKey adminKey) {
         throwIfImmutable("Cannot change this token's admin key if it's immutable.");
         this.adminKey = adminKey;
     }
@@ -555,7 +556,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return expiry;
     }
 
-    public void setExpiry(long expiry) {
+    public void setExpiry(final long expiry) {
         throwIfImmutable("Cannot change this token's expiry time if it's immutable.");
         this.expiry = expiry;
     }
@@ -564,7 +565,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return autoRenewPeriod;
     }
 
-    public void setAutoRenewPeriod(long autoRenewPeriod) {
+    public void setAutoRenewPeriod(final long autoRenewPeriod) {
         throwIfImmutable("Cannot change this token's auto renewal period if it's immutable.");
         this.autoRenewPeriod = autoRenewPeriod;
     }
@@ -577,14 +578,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return autoRenewAccount != null;
     }
 
-    public void setAutoRenewAccount(EntityId autoRenewAccount) {
+    public void setAutoRenewAccount(final EntityId autoRenewAccount) {
         throwIfImmutable("Cannot change this token's auto renewal account if it's immutable.");
         this.autoRenewAccount = autoRenewAccount;
     }
 
-    public void adjustTotalSupplyBy(long amount) {
+    public void adjustTotalSupplyBy(final long amount) {
         throwIfImmutable("Cannot adjust this token's total supply if it's immutable.");
-        var newTotalSupply = totalSupply + amount;
+        final var newTotalSupply = totalSupply + amount;
         if (newTotalSupply < 0) {
             throw new IllegalArgumentException(
                     String.format(
@@ -631,7 +632,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return pauseKey;
     }
 
-    public void setTotalSupply(long totalSupply) {
+    public void setTotalSupply(final long totalSupply) {
         throwIfImmutable("Cannot change this token's total supply if it's immutable.");
         this.totalSupply = totalSupply;
     }
@@ -640,17 +641,17 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return memo;
     }
 
-    public void setMemo(String memo) {
+    public void setMemo(final String memo) {
         throwIfImmutable("Cannot change this token's memo if it's immutable.");
         this.memo = memo;
     }
 
-    public void setAccountsFrozenByDefault(boolean accountsFrozenByDefault) {
+    public void setAccountsFrozenByDefault(final boolean accountsFrozenByDefault) {
         throwIfImmutable("Cannot change this token's default frozen status if it's immutable.");
         this.accountsFrozenByDefault = accountsFrozenByDefault;
     }
 
-    public void setAccountsKycGrantedByDefault(boolean accountsKycGrantedByDefault) {
+    public void setAccountsKycGrantedByDefault(final boolean accountsKycGrantedByDefault) {
         throwIfImmutable("Cannot change this token's default Kyc status if it's immutable.");
         this.accountsKycGrantedByDefault = accountsKycGrantedByDefault;
     }
@@ -659,7 +660,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return lastUsedSerialNumber;
     }
 
-    public void setLastUsedSerialNumber(long serialNum) {
+    public void setLastUsedSerialNumber(final long serialNum) {
         throwIfImmutable("Cannot change this token's last used serial number if it's immutable.");
         this.lastUsedSerialNumber = serialNum;
     }
@@ -668,12 +669,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return tokenType;
     }
 
-    public void setTokenType(TokenType tokenType) {
+    public void setTokenType(final TokenType tokenType) {
         throwIfImmutable("Cannot change this token's token type if it's immutable.");
         this.tokenType = tokenType;
     }
 
-    public void setTokenType(int tokenTypeInt) {
+    public void setTokenType(final int tokenTypeInt) {
         throwIfImmutable("Cannot change this token's token type through value if it's immutable.");
         this.tokenType = TokenType.values()[tokenTypeInt];
     }
@@ -682,12 +683,12 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return supplyType;
     }
 
-    public void setSupplyType(TokenSupplyType supplyType) {
+    public void setSupplyType(final TokenSupplyType supplyType) {
         throwIfImmutable("Cannot change this token's supply type if it's immutable.");
         this.supplyType = supplyType;
     }
 
-    public void setSupplyType(int supplyTypeInt) {
+    public void setSupplyType(final int supplyTypeInt) {
         throwIfImmutable("Cannot change this token's supply type through value if it's immutable.");
         this.supplyType = TokenSupplyType.values()[supplyTypeInt];
     }
@@ -696,7 +697,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return maxSupply;
     }
 
-    public void setMaxSupply(long maxSupply) {
+    public void setMaxSupply(final long maxSupply) {
         throwIfImmutable("Cannot change this token's max supply if it's immutable.");
         this.maxSupply = maxSupply;
     }
@@ -705,14 +706,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         return feeSchedule;
     }
 
-    public void setFeeSchedule(List<FcCustomFee> feeSchedule) {
+    public void setFeeSchedule(final List<FcCustomFee> feeSchedule) {
         throwIfImmutable("Cannot change this token's fee schedule if it's immutable.");
         this.feeSchedule = feeSchedule;
     }
 
     public List<CustomFee> grpcFeeSchedule() {
         final List<CustomFee> grpcList = new ArrayList<>();
-        for (var customFee : feeSchedule) {
+        for (final var customFee : feeSchedule) {
             grpcList.add(customFee.asGrpc());
         }
         return grpcList;
@@ -780,7 +781,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     @VisibleForTesting
-    public void setFeeScheduleFrom(List<CustomFee> grpcFeeSchedule) {
+    public void setFeeScheduleFrom(final List<CustomFee> grpcFeeSchedule) {
         throwIfImmutable("Cannot change this token's fee schedule from grpc if it's immutable.");
         feeSchedule = grpcFeeSchedule.stream().map(FcCustomFee::fromGrpc).toList();
     }
@@ -804,7 +805,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     @Override
-    public void setKey(EntityNum phi) {
+    public void setKey(final EntityNum phi) {
         this.number = phi.intValue();
     }
 }

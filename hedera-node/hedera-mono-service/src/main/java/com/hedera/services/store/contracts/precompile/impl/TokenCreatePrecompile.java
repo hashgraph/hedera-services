@@ -85,6 +85,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -98,7 +99,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Executes the logic of creating a token from {@link HTSPrecompiledContract}.
@@ -369,7 +369,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         verifySolidityInput();
         try {
             replaceInheritedProperties();
-        } catch (DecoderException e) {
+        } catch (final DecoderException e) {
             throw new InvalidTransactionException(FAIL_INVALID);
         }
         transactionBody = syntheticTxnFactory.createTokenCreate(tokenCreateOp);
@@ -427,7 +427,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) {
+    public long getGasRequirement(final long blockTimestamp) {
         return getMinimumFeeInTinybars(Timestamp.newBuilder().setSeconds(blockTimestamp).build());
     }
 
@@ -539,7 +539,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         }
     }
 
-    private void replaceInheritedKeysWithSenderKey(AccountID parentId) throws DecoderException {
+    private void replaceInheritedKeysWithSenderKey(final AccountID parentId)
+            throws DecoderException {
         tokenCreateOp.setAllInheritedKeysTo(
                 (JKey) ledgers.accounts().get(parentId, AccountProperty.KEY));
     }
@@ -610,8 +611,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
      *
      * <p><b>Important: </b>This is an old version of this method and is superseded by
      * decodeFungibleCreateV2(). The selector for this function is derived from:
-     * createFungibleToken((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address))[],
-     * (uint32,address,uint32)),uint256,uint256)
+     * createFungibleToken((string,string,address,string,bool,uint32,bool,(uint256,(bool,address,bytes,bytes,address)
+     * )[], (uint32,address,uint32)),uint256,uint256)
      *
      * @param input encoded bytes containing selector and input parameters
      * @param aliasResolver function used to resolve aliases
@@ -632,7 +633,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static TokenCreateWrapper decodeTokenCreateWithoutFees(
-            @NotNull final Tuple tokenCreateStruct,
+            @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final BigInteger initSupply,
             final BigInteger decimals,
@@ -642,7 +643,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static TokenCreateWrapper decodeTokenCreateWithoutFeesV2(
-            @NotNull final Tuple tokenCreateStruct,
+            @NonNull final Tuple tokenCreateStruct,
             final boolean isFungible,
             final BigInteger initSupply,
             final BigInteger decimals,
@@ -652,11 +653,11 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperFungible(
-            @NotNull Tuple tokenCreateStruct,
-            boolean isFungible,
-            BigInteger initSupply,
-            BigInteger decimals,
-            UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple tokenCreateStruct,
+            final boolean isFungible,
+            final BigInteger initSupply,
+            final BigInteger decimals,
+            final UnaryOperator<byte[]> aliasResolver) {
         final var tokenName = (String) tokenCreateStruct.get(0);
         final var tokenSymbol = (String) tokenCreateStruct.get(1);
         final var tokenTreasury =
@@ -703,9 +704,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     private static TokenCreateWrapper getTokenCreateWrapperFungibleWithFees(
-            Bytes input,
-            UnaryOperator<byte[]> aliasResolver,
-            Bytes tokenCreateFungibleWithFeesSelector) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Bytes tokenCreateFungibleWithFeesSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
@@ -728,7 +729,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static List<FixedFeeWrapper> decodeFixedFees(
-            @NotNull final Tuple[] fixedFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple[] fixedFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<FixedFeeWrapper> fixedFees = new ArrayList<>(fixedFeesTuples.length);
         for (final var fixedFeeTuple : fixedFeesTuples) {
             final var amount = (long) fixedFeeTuple.get(0);
@@ -749,7 +750,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static List<FractionalFeeWrapper> decodeFractionalFees(
-            @NotNull final Tuple[] fractionalFeesTuples,
+            @NonNull final Tuple[] fractionalFeesTuples,
             final UnaryOperator<byte[]> aliasResolver) {
         final List<FractionalFeeWrapper> fractionalFees =
                 new ArrayList<>(fractionalFeesTuples.length);
@@ -792,7 +793,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static List<RoyaltyFeeWrapper> decodeRoyaltyFees(
-            @NotNull final Tuple[] royaltyFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple[] royaltyFeesTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<RoyaltyFeeWrapper> decodedRoyaltyFees =
                 new ArrayList<>(royaltyFeesTuples.length);
         for (final var royaltyFeeTuple : royaltyFeesTuples) {
@@ -912,8 +913,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
      *
      * <p><b>Important: </b>This is the latest version and supersedes decodeNonFungibleCreateV2().
      * The selector for this function is derived from:
-     * createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],
-     * (uint32,address,uint32)))
+     * createNonFungibleToken((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,
+     * address))[], (uint32,address,uint32)))
      *
      * @param input encoded bytes containing selector and input parameters
      * @param aliasResolver function used to resolve aliases
@@ -982,9 +983,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     private static TokenCreateWrapper getTokenCreateWrapper(
-            Bytes input,
-            UnaryOperator<byte[]> aliasResolver,
-            Bytes tokenCreateNonFungibleWithFeesSelector) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Bytes tokenCreateNonFungibleWithFeesSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,

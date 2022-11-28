@@ -26,9 +26,9 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,8 +43,8 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 
     @Inject
     public GetContractInfoResourceUsage(
-            AliasManager aliasManager,
-            GlobalDynamicProperties dynamicProperties,
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator) {
         this.aliasManager = aliasManager;
         this.dynamicProperties = dynamicProperties;

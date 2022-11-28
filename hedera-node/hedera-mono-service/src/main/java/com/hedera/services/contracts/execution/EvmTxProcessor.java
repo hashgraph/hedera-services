@@ -31,12 +31,12 @@ import com.hedera.services.store.contracts.HederaMutableWorldState;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.stream.proto.SidecarType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -188,7 +188,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             // Don't let a resource limit exception propagate, since then we charge no gas
             try {
                 updater.commit();
-            } catch (ResourceLimitException e) {
+            } catch (final ResourceLimitException e) {
                 // Consume all gas on resource exhaustion, using a clean updater
                 final var feesOnlyUpdater = (HederaWorldState.Updater) worldState.updater();
                 chargeForGas(
@@ -304,7 +304,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         < 0) {
                     // If sender gas price < current gas price, pay the difference from gas
                     // allowance
-                    var senderFee =
+                    final var senderFee =
                             Wei.of(
                                     userOfferedGasPrice
                                             .multiply(BigInteger.valueOf(gasLimit))

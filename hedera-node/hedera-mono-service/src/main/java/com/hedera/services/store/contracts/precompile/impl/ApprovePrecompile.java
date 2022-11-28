@@ -55,10 +55,10 @@ import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
-import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -221,7 +221,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
                         transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                         transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
                         grpcOperatorId);
-            } catch (InvalidTransactionException e) {
+            } catch (final InvalidTransactionException e) {
                 throw new InvalidTransactionException(e.getResponseCode(), true);
             }
         }
@@ -235,7 +235,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         if (isNftApprovalRevocation()) {
             return pricingUtils.getMinimumPriceInTinybars(DELETE_NFT_APPROVE, consensusTime);
         } else {
@@ -259,7 +259,7 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             final TokenID impliedTokenId,
             final boolean isFungible,
             final UnaryOperator<byte[]> aliasResolver,
-            WorldLedgers ledgers) {
+            final WorldLedgers ledgers) {
 
         final var offset = impliedTokenId == null ? 1 : 0;
         final Tuple decodedArguments;

@@ -33,9 +33,9 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -53,24 +53,27 @@ public class GetBytecodeAnswer implements AnswerService {
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getContractGetBytecode().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(
                 query.getContractGetBytecode().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        var op = query.getContractGetBytecode();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final var op = query.getContractGetBytecode();
         final var target = EntityIdUtils.unaliased(op.getContractID(), aliasManager);
 
-        var response = ContractGetBytecodeResponse.newBuilder();
-        var type = op.getHeader().getResponseType();
+        final var response = ContractGetBytecodeResponse.newBuilder();
+        final var type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
             response.setBytecode(ByteString.copyFrom(EMPTY_BYTECODE));
@@ -92,7 +95,7 @@ public class GetBytecodeAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         final var id = unaliased(query.getContractGetBytecode().getContractID(), aliasManager);
 
         return validator.queryableContractStatus(id, view.contracts());
@@ -104,15 +107,15 @@ public class GetBytecodeAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getContractGetBytecodeResponse()
                 .getHeader()
                 .getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        var paymentTxn = query.getContractGetBytecode().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final var paymentTxn = query.getContractGetBytecode().getHeader().getPayment();
         return Optional.ofNullable(uncheckedFrom(paymentTxn));
     }
 }
