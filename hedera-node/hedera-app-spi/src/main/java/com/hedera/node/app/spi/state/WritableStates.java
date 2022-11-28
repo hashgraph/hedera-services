@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface WritableStates {
     /**
@@ -30,6 +30,6 @@ public interface WritableStates {
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @Nonnull
-    <K, V> WritableState<K, V> get(@Nonnull String stateKey);
+    @NonNull
+    <K, V> WritableState<K, V> get(@NonNull String stateKey);
 }

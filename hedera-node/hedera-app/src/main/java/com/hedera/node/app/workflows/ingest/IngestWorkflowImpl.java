@@ -17,7 +17,6 @@ package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 
 /**

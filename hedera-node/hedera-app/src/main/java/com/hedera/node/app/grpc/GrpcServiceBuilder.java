@@ -18,6 +18,7 @@ package com.hedera.node.app.grpc;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import io.helidon.grpc.core.MarshallerSupplier;
 import io.helidon.grpc.server.ServiceDescriptor;
@@ -25,7 +26,6 @@ import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

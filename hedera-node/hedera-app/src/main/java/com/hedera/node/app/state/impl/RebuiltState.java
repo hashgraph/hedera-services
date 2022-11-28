@@ -20,7 +20,6 @@ import com.hedera.node.app.state.merkle.HederaStateImpl;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.fchashmap.FCHashMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Map;
 import java.util.Objects;
 

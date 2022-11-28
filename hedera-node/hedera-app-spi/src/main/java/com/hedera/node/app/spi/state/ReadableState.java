@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.spi.state;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 
 /**
  * Provides access to key/value state for a service implementation. This interface is implemented by
@@ -40,7 +40,7 @@ public interface ReadableState<K, V> {
      * @return The state key. This will never be null, and will always be the same value for an
      *     instance of {@link ReadableState}.
      */
-    @Nonnull
+    @NonNull
     String getStateKey();
 
     /**
@@ -49,7 +49,9 @@ public interface ReadableState<K, V> {
      * @param key The key. Cannot be null, otherwise an exception is thrown.
      * @return true if the key exists in the state.
      */
-    boolean contains(@Nonnull K key);
+    default boolean contains(@NonNull K key) {
+        return get(key).isPresent();
+    }
 
     /**
      * Gets the value associated with the given key in a <strong>READ-ONLY</strong> way. The
@@ -61,6 +63,6 @@ public interface ReadableState<K, V> {
      * @return A non-null optional. It may be empty if there is no value for this associated key.
      * @throws NullPointerException if the key is null.
      */
-    @Nonnull
-    Optional<V> get(@Nonnull K key);
+    @NonNull
+    Optional<V> get(@NonNull K key);
 }

@@ -19,7 +19,6 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.swirlds.common.metrics.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 import java.util.Objects;
 

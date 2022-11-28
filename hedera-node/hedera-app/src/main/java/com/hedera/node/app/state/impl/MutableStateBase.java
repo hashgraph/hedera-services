@@ -18,7 +18,6 @@ package com.hedera.node.app.state.impl;
 import com.hedera.node.app.spi.state.WritableState;
 import com.swirlds.common.merkle.MerkleNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.*;
 
 /**
@@ -34,6 +33,9 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     /** A set of all keys (and their implicit values) removed by this mutable state */
     private final Set<K> removed = new HashSet<>();
 
+    /** A set of all keys (and their implicit values) PUT by this mutable state */
+    private final Set<K> put = new HashSet<>();
+
     /**
      * Create a new StateBase.
      *
@@ -48,6 +50,10 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
         for (final K key : removed) {
             removeFromDataSource(key);
         }
+
+        for (final K key : put) {
+            putIntoDataSource(key, modified.get(key));
+        }
     }
 
     /**
@@ -61,6 +67,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
         super.reset();
         modified.clear();
         removed.clear();
+        put.clear();
     }
 
     /** {@inheritDoc} */
@@ -84,6 +91,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
         modified.put(key, value);
+        put.add(key);
         removed.remove(key);
     }
 
@@ -91,6 +99,7 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     @Override
     public final void remove(@NonNull final K key) {
         modified.remove(key);
+        put.remove(key);
         removed.add(key);
     }
 

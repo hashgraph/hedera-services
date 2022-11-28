@@ -23,8 +23,9 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.Objects;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * An implementation of the {@link StateRegistry} based on merkle tree. Each instance of this class
@@ -54,17 +55,19 @@ public final class StateRegistryImpl implements StateRegistry {
     public StateRegistryImpl(
             @NonNull ServiceStateNode serviceMerkle,
             @NonNull SoftwareVersion currentVersion,
-            @NonNull SoftwareVersion previousVersion) {
+            @Nullable SoftwareVersion previousVersion) {
         this.serviceMerkle = Objects.requireNonNull(serviceMerkle);
         this.currentVersion = Objects.requireNonNull(currentVersion);
-        this.previousVersion = Objects.requireNonNull(previousVersion);
+        this.previousVersion = previousVersion;
     }
 
+    @NonNull
     @Override
     public SoftwareVersion getCurrentVersion() {
         return currentVersion;
     }
 
+    @Nullable
     @Override
     public SoftwareVersion getExistingVersion() {
         return previousVersion;
@@ -80,9 +83,8 @@ public final class StateRegistryImpl implements StateRegistry {
 
     @Override
     public StateDefinition defineNewState(@NonNull String stateKey) {
-        // TODO Return a builder which, upon "define", will register a new thing here.
-        // serviceMerkle.put(stateKey, newState.merkleNode())
-        return new StateDefinitionBuilder(stateKey);
+        return new StateDefinitionBuilder(
+                stateKey, (merkleNode) -> serviceMerkle.put(stateKey, merkleNode));
     }
 
     @Override

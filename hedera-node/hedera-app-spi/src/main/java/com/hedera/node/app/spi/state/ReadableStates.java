@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.spi.state;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface ReadableStates {
     /**
@@ -30,6 +30,6 @@ public interface ReadableStates {
      * @throws NullPointerException if stateKey is null.
      * @throws IllegalArgumentException if the state cannot be found.
      */
-    @Nonnull
-    <K, V, S extends ReadableState<K, V>> S get(@Nonnull String stateKey);
+    @NonNull
+    <K, V, S extends ReadableState<K, V>> S get(@NonNull String stateKey);
 }

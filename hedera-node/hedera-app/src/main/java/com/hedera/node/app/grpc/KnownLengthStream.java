@@ -17,7 +17,6 @@ package com.hedera.node.app.grpc;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
-
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;

@@ -32,11 +32,10 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class HederaStateImpl extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2, HederaState {

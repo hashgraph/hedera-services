@@ -21,7 +21,7 @@ import com.swirlds.jasperdb.VirtualLeafRecordSerializer;
 import com.swirlds.jasperdb.files.hashmap.KeySerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Creates new {@link WritableState} definition using a fluent-API.
@@ -40,8 +40,8 @@ public interface StateDefinition {
      * @param <K> The key type to use for the in memory state
      * @param <V> The value type to use for the in memory state
      */
-    @Nonnull
-    <K, V extends MerkleNode & Keyed<K>> InMemoryDefinition<K, V> inMemory();
+    @NonNull
+    <K, V extends MerkleNode & Keyed<K>> InMemoryDefinition inMemory();
 
     /**
      * Create a new {@link OnDiskDefinition} for a {@link WritableState}.
@@ -51,26 +51,23 @@ public interface StateDefinition {
      * @param <K> The key type to use for the on disk state
      * @param <V> The value type to use for the on disk state
      */
-    @Nonnull
+    @NonNull
     <K extends VirtualKey<? super K>, V extends VirtualValue> OnDiskDefinition<K, V> onDisk(
-            @Nonnull String label);
+            @NonNull String label);
 
-    /**
-     * A fluent-API for defining configuration for in-memory state.
-     *
-     * @param <K> The key type to use for the in memory state
-     * @param <V> The value type to use for the in memory state
-     */
-    interface InMemoryDefinition<K, V extends MerkleNode & Keyed<K>> {
+    /** A fluent-API for defining configuration for in-memory state. */
+    interface InMemoryDefinition {
         /**
          * Finishes the definition of this state.
          *
+         * @param <K> The key type to use for the in memory state
+         * @param <V> The value type to use for the in memory state
          * @return A new {@link WritableState} based on the definition. This state should
          *     <b>NEVER</b> be held onto, it exists so the {@link StateRegistryCallback} can use it
          *     for migration purposes.
          */
-        @Nonnull
-        WritableState<K, V> define();
+        @NonNull
+        <K, V extends MerkleNode & Keyed<K>> WritableState<K, V> define();
     }
 
     /**
@@ -86,8 +83,8 @@ public interface StateDefinition {
          * @param serializer The serializer to use.
          * @return a reference to this definer.
          */
-        @Nonnull
-        OnDiskDefinition<K, V> keySerializer(@Nonnull KeySerializer<K> serializer);
+        @NonNull
+        OnDiskDefinition<K, V> keySerializer(@NonNull KeySerializer<K> serializer);
 
         /**
          * The serializer to use with the value type, for storing on disk.
@@ -95,9 +92,9 @@ public interface StateDefinition {
          * @param serializer The serializer to use.
          * @return a reference to this definer.
          */
-        @Nonnull
+        @NonNull
         OnDiskDefinition<K, V> valueSerializer(
-                @Nonnull VirtualLeafRecordSerializer<K, V> serializer);
+                @NonNull VirtualLeafRecordSerializer<K, V> serializer);
 
         /**
          * Finishes the definition of this state.
@@ -106,7 +103,7 @@ public interface StateDefinition {
          *     <b>NEVER</b> be held onto, it exists so the {@link StateRegistryCallback} can use it
          *     for migration purposes.
          */
-        @Nonnull
+        @NonNull
         WritableState<K, V> define();
     }
 }

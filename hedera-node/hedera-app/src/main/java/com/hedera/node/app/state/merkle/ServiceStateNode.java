@@ -18,9 +18,9 @@ package com.hedera.node.app.state.merkle;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import java.util.Objects;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
 
 /**
  * An internal merkle node acting as the root for <b>all</b> state related to a particular service

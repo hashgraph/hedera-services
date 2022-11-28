@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.grpc;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An implementation of a gRPC marshaller which does nothing but pass through byte arrays. A single

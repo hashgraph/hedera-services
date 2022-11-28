@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.spi.state;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nonnull;
 
 /**
  * A {@link ReadableState} who's values can be mutated.
@@ -39,8 +39,8 @@ public interface WritableState<K, V> extends ReadableState<K, V> {
      * @return A non-null optional. It may be empty if there is no value for this associated key.
      * @throws NullPointerException if the key is null.
      */
-    @Nonnull
-    Optional<V> getForModify(@Nonnull K key);
+    @NonNull
+    Optional<V> getForModify(@NonNull K key);
 
     /**
      * Adds a new value to the store, or updates an existing value. It is generally preferred to use
@@ -51,7 +51,7 @@ public interface WritableState<K, V> extends ReadableState<K, V> {
      * @param value The value. Cannot be null.
      * @throws NullPointerException if the key or value is null.
      */
-    void put(@Nonnull K key, @Nonnull V value);
+    void put(@NonNull K key, @NonNull V value);
 
     /**
      * Removes the given key and its associated value from the map. Subsequent calls to {@link
@@ -61,7 +61,7 @@ public interface WritableState<K, V> extends ReadableState<K, V> {
      * @param key The key representing the key/value to remove. Cannot be null.
      * @throws NullPointerException if the key or value is null.
      */
-    void remove(@Nonnull K key);
+    void remove(@NonNull K key);
 
     /**
      * Gets a {@link Set} of all keys that have been modified through this {@link WritableState}.
@@ -70,6 +70,6 @@ public interface WritableState<K, V> extends ReadableState<K, V> {
      *
      * @return A non-null set of modified keys, which may be empty.
      */
-    @Nonnull
+    @NonNull
     Set<K> modifiedKeys();
 }

@@ -40,7 +40,7 @@ public interface StateRegistry {
      * @return The version of the system's state that was loaded, or {@link
      *     SoftwareVersion#NO_VERSION}.
      */
-    @NonNull
+    @Nullable
     SoftwareVersion getExistingVersion();
 
     /**

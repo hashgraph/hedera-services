@@ -20,9 +20,9 @@ import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A

@@ -18,7 +18,6 @@ package com.hedera.node.app.state.impl;
 import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.WritableState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.*;
 
 /**
@@ -36,7 +35,8 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
      * rather than going to the underlying merkle data structures to read the data a second time, we
      * simply return it from the cache. We also keep track of all keys read, which is critical for
      * dealing with validating what we read during pre-handle with what may have changed before we
-     * got to handle transaction.
+     * got to handle transaction. If the value is "null", this means it was NOT FOUND when we looked
+     * it up.
      */
     private final Map<K, V> readCache = new HashMap<>();
 
@@ -60,18 +60,16 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
     @Override
     @NonNull
     public final Optional<V> get(@NonNull K key) {
-        Objects.requireNonNull(key);
-        return Optional.ofNullable(
-                readCache.computeIfAbsent(key, ignore -> readFromDataSource(key)));
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public final boolean contains(@NonNull K key) {
         // We need to cache the item because somebody may perform business logic basic on this
         // contains call, even if they never need the value itself!
-        final var item = readCache.computeIfAbsent(key, ignore -> readFromDataSource(key));
-        return item != null;
+        Objects.requireNonNull(key);
+        if (readCache.containsKey(key)) {
+            return Optional.ofNullable(readCache.get(key));
+        } else {
+            final var value = readFromDataSource(key);
+            readCache.put(key, value);
+            return Optional.ofNullable(readCache.get(key));
+        }
     }
 
     /**

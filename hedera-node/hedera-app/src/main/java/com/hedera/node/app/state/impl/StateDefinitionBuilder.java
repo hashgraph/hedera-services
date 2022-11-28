@@ -27,20 +27,24 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 class StateDefinitionBuilder implements StateDefinition {
     private final String stateKey;
+    private final Consumer<MerkleNode> onDefine;
 
-    StateDefinitionBuilder(@NonNull final String stateKey) {
+    StateDefinitionBuilder(
+            @NonNull final String stateKey, @Nullable final Consumer<MerkleNode> onDefine) {
         this.stateKey = Objects.requireNonNull(stateKey);
+        this.onDefine = onDefine;
     }
 
     @NonNull
     @Override
-    public <K, V extends MerkleNode & Keyed<K>> InMemoryDefinition<K, V> inMemory() {
-        return new InMemoryBuilderImpl<K, V>(stateKey);
+    public <K, V extends MerkleNode & Keyed<K>> InMemoryDefinition inMemory() {
+        return new InMemoryBuilderImpl(stateKey);
     }
 
     @NonNull
@@ -53,12 +57,8 @@ class StateDefinitionBuilder implements StateDefinition {
     /**
      * An implementation for {@link
      * com.hedera.node.app.spi.state.StateDefinition.InMemoryDefinition}.
-     *
-     * @param <K> The key type
-     * @param <V> The value type
      */
-    private static final class InMemoryBuilderImpl<K, V extends MerkleNode & Keyed<K>>
-            implements InMemoryDefinition<K, V> {
+    private final class InMemoryBuilderImpl implements InMemoryDefinition {
         private final String stateKey;
 
         InMemoryBuilderImpl(String stateKey) {
@@ -67,8 +67,12 @@ class StateDefinitionBuilder implements StateDefinition {
 
         @NonNull
         @Override
-        public WritableState<K, V> define() {
-            return new InMemoryState<>(stateKey, new MerkleMap<>());
+        public <K, V extends MerkleNode & Keyed<K>> WritableState<K, V> define() {
+            final var merkleMap = new MerkleMap<K, V>();
+            if (onDefine != null) {
+                onDefine.accept(merkleMap);
+            }
+            return new InMemoryState<>(stateKey, merkleMap);
         }
     }
 
@@ -78,8 +82,7 @@ class StateDefinitionBuilder implements StateDefinition {
      * @param <K> The key type
      * @param <V> The value type
      */
-    private static final class OnDiskBuilderImpl<
-                    K extends VirtualKey<? super K>, V extends VirtualValue>
+    private final class OnDiskBuilderImpl<K extends VirtualKey<? super K>, V extends VirtualValue>
             implements OnDiskDefinition<K, V> {
         private final String stateKey;
         private final String label;
@@ -95,7 +98,11 @@ class StateDefinitionBuilder implements StateDefinition {
         @NonNull
         @Override
         public WritableState<K, V> define() {
-            return new OnDiskState<>(stateKey, new VirtualMap<>(label, builder));
+            final var virtualMap = new VirtualMap<>(label, builder);
+            if (onDefine != null) {
+                onDefine.accept(virtualMap);
+            }
+            return new OnDiskState<>(stateKey, virtualMap);
         }
 
         @NonNull
