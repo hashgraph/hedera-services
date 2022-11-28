@@ -15,9 +15,9 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
-import static com.hedera.services.sysfiles.ParsingUtils.fromTwoPartDelimited;
+import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
+import static com.hedera.node.app.hapi.utils.sysfiles.ParsingUtils.fromTwoPartDelimited;
 
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -152,7 +152,7 @@ public record ContractStoragePriceTiers(
             final long requestedKvPairs,
             final long contractKvPairsUsed) {
         assertValidArgs(requestedKvPairs, requestedLifetime);
-        if (contractKvPairsUsed < freeTierLimit) {
+        if (requestedKvPairs == 0 || contractKvPairsUsed < freeTierLimit) {
             return 0;
         }
 
@@ -193,8 +193,8 @@ public record ContractStoragePriceTiers(
     }
 
     private void assertValidArgs(final long requestedKvPairs, final long requestedLifetime) {
-        if (requestedKvPairs <= 0) {
-            throw new IllegalArgumentException("Must request a positive number of slots");
+        if (requestedKvPairs < 0) {
+            throw new IllegalArgumentException("Must request a non-negative number of slots");
         }
         if (requestedLifetime < 0) {
             throw new IllegalArgumentException("Must request a non-negative lifetime");
@@ -202,14 +202,14 @@ public record ContractStoragePriceTiers(
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ContractStoragePriceTiers that = (ContractStoragePriceTiers) o;
+        final ContractStoragePriceTiers that = (ContractStoragePriceTiers) o;
         return freeTierLimit == that.freeTierLimit
                 && maxTotalKvPairs == that.maxTotalKvPairs
                 && referenceLifetime == that.referenceLifetime
@@ -276,7 +276,7 @@ public record ContractStoragePriceTiers(
         return Long.parseLong(s) * scale;
     }
 
-    private static long nonDegenerateDiv(long dividend, long divisor) {
+    private static long nonDegenerateDiv(final long dividend, final long divisor) {
         return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
     }
 }

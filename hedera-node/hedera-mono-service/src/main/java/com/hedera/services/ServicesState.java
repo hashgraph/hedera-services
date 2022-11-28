@@ -31,8 +31,25 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
-import com.hedera.services.state.merkle.*;
-import com.hedera.services.state.migration.*;
+import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.services.state.merkle.MerkleAccountState;
+import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.services.state.merkle.MerkleScheduledTransactions;
+import com.hedera.services.state.merkle.MerkleSpecialFiles;
+import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.services.state.merkle.MerkleUniqueToken;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.MapMigrationToDisk;
+import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.services.state.migration.StakingInfoMapBuilder;
+import com.hedera.services.state.migration.StateChildIndices;
+import com.hedera.services.state.migration.ToDiskMigrations;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
+import com.hedera.services.state.migration.VirtualMapDataAccess;
 import com.hedera.services.state.org.StateMetadata;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
@@ -50,13 +67,20 @@ import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.system.*;
+import com.swirlds.common.system.InitTrigger;
+import com.swirlds.common.system.NodeId;
+import com.swirlds.common.system.Platform;
+import com.swirlds.common.system.Round;
+import com.swirlds.common.system.SoftwareVersion;
+import com.swirlds.common.system.SwirldDualState;
+import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
@@ -70,6 +94,8 @@ import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualMapMigration;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -78,10 +104,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
@@ -210,7 +234,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable SoftwareVersion deserializedVersion) {
+            @Nullable final SoftwareVersion deserializedVersion) {
         if (trigger == GENESIS) {
             genesisInit(platform, addressBook, dualState);
         } else {
@@ -264,7 +288,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final AddressBook addressBook,
             final SwirldDualState dualState,
             final InitTrigger trigger,
-            @NotNull final SoftwareVersion deserializedVersion) {
+            @NonNull final SoftwareVersion deserializedVersion) {
         log.info("Init called on Services node {} WITH Merkle saved state", platform.getSelfId());
 
         // Immediately override the address book from the saved state
@@ -323,7 +347,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                             .initialHash(initialHash)
                             .platform(platform)
                             .consoleCreator(SwirldsGui::createConsole)
-                            .crypto(platform.getCryptography())
+                            .crypto(CryptographyHolder.get())
                             .selfId(selfId)
                             .build();
             APPS.save(selfId, app);
@@ -606,7 +630,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             OnDiskTokenRel::from;
 
     @VisibleForTesting
-    void migrateFrom(@NotNull final SoftwareVersion deserializedVersion) {
+    void migrateFrom(@NonNull final SoftwareVersion deserializedVersion) {
         // Keep the MutableStateChildren up-to-date (no harm done if they are already are)
         final var app = getMetadata().app();
         app.workingState().updatePrimitiveChildrenFrom(this);

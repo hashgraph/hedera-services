@@ -24,13 +24,13 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * The key of a key/value pair used by a Smart Contract for storage purposes.
@@ -68,16 +68,16 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         return new ContractKey(accountNum, key.toArray());
     }
 
-    public ContractKey(long contractId, long key) {
+    public ContractKey(final long contractId, final long key) {
         setContractId(contractId);
         setKey(key);
     }
 
-    public ContractKey(long contractId, byte[] data) {
+    public ContractKey(final long contractId, final byte[] data) {
         this(contractId, KeyPackingUtils.asPackedInts(data));
     }
 
-    public ContractKey(long contractId, int[] key) {
+    public ContractKey(final long contractId, final int[] key) {
         setContractId(contractId);
         setKey(key);
     }
@@ -90,7 +90,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         return contractId;
     }
 
-    public void setContractId(long contractId) {
+    public void setContractId(final long contractId) {
         this.contractId = contractId;
         this.contractIdNonZeroBytes = KeyPackingUtils.computeNonZeroBytes(contractId);
     }
@@ -100,16 +100,16 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     public BigInteger getKeyAsBigInteger() {
-        ByteBuffer buf = ByteBuffer.allocate(32);
+        final ByteBuffer buf = ByteBuffer.allocate(32);
         buf.asIntBuffer().put(uint256Key);
         return new BigInteger(buf.array());
     }
 
-    public void setKey(long key) {
+    public void setKey(final long key) {
         setKey(new int[] {0, 0, 0, 0, 0, 0, (int) (key >> Integer.SIZE), (int) key});
     }
 
-    public void setKey(int[] uint256Key) {
+    public void setKey(final int[] uint256Key) {
         if (uint256Key == null || uint256Key.length != 8) {
             throw new IllegalArgumentException(
                     "The key cannot be null and the key's packed int array size must be 8");
@@ -124,10 +124,10 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ContractKey that = (ContractKey) o;
+        final ContractKey that = (ContractKey) o;
         return contractId == that.contractId && Arrays.equals(uint256Key, that.uint256Key);
     }
 
@@ -163,11 +163,11 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         serializeReturningBytesWritten(out);
     }
 
-    public int serializeReturningBytesWritten(SerializableDataOutputStream out) throws IOException {
+    public int serializeReturningBytesWritten(final SerializableDataOutputStream out) throws IOException {
         out.write(getContractIdNonZeroBytesAndUint256KeyNonZeroBytes());
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             out.write((byte) (contractId >> (b * 8)));
@@ -191,7 +191,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int i) throws IOException {
         final byte packedSize = in.readByte();
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
@@ -204,7 +204,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public void deserialize(ByteBuffer buf, int i) throws IOException {
+    public void deserialize(final ByteBuffer buf, final int i) throws IOException {
         final byte packedSize = buf.get();
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
@@ -223,7 +223,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      * @param buf The buffer to read from, its position will be restored after we read
      * @return the size in byte for the key contained in buffer.
      */
-    public static int readKeySize(ByteBuffer buf) {
+    public static int readKeySize(final ByteBuffer buf) {
         final byte packedSize = buf.get();
         buf.position(buf.position() - 1); // move position back, like we never read anything
         return 1
@@ -285,7 +285,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      * @param packed byte containing contractIdNonZeroBytes and uint256KeyNonZeroBytes
      * @return contractIdNonZeroBytes
      */
-    static byte getContractIdNonZeroBytesFromPacked(byte packed) {
+    static byte getContractIdNonZeroBytesFromPacked(final byte packed) {
         return (byte) ((Byte.toUnsignedInt(packed) >> 5) + 1);
     }
 
@@ -295,7 +295,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
      * @param packed byte containing contractIdNonZeroBytes and uint256KeyNonZeroBytes
      * @return uint256KeyNonZeroBytes
      */
-    static byte getUint256KeyNonZeroBytesFromPacked(byte packed) {
+    static byte getUint256KeyNonZeroBytesFromPacked(final byte packed) {
         return (byte) ((packed & 0b00011111) + 1);
     }
 
@@ -321,7 +321,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
     }
 
     @Override
-    public int compareTo(@NotNull final ContractKey that) {
+    public int compareTo(@NonNull final ContractKey that) {
         if (this == that) {
             return 0;
         }

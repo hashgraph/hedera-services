@@ -21,17 +21,22 @@ plugins {
 group = "com.hedera.evm"
 description = "Hedera EVM - API"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+}
+
 dependencies {
     api(libs.besu.evm)
-    api(libs.besu.datatypes) {
-        exclude("com.google.code.findbugs", "jsr305")
-    }
+    api(libs.besu.datatypes)
     api(libs.swirlds.common)
     implementation(libs.caffeine)
+    implementation(libs.guava)
     implementation(libs.hapi) {
-        exclude("com.google.code.findbugs", "jsr305")
+        exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
+    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.mockito.jupiter)
 }

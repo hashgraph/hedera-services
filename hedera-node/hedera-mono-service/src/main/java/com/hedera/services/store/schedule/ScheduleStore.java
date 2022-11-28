@@ -22,10 +22,10 @@ import com.hedera.services.store.CreationResult;
 import com.hedera.services.store.Store;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 /** Defines a type able to manage Scheduled entities. */
@@ -47,7 +47,7 @@ public interface ScheduleStore extends Store<ScheduleID, ScheduleVirtualValue> {
 
     void expire(ScheduleID id);
 
-    default ScheduleID resolve(ScheduleID id) {
+    default ScheduleID resolve(final ScheduleID id) {
         return exists(id) ? id : MISSING_SCHEDULE;
     }
 

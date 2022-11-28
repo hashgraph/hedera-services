@@ -16,6 +16,7 @@
 package com.hedera.services.state.expiry.removal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -26,6 +27,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -54,6 +56,16 @@ class AccountGCTest {
                         sigImpactHistorian,
                         treasuryReturns,
                         backingAccounts);
+    }
+
+    @Test
+    void canMarkDetached() {
+        final var account = new OnDiskAccount();
+        given(backingAccounts.getRef(num.toGrpcAccountId())).willReturn(account);
+
+        subject.markDetached(num);
+
+        assertTrue(account.isExpiredAndPendingRemoval());
     }
 
     @Test

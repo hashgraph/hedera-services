@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
@@ -52,7 +53,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -246,7 +246,7 @@ class SolvencyPrecheckTest {
 
     @Test
     void refinesInsufficientPayerBalanceToDetachedResponseIfExpired() {
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean()))
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean()))
                 .willReturn(ACCOUNT_EXPIRED_AND_PENDING_REMOVAL);
         givenInsolventPayer();
         givenValidSigs();
@@ -267,7 +267,7 @@ class SolvencyPrecheckTest {
         givenInsolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
 
@@ -285,7 +285,7 @@ class SolvencyPrecheckTest {
         givenAcceptableFees();
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(+payerBalance);
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
 
         // when:
         var result = subject.assessWithSvcFees(accessorCoveringAllFees);
@@ -299,7 +299,7 @@ class SolvencyPrecheckTest {
         givenSolventPayer();
         givenValidSigs();
         givenAcceptableFees();
-        given(validator.expiryStatusGiven(anyLong(), anyLong(), anyBoolean())).willReturn(OK);
+        given(validator.expiryStatusGiven(anyLong(), anyBoolean(), anyBoolean())).willReturn(OK);
         given(feeCalculator.estimatedNonFeePayerAdjustments(accessorCoveringAllFees, now))
                 .willReturn(-payerBalance);
 

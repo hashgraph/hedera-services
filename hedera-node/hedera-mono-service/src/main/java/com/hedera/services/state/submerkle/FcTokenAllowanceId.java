@@ -22,11 +22,11 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents the key for {@code nftAllowances} and {@code fungibleTokenAllowances} maps in {@code
@@ -81,7 +81,7 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }
@@ -123,7 +123,7 @@ public class FcTokenAllowanceId implements SelfSerializable, Comparable<FcTokenA
     }
 
     @Override
-    public int compareTo(@NotNull final FcTokenAllowanceId that) {
+    public int compareTo(@NonNull final FcTokenAllowanceId that) {
         return new CompareToBuilder()
                 .append(tokenNum, that.tokenNum)
                 .append(spenderNum, that.spenderNum)

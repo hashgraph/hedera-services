@@ -45,8 +45,8 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
-import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -104,7 +104,7 @@ public class TransitionRunner {
      * @param accessor the transaction accessor
      * @return true if the logic was run to completion
      */
-    public boolean tryTransition(@Nonnull TxnAccessor accessor) {
+    public boolean tryTransition(@NonNull final TxnAccessor accessor) {
         final var txn = accessor.getTxn();
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);
@@ -127,9 +127,9 @@ public class TransitionRunner {
                 if (opsWithDefaultSuccessStatus.contains(function)) {
                     txnCtx.setStatus(SUCCESS);
                 }
-            } catch (InvalidTransactionException e) {
+            } catch (final InvalidTransactionException e) {
                 resolveFailure(e, accessor);
-            } catch (Exception processFailure) {
+            } catch (final Exception processFailure) {
                 ids.reclaimProvisionalIds();
                 throw processFailure;
             }

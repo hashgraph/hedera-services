@@ -26,11 +26,11 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
-public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
+public abstract class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     protected final AccountAccessor accountAccessor;
 
-    public AbstractLedgerEvmWorldUpdater(AccountAccessor accountAccessor) {
+    protected AbstractLedgerEvmWorldUpdater(AccountAccessor accountAccessor) {
         this.accountAccessor = accountAccessor;
     }
 
@@ -76,11 +76,15 @@ public class AbstractLedgerEvmWorldUpdater implements WorldUpdater {
 
     @Override
     public WorldUpdater updater() {
-        return null;
+        return this;
     }
 
     @Override
     public Account get(Address address) {
         return new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
+    }
+
+    public boolean isTokenAddress(Address address) {
+        return accountAccessor.isTokenAddress(address);
     }
 }

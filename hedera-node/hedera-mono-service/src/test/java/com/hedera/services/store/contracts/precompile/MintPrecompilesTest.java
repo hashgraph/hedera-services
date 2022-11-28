@@ -61,6 +61,8 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -69,7 +71,6 @@ import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -77,7 +78,6 @@ import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -103,7 +103,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -154,7 +153,6 @@ class MintPrecompilesTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfers;
     @Mock private FeeCalculator feeCalculator;
     @Mock private FeeObject mockFeeObject;
     @Mock private StateView stateView;
@@ -191,12 +189,12 @@ class MintPrecompilesTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenMint,
                 Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -213,7 +211,6 @@ class MintPrecompilesTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfers,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
@@ -231,7 +228,7 @@ class MintPrecompilesTest {
 
     @Test
     void mintFailurePathWorks() {
-        Bytes pretendArguments = givenNonFungibleFrameContext();
+        final Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -272,7 +269,7 @@ class MintPrecompilesTest {
 
     @Test
     void mintRandomFailurePathWorks() {
-        Bytes pretendArguments = givenNonFungibleFrameContext();
+        final Bytes pretendArguments = givenNonFungibleFrameContext();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -308,7 +305,7 @@ class MintPrecompilesTest {
 
     @Test
     void nftMintHappyPathWorks() {
-        Bytes pretendArguments = givenNonFungibleFrameContext();
+        final Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
@@ -368,7 +365,7 @@ class MintPrecompilesTest {
 
     @Test
     void nftMintBadSyntaxWorks() {
-        Bytes pretendArguments = givenNonFungibleFrameContext();
+        final Bytes pretendArguments = givenNonFungibleFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
@@ -413,7 +410,7 @@ class MintPrecompilesTest {
 
     @Test
     void fungibleMintHappyPathWorks() {
-        Bytes pretendArguments = givenFungibleFrameContext();
+        final Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
         givenPricingUtilsContext();
@@ -453,7 +450,7 @@ class MintPrecompilesTest {
 
     @Test
     void mintFailsWithMissingParentUpdater() {
-        Bytes pretendArguments = givenFungibleFrameContext();
+        final Bytes pretendArguments = givenFungibleFrameContext();
         givenLedgers();
         givenFungibleCollaborators();
         givenPricingUtilsContext();
@@ -485,7 +482,7 @@ class MintPrecompilesTest {
 
     @Test
     void fungibleMintFailureAmountLimitOversize() {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         // given:
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -511,7 +508,7 @@ class MintPrecompilesTest {
         // given:
         givenLedgers();
         givenPricingUtilsContext();
-        Bytes pretendArguments = givenFrameContext();
+        final Bytes pretendArguments = givenFrameContext();
         givenFungibleCollaborators();
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
@@ -556,7 +553,7 @@ class MintPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -574,7 +571,7 @@ class MintPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -627,14 +624,14 @@ class MintPrecompilesTest {
     }
 
     private Bytes givenNonFungibleFrameContext() {
-        Bytes pretendArguments = givenFrameContext();
+        final Bytes pretendArguments = givenFrameContext();
         mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(nftMint);
         given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
 
     private Bytes givenFungibleFrameContext() {
-        Bytes pretendArguments = givenFrameContext();
+        final Bytes pretendArguments = givenFrameContext();
         mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
@@ -647,7 +644,7 @@ class MintPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         return Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));

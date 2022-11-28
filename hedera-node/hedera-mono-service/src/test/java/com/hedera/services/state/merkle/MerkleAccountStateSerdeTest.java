@@ -19,6 +19,7 @@ import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0230_V
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_ALPHA_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0250_VERSION;
 import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0270_VERSION;
+import static com.hedera.services.state.merkle.MerkleAccountState.RELEASE_0320_VERSION;
 
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
@@ -59,12 +60,15 @@ public class MerkleAccountStateSerdeTest extends SelfSerializableDataTest<Merkle
             return seededAccount;
         } else {
             final var seededAccount = getExpectedObject(propertySource);
-            if (version < RELEASE_0270_VERSION) {
-                seededAccount.setStakedToMe(0);
-                seededAccount.setDeclineReward(false);
-                seededAccount.setStakePeriodStart(-1);
-                seededAccount.setStakedNum(0);
-                seededAccount.setStakeAtStartOfLastRewardedPeriod(-1);
+            if (version < RELEASE_0320_VERSION) {
+                seededAccount.setExpiredAndPendingRemoval(false);
+                if (version < RELEASE_0270_VERSION) {
+                    seededAccount.setStakedToMe(0);
+                    seededAccount.setDeclineReward(false);
+                    seededAccount.setStakePeriodStart(-1);
+                    seededAccount.setStakedNum(0);
+                    seededAccount.setStakeAtStartOfLastRewardedPeriod(-1);
+                }
             }
             return seededAccount;
         }

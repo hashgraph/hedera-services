@@ -45,13 +45,14 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor {
     private static final int INITIAL_CHANGE_CAPACITY = 32;
@@ -195,7 +196,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private StakeChangeScenario scenarioFor(
-            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes) {
         setCurrentAndNewIds(account, changes);
         return StakeChangeScenario.forCase(curStakedId, newStakedId);
     }
@@ -251,9 +253,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             } else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
                 stakeAtStartOfLastRewardedPeriodUpdates[i] = roundedToHbar(account.totalStake());
             }
+            final var wasRewarded =
+                    rewardsEarned[i] > 0
+                            || (rewardsEarned[i] == 0
+                                    && earnedZeroRewardsBecauseOfZeroStake(account));
             stakePeriodStartUpdates[i] =
                     stakePeriodManager.startUpdateFor(
-                            curStakedId, newStakedId, rewardsEarned[i] > 0, stakeMetaChanged);
+                            curStakedId, newStakedId, wasRewarded, stakeMetaChanged);
         }
     }
 
@@ -283,31 +289,61 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final StakeChangeScenario scenario,
             final Map<AccountProperty, Object> changes,
             final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
+        // Common case that deserves performance optimization
         if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
-            final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
-            final var roundedInitialBalance = roundedToHbar(account.getBalance());
-            // Common case that deserves performance optimization
+            final var finalBalance = finalBalanceGiven(account, changes);
+            final var initialBalance = account.getBalance();
+            final var roundedFinalBalance = roundedToHbar(finalBalance);
+            final var roundedInitialBalance = roundedToHbar(initialBalance);
             final var delta = roundedFinalBalance - roundedInitialBalance;
-            alterStakedToMe(curStakedId, delta, pendingChanges);
+            // Even if the stakee's total stake hasn't changed, we still want to
+            // trigger a reward situation whenever the staker balance changes; c.f.,
+            // https://github.com/hashgraph/hedera-services/issues/4166
+            final var alwaysUpdate = finalBalance != initialBalance;
+            alterStakedToMe(curStakedId, delta, alwaysUpdate, pendingChanges);
         } else {
             if (scenario.withdrawsFromAccount()) {
                 final var roundedInitialBalance = roundedToHbar(account.getBalance());
-                alterStakedToMe(curStakedId, -roundedInitialBalance, pendingChanges);
+                // Always trigger a reward situation for the old stakee when they are
+                // losing an indirect staker, even if it doesn't change their total stake
+                alterStakedToMe(curStakedId, -roundedInitialBalance, true, pendingChanges);
             }
             if (scenario.awardsToAccount()) {
+                // Always trigger a reward situation for the new stakee when they are
+                // losing an indirect staker, even if it doesn't change their total stake
                 final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
-                alterStakedToMe(newStakedId, roundedFinalBalance, pendingChanges);
+                alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }
+    }
+
+    /**
+     * Given an existing account that was in a reward situation and earned zero rewards, checks if
+     * this was because the account had effective stake of zero whole hbars during the rewardable
+     * periods. (The alternative is that it had zero rewardable periods; i.e., it started staking
+     * this period, or the last.)
+     *
+     * <p>This distinction matters because in the case of zero stake, we still want to update the
+     * account's {@code stakePeriodStart} and {@code stakeAtStartOfLastRewardedPeriod}. Otherwise,
+     * we don't want to update {@code stakePeriodStart}; and only want to update {@code
+     * stakeAtStartOfLastRewardedPeriod} if the account began staking in exactly the last period.
+     *
+     * @param account an account presumed to have just earned zero rewards
+     * @return whether the zero rewards were due to having zero stake
+     */
+    private boolean earnedZeroRewardsBecauseOfZeroStake(final HederaAccount account) {
+        return Objects.requireNonNull(account).getStakePeriodStart()
+                < stakePeriodManager.firstNonRewardableStakePeriod();
     }
 
     private void alterStakedToMe(
             final long accountNum,
             final long delta,
-            @NotNull
+            final boolean alwaysUpdate,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
-        if (delta != 0) {
+        if (delta != 0 || alwaysUpdate) {
             final var stakeeI = stakeChangeManager.findOrAdd(accountNum, pendingChanges);
             updateStakedToMe(stakeeI, delta, stakedToMeUpdates, pendingChanges);
             // The stakee may now be eligible for a reward
@@ -321,9 +357,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payRewardIfPending(
             final int i,
-            @Nullable HederaAccount account,
-            @NotNull Map<AccountProperty, Object> changes,
-            @NotNull
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
@@ -333,9 +369,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payReward(
             final int i,
-            @NotNull HederaAccount account,
-            @NotNull Map<AccountProperty, Object> changes,
-            @NotNull
+            @NonNull HederaAccount account,
+            @NonNull Map<AccountProperty, Object> changes,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         final var reward = rewardsEarned[i] = rewardCalculator.computePendingReward(account);
@@ -350,7 +386,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         // accounts until we find a non-deleted account to try to reward (it may still decline)
         if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
             var j = 1;
-            var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
+            final var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
             do {
                 if (j++ > maxRedirects) {
                     log.error(
@@ -392,7 +428,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     boolean isRewardSituation(
             @Nullable final HederaAccount account,
             final long stakedToMeUpdate,
-            @NotNull final Map<AccountProperty, Object> changes) {
+            @NonNull final Map<AccountProperty, Object> changes) {
         return rewardsActivated
                 && account != null
                 && account.getStakedId() < 0
@@ -437,12 +473,14 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private void setCurrentAndNewIds(
-            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes) {
         curStakedId = account == null ? 0L : account.getStakedId();
         newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
 
-    private boolean shouldRememberStakeStartFor(
+    @VisibleForTesting
+    boolean shouldRememberStakeStartFor(
             @Nullable final HederaAccount account, final long curStakedId, final long reward) {
         if (account == null || curStakedId >= 0 || account.isDeclinedReward()) {
             // Alice cannot receive a reward for today, so nothing to remember here
@@ -457,6 +495,24 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // current value to reward her correctly for today no matter what happens later on
             return true;
         } else {
+            // At this point, Alice is an account staking to a node, accepting rewards, and in
+            // a reward situation---who nonetheless received zero rewards. There are essentially
+            // four scenarios:
+            //   1. Alice's stakePeriodStart is before the first non-rewardable period, but
+            //   she was either staking zero whole hbars during those periods (or the reward rate
+            //   was zero).
+            //   2. Alice's stakePeriodStart is the first non-rewardable period because she
+            //   was already rewarded earlier today.
+            //   3. Alice's stakePeriodStart is the first non-rewardable period, but she was not
+            //   rewarded today.
+            //   4. Alice's stakePeriodStart is the current period.
+            // We need to record her current stake as totalStakeAtStartOfLastRewardedPeriod in
+            // scenarios 1 and 3, but not 2 and 4. (As noted below, in scenario 2 we want to
+            // preserve an already-recorded memory of her stake at the beginning of this period;
+            // while in scenario 4 there is no point in recording anything---it will go unused.)
+            if (earnedZeroRewardsBecauseOfZeroStake(account)) {
+                return true;
+            }
             if (account.totalStakeAtStartOfLastRewardedPeriod()
                     != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
                 // Alice was in a reward situation, but did not earn anything because she already
@@ -488,12 +544,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     @VisibleForTesting
-    void setCurStakedId(long curStakedId) {
+    void setCurStakedId(final long curStakedId) {
         this.curStakedId = curStakedId;
     }
 
     @VisibleForTesting
-    void setNewStakedId(long newStakedId) {
+    void setNewStakedId(final long newStakedId) {
         this.newStakedId = newStakedId;
     }
 

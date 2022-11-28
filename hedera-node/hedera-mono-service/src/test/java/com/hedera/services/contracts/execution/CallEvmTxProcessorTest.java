@@ -15,9 +15,9 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -84,11 +84,11 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-import org.hyperledger.besu.evm.tracing.OperationTracer.ExecuteOperation;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -372,8 +372,8 @@ class CallEvmTxProcessorTest {
                         (mock, context) -> {
                             doCallRealMethod()
                                     .when(mock)
-                                    .traceExecution(
-                                            any(MessageFrame.class), any(ExecuteOperation.class));
+                                    .tracePostExecution(
+                                            any(MessageFrame.class), any(OperationResult.class));
                             doReturn(List.of(action, action2)).when(mock).getActions();
                         })) {
 

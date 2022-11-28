@@ -15,10 +15,10 @@
  */
 package com.hedera.services.txns.ethereum;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -27,9 +27,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
@@ -172,7 +173,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
     public void preFetch(final TxnAccessor accessor) {
         try {
             spanMapManager.expandEthereumSpan(accessor);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Pre-fetch failed for {}", accessor.getSignedTxnWrapper(), e);
         }
     }
@@ -200,17 +201,28 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
             final long maxGasAllowance,
             final BigInteger offeredGasPrice) {
         final var customizedCreate =
-                creationCustomizer.customize(synthCreate, callerId.asGrpcAccount());
+                creationCustomizer.customize(synthCreate, callerId.asGrpcAccount(), false);
         contractCreateTransitionLogic.doStateTransitionOperation(
                 customizedCreate, callerId, true, relayerId, maxGasAllowance, offeredGasPrice);
     }
 
-    private EntityNum validatedCallerOf(final TxnAccessor accessor) {
-        // We take advantage of the validation work done by SpanMapManager, which guaranteed that a
-        // EthTxExpansion exists in the span map; and that if its result is OK, the EthTxData,
-        // EthTxSigs,
-        // and synthetic TransactionBody _also_ exist in the span map
-        final var expansion = Objects.requireNonNull(spanMapAccessor.getEthTxExpansion(accessor));
+    @VisibleForTesting
+    EntityNum validatedCallerOf(final TxnAccessor accessor) {
+        // In a normal transaction flow, we can take advantage of the validation work done by
+        // SpanMapManager
+        // in preHandle, which guarantees that a EthTxExpansion exists in the span map; and that if
+        // its result
+        // is OK, the EthTxData, EthTxSigs, and synthetic TransactionBody _also_ exist in the span
+        // map
+        var expansion = spanMapAccessor.getEthTxExpansion(accessor);
+        // But if running during recovery, there is an edge case where preHandle() is never called,
+        // so
+        // now we need to "make up" for the missing call to preFetch()
+        if (expansion == null) {
+            log.warn("Recovering from missed preHandle() call");
+            spanMapManager.rationalizeEthereumSpan(accessor);
+            expansion = Objects.requireNonNull(spanMapAccessor.getEthTxExpansion(accessor));
+        }
         validateTrue(expansion.result() == OK, expansion.result());
 
         final var ethTxSigs = spanMapAccessor.getEthTxSigsMeta(accessor);

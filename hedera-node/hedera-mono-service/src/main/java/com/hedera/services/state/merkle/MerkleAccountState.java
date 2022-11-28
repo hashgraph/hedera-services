@@ -50,6 +50,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,7 +59,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-import org.jetbrains.annotations.Nullable;
 
 public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf {
     private static final int MAX_CONCEIVABLE_MEMO_UTF8_BYTES = 1_024;
@@ -68,7 +68,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
     static final int RELEASE_0250_VERSION = 12;
     static final int RELEASE_0260_VERSION = 13;
     static final int RELEASE_0270_VERSION = 14;
-    private static final int CURRENT_VERSION = RELEASE_0270_VERSION;
+    static final int RELEASE_0320_VERSION = 15;
+    public static final int CURRENT_VERSION = RELEASE_0320_VERSION;
     static final long RUNTIME_CONSTRUCTABLE_ID = 0x354cfc55834e7f12L;
 
     public static final String DEFAULT_MEMO = "";
@@ -112,6 +113,11 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
     // When staking to a node it is stored as -node-1 in order to differentiate nodeId=0
     private long stakedNum;
     private boolean declineReward;
+    // The entity expiration system task toggles on this flag when it reaches this account
+    // and finds it expired; we need this to prevent a zero-balance account with a funded
+    // auto-renew account from being treated as expired in the interval between its expiration
+    // and the time the system task actually auto-renews it
+    private boolean expiredAndPendingRemoval;
     private long stakeAtStartOfLastRewardedPeriod = -1;
 
     // C.f. https://github.com/hashgraph/hedera-services/issues/2842; we may want to migrate
@@ -160,6 +166,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         this.stakedNum = that.stakedNum;
         this.declineReward = that.declineReward;
         this.stakeAtStartOfLastRewardedPeriod = that.stakeAtStartOfLastRewardedPeriod;
+        this.expiredAndPendingRemoval = that.expiredAndPendingRemoval;
     }
 
     public MerkleAccountState(
@@ -195,7 +202,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
             final long stakePeriodStart,
             final long stakedNum,
             final boolean declineReward,
-            final long stakeAtStartOfLastRewardedPeriod) {
+            final long stakeAtStartOfLastRewardedPeriod,
+            final boolean expiredAndPendingRemoval) {
         this.key = key;
         this.expiry = expiry;
         this.hbarBalance = hbarBalance;
@@ -229,6 +237,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         this.stakedNum = stakedNum;
         this.declineReward = declineReward;
         this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
+        this.expiredAndPendingRemoval = expiredAndPendingRemoval;
     }
 
     /* --- MerkleLeaf --- */
@@ -293,7 +302,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         if (version >= RELEASE_0260_VERSION) {
             ethereumNonce = in.readLong();
             if (smartContract) {
-                byte marker = in.readByte();
+                final byte marker = in.readByte();
                 if (marker != KeyPackingUtils.MISSING_KEY_SENTINEL) {
                     firstUint256KeyNonZeroBytes = marker;
                     firstUint256Key =
@@ -313,6 +322,9 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
             stakedNum = in.readLong();
             declineReward = in.readBoolean();
             stakeAtStartOfLastRewardedPeriod = in.readLong();
+        }
+        if (version >= RELEASE_0320_VERSION) {
+            expiredAndPendingRemoval = in.readBoolean();
         }
     }
 
@@ -352,6 +364,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         out.writeLong(stakedNum);
         out.writeBoolean(declineReward);
         out.writeLong(stakeAtStartOfLastRewardedPeriod);
+        out.writeBoolean(expiredAndPendingRemoval);
     }
 
     /* --- Copyable --- */
@@ -361,7 +374,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -369,7 +382,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
             return false;
         }
 
-        var that = (MerkleAccountState) o;
+        final var that = (MerkleAccountState) o;
 
         return this.number == that.number
                 && this.expiry == that.expiry
@@ -402,7 +415,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 && this.stakePeriodStart == that.stakePeriodStart
                 && this.stakedNum == that.stakedNum
                 && this.declineReward == that.declineReward
-                && this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod;
+                && this.stakeAtStartOfLastRewardedPeriod == that.stakeAtStartOfLastRewardedPeriod
+                && this.expiredAndPendingRemoval == that.expiredAndPendingRemoval;
     }
 
     @Override
@@ -438,7 +452,8 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 stakePeriodStart,
                 stakedNum,
                 declineReward,
-                stakeAtStartOfLastRewardedPeriod);
+                stakeAtStartOfLastRewardedPeriod,
+                expiredAndPendingRemoval);
     }
 
     /* --- Bean --- */
@@ -477,6 +492,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
                 .add("stakedNum", stakedNum)
                 .add("declineReward", declineReward)
                 .add("balanceAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
+                .add("expiredAndPendingRemoval", expiredAndPendingRemoval)
                 .toString();
     }
 
@@ -484,11 +500,11 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         return number;
     }
 
-    public void setNumber(int number) {
+    public void setNumber(final int number) {
         this.number = number;
     }
 
-    public void setAlias(ByteString alias) {
+    public void setAlias(final ByteString alias) {
         this.alias = alias;
     }
 
@@ -540,52 +556,60 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         return alias;
     }
 
-    public void setAccountKey(JKey key) {
+    public boolean isExpiredAndPendingRemoval() {
+        return expiredAndPendingRemoval;
+    }
+
+    public void setExpiredAndPendingRemoval(final boolean expiredAndPendingRemoval) {
+        this.expiredAndPendingRemoval = expiredAndPendingRemoval;
+    }
+
+    public void setAccountKey(final JKey key) {
         assertMutable("key");
         this.key = key;
     }
 
-    public void setExpiry(long expiry) {
+    public void setExpiry(final long expiry) {
         assertMutable("expiry");
         this.expiry = expiry;
     }
 
-    public void setHbarBalance(long hbarBalance) {
+    public void setHbarBalance(final long hbarBalance) {
         assertMutable("hbarBalance");
         this.hbarBalance = hbarBalance;
     }
 
-    public void setAutoRenewSecs(long autoRenewSecs) {
+    public void setAutoRenewSecs(final long autoRenewSecs) {
         assertMutable("autoRenewSecs");
         this.autoRenewSecs = autoRenewSecs;
     }
 
-    public void setMemo(String memo) {
+    public void setMemo(final String memo) {
         assertMutable("memo");
         this.memo = memo;
     }
 
-    public void setEthereumNonce(long ethereumNonce) {
+    public void setEthereumNonce(final long ethereumNonce) {
         assertMutable("ethereumNonce");
         this.ethereumNonce = ethereumNonce;
     }
 
-    public void setDeleted(boolean deleted) {
+    public void setDeleted(final boolean deleted) {
         assertMutable("isSmartContract");
         this.deleted = deleted;
     }
 
-    public void setSmartContract(boolean smartContract) {
+    public void setSmartContract(final boolean smartContract) {
         assertMutable("isSmartContract");
         this.smartContract = smartContract;
     }
 
-    public void setReceiverSigRequired(boolean receiverSigRequired) {
+    public void setReceiverSigRequired(final boolean receiverSigRequired) {
         assertMutable("isReceiverSigRequired");
         this.receiverSigRequired = receiverSigRequired;
     }
 
-    public void setProxy(EntityId proxy) {
+    public void setProxy(final EntityId proxy) {
         assertMutable("proxy");
         this.proxy = proxy;
     }
@@ -644,7 +668,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         return numContractKvPairs;
     }
 
-    public void setNumContractKvPairs(int numContractKvPairs) {
+    public void setNumContractKvPairs(final int numContractKvPairs) {
         assertMutable("numContractKvPairs");
         this.numContractKvPairs = numContractKvPairs;
     }
@@ -657,12 +681,12 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         return usedAutoAssociations;
     }
 
-    public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+    public void setMaxAutomaticAssociations(final int maxAutomaticAssociations) {
         assertMutable("maxAutomaticAssociations");
         this.maxAutoAssociations = maxAutomaticAssociations;
     }
 
-    public void setUsedAutomaticAssociations(int usedAutoAssociations) {
+    public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
         assertMutable("usedAutomaticAssociations");
         this.usedAutoAssociations = usedAutoAssociations;
     }
@@ -813,7 +837,7 @@ public class MerkleAccountState extends PartialMerkleLeaf implements MerkleLeaf 
         this.stakeAtStartOfLastRewardedPeriod = stakeAtStartOfLastRewardedPeriod;
     }
 
-    private void assertMutable(String proximalField) {
+    private void assertMutable(final String proximalField) {
         if (isImmutable()) {
             throw new MutabilityException(
                     "Cannot set " + proximalField + " on an immutable account state!");

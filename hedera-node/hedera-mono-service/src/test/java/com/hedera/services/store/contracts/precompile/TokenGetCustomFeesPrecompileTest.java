@@ -21,7 +21,6 @@ import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_C
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.payer;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderId;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
@@ -34,6 +33,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -41,11 +43,11 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.pricing.AssetsLoader;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -60,8 +62,8 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -96,7 +98,6 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private HederaStackedWorldStateUpdater worldUpdater;
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private StateView stateView;
     @Mock private UsagePricesProvider resourceCosts;
@@ -105,6 +106,8 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+    @Mock private NetworkInfo networkInfo;
 
     private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
             Bytes.fromHexString(
@@ -116,9 +119,6 @@ class TokenGetCustomFeesPrecompileTest {
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<TokenGetCustomFeesPrecompile> tokenGetCustomFeesPrecompile;
-
-    // Common token properties
-    private final EntityId treasury = senderId;
 
     @BeforeEach
     void setUp() {
@@ -145,7 +145,6 @@ class TokenGetCustomFeesPrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
@@ -177,8 +176,8 @@ class TokenGetCustomFeesPrecompileTest {
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
-        given(stateView.tokenCustomFees(tokenMerkleId)).willReturn(List.of(fractionalFee));
-        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
+        given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
+                .willReturn(Optional.of(List.of(fractionalFee)));
         given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -268,7 +267,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }
@@ -302,12 +301,12 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     private CustomFee getFractionalFee() {
-        long denominator = 2L;
-        long numerator = 1L;
+        final long denominator = 2L;
+        final long numerator = 1L;
         final var fraction =
                 Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
-        long maximumAmount = 400_000_000L;
-        long minimumAmount = 10_000L;
+        final long maximumAmount = 400_000_000L;
+        final long minimumAmount = 10_000L;
         final var fractionalFee =
                 FractionalFee.newBuilder()
                         .setFractionalAmount(fraction)

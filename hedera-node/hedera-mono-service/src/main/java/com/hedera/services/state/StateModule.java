@@ -18,14 +18,14 @@ package com.hedera.services.state;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.ids.EntityIdSource;
 import com.hedera.services.ledger.ids.SeqNoEntityIdSource;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
@@ -43,6 +43,7 @@ import com.hedera.services.state.initialization.SystemFilesManager;
 import com.hedera.services.state.logic.HandleLogicModule;
 import com.hedera.services.state.logic.ReconnectListener;
 import com.hedera.services.state.logic.StateWriteToDiskListener;
+import com.hedera.services.state.logic.StatusChangeListener;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
@@ -73,7 +74,7 @@ import com.hedera.services.utils.SystemExits;
 import com.swirlds.common.Console;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.notification.NotificationEngine;
-import com.swirlds.common.notification.NotificationFactory;
+import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.system.NodeId;
@@ -87,6 +88,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -95,7 +97,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 @Module(includes = HandleLogicModule.class)
@@ -129,6 +130,11 @@ public interface StateModule {
 
     @Binds
     @Singleton
+    PlatformStatusChangeListener bindStatusChangeListener(
+            StatusChangeListener statusChangeListener);
+
+    @Binds
+    @Singleton
     LedgerValidator bindLedgerValidator(BasedLedgerValidator basedLedgerValidator);
 
     @Binds
@@ -145,7 +151,7 @@ public interface StateModule {
         try {
             return new SignedStateBalancesExporter(
                     systemExits, properties, signer, dynamicProperties);
-        } catch (NoSuchAlgorithmException fatal) {
+        } catch (final NoSuchAlgorithmException fatal) {
             throw new IllegalStateException(
                     "Could not construct signed state balances exporter", fatal);
         }
@@ -189,8 +195,8 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<NotificationEngine> provideNotificationEngine() {
-        return NotificationFactory::getEngine;
+    static Supplier<NotificationEngine> provideNotificationEngine(final Platform platform) {
+        return platform::getNotificationEngine;
     }
 
     @Provides
@@ -208,13 +214,13 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Function<byte[], Signature> provideSigner(Platform platform) {
+    static Function<byte[], Signature> provideSigner(final Platform platform) {
         return platform::sign;
     }
 
     @Provides
     @Singleton
-    static NodeId provideNodeId(Platform platform) {
+    static NodeId provideNodeId(final Platform platform) {
         return platform.getSelfId();
     }
 
@@ -368,7 +374,8 @@ public interface StateModule {
 
     @Provides
     @Singleton
-    static Supplier<JEd25519Key> provideSystemFileKey(@CompositeProps PropertySource properties) {
+    static Supplier<JEd25519Key> provideSystemFileKey(
+            @CompositeProps final PropertySource properties) {
         return () -> {
             final var hexedEd25519Key = properties.getStringProperty(BOOTSTRAP_GENESIS_PUBLIC_KEY);
             final var ed25519Key = new JEd25519Key(CommonUtils.unhex(hexedEd25519Key));

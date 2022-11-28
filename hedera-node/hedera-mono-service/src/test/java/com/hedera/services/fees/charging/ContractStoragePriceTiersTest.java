@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedAddition;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedMultiplication;
@@ -136,14 +136,22 @@ class ContractStoragePriceTiersTest {
     }
 
     @Test
-    void failsOnZeroSlotsRequested() {
+    void failsOnNegativeSlotsRequested() {
         givenTypicalSubject();
-        final var usage = nonFreeUsageFor(0);
+        final var usage = nonFreeUsageFor(-1);
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         subject.priceOfPendingUsage(
                                 someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
+    }
+
+    @Test
+    void zeroSlotsRequestedIsZeroRent() {
+        givenTypicalSubject();
+        final var usage = nonFreeUsageFor(0);
+        assertEquals(
+                0, subject.priceOfPendingUsage(someRate, 666, DEFAULT_REFERENCE_LIFETIME, usage));
     }
 
     @Test

@@ -67,13 +67,13 @@ import com.hedera.services.store.HederaStore;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -96,16 +96,16 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
     @Inject
     public HederaScheduleStore(
-            GlobalDynamicProperties properties,
-            EntityIdSource ids,
-            Supplier<MerkleScheduledTransactions> schedules) {
+            final GlobalDynamicProperties properties,
+            final EntityIdSource ids,
+            final Supplier<MerkleScheduledTransactions> schedules) {
         super(ids);
         this.schedules = schedules;
         this.properties = properties;
     }
 
     @Override
-    public ScheduleVirtualValue get(ScheduleID id) {
+    public ScheduleVirtualValue get(final ScheduleID id) {
         throwIfMissing(id);
 
         return pendingId.equals(id)
@@ -121,13 +121,13 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public boolean exists(ScheduleID id) {
+    public boolean exists(final ScheduleID id) {
         return (isCreationPending() && pendingId.equals(id))
                 || schedules.get().byId().containsKey(new EntityNumVirtualKey(fromScheduleId(id)));
     }
 
     @Override
-    public void apply(ScheduleID id, Consumer<ScheduleVirtualValue> change) {
+    public void apply(final ScheduleID id, final Consumer<ScheduleVirtualValue> change) {
         throwIfMissing(id);
 
         if (id.equals(pendingId)) {
@@ -135,19 +135,19 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             return;
         }
 
-        var key = fromScheduleId(id);
-        var virtualKey = new EntityNumVirtualKey(key);
-        var schedule = schedules.get().byId().get(virtualKey).asWritable();
+        final var key = fromScheduleId(id);
+        final var virtualKey = new EntityNumVirtualKey(key);
+        final var schedule = schedules.get().byId().get(virtualKey).asWritable();
         try {
             change.accept(schedule);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new IllegalArgumentException("Schedule change failed unexpectedly!", e);
         } finally {
             schedules.get().byId().put(virtualKey, schedule);
         }
     }
 
-    private void applyProvisionally(Consumer<ScheduleVirtualValue> change) {
+    private void applyProvisionally(final Consumer<ScheduleVirtualValue> change) {
         change.accept(pendingCreation);
     }
 
@@ -209,8 +209,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public ResponseCodeEnum deleteAt(ScheduleID id, Instant consensusTime) {
-        var status = usabilityCheck(id, true, consensusTime);
+    public ResponseCodeEnum deleteAt(final ScheduleID id, final Instant consensusTime) {
+        final var status = usabilityCheck(id, true, consensusTime);
         if (status != OK) {
             return status;
         }
@@ -220,7 +220,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public ResponseCodeEnum delete(ScheduleID id) {
+    public ResponseCodeEnum delete(final ScheduleID id) {
         throw new UnsupportedOperationException("Only deleteAt() is usable with schedules");
     }
 
@@ -228,10 +228,10 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     public void commitCreation() {
         throwIfNoCreationPending();
 
-        var id = new EntityNumVirtualKey(fromScheduleId(pendingId));
+        final var id = new EntityNumVirtualKey(fromScheduleId(pendingId));
         schedules.get().byId().put(id, pendingCreation);
 
-        var secondKey =
+        final var secondKey =
                 new SecondSinceEpocVirtualKey(
                         pendingCreation.calculatedExpirationTime().getSeconds());
 
@@ -248,7 +248,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
         schedules.get().byExpirationSecond().put(secondKey, bySecond);
 
-        var equalityKey = new ScheduleEqualityVirtualKey(pendingCreation.equalityCheckKey());
+        final var equalityKey = new ScheduleEqualityVirtualKey(pendingCreation.equalityCheckKey());
 
         var byEquality = schedules.get().byEquality().get(equalityKey);
 
@@ -292,10 +292,10 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
             return Pair.of(pendingId, pendingCreation);
         }
 
-        var equalityKey = new ScheduleEqualityVirtualKey(schedule.equalityCheckKey());
-        var byEquality = schedules.get().byEquality().get(equalityKey);
+        final var equalityKey = new ScheduleEqualityVirtualKey(schedule.equalityCheckKey());
+        final var byEquality = schedules.get().byEquality().get(equalityKey);
         if (byEquality != null) {
-            var existingId = byEquality.getIds().get(schedule.equalityCheckValue());
+            final var existingId = byEquality.getIds().get(schedule.equalityCheckValue());
 
             if (existingId != null) {
 
@@ -311,8 +311,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public ResponseCodeEnum preMarkAsExecuted(ScheduleID id) {
-        var status = usabilityCheck(id, false, null);
+    public ResponseCodeEnum preMarkAsExecuted(final ScheduleID id) {
+        final var status = usabilityCheck(id, false, null);
         if (status != OK) {
             return status;
         }
@@ -320,8 +320,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public ResponseCodeEnum markAsExecuted(ScheduleID id, Instant consensusTime) {
-        var status = usabilityCheck(id, false, null);
+    public ResponseCodeEnum markAsExecuted(final ScheduleID id, final Instant consensusTime) {
+        final var status = usabilityCheck(id, false, null);
         if (status != OK) {
             return status;
         }
@@ -330,7 +330,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public void expire(ScheduleID id) {
+    public void expire(final ScheduleID id) {
         if (id.equals(pendingId)) {
             throw new IllegalArgumentException(
                     String.format(
@@ -339,12 +339,12 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
         throwIfMissing(id);
 
-        var idToDelete = new EntityNumVirtualKey(fromScheduleId(id));
-        var existingSchedule = schedules.get().byId().remove(idToDelete);
+        final var idToDelete = new EntityNumVirtualKey(fromScheduleId(id));
+        final var existingSchedule = schedules.get().byId().remove(idToDelete);
 
         if (existingSchedule != null) {
 
-            var secondKey =
+            final var secondKey =
                     new SecondSinceEpocVirtualKey(
                             existingSchedule.calculatedExpirationTime().getSeconds());
 
@@ -362,7 +362,8 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
                 }
             }
 
-            var equalityKey = new ScheduleEqualityVirtualKey(existingSchedule.equalityCheckKey());
+            final var equalityKey =
+                    new ScheduleEqualityVirtualKey(existingSchedule.equalityCheckKey());
 
             var byEquality = schedules.get().byEquality().get(equalityKey);
 
@@ -380,7 +381,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @VisibleForTesting
-    boolean advanceCurrentMinSecond(Instant consensusTime) {
+    boolean advanceCurrentMinSecond(final Instant consensusTime) {
 
         boolean changed = false;
 
@@ -405,7 +406,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public List<ScheduleID> nextSchedulesToExpire(Instant consensusTime) {
+    public List<ScheduleID> nextSchedulesToExpire(final Instant consensusTime) {
 
         advanceCurrentMinSecond(consensusTime);
 
@@ -424,14 +425,14 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
         if (bySecond != null) {
             outer:
-            for (var entry : bySecond.getIds().entrySet()) {
-                var instant = entry.getKey();
-                var ids = entry.getValue();
+            for (final var entry : bySecond.getIds().entrySet()) {
+                final var instant = entry.getKey();
+                final var ids = entry.getValue();
                 for (int i = 0; i < ids.size(); ++i) {
-                    var id = ids.get(i);
-                    var scheduleId = EntityNum.fromLong(id).toGrpcScheduleId();
+                    final var id = ids.get(i);
+                    final var scheduleId = EntityNum.fromLong(id).toGrpcScheduleId();
 
-                    var schedule = getNoError(scheduleId);
+                    final var schedule = getNoError(scheduleId);
 
                     if (schedule == null) {
                         log.error(
@@ -462,7 +463,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
             if ((!toRemove.isEmpty()) || bySecond.getIds().isEmpty()) {
                 bySecond = bySecond.asWritable();
-                for (var p : toRemove) {
+                for (final var p : toRemove) {
                     bySecond.removeId(p.getKey(), p.getValue());
                 }
 
@@ -480,7 +481,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
 
     @Override
     @Nullable
-    public ScheduleID nextScheduleToEvaluate(Instant consensusTime) {
+    public ScheduleID nextScheduleToEvaluate(final Instant consensusTime) {
 
         final long curSecond = schedules.get().getCurrentMinSecond();
 
@@ -492,11 +493,11 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
                 schedules.get().byExpirationSecond().get(new SecondSinceEpocVirtualKey(curSecond));
 
         if (bySecond != null) {
-            for (var ids : bySecond.getIds().values()) {
+            for (final var ids : bySecond.getIds().values()) {
                 if (ids.size() > 0) {
-                    var scheduleId = EntityNum.fromLong(ids.get(0)).toGrpcScheduleId();
+                    final var scheduleId = EntityNum.fromLong(ids.get(0)).toGrpcScheduleId();
 
-                    var schedule = getNoError(scheduleId);
+                    final var schedule = getNoError(scheduleId);
 
                     if (schedule == null) {
                         log.error(
@@ -530,7 +531,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     @Override
-    public ScheduleSecondVirtualValue getBySecond(long second) {
+    public ScheduleSecondVirtualValue getBySecond(final long second) {
         return schedules.get().byExpirationSecond().get(new SecondSinceEpocVirtualKey(second));
     }
 
@@ -550,13 +551,15 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
     }
 
     private ResponseCodeEnum usabilityCheck(
-            ScheduleID id, boolean requiresMutability, @Nullable Instant consensusTime) {
-        var idRes = resolve(id);
+            final ScheduleID id,
+            final boolean requiresMutability,
+            @Nullable final Instant consensusTime) {
+        final var idRes = resolve(id);
         if (idRes == MISSING_SCHEDULE) {
             return INVALID_SCHEDULE_ID;
         }
 
-        var schedule = get(id);
+        final var schedule = get(id);
         if (schedule.isDeleted()) {
             return SCHEDULE_ALREADY_DELETED;
         }
@@ -579,7 +582,7 @@ public final class HederaScheduleStore extends HederaStore implements ScheduleSt
         return OK;
     }
 
-    private void throwIfMissing(ScheduleID id) {
+    private void throwIfMissing(final ScheduleID id) {
         if (!exists(id)) {
             throw new IllegalArgumentException(
                     String.format(

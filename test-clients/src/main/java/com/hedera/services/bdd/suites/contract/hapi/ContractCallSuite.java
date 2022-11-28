@@ -98,6 +98,7 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -114,7 +115,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.FeeBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
@@ -139,7 +139,7 @@ public class ContractCallSuite extends HapiApiSuite {
     private static final long DEPOSIT_AMOUNT = 1000;
     private static final long GAS_TO_OFFER = 2_000_000L;
 
-    private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
+    public static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     private static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";

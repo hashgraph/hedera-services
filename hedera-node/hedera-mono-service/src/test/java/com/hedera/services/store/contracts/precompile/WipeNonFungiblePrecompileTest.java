@@ -43,6 +43,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -50,14 +52,12 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -83,7 +83,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -135,7 +134,6 @@ class WipeNonFungiblePrecompileTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokens;
     @Mock private ExpiringCreations creator;
-    @Mock private ImpliedTransfersMarshal impliedTransfersMarshal;
     @Mock private FeeCalculator feeCalculator;
     @Mock private FeeObject mockFeeObject;
     @Mock private StateView stateView;
@@ -162,12 +160,12 @@ class WipeNonFungiblePrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenAccountWipe,
                 Map.of(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -184,7 +182,6 @@ class WipeNonFungiblePrecompileTest {
                         encoder,
                         syntheticTxnFactory,
                         creator,
-                        impliedTransfersMarshal,
                         () -> feeCalculator,
                         stateView,
                         precompilePricingUtils,
@@ -323,7 +320,7 @@ class WipeNonFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -343,7 +340,7 @@ class WipeNonFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -382,7 +379,7 @@ class WipeNonFungiblePrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }

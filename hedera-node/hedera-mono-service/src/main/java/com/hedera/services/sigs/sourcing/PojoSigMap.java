@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.sourcing;
 
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -59,15 +59,15 @@ public class PojoSigMap {
         return keyTypes[i].getLength() == rawMap[i][PUB_KEY_PREFIX_INDEX].length;
     }
 
-    public KeyType keyType(int i) {
+    public KeyType keyType(final int i) {
         return keyTypes[i];
     }
 
-    public byte[] pubKeyPrefix(int i) {
+    public byte[] pubKeyPrefix(final int i) {
         return rawMap[i][PUB_KEY_PREFIX_INDEX];
     }
 
-    public byte[] primitiveSignature(int i) {
+    public byte[] primitiveSignature(final int i) {
         return rawMap[i][SIG_BYTES_INDEX];
     }
 

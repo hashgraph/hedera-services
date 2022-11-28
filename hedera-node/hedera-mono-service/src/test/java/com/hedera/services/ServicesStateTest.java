@@ -851,7 +851,7 @@ class ServicesStateTest {
         return DaggerServicesApp.builder()
                 .initialHash(new Hash())
                 .platform(platform)
-                .crypto(platform.getCryptography())
+                .crypto(CryptographyHolder.get())
                 .consoleCreator((ignore, visible) -> null)
                 .selfId(platform.getSelfId().getId())
                 .staticAccountMemo("memo")

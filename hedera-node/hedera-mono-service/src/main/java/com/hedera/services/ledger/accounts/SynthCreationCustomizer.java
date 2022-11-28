@@ -45,8 +45,14 @@ public class SynthCreationCustomizer {
      * @param callerId a known caller account
      * @return the HAPI transaction customized with the caller's inheritable properties
      */
-    public TransactionBody customize(final TransactionBody synthCreate, final AccountID callerId) {
-        final var customizer = ContractCustomizer.fromSponsorContract(callerId, accountsLedger);
+    public TransactionBody customize(
+            final TransactionBody synthCreate, final AccountID callerId, final boolean inheritKey) {
+        ContractCustomizer customizer;
+        if (inheritKey) {
+            customizer = ContractCustomizer.fromSponsorContract(callerId, accountsLedger);
+        } else {
+            customizer = ContractCustomizer.fromSponsorContractWithoutKey(callerId, accountsLedger);
+        }
         final var customBuilder = synthCreate.getContractCreateInstance().toBuilder();
         customizer.customizeSynthetic(customBuilder);
         return synthCreate.toBuilder().setContractCreateInstance(customBuilder).build();

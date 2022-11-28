@@ -18,7 +18,6 @@ package com.hedera.services.context.primitives;
 import static com.hedera.services.context.primitives.StateView.REMOVED_TOKEN;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
-import static com.hedera.services.state.virtual.schedule.ScheduleVirtualValueTest.scheduleCreateTxnWith;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
@@ -35,6 +34,7 @@ import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMI
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_FREEZE_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_PAUSE_KT;
+import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asContract;
@@ -58,9 +58,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -1272,24 +1272,24 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
     }
 
     @Test
     void tokenCustomFeesFailsGracefully() {
         given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
-        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(missingTokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesWorksForMissing() {
         subject = new StateView(null, null, null);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

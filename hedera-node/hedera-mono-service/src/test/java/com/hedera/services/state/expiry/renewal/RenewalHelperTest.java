@@ -16,6 +16,7 @@
 package com.hedera.services.state.expiry.renewal;
 
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.state.expiry.classification.ClassificationWork.CLASSIFICATION_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SELF_RENEWAL_WORK;
 import static com.hedera.services.state.expiry.renewal.RenewalHelper.SUPPORTED_RENEWAL_WORK;
@@ -166,6 +167,7 @@ class RenewalHelperTest {
         verify(recordsHelper)
                 .streamCryptoRenewal(targetNum, nonZeroBalance, expectedNewExpiry, true);
         assertEquals(key, classificationWork.getPayerNumForLastClassified());
+        verify(accountsLedger).set(key.toGrpcAccountId(), EXPIRED_AND_PENDING_REMOVAL, false);
     }
 
     @Test

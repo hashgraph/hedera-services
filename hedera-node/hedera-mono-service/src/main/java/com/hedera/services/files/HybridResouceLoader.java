@@ -18,9 +18,9 @@ package com.hedera.services.files;
 import static com.hedera.services.utils.EntityIdUtils.asFile;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -58,7 +58,7 @@ public class HybridResouceLoader {
                 throw new IOException("Could not load resource '" + resourceLoc + "'");
             }
             return in.readAllBytes();
-        } catch (IOException unavailable) {
+        } catch (final IOException unavailable) {
             log.warn("Unable to read JAR resource", unavailable);
             return null;
         }
@@ -69,7 +69,7 @@ public class HybridResouceLoader {
         try {
             final var fid = asFile(parseAccount(resourceLoc));
             return hfs.cat(fid);
-        } catch (IllegalArgumentException unavailable) {
+        } catch (final IllegalArgumentException unavailable) {
             log.warn("Unable to read HRS resource", unavailable);
             return null;
         }

@@ -17,23 +17,27 @@ package com.hedera.services.records;
 
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.*;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.services.contracts.operation.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.contracts.operation.HederaExceptionalHaltReason;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;
@@ -44,8 +48,12 @@ import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.*;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -291,7 +299,7 @@ class TransactionRecordServiceTest {
 
     @Test
     void updateFromEvmCallContextRelaysToDelegate() {
-        EntityId senderId = EntityId.fromIdentityCode(42);
+        final EntityId senderId = EntityId.fromIdentityCode(42);
         // when:
         subject.updateForEvmCall(evmFnCallContext, senderId);
         // then:
@@ -308,7 +316,7 @@ class TransactionRecordServiceTest {
 
     @Test
     void getStatusTest() {
-        var processingResult = mock(TransactionProcessingResult.class);
+        final var processingResult = mock(TransactionProcessingResult.class);
         given(processingResult.isSuccessful()).willReturn(true);
         assertEquals(
                 ResponseCodeEnum.SUCCESS,
@@ -347,7 +355,7 @@ class TransactionRecordServiceTest {
         }
     }
 
-    private static SolidityAction createAction(CallOperationType opCall) {
+    private static SolidityAction createAction(final CallOperationType opCall) {
         final SolidityAction solidityAction =
                 new SolidityAction(ContractActionType.CALL, 100, null, 55, 0);
         solidityAction.setCallOperationType(opCall);

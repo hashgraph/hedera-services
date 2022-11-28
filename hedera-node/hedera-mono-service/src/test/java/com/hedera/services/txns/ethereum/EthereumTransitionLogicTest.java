@@ -35,10 +35,10 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
@@ -181,7 +181,7 @@ class EthereumTransitionLogicTest {
     @Test
     void transitionDelegatesToCustomContractCreateForSynthCreate() {
         givenValidlyCalled(createTxn);
-        given(creationCustomizer.customize(createTxn, callerId)).willReturn(createTxn);
+        given(creationCustomizer.customize(createTxn, callerId, false)).willReturn(createTxn);
         givenOfferedPrice();
 
         subject.doStateTransition();
@@ -279,6 +279,17 @@ class EthereumTransitionLogicTest {
         willThrow(IllegalStateException.class).given(spanMapManager).expandEthereumSpan(accessor);
 
         assertDoesNotThrow(() -> subject.preFetch(accessor));
+    }
+
+    @Test
+    void dealsWithRecoveryEdgeCase() {
+        given(spanMapAccessor.getEthTxExpansion(accessor))
+                .willReturn(null)
+                .willReturn(notOkExpansion);
+
+        assertFailsWith(() -> subject.validatedCallerOf(accessor), INVALID_ETHEREUM_TRANSACTION);
+
+        verify(spanMapManager).rationalizeEthereumSpan(accessor);
     }
 
     private void givenReasonableSemantics() {

@@ -23,9 +23,9 @@ import com.hedera.services.utils.MiscUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.jetbrains.annotations.NotNull;
 
 public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
 
@@ -76,13 +76,14 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public void deserialize(ByteBuffer buffer, int version) throws IOException {
+    public void deserialize(final ByteBuffer buffer, final int version) throws IOException {
         type = BLOB_TYPES[0xff & buffer.get()];
         entityNumCode = buffer.getInt();
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         type = BLOB_TYPES[0xff & in.readByte()];
         entityNumCode = in.readInt();
     }
@@ -93,7 +94,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByte(type.ordinal());
         out.writeInt(entityNumCode);
     }
@@ -104,7 +105,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -112,7 +113,7 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
             return false;
         }
 
-        var that = (VirtualBlobKey) o;
+        final var that = (VirtualBlobKey) o;
 
         return this.type == that.type && this.entityNumCode == that.entityNumCode;
     }
@@ -135,11 +136,11 @@ public class VirtualBlobKey implements VirtualKey<VirtualBlobKey> {
     }
 
     @Override
-    public int compareTo(@NotNull final VirtualBlobKey that) {
+    public int compareTo(@NonNull final VirtualBlobKey that) {
         if (this == that) {
             return 0;
         }
-        int order = Integer.compare(this.entityNumCode, that.entityNumCode);
+        final int order = Integer.compare(this.entityNumCode, that.entityNumCode);
         if (order != 0) {
             return order;
         }

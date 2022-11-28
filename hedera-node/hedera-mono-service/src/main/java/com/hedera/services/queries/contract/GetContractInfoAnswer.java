@@ -36,10 +36,10 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -66,29 +66,32 @@ public class GetContractInfoAnswer implements AnswerService {
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getContractGetInfo().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(
                 query.getContractGetInfo().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
     @Override
     public Response responseGiven(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Map<String, Object> queryCtx) {
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Map<String, Object> queryCtx) {
         return responseFor(query, view, validity, cost, Optional.of(queryCtx));
     }
 
@@ -107,26 +110,26 @@ public class GetContractInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        var paymentTxn = query.getContractGetInfo().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final var paymentTxn = query.getContractGetInfo().getHeader().getPayment();
         return Optional.of(uncheckedFrom(paymentTxn));
     }
 
     private Response responseFor(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
-        var op = query.getContractGetInfo();
-        var response = ContractGetInfoResponse.newBuilder();
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
+        final var op = query.getContractGetInfo();
+        final var response = ContractGetInfoResponse.newBuilder();
 
-        var type = op.getHeader().getResponseType();
+        final var type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
         } else {
@@ -142,13 +145,13 @@ public class GetContractInfoAnswer implements AnswerService {
 
     @SuppressWarnings("unchecked")
     private void setAnswerOnly(
-            ContractGetInfoResponse.Builder response,
-            StateView view,
-            ContractGetInfoQuery op,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
+            final ContractGetInfoResponse.Builder response,
+            final StateView view,
+            final ContractGetInfoQuery op,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
         if (queryCtx.isPresent()) {
-            var ctx = queryCtx.get();
+            final var ctx = queryCtx.get();
             if (!ctx.containsKey(CONTRACT_INFO_CTX_KEY)) {
                 response.setHeader(answerOnlyHeader(INVALID_CONTRACT_ID));
             } else {

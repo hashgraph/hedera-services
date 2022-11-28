@@ -33,7 +33,6 @@ import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.enums.TokenType;
@@ -95,6 +94,7 @@ import com.hedera.services.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -111,7 +111,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
@@ -146,7 +145,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     private final RecordsHistorian recordsHistorian;
     private final SyntheticTxnFactory syntheticTxnFactory;
     private final InfrastructureFactory infrastructureFactory;
-    private final ImpliedTransfersMarshal impliedTransfersMarshal;
 
     private Precompile precompile;
     private TransactionBody.Builder transactionBody;
@@ -168,7 +166,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final EncodingFacade encoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final ExpiringCreations creator,
-            final ImpliedTransfersMarshal impliedTransfersMarshal,
             final Provider<FeeCalculator> feeCalculator,
             final StateView currentView,
             final PrecompilePricingUtils precompilePricingUtils,
@@ -180,7 +177,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.syntheticTxnFactory = syntheticTxnFactory;
         this.creator = creator;
         this.dynamicProperties = dynamicProperties;
-        this.impliedTransfersMarshal = impliedTransfersMarshal;
         this.feeCalculator = feeCalculator;
         this.currentView = currentView;
         this.precompilePricingUtils = precompilePricingUtils;
@@ -222,10 +218,10 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         return gasRequirement;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public PrecompileContractResult computePrecompile(
-            final Bytes input, @NotNull final MessageFrame frame) {
+            final Bytes input, @NonNull final MessageFrame frame) {
         prepareFields(frame);
         prepareComputation(input, updater::unaliased);
 
@@ -237,7 +233,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
         final var now = frame.getBlockValues().getTimestamp();
         gasRequirement = precompile.getGasRequirement(now);
-        Bytes result = computeInternal(frame);
+        final Bytes result = computeInternal(frame);
 
         return result == null
                 ? PrecompiledContract.PrecompileContractResult.halt(
@@ -259,7 +255,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.precompile = null;
         this.transactionBody = null;
 
-        int functionId = input.getInt(0);
+        final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
         this.precompile =
@@ -277,8 +273,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils,
                             functionId,
-                            senderAddress,
-                            impliedTransfersMarshal);
+                            senderAddress);
                     case AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2 -> checkFeatureFlag(
                             dynamicProperties.isAtomicCryptoTransferEnabled(),
                             () ->
@@ -291,8 +286,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             infrastructureFactory,
                                             precompilePricingUtils,
                                             functionId,
-                                            senderAddress,
-                                            impliedTransfersMarshal));
+                                            senderAddress));
                     case AbiConstants.ABI_ID_MINT_TOKEN,
                             AbiConstants.ABI_ID_MINT_TOKEN_V2 -> new MintPrecompile(
                             ledgers,
@@ -600,8 +594,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId,
-                                                    impliedTransfersMarshal));
+                                                    functionId));
 
                             case AbiConstants.ABI_ID_ERC_TRANSFER_FROM -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -618,8 +611,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     infrastructureFactory,
                                                     precompilePricingUtils,
-                                                    functionId,
-                                                    impliedTransfersMarshal));
+                                                    functionId));
                             case AbiConstants.ABI_ID_ERC_ALLOWANCE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
                                     () ->
@@ -744,12 +736,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                            null,
-                            syntheticTxnFactory,
-                            ledgers,
-                            encoder,
-                            precompilePricingUtils,
-                            currentView);
+                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
                             null,
@@ -783,8 +770,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId,
-                                            impliedTransfersMarshal));
+                                            functionId));
                     case AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> checkFeatureFlag(
                             dynamicProperties.areAllowancesEnabled(),
                             () ->
@@ -799,8 +785,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             syntheticTxnFactory,
                                             infrastructureFactory,
                                             precompilePricingUtils,
-                                            functionId,
-                                            impliedTransfersMarshal));
+                                            functionId));
                     default -> null;
                 };
         if (precompile != null) {
@@ -813,13 +798,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.transactionBody = TransactionBody.newBuilder();
         try {
             this.transactionBody = this.precompile.body(input, aliasResolver);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
             transactionBody = null;
         }
     }
 
-    private Precompile checkNFT(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+    private Precompile checkNFT(
+            final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (isFungible) {
             throw new InvalidTransactionException(
                     NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
@@ -828,7 +814,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         }
     }
 
-    private Precompile checkFungible(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+    private Precompile checkFungible(
+            final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (!isFungible) {
             throw new InvalidTransactionException(
                     NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
@@ -838,7 +825,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     }
 
     private Precompile checkFeatureFlag(
-            boolean featureFlag, Supplier<Precompile> precompileSupplier) {
+            final boolean featureFlag, final Supplier<Precompile> precompileSupplier) {
         if (!featureFlag) {
             throw new InvalidTransactionException(NOT_SUPPORTED);
         } else {

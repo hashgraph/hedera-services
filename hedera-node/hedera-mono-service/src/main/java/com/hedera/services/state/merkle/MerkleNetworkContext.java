@@ -15,10 +15,10 @@
  */
 package com.hedera.services.state.merkle;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.submerkle.RichInstant.fromJava;
@@ -26,6 +26,9 @@ import static com.hedera.services.utils.MiscUtils.safeResetThrottles;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
@@ -33,9 +36,6 @@ import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.submerkle.SequenceNumber;
 import com.hedera.services.state.tasks.SystemTaskManager;
-import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
@@ -47,6 +47,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.fcqueue.FCQueue;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -56,13 +57,12 @@ import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLeaf {
-    private static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
+    public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
     private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
 
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
@@ -189,7 +189,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     public void resetThrottlingFromSavedSnapshots(final FunctionalityThrottling throttling) {
-        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
+        final var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
         if (activeThrottles.size() != usageSnapshots.length) {
             log.warn(
                     "There are {} active throttles, but {} usage snapshots from saved state. "
@@ -242,22 +242,22 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         entitiesTouchedThisSecond = 0L;
     }
 
-    public void updateAutoRenewSummaryCounts(int numScanned, int numTouched) {
+    public void updateAutoRenewSummaryCounts(final int numScanned, final int numTouched) {
         throwIfImmutable("Cannot update auto-renew summary counts on an immutable context");
         entitiesScannedThisSecond += numScanned;
         entitiesTouchedThisSecond += numTouched;
     }
 
-    public void updateLastScannedEntity(long lastScannedEntity) {
+    public void updateLastScannedEntity(final long lastScannedEntity) {
         throwIfImmutable("Cannot update last scanned entity on an immutable context");
         this.lastScannedEntity = lastScannedEntity;
     }
 
-    public void syncThrottling(FunctionalityThrottling throttling) {
+    public void syncThrottling(final FunctionalityThrottling throttling) {
         this.throttling = throttling;
     }
 
-    public void syncExpiryThrottle(ExpiryThrottle expiryThrottle) {
+    public void syncExpiryThrottle(final ExpiryThrottle expiryThrottle) {
         this.expiryThrottle = expiryThrottle;
     }
 
@@ -265,12 +265,12 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         this.multiplierSources = multiplierSources;
     }
 
-    public void setConsensusTimeOfLastHandledTxn(Instant consensusTimeOfLastHandledTxn) {
+    public void setConsensusTimeOfLastHandledTxn(final Instant consensusTimeOfLastHandledTxn) {
         throwIfImmutable("Cannot set consensus time of last transaction on an immutable context");
         this.consensusTimeOfLastHandledTxn = consensusTimeOfLastHandledTxn;
     }
 
-    public void setStateVersion(int stateVersion) {
+    public void setStateVersion(final int stateVersion) {
         throwIfImmutable("Cannot set state version on an immutable context");
         this.stateVersion = stateVersion;
     }
@@ -279,13 +279,13 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return preparedUpdateFileNum != NO_PREPARED_UPDATE_FILE_NUM;
     }
 
-    public void recordPreparedUpgrade(FreezeTransactionBody op) {
+    public void recordPreparedUpgrade(final FreezeTransactionBody op) {
         throwIfImmutable("Cannot record a prepared upgrade on an immutable context");
         preparedUpdateFileNum = op.getUpdateFile().getFileNum();
         preparedUpdateFileHash = op.getFileHash().toByteArray();
     }
 
-    public boolean isPreparedFileHashValidGiven(MerkleSpecialFiles specialFiles) {
+    public boolean isPreparedFileHashValidGiven(final MerkleSpecialFiles specialFiles) {
         if (preparedUpdateFileNum == NO_PREPARED_UPDATE_FILE_NUM) {
             return true;
         }
@@ -421,7 +421,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
 
     private void readCongestionControlData(final SerializableDataInputStream in, final int version)
             throws IOException {
-        int numUsageSnapshots = in.readInt();
+        final int numUsageSnapshots = in.readInt();
         if (numUsageSnapshots > 0) {
             usageSnapshots = new DeterministicThrottle.UsageSnapshot[numUsageSnapshots];
             for (int i = 0; i < numUsageSnapshots; i++) {
@@ -511,7 +511,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             out.write(blockHashes.getHash().getValue());
             out.writeLong(totalStakedRewardStart);
             out.writeLong(totalStakedStart);
-        } catch (IOException | UncheckedIOException e) {
+        } catch (final IOException | UncheckedIOException e) {
             log.error("Hash computation failed", e);
             return EMPTY_HASH;
         }
@@ -527,7 +527,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return summarizedWith(null);
     }
 
-    public String summarizedWith(DualStateAccessor dualStateAccessor) {
+    public String summarizedWith(final DualStateAccessor dualStateAccessor) {
         final var isDualStateAvailable =
                 dualStateAccessor != null && dualStateAccessor.getDualState() != null;
         final var freezeTime =
@@ -620,7 +620,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             return NOT_AVAILABLE_SUFFIX;
         } else {
             final var sb = new StringBuilder();
-            for (var snapshot : usageSnapshots) {
+            for (final var snapshot : usageSnapshots) {
                 appendDesc(sb, snapshot);
             }
             sb.append(LINE_WRAP)
@@ -654,7 +654,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             return NOT_AVAILABLE_SUFFIX;
         } else {
             final var sb = new StringBuilder();
-            for (var start : levelStarts) {
+            for (final var start : levelStarts) {
                 sb.append(LINE_WRAP).append(reprOf(start));
             }
             return sb.toString();
@@ -673,7 +673,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
                 + CommonUtils.hex(preparedUpdateFileHash).substring(0, 8);
     }
 
-    private String freezeTimeDesc(@Nullable Instant freezeTime, boolean isDualStateAvailable) {
+    private String freezeTimeDesc(
+            @Nullable final Instant freezeTime, final boolean isDualStateAvailable) {
         final var nmtDescSkip = LINE_WRAP;
         if (freezeTime == null) {
             return (isDualStateAvailable ? NOT_EXTANT : NOT_AVAILABLE) + nmtDescSkip;
@@ -733,8 +734,8 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     /* --- Internal helpers --- */
     void updateSnapshotsFrom(final FunctionalityThrottling throttling) {
         throwIfImmutable("Cannot update usage snapshots on an immutable context");
-        var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
-        int n = activeThrottles.size();
+        final var activeThrottles = throttling.<DeterministicThrottle>allActiveThrottles();
+        final int n = activeThrottles.size();
         if (n == 0) {
             usageSnapshots = NO_SNAPSHOTS;
         } else {
@@ -766,9 +767,9 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         writeNullable(fromJava(consensusTimeOfLastHandledTxn), out, RichInstant::serialize);
         seqNo.serialize(out);
         out.writeSerializable(midnightRates, true);
-        int n = usageSnapshots.length;
+        final int n = usageSnapshots.length;
         out.writeInt(n);
-        for (var usageSnapshot : usageSnapshots) {
+        for (final var usageSnapshot : usageSnapshots) {
             out.writeLong(usageSnapshot.used());
             writeNullable(fromJava(usageSnapshot.lastDecisionTime()), out, RichInstant::serialize);
         }
@@ -803,20 +804,21 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             final Instant[] starts, final SerializableDataOutputStream out) throws IOException {
         final var n = starts.length;
         out.writeInt(n);
-        for (var congestionStart : starts) {
+        for (final var congestionStart : starts) {
             writeNullable(fromJava(congestionStart), out, RichInstant::serialize);
         }
     }
 
     private void reset(
-            List<DeterministicThrottle> throttles, GasLimitDeterministicThrottle gasLimitThrottle) {
+            final List<DeterministicThrottle> throttles,
+            final GasLimitDeterministicThrottle gasLimitThrottle) {
         safeResetThrottles(throttles, usageSnapshots, "handle");
 
-        var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
+        final var currGasThrottleUsageSnapshot = gasLimitThrottle.usageSnapshot();
         try {
             gasLimitThrottle.resetUsageTo(gasThrottleUsageSnapshot);
             log.info("Reset {} with saved gas throttle usage snapshot", gasThrottleUsageSnapshot);
-        } catch (IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             log.warn(
                     String.format(
                             "Saved gas throttle usage snapshot was not compatible with the"
@@ -826,7 +828,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
     }
 
-    private String reprOf(Instant consensusTime) {
+    private String reprOf(final Instant consensusTime) {
         return consensusTime == null ? NOT_AVAILABLE : consensusTime.toString();
     }
 
@@ -865,7 +867,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return preparedUpdateFileNum;
     }
 
-    public void setPreparedUpdateFileNum(long preparedUpdateFileNum) {
+    public void setPreparedUpdateFileNum(final long preparedUpdateFileNum) {
         throwIfImmutable("Cannot update prepared update file num on an immutable context");
         this.preparedUpdateFileNum = preparedUpdateFileNum;
     }
@@ -874,7 +876,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return preparedUpdateFileHash;
     }
 
-    public void setPreparedUpdateFileHash(byte[] preparedUpdateFileHash) {
+    public void setPreparedUpdateFileHash(final byte[] preparedUpdateFileHash) {
         throwIfImmutable("Cannot update prepared update file hash on an immutable context");
         this.preparedUpdateFileHash = preparedUpdateFileHash;
     }
@@ -995,7 +997,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return evmCongestionLevelStarts;
     }
 
-    public void setEvmCongestionLevelStarts(Instant[] evmCongestionLevelStarts) {
+    public void setEvmCongestionLevelStarts(final Instant[] evmCongestionLevelStarts) {
         this.evmCongestionLevelStarts = evmCongestionLevelStarts;
     }
 
@@ -1011,11 +1013,11 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return expiryUsageSnapshot;
     }
 
-    public void setMidnightRates(ExchangeRates midnightRates) {
+    public void setMidnightRates(final ExchangeRates midnightRates) {
         this.midnightRates = midnightRates;
     }
 
-    public void setSeqNo(SequenceNumber seqNo) {
+    public void setSeqNo(final SequenceNumber seqNo) {
         this.seqNo = seqNo;
     }
 
@@ -1032,12 +1034,12 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         return gasThrottleUsageSnapshot;
     }
 
-    public void setStakingRewardsActivated(boolean stakingRewardsActivated) {
+    public void setStakingRewardsActivated(final boolean stakingRewardsActivated) {
         this.stakingRewardsActivated = stakingRewardsActivated;
     }
 
     public void setGasThrottleUsageSnapshot(
-            DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
+            final DeterministicThrottle.UsageSnapshot gasThrottleUsageSnapshot) {
         this.gasThrottleUsageSnapshot = gasThrottleUsageSnapshot;
     }
 
@@ -1101,7 +1103,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
     }
 
     @VisibleForTesting
-    public void setSeqNoPostUpgrade(long seqNoPostUpgrade) {
+    public void setSeqNoPostUpgrade(final long seqNoPostUpgrade) {
         this.seqNoPostUpgrade = seqNoPostUpgrade;
     }
 }

@@ -18,17 +18,17 @@ package com.hedera.services.fees.calculation.contract.queries;
 import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.node.app.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,8 +43,8 @@ public final class GetContractInfoResourceUsage implements QueryResourceUsageEst
 
     @Inject
     public GetContractInfoResourceUsage(
-            AliasManager aliasManager,
-            GlobalDynamicProperties dynamicProperties,
+            final AliasManager aliasManager,
+            final GlobalDynamicProperties dynamicProperties,
             final RewardCalculator rewardCalculator) {
         this.aliasManager = aliasManager;
         this.dynamicProperties = dynamicProperties;

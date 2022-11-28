@@ -18,12 +18,16 @@ package com.hedera.services.ledger;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
-import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -35,16 +39,16 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, AccountProperty> {
     private final OptionValidator validator;
 
     private BalanceChange balanceChange;
-    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+    private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     public MerkleAccountScopedCheck(
             final OptionValidator validator,
@@ -105,8 +109,10 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                 return useExtantProps ? extantProps.apply(IS_DELETED) : account.isDeleted();
             case BALANCE:
                 return useExtantProps ? extantProps.apply(BALANCE) : account.getBalance();
-            case EXPIRY:
-                return useExtantProps ? extantProps.apply(EXPIRY) : account.getExpiry();
+            case EXPIRED_AND_PENDING_REMOVAL:
+                return useExtantProps
+                        ? extantProps.apply(EXPIRED_AND_PENDING_REMOVAL)
+                        : account.isExpiredAndPendingRemoval();
             case CRYPTO_ALLOWANCES:
                 return useExtantProps
                         ? extantProps.apply(CRYPTO_ALLOWANCES)
@@ -133,11 +139,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             return ACCOUNT_DELETED;
         }
 
-        final var expiry = (long) getEffective(EXPIRY, account, extantProps, changeSet);
+        final var isDetached =
+                (boolean)
+                        getEffective(EXPIRED_AND_PENDING_REMOVAL, account, extantProps, changeSet);
         final var balance = (long) getEffective(BALANCE, account, extantProps, changeSet);
         final var isContract =
                 (boolean) getEffective(IS_SMART_CONTRACT, account, extantProps, changeSet);
-        final var expiryStatus = validator.expiryStatusGiven(balance, expiry, isContract);
+        final var expiryStatus = validator.expiryStatusGiven(balance, isDetached, isContract);
         if (expiryStatus != OK) {
             return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
         }

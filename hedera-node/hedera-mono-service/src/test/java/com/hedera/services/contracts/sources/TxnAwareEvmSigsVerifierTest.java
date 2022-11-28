@@ -71,6 +71,7 @@ import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.core.jproto.JKeyList;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -82,9 +83,9 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -321,6 +322,20 @@ class TxnAwareEvmSigsVerifierTest {
     }
 
     @Test
+    void testsEmptyKeyList() {
+        final JKeyList emptyKeyList = new JKeyList();
+
+        given(ledgers.accounts()).willReturn(accountsLedger);
+        given(accountsLedger.exists(account)).willReturn(true);
+        given(accountsLedger.get(account, AccountProperty.KEY)).willReturn(emptyKeyList);
+
+        final var verdict =
+                subject.hasActiveKey(true, PRETEND_ACCOUNT_ADDR, PRETEND_SENDER_ADDR, ledgers);
+
+        assertFalse(verdict);
+    }
+
+    @Test
     void filtersContracts() {
         given(txnCtx.activePayer()).willReturn(payer);
         givenSigReqCheckable(smartContract, false, null);
@@ -402,7 +417,7 @@ class TxnAwareEvmSigsVerifierTest {
 
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-        boolean sigRequiredFlag =
+        final boolean sigRequiredFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true,
                         EntityIdUtils.asTypedEvmAddress(sigRequired),
@@ -416,7 +431,7 @@ class TxnAwareEvmSigsVerifierTest {
     void filtersPayerSinceSigIsGuaranteed() {
         given(txnCtx.activePayer()).willReturn(payer);
 
-        boolean payerFlag =
+        final boolean payerFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true, EntityIdUtils.asTypedEvmAddress(payer), PRETEND_SENDER_ADDR, ledgers);
 

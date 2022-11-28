@@ -25,9 +25,9 @@ import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

@@ -31,7 +31,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -65,7 +65,7 @@ public class AccountStore {
      * @throws InvalidTransactionException if the requested account is missing, deleted, or expired
      *     and pending removal
      */
-    public Account loadAccount(Id id) {
+    public Account loadAccount(final Id id) {
         return this.loadAccountOrFailWith(id, null);
     }
 
@@ -82,7 +82,7 @@ public class AccountStore {
      * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
      * @return a usable model of the account if available
      */
-    public Account loadAccountOrFailWith(Id id, @Nullable ResponseCodeEnum code) {
+    public Account loadAccountOrFailWith(final Id id, @Nullable final ResponseCodeEnum code) {
         return this.loadEntityOrFailWith(id, code, INVALID_ACCOUNT_ID, ACCOUNT_DELETED);
     }
 
@@ -95,7 +95,7 @@ public class AccountStore {
      * @throws InvalidTransactionException if the requested contract is missing, deleted or is not
      *     smart contract
      */
-    public Account loadContract(Id id) {
+    public Account loadContract(final Id id) {
         return loadEntityOrFailWith(id, null, INVALID_CONTRACT_ID, CONTRACT_DELETED);
     }
 
@@ -156,7 +156,7 @@ public class AccountStore {
      *
      * @param account the account to save
      */
-    public void commitAccount(Account account) {
+    public void commitAccount(final Account account) {
         final var id = account.getId();
         final var grpcId = id.asGrpcAccount();
         final var mutableAccount = accounts.getRef(grpcId);
@@ -164,7 +164,7 @@ public class AccountStore {
         accounts.put(grpcId, mutableAccount);
     }
 
-    private void mapModelToMutable(Account model, HederaAccount mutableAccount) {
+    private void mapModelToMutable(final Account model, final HederaAccount mutableAccount) {
         if (model.getProxy() != null) {
             mutableAccount.setProxy(model.getProxy().asEntityId());
         }
@@ -188,10 +188,10 @@ public class AccountStore {
     }
 
     private void validateUsable(
-            HederaAccount merkleAccount,
-            @Nullable ResponseCodeEnum explicitResponse,
-            ResponseCodeEnum nonExistingCode,
-            ResponseCodeEnum deletedCode) {
+            final HederaAccount merkleAccount,
+            @Nullable final ResponseCodeEnum explicitResponse,
+            final ResponseCodeEnum nonExistingCode,
+            final ResponseCodeEnum deletedCode) {
         validateTrue(
                 merkleAccount != null,
                 explicitResponse != null ? explicitResponse : nonExistingCode);
@@ -201,7 +201,7 @@ public class AccountStore {
         final var expiryStatus =
                 validator.expiryStatusGiven(
                         merkleAccount.getBalance(),
-                        merkleAccount.getExpiry(),
+                        merkleAccount.isExpiredAndPendingRemoval(),
                         merkleAccount.isSmartContract());
         validateTrue(expiryStatus == OK, expiryStatus);
     }

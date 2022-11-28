@@ -1,17 +1,22 @@
-module com.hedera.services.hapi.fees {
-    exports com.hedera.services.pricing;
-    exports com.hedera.services.usage;
-    exports com.hedera.services.usage.crypto;
-    exports com.hedera.services.usage.crypto.entities;
-    exports com.hedera.services.usage.consensus;
-    exports com.hedera.services.usage.file;
-    exports com.hedera.services.usage.state;
-    exports com.hedera.services.usage.schedule;
-    exports com.hedera.services.usage.token;
-    exports com.hedera.services.usage.token.meta;
+module com.hedera.node.app.hapi.fees {
+    exports com.hedera.node.app.hapi.fees.pricing;
+    exports com.hedera.node.app.hapi.fees.usage.crypto;
+    exports com.hedera.node.app.hapi.fees.usage.crypto.entities;
+    exports com.hedera.node.app.hapi.fees.usage.consensus;
+    exports com.hedera.node.app.hapi.fees.usage.state;
+    exports com.hedera.node.app.hapi.fees.usage.schedule;
+    exports com.hedera.node.app.hapi.fees.usage.token;
+    exports com.hedera.node.app.hapi.fees.usage.token.meta;
+    exports com.hedera.node.app.hapi.fees.usage.file;
+    exports com.hedera.node.app.hapi.fees.usage;
 
-    requires com.hedera.services.hapi.utils;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;
+    requires javax.inject;
+    requires com.google.protobuf;
+    requires org.apache.commons.lang3;
+    requires com.google.common;
+    requires static com.github.spotbugs.annotations;
 }

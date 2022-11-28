@@ -24,8 +24,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;

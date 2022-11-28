@@ -29,9 +29,9 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosResponse;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -56,12 +56,15 @@ public class GetAccountNftInfosAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        TokenGetAccountNftInfosQuery op = query.getTokenGetAccountNftInfos();
-        TokenGetAccountNftInfosResponse.Builder response =
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final TokenGetAccountNftInfosQuery op = query.getTokenGetAccountNftInfos();
+        final TokenGetAccountNftInfosResponse.Builder response =
                 TokenGetAccountNftInfosResponse.newBuilder();
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {
@@ -71,17 +74,17 @@ public class GetAccountNftInfosAnswer extends AbstractAnswer {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 }

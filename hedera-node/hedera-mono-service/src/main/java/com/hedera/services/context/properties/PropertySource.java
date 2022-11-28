@@ -18,12 +18,12 @@ package com.hedera.services.context.properties;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.sysfiles.domain.KnownBlockValues;
-import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

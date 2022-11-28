@@ -22,7 +22,7 @@ import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenRelStorageAdapter {
     private final boolean relsOnDisk;

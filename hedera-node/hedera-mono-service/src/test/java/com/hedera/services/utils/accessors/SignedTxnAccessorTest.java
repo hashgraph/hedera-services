@@ -18,39 +18,91 @@ package com.hedera.services.utils.accessors;
 import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.test.utils.IdUtils.*;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static java.util.stream.Collectors.toList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.*;
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.StringValue;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.usage.token.TokenOpsUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.builder.RequestBuilder;
-import com.hederahashgraph.fee.FeeBuilder;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.math.BigInteger;
@@ -198,13 +250,14 @@ class SignedTxnAccessorTest {
         xferWithAliasesNoAutoCreation =
                 xferWithAliasesNoAutoCreation.toBuilder().setSigMap(expectedMap).build();
         final var body = CommonUtils.extractTransactionBody(xferNoAliases);
-
-        var accessor = SignedTxnAccessor.uncheckedFrom(xferNoAliases);
+        final var signedTransaction = TxnUtils.signedTransactionFrom(body, expectedMap);
+        final var newTransaction = buildTransactionFrom(signedTransaction.toByteString());
+        var accessor = SignedTxnAccessor.uncheckedFrom(newTransaction);
         accessor.countAutoCreationsWith(aliasManager);
         final var txnUsageMeta = accessor.baseUsageMeta();
 
-        assertEquals(xferNoAliases, accessor.getSignedTxnWrapper());
-        assertArrayEquals(xferNoAliases.toByteArray(), accessor.getSignedTxnWrapperBytes());
+        assertEquals(newTransaction, accessor.getSignedTxnWrapper());
+        assertArrayEquals(newTransaction.toByteArray(), accessor.getSignedTxnWrapperBytes());
         assertEquals(body, accessor.getTxn());
         assertArrayEquals(body.toByteArray(), accessor.getTxnBytes());
         assertEquals(body.getTransactionID(), accessor.getTxnId());
@@ -212,7 +265,8 @@ class SignedTxnAccessorTest {
         assertEquals(HederaFunctionality.CryptoTransfer, accessor.getFunction());
         assertEquals(offeredFee, accessor.getOfferedFee());
         assertArrayEquals(
-                CommonUtils.noThrowSha384HashOf(xferNoAliases.toByteArray()), accessor.getHash());
+                CommonUtils.noThrowSha384HashOf(signedTransaction.toByteArray()),
+                accessor.getHash());
         assertEquals(expectedMap, accessor.getSigMap());
         assertArrayEquals("irst".getBytes(), accessor.getPkToSigsFn().sigBytesFor("f".getBytes()));
         assertArrayEquals(zeroByteMemoUtf8Bytes, accessor.getMemoUtf8Bytes());
@@ -466,7 +520,10 @@ class SignedTxnAccessorTest {
                         -70000l,
                         5679l,
                         70000l);
-        final var body = TransactionBody.parseFrom(xferWithTopLevelBodyBytes.getBodyBytes());
+        final var signedTxn =
+                SignedTransaction.parseFrom(xferWithTopLevelBodyBytes.getSignedTransactionBytes());
+        final var body = TransactionBody.parseFrom(signedTxn.getBodyBytes());
+
         final var confusedTxn = Transaction.parseFrom(body.toByteArray());
 
         final var confusedAccessor = SignedTxnAccessor.uncheckedFrom(confusedTxn);
@@ -687,7 +744,7 @@ class SignedTxnAccessorTest {
 
     @Test
     void precheckSupportingFunctionsWork() throws InvalidProtocolBufferException {
-        var falseOp = ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
+        final var falseOp = ContractCallTransactionBody.newBuilder().setGas(123456789L).build();
         var txn =
                 buildTransactionFrom(TransactionBody.newBuilder().setContractCall(falseOp).build());
 
@@ -697,7 +754,7 @@ class SignedTxnAccessorTest {
         assertFalse(accessor.mintsWithMetadata());
         assertThrows(UnsupportedOperationException.class, accessor::doPrecheck);
 
-        var trueOp =
+        final var trueOp =
                 TokenWipeAccountTransactionBody.newBuilder()
                         .setAccount(asAccount("0.0.1000"))
                         .build();
@@ -707,7 +764,7 @@ class SignedTxnAccessorTest {
         given(dynamicProperties.areNftsEnabled()).willReturn(true);
         given(dynamicProperties.maxBatchSizeWipe()).willReturn(10);
 
-        var subject = new TokenWipeAccessor(txn.toByteArray(), txn, dynamicProperties);
+        final var subject = new TokenWipeAccessor(txn.toByteArray(), txn, dynamicProperties);
 
         assertEquals(true, subject.supportsPrecheck());
         assertEquals(INVALID_TOKEN_ID, subject.doPrecheck());
@@ -828,7 +885,7 @@ class SignedTxnAccessorTest {
 
     @Test
     void toLoggableStringWorks() throws InvalidProtocolBufferException {
-        TransactionBody someTxn =
+        final TransactionBody someTxn =
                 TransactionBody.newBuilder()
                         .setTransactionID(
                                 TransactionID.newBuilder().setAccountID(asAccount("0.0.2")))
@@ -849,7 +906,7 @@ class SignedTxnAccessorTest {
                                         .setPubKeyPrefix(ByteString.copyFromUtf8("a"))
                                         .setEd25519(canonicalSig))
                         .build();
-        Transaction signedTxnWithBody =
+        final Transaction signedTxnWithBody =
                 Transaction.newBuilder()
                         .setBodyBytes(someTxn.toByteString())
                         .setSigMap(onePairSigMap)
@@ -857,7 +914,7 @@ class SignedTxnAccessorTest {
         final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
+        final SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
 
         final var expectedString =
                 "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111,"
