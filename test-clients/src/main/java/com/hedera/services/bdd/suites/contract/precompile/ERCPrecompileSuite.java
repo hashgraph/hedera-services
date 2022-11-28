@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -50,8 +51,10 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUniqueWithAllowance;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -74,6 +77,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_ACCOUNT_SAME_AS_OWNER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
@@ -93,6 +97,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -184,30 +189,34 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ERC_20(), ERC_721());
+        return allOf(ERC_20());
     }
 
     List<HapiApiSpec> ERC_20() {
         return List.of(
-                getErc20TokenName(),
-                getErc20TokenSymbol(),
-                getErc20TokenDecimals(),
-                getErc20TotalSupply(),
-                getErc20BalanceOfAccount(),
-                transferErc20Token(),
-                erc20Allowance(),
-                erc20Approve(),
-                someERC20ApproveAllowanceScenariosPass(),
-                someERC20NegativeTransferFromScenariosPass(),
-                someERC20ApproveAllowanceScenarioInOneCall(),
-                getErc20TokenDecimalsFromErc721TokenFails(),
-                transferErc20TokenFromErc721TokenFails(),
-                transferErc20TokenReceiverContract(),
-                transferErc20TokenSenderAccount(),
-                transferErc20TokenAliasedSender(),
-                directCallsWorkForERC20(),
-                erc20TransferFrom(),
-                erc20TransferFromSelf());
+                getErc20TokenNameNTimes()
+                //                getErc20TokenName(),
+                //                getErc20TokenSymbol(),
+                //                getErc20TokenDecimals(),
+                //                getErc20TotalSupply(),
+                //                getErc20BalanceOfAccount(),
+                //                transferErc20Token(),
+                //                erc20Allowance(),
+                //                erc20Approve(),
+                //                someERC20ApproveAllowanceScenariosPass(),
+                //                someERC20NegativeTransferFromScenariosPass(),
+                //                someERC20ApproveAllowanceScenarioInOneCall(),
+                //                getErc20TokenDecimalsFromErc721TokenFails(),
+                //                transferErc20TokenFromErc721TokenFails(),
+                //                transferErc20TokenReceiverContract(),
+                //                transferErc20TokenSenderAccount(),
+                //                transferErc20TokenAliasedSender(),
+                //                directCallsWorkForERC20(),
+                //                erc20TransferFrom(),
+                //                erc20TransferFromSelf(),
+                //
+                // transferErc20TokenToEVMAddressAliasRevertAndTransferAgainSuccessfully()
+                );
     }
 
     List<HapiApiSpec> ERC_721() {
@@ -1759,6 +1768,58 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .ERC_NAME)
                                                                         .withName(TOKEN_NAME)))));
+    }
+
+    private HapiApiSpec getErc20TokenNameNTimes() {
+        final var REDUCED_NETWORK_FEE = 1L;
+        final var REDUCED_NODE_FEE = 1L;
+        final var REDUCED_SERVICE_FEE = 1L;
+        final var TOTAL_REDUCED_FEE = REDUCED_NETWORK_FEE + REDUCED_NODE_FEE + REDUCED_SERVICE_FEE;
+        return defaultHapiSpec("getErc20TokenNameNTimes")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(5)
+                                .name(TOKEN_NAME)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(ERC_20_CONTRACT),
+                        contractCreate(ERC_20_CONTRACT))
+                .when(
+                        balanceSnapshot("accountSnapshot", ACCOUNT),
+                        reduceFeeFor(
+                                HederaFunctionality.ContractCall,
+                                REDUCED_NODE_FEE,
+                                REDUCED_NETWORK_FEE,
+                                REDUCED_SERVICE_FEE),
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                ERC_20_CONTRACT,
+                                                                "nameNTimes",
+                                                                asHeadlongAddress(
+                                                                        asHexedAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN))),
+                                                                BigInteger.valueOf(51))
+                                                        .payingWith(ACCOUNT)
+                                                        .via(NAME_TXN)
+                                                        .gas(4_000_000)
+                                                        .hasKnownStatus(
+                                                                MAX_CHILD_RECORDS_EXCEEDED))))
+                .then(
+                        getTxnRecord(NAME_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT)
+                                .hasTinyBars(
+                                        changeFromSnapshot("accountSnapshot", -TOTAL_REDUCED_FEE)));
     }
 
     private HapiApiSpec getErc721Symbol() {
