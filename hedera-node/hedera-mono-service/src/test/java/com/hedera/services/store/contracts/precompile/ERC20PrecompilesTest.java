@@ -79,6 +79,7 @@ import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
@@ -98,7 +99,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -233,13 +233,13 @@ class ERC20PrecompilesTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
-        Map<SubType, BigDecimal> type = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<SubType, BigDecimal> type = new HashMap<>();
         type.put(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0));
         type.put(SubType.TOKEN_NON_FUNGIBLE_UNIQUE, BigDecimal.valueOf(0));
         canonicalPrices.put(HederaFunctionality.CryptoTransfer, type);
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -303,7 +303,7 @@ class ERC20PrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        Bytes pretendArgumentsApprove =
+        final Bytes pretendArgumentsApprove =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -316,7 +316,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsApprove, a -> a));
 
-        Bytes pretendArgumentsTransferFrom =
+        final Bytes pretendArgumentsTransferFrom =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -329,7 +329,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsTransferFrom, a -> a));
 
-        Bytes pretendArgumentsAllowance =
+        final Bytes pretendArgumentsAllowance =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -342,7 +342,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsAllowance, a -> a));
 
-        Bytes pretendArgumentsApproveForAll =
+        final Bytes pretendArgumentsApproveForAll =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -355,7 +355,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsApproveForAll, a -> a));
 
-        Bytes pretendArgumentsGetApproved =
+        final Bytes pretendArgumentsGetApproved =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -368,7 +368,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsGetApproved, a -> a));
 
-        Bytes pretendArgumentsApprovedForAll =
+        final Bytes pretendArgumentsApprovedForAll =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_REDIRECT_FOR_TOKEN)),
                         fungibleTokenAddr,
@@ -388,7 +388,7 @@ class ERC20PrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
 
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        Bytes pretendArgumentsApprove =
+        final Bytes pretendArgumentsApprove =
                 Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_APPROVE)));
 
         // when:
@@ -398,7 +398,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsApprove, a -> a));
 
-        Bytes pretendArgumentsAllowance =
+        final Bytes pretendArgumentsAllowance =
                 Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE)));
 
         // when:
@@ -408,7 +408,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsAllowance, a -> a));
 
-        Bytes pretendArgumentsApproveForAll =
+        final Bytes pretendArgumentsApproveForAll =
                 Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_SET_APPROVAL_FOR_ALL)));
 
         // when:
@@ -418,7 +418,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsApproveForAll, a -> a));
 
-        Bytes pretendArgumentsGetApproved =
+        final Bytes pretendArgumentsGetApproved =
                 Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_GET_APPROVED)));
 
         // when:
@@ -428,7 +428,7 @@ class ERC20PrecompilesTest {
                 InvalidTransactionException.class,
                 () -> subject.prepareComputation(pretendArgumentsGetApproved, a -> a));
 
-        Bytes pretendArgumentsApprovedForAll =
+        final Bytes pretendArgumentsApprovedForAll =
                 Bytes.concatenate(Bytes.of(Integers.toBytes(ABI_ID_IS_APPROVED_FOR_ALL)));
 
         // when:
@@ -441,8 +441,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void invalidNestedFunctionSelector() {
-        Bytes nestedPretendArguments = Bytes.of(0, 0, 0, 0);
-        Bytes pretendArguments =
+        final Bytes nestedPretendArguments = Bytes.of(0, 0, 0, 0);
+        final Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -455,8 +455,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void gasCalculationForReadOnlyMethod() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -493,8 +493,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void gasCalculationForModifyingMethod() throws InvalidProtocolBufferException {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -574,8 +574,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void name() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_NAME));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -608,7 +608,7 @@ class ERC20PrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
-        ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
+        final ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
         verify(mockRecordBuilder).setContractCallResult(captor.capture());
         assertEquals(0L, captor.getValue().getGas());
         assertEquals(0L, captor.getValue().getAmount());
@@ -617,8 +617,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void symbol() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_SYMBOL));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -655,8 +655,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void decimals() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_DECIMALS));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -695,8 +695,9 @@ class ERC20PrecompilesTest {
 
     @Test
     void totalSupply() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments =
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_TOTAL_SUPPLY_TOKEN));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         given(
@@ -734,15 +735,15 @@ class ERC20PrecompilesTest {
 
     @Test
     void ercAllowance() {
-        TreeMap<FcTokenAllowanceId, Long> allowances = new TreeMap<>();
+        final TreeMap<FcTokenAllowanceId, Long> allowances = new TreeMap<>();
         allowances.put(
                 FcTokenAllowanceId.from(
                         EntityNum.fromLong(token.getTokenNum()),
                         EntityNum.fromLong(receiver.getAccountNum())),
                 10L);
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_ALLOWANCE));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
@@ -789,14 +790,14 @@ class ERC20PrecompilesTest {
 
     @Test
     void hapiAllowance() {
-        TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
+        final TreeMap<FcTokenAllowanceId, Long> alowances = new TreeMap<>();
         alowances.put(
                 FcTokenAllowanceId.from(
                         EntityNum.fromLong(token.getTokenNum()),
                         EntityNum.fromLong(receiver.getAccountNum())),
                 10L);
 
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ALLOWANCE));
         givenMinimalFrameContext(pretendArguments);
         given(wrappedLedgers.accounts()).willReturn(accounts);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
@@ -843,8 +844,9 @@ class ERC20PrecompilesTest {
 
     @Test
     void balanceOf() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments =
+                Bytes.of(Integers.toBytes(ABI_ID_ERC_BALANCE_OF_TOKEN));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
@@ -898,8 +900,8 @@ class ERC20PrecompilesTest {
     void allowanceValidation() {
         givenPricingUtilsContext();
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
 
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -940,12 +942,12 @@ class ERC20PrecompilesTest {
 
     @Test
     void ercApprove() {
-        List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
-        List<TokenAllowance> tokenAllowances = new ArrayList<>();
-        List<NftAllowance> nftAllowances = new ArrayList<>();
+        final List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+        final List<TokenAllowance> tokenAllowances = new ArrayList<>();
+        final List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_APPROVE));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1021,11 +1023,11 @@ class ERC20PrecompilesTest {
 
     @Test
     void hapiApprove() {
-        List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
-        List<TokenAllowance> tokenAllowances = new ArrayList<>();
-        List<NftAllowance> nftAllowances = new ArrayList<>();
+        final List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+        final List<TokenAllowance> tokenAllowances = new ArrayList<>();
+        final List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE));
         givenMinimalFrameContext(pretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1108,11 +1110,11 @@ class ERC20PrecompilesTest {
 
     @Test
     void hapiApproveNFT() {
-        List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
-        List<TokenAllowance> tokenAllowances = new ArrayList<>();
-        List<NftAllowance> nftAllowances = new ArrayList<>();
+        final List<CryptoAllowance> cryptoAllowances = new ArrayList<>();
+        final List<TokenAllowance> tokenAllowances = new ArrayList<>();
+        final List<NftAllowance> nftAllowances = new ArrayList<>();
 
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE_NFT));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_APPROVE_NFT));
         givenMinimalFrameContext(pretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
@@ -1196,8 +1198,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void transfer() throws InvalidProtocolBufferException {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1287,8 +1289,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void transferFrom() throws InvalidProtocolBufferException {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER_FROM));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1563,8 +1565,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void transferFails() throws InvalidProtocolBufferException {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
-        Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TRANSFER));
+        final Bytes pretendArguments = givenMinimalFrameContext(nestedPretendArguments);
         givenLedgers();
         givenPricingUtilsContext();
 
@@ -1631,8 +1633,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void ownerOfNotSupported() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
-        Bytes pretendArguments =
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_OWNER_OF_NFT));
+        final Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -1647,8 +1649,8 @@ class ERC20PrecompilesTest {
 
     @Test
     void tokenURINotSupported() {
-        Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
-        Bytes pretendArguments =
+        final Bytes nestedPretendArguments = Bytes.of(Integers.toBytes(ABI_ID_ERC_TOKEN_URI_NFT));
+        final Bytes pretendArguments =
                 givenMinimalFrameContextWithoutParentUpdater(nestedPretendArguments);
 
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
@@ -1661,12 +1663,12 @@ class ERC20PrecompilesTest {
         assertEquals(NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, exception.getMessage());
     }
 
-    private Bytes givenMinimalFrameContext(Bytes nestedArg) {
+    private Bytes givenMinimalFrameContext(final Bytes nestedArg) {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         return Bytes.concatenate(
@@ -1675,7 +1677,7 @@ class ERC20PrecompilesTest {
                 nestedArg);
     }
 
-    private Bytes givenMinimalFrameContextWithoutParentUpdater(Bytes nestedArg) {
+    private Bytes givenMinimalFrameContextWithoutParentUpdater(final Bytes nestedArg) {
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);

@@ -33,6 +33,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
@@ -44,7 +45,6 @@ import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -267,7 +267,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }
@@ -301,12 +301,12 @@ class TokenGetCustomFeesPrecompileTest {
     }
 
     private CustomFee getFractionalFee() {
-        long denominator = 2L;
-        long numerator = 1L;
+        final long denominator = 2L;
+        final long numerator = 1L;
         final var fraction =
                 Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
-        long maximumAmount = 400_000_000L;
-        long minimumAmount = 10_000L;
+        final long maximumAmount = 400_000_000L;
+        final long minimumAmount = 10_000L;
         final var fractionalFee =
                 FractionalFee.newBuilder()
                         .setFractionalAmount(fraction)

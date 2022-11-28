@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -71,7 +72,6 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -117,7 +117,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     private static final String RECIPIENT = "recipient";
     private static final String MINT_FUNGIBLE_TOKEN = "mintFungibleToken";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new ContractMintHTSSuite().runSuiteSync();
     }
 
@@ -837,7 +837,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
         final BigDecimal hapiUsdPrice;
         try {
             hapiUsdPrice = assetsLoader.loadCanonicalPrices().get(function).get(type);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
         final var precompileTinycentPrice =
@@ -864,10 +864,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
             final String nestedTransferTxn) {
         return assertionsHold(
                 (spec, log) -> {
-                    var subOp = getTxnRecord(nestedTransferTxn);
+                    final var subOp = getTxnRecord(nestedTransferTxn);
                     allRunFor(spec, subOp);
 
-                    var rcd = subOp.getResponseRecord();
+                    final var rcd = subOp.getResponseRecord();
 
                     final var contractCallResult = rcd.getContractCallResult();
                     assertEquals(
