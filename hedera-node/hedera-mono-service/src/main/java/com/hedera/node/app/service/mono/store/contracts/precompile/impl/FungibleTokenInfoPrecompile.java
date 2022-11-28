@@ -64,7 +64,8 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        final var tokenInfo =
+                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         return encoder.encodeGetFungibleTokenInfo(tokenInfo);

@@ -31,10 +31,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -52,9 +55,16 @@ import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
@@ -117,7 +127,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(Address address) {
+    public boolean isUsable(final Address address) {
         final var account = accounts.get(fromEvmAddress(address));
         if (account == null || account.isDeleted()) {
             return false;
@@ -135,31 +145,31 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isTokenAccount(Address address) {
+    public boolean isTokenAccount(final Address address) {
         return view.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
     }
 
     @Override
-    public void putStorage(AccountID id, Bytes key, Bytes value) {
+    public void putStorage(final AccountID id, final Bytes key, final Bytes value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UInt256 getStorage(Address address, Bytes key) {
+    public UInt256 getStorage(final Address address, final Bytes key) {
         final var num = numFromEvmAddress(address.toArrayUnsafe());
         final var contractKey = new ContractKey(num, key.toArray());
-        IterableContractValue value = storage.get(contractKey);
+        final IterableContractValue value = storage.get(contractKey);
         return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
     }
 
     @Override
     public void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void storeCode(AccountID id, Bytes code) {
+    public void storeCode(final AccountID id, final Bytes code) {
         throw new UnsupportedOperationException();
     }
 
@@ -185,7 +195,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Override
     public void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
@@ -274,6 +284,20 @@ public class StaticEntityAccess implements EntityAccess {
         return (relStatus != null) ? relStatus.getBalance() : 0;
     }
 
+    public JKey keyOf(final TokenID tokenId, final TokenProperty keyType) {
+        final var token = lookupToken(tokenId);
+        return switch (keyType) {
+            case ADMIN_KEY -> token.getAdminKey();
+            case KYC_KEY -> token.getKycKey();
+            case FREEZE_KEY -> token.getFreezeKey();
+            case WIPE_KEY -> token.getWipeKey();
+            case SUPPLY_KEY -> token.getSupplyKey();
+            case FEE_SCHEDULE_KEY -> token.getFeeScheduleKey();
+            case PAUSE_KEY -> token.getPauseKey();
+            default -> throw new InvalidTransactionException(ResponseCodeEnum.INVALID_KEY_ENCODING);
+        };
+    }
+
     /**
      * Returns the frozen status of the given token for the given account.
      *
@@ -288,6 +312,24 @@ public class StaticEntityAccess implements EntityAccess {
         final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
         final var relStatus = tokenAssociations.get(isFrozenKey);
         return relStatus != null && relStatus.isFrozen();
+    }
+
+    public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
+        return view.infoForToken(tokenId);
+    }
+
+    public Optional<TokenNftInfo> infoForNft(final NftID target) {
+        final var nft =
+                nfts.get(
+                        NftId.withDefaultShardRealm(
+                                EntityNum.fromTokenId(target.getTokenID()).longValue(),
+                                target.getSerialNumber()));
+        validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        return view.infoForNft(target);
+    }
+
+    public List<CustomFee> infoForTokenCustomFees(final TokenID tokenId) {
+        return view.infoForTokenCustomFees(tokenId);
     }
 
     /**
@@ -385,7 +427,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     private <T> T nftPropertyOf(final NftId nftId, final Function<UniqueTokenAdapter, T> getter) {
-        var nft = nfts.get(nftId);
+        final var nft = nfts.get(nftId);
         validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return getter.apply(nft);
     }

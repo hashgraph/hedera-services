@@ -87,19 +87,19 @@ public class Account implements HederaEvmAccount {
     private int numTreasuryTitles;
     private long ethereumNonce;
 
-    public Account(Id id) {
+    public Account(final Id id) {
         this.id = id;
     }
 
-    public void setExpiry(long expiry) {
+    public void setExpiry(final long expiry) {
         this.expiry = expiry;
     }
 
-    public void initBalance(long balance) {
+    public void initBalance(final long balance) {
         this.balance = balance;
     }
 
-    public void setEthereumNonce(long ethereumNonce) {
+    public void setEthereumNonce(final long ethereumNonce) {
         this.ethereumNonce = ethereumNonce;
     }
 
@@ -115,7 +115,7 @@ public class Account implements HederaEvmAccount {
         return ownedNfts;
     }
 
-    public void setOwnedNfts(long ownedNfts) {
+    public void setOwnedNfts(final long ownedNfts) {
         this.ownedNfts = ownedNfts;
     }
 
@@ -123,7 +123,7 @@ public class Account implements HederaEvmAccount {
         this.ownedNfts++;
     }
 
-    public void setAutoAssociationMetadata(int autoAssociationMetadata) {
+    public void setAutoAssociationMetadata(final int autoAssociationMetadata) {
         this.autoAssociationMetadata = autoAssociationMetadata;
     }
 
@@ -131,7 +131,7 @@ public class Account implements HederaEvmAccount {
         return numTreasuryTitles;
     }
 
-    public void setNumTreasuryTitles(int numTreasuryTitles) {
+    public void setNumTreasuryTitles(final int numTreasuryTitles) {
         this.numTreasuryTitles = numTreasuryTitles;
     }
 
@@ -152,7 +152,7 @@ public class Account implements HederaEvmAccount {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(WorldLedgers.ECDSA_KEY_ALIAS_PREFIX)) {
-                var addressBytes =
+                final var addressBytes =
                         EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 return addressBytes == null
                         ? id.asEvmAddress()
@@ -175,12 +175,12 @@ public class Account implements HederaEvmAccount {
         return getAlreadyUsedAutomaticAssociationsFrom(autoAssociationMetadata);
     }
 
-    public void setMaxAutomaticAssociations(int maxAutomaticAssociations) {
+    public void setMaxAutomaticAssociations(final int maxAutomaticAssociations) {
         autoAssociationMetadata =
                 setMaxAutomaticAssociationsTo(autoAssociationMetadata, maxAutomaticAssociations);
     }
 
-    public void setAlreadyUsedAutomaticAssociations(int alreadyUsedCount) {
+    public void setAlreadyUsedAutomaticAssociations(final int alreadyUsedCount) {
         validateTrue(
                 isValidAlreadyUsedCount(alreadyUsedCount), NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
         autoAssociationMetadata =
@@ -291,12 +291,12 @@ public class Account implements HederaEvmAccount {
         return id;
     }
 
-    private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {
+    private boolean isValidAlreadyUsedCount(final int alreadyUsedCount) {
         return alreadyUsedCount >= 0 && alreadyUsedCount <= getMaxAutomaticAssociations();
     }
 
     private boolean exceedsTokenAssociationLimit(
-            GlobalDynamicProperties dynamicProperties, int totalAssociations) {
+            final GlobalDynamicProperties dynamicProperties, final int totalAssociations) {
         return dynamicProperties.areTokenAssociationsLimited()
                 && totalAssociations > dynamicProperties.maxTokensPerAccount();
     }
@@ -306,7 +306,7 @@ public class Account implements HederaEvmAccount {
     collections, so the performance of these methods doesn't matter. */
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
     }
 
@@ -351,7 +351,7 @@ public class Account implements HederaEvmAccount {
         return isSmartContract;
     }
 
-    public void setSmartContract(boolean val) {
+    public void setSmartContract(final boolean val) {
         this.isSmartContract = val;
     }
 
@@ -359,7 +359,7 @@ public class Account implements HederaEvmAccount {
         return this.isReceiverSigRequired;
     }
 
-    public void setReceiverSigRequired(boolean isReceiverSigRequired) {
+    public void setReceiverSigRequired(final boolean isReceiverSigRequired) {
         this.isReceiverSigRequired = isReceiverSigRequired;
     }
 

@@ -23,7 +23,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -35,6 +34,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -66,12 +66,11 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        validateTrue(stateView.tokenExists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
-        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        final var tokenInfo =
+                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
 
-        if (tokenInfo == null) {
-            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID);
-        }
+        validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+        Objects.requireNonNull(tokenInfo);
 
         final var expiryInfo =
                 new TokenExpiryWrapper(

@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -46,17 +45,18 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile {
     private static final ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
 
     public GetTokenTypePrecompile(
-            TokenID tokenId,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WorldLedgers ledgers,
-            EncodingFacade encoder,
-            PrecompilePricingUtils pricingUtils,
-            StateView stateView) {
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils,
+            final StateView stateView) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils, stateView);
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetTokenType(input);
         tokenId = tokenInfoWrapper.tokenID();
         return super.body(input, aliasResolver);
@@ -64,7 +64,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var token = stateView.tokens().getOrDefault(EntityNum.fromTokenId(tokenId), null);
+        final var token = ledgers.tokens().getImmutableRef(tokenId);
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenType = token.tokenType().ordinal();
         return encoder.encodeGetTokenType(tokenType);

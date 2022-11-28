@@ -54,6 +54,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -62,8 +63,11 @@ import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
@@ -136,6 +140,8 @@ class GetTokenInfoPrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+    @Mock private NetworkInfo networkInfo;
 
     public static final Bytes GET_TOKEN_INFO_INPUT =
             Bytes.fromHexString(
@@ -286,7 +292,10 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -328,7 +337,10 @@ class GetTokenInfoPrecompilesTest {
                         .build();
         tokenInfo.setSupplyKey(supplyKey);
 
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         entityIdUtils
                 .when(
@@ -372,7 +384,10 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithAllKeys();
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -408,7 +423,10 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
         given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -445,13 +463,17 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
         given(
-                        stateView.infoForNft(
+                        wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
                                         .setSerialNumber(serialNumber)
                                         .setTokenID(tokenMerkleId)
-                                        .build()))
+                                        .build(),
+                                networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
                 .willReturn(successResult);
@@ -490,7 +512,10 @@ class GetTokenInfoPrecompilesTest {
 
         final var fixedFee = getFixedFeeWithDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -528,7 +553,10 @@ class GetTokenInfoPrecompilesTest {
 
         final var fixedFee = getFixedFeeWithoutDenomination();
         tokenInfo.addAllCustomFees(List.of(fixedFee));
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -566,7 +594,10 @@ class GetTokenInfoPrecompilesTest {
 
         final var fractionalFee = getFractionalFee();
         tokenInfo.addAllCustomFees(List.of(fractionalFee));
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -606,13 +637,17 @@ class GetTokenInfoPrecompilesTest {
 
         final var royaltyFee = getRoyaltyFee(true);
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
         given(
-                        stateView.infoForNft(
+                        wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
                                         .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
-                                        .build()))
+                                        .build(),
+                                networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
@@ -654,13 +689,17 @@ class GetTokenInfoPrecompilesTest {
 
         final var royaltyFee = getRoyaltyFee(false);
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
         given(
-                        stateView.infoForNft(
+                        wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
                                         .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
-                                        .build()))
+                                        .build(),
+                                networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
@@ -699,7 +738,10 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -732,7 +774,10 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
@@ -766,8 +811,12 @@ class GetTokenInfoPrecompilesTest {
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
-        given(stateView.infoForNft(nftID)).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
 
         givenMinimalContextForInvalidNftSerialNumberCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -802,7 +851,10 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -839,7 +891,10 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
 
         given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
 
@@ -878,8 +933,12 @@ class GetTokenInfoPrecompilesTest {
                 .thenReturn(tokenInfoWrapper);
 
         tokenInfo = createTokenInfoWithSingleKey(1, true);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo.build()));
-        given(stateView.infoForNft(nftID)).willReturn(Optional.of(nonFungibleTokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo.build()));
+        given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
+                .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
                 .willReturn(successResult);

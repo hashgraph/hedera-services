@@ -232,7 +232,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
         final var now = frame.getBlockValues().getTimestamp();
         gasRequirement = precompile.getGasRequirement(now);
-        Bytes result = computeInternal(frame);
+        final Bytes result = computeInternal(frame);
 
         return result == null
                 ? PrecompiledContract.PrecompileContractResult.halt(
@@ -254,7 +254,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.precompile = null;
         this.transactionBody = null;
 
-        int functionId = input.getInt(0);
+        final int functionId = input.getInt(0);
         this.gasRequirement = 0L;
 
         this.precompile =
@@ -735,12 +735,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                            null,
-                            syntheticTxnFactory,
-                            ledgers,
-                            encoder,
-                            precompilePricingUtils,
-                            currentView);
+                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
                             null,
@@ -802,13 +797,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         this.transactionBody = TransactionBody.newBuilder();
         try {
             this.transactionBody = this.precompile.body(input, aliasResolver);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
             transactionBody = null;
         }
     }
 
-    private Precompile checkNFT(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+    private Precompile checkNFT(
+            final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (isFungible) {
             throw new InvalidTransactionException(
                     NOT_SUPPORTED_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
@@ -817,7 +813,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         }
     }
 
-    private Precompile checkFungible(boolean isFungible, Supplier<Precompile> precompileSupplier) {
+    private Precompile checkFungible(
+            final boolean isFungible, final Supplier<Precompile> precompileSupplier) {
         if (!isFungible) {
             throw new InvalidTransactionException(
                     NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON, INVALID_TOKEN_ID);
@@ -827,7 +824,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
     }
 
     private Precompile checkFeatureFlag(
-            boolean featureFlag, Supplier<Precompile> precompileSupplier) {
+            final boolean featureFlag, final Supplier<Precompile> precompileSupplier) {
         if (!featureFlag) {
             throw new InvalidTransactionException(NOT_SUPPORTED);
         } else {
