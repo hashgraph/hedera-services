@@ -15,17 +15,17 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage.ifPresent;
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenUpdateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -40,26 +40,27 @@ public class TokenUpdateResourceUsage extends AbstractTokenResourceUsage
             TokenUpdateUsage::newEstimate;
 
     @Inject
-    public TokenUpdateResourceUsage(EstimatorFactory estimatorFactory) {
+    public TokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
         super(estimatorFactory);
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasTokenUpdate();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        var op = txn.getTokenUpdate();
-        var sigUsage =
+        final var op = txn.getTokenUpdate();
+        final var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-        var optionalInfo = view.infoForToken(op.getToken());
+        final var optionalInfo = view.infoForToken(op.getToken());
         if (optionalInfo.isPresent()) {
-            var info = optionalInfo.get();
-            var estimate =
+            final var info = optionalInfo.get();
+            final var estimate =
                     factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS))
                             .givenCurrentExpiry(info.getExpiry().getSeconds())
                             .givenCurrentAdminKey(

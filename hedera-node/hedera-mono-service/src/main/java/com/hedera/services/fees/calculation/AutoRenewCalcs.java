@@ -26,15 +26,15 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApp
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.fees.usage.contract.ExtantContractContext;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.usage.contract.ExtantContractContext;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;

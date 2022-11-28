@@ -54,6 +54,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
@@ -66,7 +67,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -1018,7 +1018,7 @@ class GetTokenInfoPrecompilesTest {
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }
@@ -1078,7 +1078,7 @@ class GetTokenInfoPrecompilesTest {
     }
 
     private CustomFee getRoyaltyFee(final boolean hasFallbackFee) {
-        RoyaltyFee royaltyFee;
+        final RoyaltyFee royaltyFee;
         final var fraction =
                 Fraction.newBuilder().setNumerator(numerator).setDenominator(denominator).build();
         if (hasFallbackFee) {
