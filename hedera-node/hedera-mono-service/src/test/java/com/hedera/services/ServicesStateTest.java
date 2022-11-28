@@ -24,6 +24,7 @@ import static com.hedera.services.context.properties.SerializableSemVers.forHapi
 import static com.hedera.services.state.migration.MapMigrationToDisk.INSERTIONS_PER_COPY;
 import static com.swirlds.common.system.InitTrigger.RECONNECT;
 import static com.swirlds.common.system.InitTrigger.RESTART;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,12 +68,14 @@ import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.ClassLoaderHelper;
+import com.hedera.test.utils.CryptoConfigUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.crypto.SerializablePublicKey;
+import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.common.exceptions.MutabilityException;
 import com.swirlds.common.system.*;
 import com.swirlds.common.system.address.Address;
@@ -862,7 +865,10 @@ class ServicesStateTest {
     private Platform createMockPlatformWithCrypto() {
         final var platform = mock(Platform.class);
         when(platform.getSelfId()).thenReturn(new NodeId(false, 0));
-        when(platform.getCryptography()).thenReturn(CryptographyHolder.get());
+        when(platform.getCryptography())
+                .thenReturn(
+                        new CryptoEngine(
+                                getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG));
         assertNotNull(platform.getCryptography());
         return platform;
     }
