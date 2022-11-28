@@ -19,6 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
@@ -29,7 +30,6 @@ import com.hedera.services.utils.ResponseCodeUtil;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
-import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;

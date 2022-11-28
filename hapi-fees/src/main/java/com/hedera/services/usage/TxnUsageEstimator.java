@@ -15,7 +15,7 @@
  */
 package com.hedera.services.usage;
 
-import static com.hederahashgraph.fee.FeeBuilder.HRS_DIVISOR;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.SubType;

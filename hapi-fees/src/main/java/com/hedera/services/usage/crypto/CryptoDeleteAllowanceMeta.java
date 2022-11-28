@@ -15,8 +15,8 @@
  */
 package com.hedera.services.usage.crypto;
 
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;

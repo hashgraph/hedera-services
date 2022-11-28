@@ -10,7 +10,7 @@ module com.hedera.services.hapi.fees {
     exports com.hedera.services.usage.token;
     exports com.hedera.services.usage.token.meta;
 
-    requires com.hedera.services.hapi.utils;
+    requires com.hedera.node.app.hapi.utils;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.fasterxml.jackson.databind;
     requires org.apache.logging.log4j;

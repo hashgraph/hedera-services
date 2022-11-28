@@ -17,6 +17,8 @@ package com.hedera.services.fees.calculation.token.txns;
 
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.usage.EstimatorFactory;
@@ -25,8 +27,6 @@ import com.hedera.services.usage.TxnUsageEstimator;
 import com.hedera.services.usage.token.TokenRevokeKycUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import javax.inject.Singleton;

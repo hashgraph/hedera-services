@@ -15,16 +15,16 @@
  */
 package com.hedera.services.calc;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.productWouldOverflow;
+import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.fee.FeeBuilder;
-import com.hederahashgraph.fee.FeeObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

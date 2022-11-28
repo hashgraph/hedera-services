@@ -15,7 +15,7 @@
  */
 package com.hedera.services.usage;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_BODY_SIZE;
 
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

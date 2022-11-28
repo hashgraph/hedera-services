@@ -15,12 +15,12 @@
  */
 package com.hedera.test.factories.sigs;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBodyBytes;
-import static com.hedera.services.legacy.proto.utils.SignatureGenerator.signBytes;
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBodyBytes;
+import static com.hedera.node.app.hapi.utils.SignatureGenerator.signBytes;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.keccak256DigestOf;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.proto.utils.SignatureGenerator;
+import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.keys.KeyTreeLeaf;
@@ -49,23 +49,24 @@ public class SigFactory {
         this(SigMapGenerator.withUniquePrefixes());
     }
 
-    public SigFactory(SigMapGenerator sigMapGen) {
+    public SigFactory(final SigMapGenerator sigMapGen) {
         this.sigMapGen = sigMapGen;
     }
 
     public static byte[] signUnchecked(final byte[] data, final PrivateKey pk) {
         try {
             return signBytes(data, pk);
-        } catch (SignatureException | NoSuchAlgorithmException | InvalidKeyException fatal) {
+        } catch (final SignatureException | NoSuchAlgorithmException | InvalidKeyException fatal) {
             throw new IllegalStateException(fatal);
         }
     }
 
     public Transaction signWithSigMap(
-            Transaction.Builder txn, List<KeyTree> signers, KeyFactory factory) throws Throwable {
-        SimpleSigning signing =
+            final Transaction.Builder txn, final List<KeyTree> signers, final KeyFactory factory)
+            throws Throwable {
+        final SimpleSigning signing =
                 new SimpleSigning(extractTransactionBodyBytes(txn), signers, factory);
-        List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
+        final List<Map.Entry<byte[], byte[]>> sigs = signing.completed();
         txn.setSigMap(sigMapGen.generate(sigs, signing.sigTypes()));
         return txn.build();
     }
@@ -78,7 +79,8 @@ public class SigFactory {
         private final List<SignatureType> sigTypes = new ArrayList<>();
         private final List<Map.Entry<byte[], byte[]>> keySigs = new ArrayList<>();
 
-        public SimpleSigning(byte[] data, List<KeyTree> signers, KeyFactory factory) {
+        public SimpleSigning(
+                final byte[] data, final List<KeyTree> signers, final KeyFactory factory) {
             this.data = data;
             this.signers = signers;
             this.factory = factory;
@@ -96,41 +98,41 @@ public class SigFactory {
         }
 
         public List<Map.Entry<byte[], byte[]>> completed() throws Throwable {
-            for (KeyTree signer : signers) {
+            for (final KeyTree signer : signers) {
                 signRecursively(signer.getRoot());
             }
             return keySigs;
         }
 
-        private void signRecursively(KeyTreeNode node) throws Throwable {
+        private void signRecursively(final KeyTreeNode node) throws Throwable {
             if (node instanceof KeyTreeLeaf) {
                 if (((KeyTreeLeaf) node).isUsedToSign()) {
                     signIfNecessary(node.asKey(factory));
                 }
             } else if (node instanceof KeyTreeListNode) {
-                for (KeyTreeNode child : ((KeyTreeListNode) node).getChildren()) {
+                for (final KeyTreeNode child : ((KeyTreeListNode) node).getChildren()) {
                     signRecursively(child);
                 }
             }
         }
 
-        private void signIfNecessary(Key key) throws Throwable {
-            String pubKeyHex = KeyFactory.asPubKeyHex(key);
+        private void signIfNecessary(final Key key) throws Throwable {
+            final String pubKeyHex = KeyFactory.asPubKeyHex(key);
             if (!used.contains(pubKeyHex)) {
                 signFor(pubKeyHex, key);
                 used.add(pubKeyHex);
             }
         }
 
-        private void signFor(String pubKeyHex, Key key) throws Throwable {
-            SignatureType sigType = sigTypeOf(key);
+        private void signFor(final String pubKeyHex, final Key key) throws Throwable {
+            final SignatureType sigType = sigTypeOf(key);
             if (sigType == SignatureType.ED25519) {
-                PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
-                byte[] sig = SignatureGenerator.signBytes(data, signer);
+                final PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
+                final byte[] sig = SignatureGenerator.signBytes(data, signer);
                 keySigs.add(new AbstractMap.SimpleEntry<>(key.getEd25519().toByteArray(), sig));
             } else if (sigType == SignatureType.ECDSA_SECP256K1) {
-                PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
-                byte[] sig = SignatureGenerator.signBytes(keccak256DigestOf(data), signer);
+                final PrivateKey signer = factory.lookupPrivateKey(pubKeyHex);
+                final byte[] sig = SignatureGenerator.signBytes(keccak256DigestOf(data), signer);
                 keySigs.add(
                         new AbstractMap.SimpleEntry<>(key.getECDSASecp256K1().toByteArray(), sig));
             } else if (sigType == SignatureType.RSA) {
@@ -141,7 +143,7 @@ public class SigFactory {
             sigTypes.add(sigType);
         }
 
-        private SignatureType sigTypeOf(Key key) {
+        private SignatureType sigTypeOf(final Key key) {
             if (key.getEd25519() != ByteString.EMPTY) {
                 return SignatureType.ED25519;
             } else if (key.getECDSASecp256K1() != ByteString.EMPTY) {

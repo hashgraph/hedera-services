@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import static com.hedera.services.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;

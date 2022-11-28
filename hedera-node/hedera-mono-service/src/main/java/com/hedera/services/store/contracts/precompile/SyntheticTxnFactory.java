@@ -26,11 +26,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;
@@ -261,7 +261,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setContractCreateInstance(builder);
     }
 
-    public TransactionBody.Builder createTransactionCall(long gas, Bytes functionParameters) {
+    public TransactionBody.Builder createTransactionCall(
+            final long gas, final Bytes functionParameters) {
         final var builder = ContractCallTransactionBody.newBuilder();
 
         builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
@@ -621,7 +622,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenUnfreeze(builder);
     }
 
-    public TransactionBody.Builder createTokenUpdate(TokenUpdateWrapper updateWrapper) {
+    public TransactionBody.Builder createTokenUpdate(final TokenUpdateWrapper updateWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(updateWrapper.tokenID());
 
@@ -644,19 +645,21 @@ public class SyntheticTxnFactory {
         return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
     }
 
-    public TransactionBody.Builder createTokenUpdateKeys(TokenUpdateKeysWrapper updateWrapper) {
+    public TransactionBody.Builder createTokenUpdateKeys(
+            final TokenUpdateKeysWrapper updateWrapper) {
         final var builder = constructUpdateTokenBuilder(updateWrapper.tokenID());
         return checkTokenKeysTypeAndBuild(updateWrapper.tokenKeys(), builder);
     }
 
-    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(TokenID tokenID) {
+    private TokenUpdateTransactionBody.Builder constructUpdateTokenBuilder(final TokenID tokenID) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(tokenID);
         return builder;
     }
 
     private TransactionBody.Builder checkTokenKeysTypeAndBuild(
-            List<TokenKeyWrapper> tokenKeys, TokenUpdateTransactionBody.Builder builder) {
+            final List<TokenKeyWrapper> tokenKeys,
+            final TokenUpdateTransactionBody.Builder builder) {
         tokenKeys.forEach(
                 tokenKeyWrapper -> {
                     final var key = tokenKeyWrapper.key().asGrpc();
@@ -673,7 +676,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createTokenUpdateExpiryInfo(
-            TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
+            final TokenUpdateExpiryInfoWrapper expiryInfoWrapper) {
         final var builder = TokenUpdateTransactionBody.newBuilder();
         builder.setToken(expiryInfoWrapper.tokenID());
 
@@ -697,7 +700,11 @@ public class SyntheticTxnFactory {
         protected final AccountID receiver;
         protected final boolean isApproval;
 
-        public HbarTransfer(long amount, boolean isApproval, AccountID sender, AccountID receiver) {
+        public HbarTransfer(
+                final long amount,
+                final boolean isApproval,
+                final AccountID sender,
+                final AccountID receiver) {
             this.amount = amount;
             this.isApproval = isApproval;
             this.sender = sender;
@@ -741,11 +748,11 @@ public class SyntheticTxnFactory {
         private final TokenID denomination;
 
         public FungibleTokenTransfer(
-                long amount,
-                boolean isApproval,
-                TokenID denomination,
-                AccountID sender,
-                AccountID receiver) {
+                final long amount,
+                final boolean isApproval,
+                final TokenID denomination,
+                final AccountID sender,
+                final AccountID receiver) {
             super(amount, isApproval, sender, receiver);
             this.denomination = denomination;
         }

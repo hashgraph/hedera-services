@@ -22,9 +22,9 @@ import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.serdes.TopicSerde;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -197,7 +197,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public boolean equals(@Nullable Object o) {
+    public boolean equals(@Nullable final Object o) {
         if (this == o) {
             return true;
         }
@@ -268,8 +268,8 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
             consensusTimestamp = Instant.ofEpochSecond(0);
         }
 
-        var boas = new ByteArrayOutputStream();
-        try (var out = new ObjectOutputStream(boas)) {
+        final var boas = new ByteArrayOutputStream();
+        try (final var out = new ObjectOutputStream(boas)) {
             out.writeObject(getRunningHash());
             out.writeLong(RUNNING_HASH_VERSION);
             out.writeLong(payer.getShardNum());
@@ -294,7 +294,7 @@ public final class MerkleTopic extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     @Override
-    public void setKey(EntityNum phi) {
+    public void setKey(final EntityNum phi) {
         number = phi.intValue();
     }
 
