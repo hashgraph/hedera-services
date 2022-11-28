@@ -175,16 +175,14 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
             for (NftTransfer nftTransfer : transfers.getNftTransfersList()) {
                 if (!tokenMeta.failed() && nftTransfer.hasSenderAccountID()) {
-                    final var shouldAddSenderKey =
-                            !nftTransfer.getSenderAccountID().equals(payer)
-                                    && !nftTransfer.getIsApproval();
-                    if (shouldAddSenderKey) {
+                    if (!nftTransfer.getIsApproval()) {
                         meta.addNonPayerKey(nftTransfer.getSenderAccountID());
                     }
 
-                    meta.addNonPayerKeyIfReceiverSigRequired(
-                            nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
-                    if (tokenMeta.metadata().hasRoyaltyWithFallback()
+                    if (accountStore.isReceiverSigRequired(nftTransfer.getReceiverAccountID())) {
+                        meta.addNonPayerKeyIfReceiverSigRequired(
+                                nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
+                    } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
                             && nftTransfer.hasReceiverAccountID()
                             && !receivesFungibleValue(nftTransfer.getReceiverAccountID(), op)) {
                         // Fallback situation; but we still need to check if the treasury is

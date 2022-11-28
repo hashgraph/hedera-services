@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
@@ -43,6 +44,7 @@ import com.hedera.node.app.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -54,12 +56,15 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +79,7 @@ class CryptoPreTransactionHandlerImplTest {
     private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
+    private final HederaKey randomKey = asHederaKey(A_COMPLEX_KEY).get();
     private final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final AccountID payer = asAccount("0.0.3");
@@ -82,6 +88,9 @@ class CryptoPreTransactionHandlerImplTest {
     private final AccountID updateAccountId = asAccount("0.0.32132");
     private final AccountID spender = asAccount("0.0.12345");
     private final AccountID delegatingSpender = asAccount("0.0.1234567");
+    private final AccountID nftSenderAccountId = asAccount("0.0.11");
+    private final AccountID nftReceiverAccountId = asAccount("0.0.22");
+    private final AccountID cryptoTransferSenderAccountId = asAccount("0.0.33");
     private final AccountID owner = asAccount("0.0.123456");
     private final TokenID token = asToken("0.0.6789");
     private final TokenID nft = asToken("0.0.56789");
@@ -121,29 +130,29 @@ class CryptoPreTransactionHandlerImplTest {
 
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
-    @Mock private InMemoryStateImpl tokens;
     @Mock private States states;
     @Mock private MerkleAccount payerAccount;
     @Mock private MerkleAccount deleteAccount;
     @Mock private MerkleAccount transferAccount;
     @Mock private MerkleAccount updateAccount;
     @Mock private MerkleAccount ownerAccount;
+    @Mock private MerkleAccount nftSenderAccount;
+    @Mock private MerkleAccount nftReceiverAccount;
+    @Mock private MerkleAccount cryptoTransferSenderAccount;
     @Mock private HederaAccountNumbers accountNumbers;
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private CryptoSignatureWaiversImpl waivers;
+    @Mock private TokenStore tokenStore;
     private PreHandleContext context;
     private AccountStore accountStore;
-    private TokenStore tokenStore;
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     public void setUp() {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
-        given(states.get(TOKENS)).willReturn(tokens);
 
         accountStore = new AccountStore(states);
-        tokenStore = new TokenStore(states);
         context = new PreHandleContext(accountNumbers, fileNumbers);
 
         subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore, context);
@@ -405,18 +414,46 @@ class CryptoPreTransactionHandlerImplTest {
 
     @Test
     void preHandleCryptoTransferVanilla() {
-        final var txn = cryptoTransferTransaction(payer);
+        final var basicCryptoTransfer =
+                List.of(
+                        AccountAmount.newBuilder()
+                                .setAccountID(cryptoTransferSenderAccountId)
+                                .setAmount(123)
+                                .build());
+        final var basicNftTransfer =
+                List.of(
+                        NftTransfer.newBuilder()
+                                .setSenderAccountID(nftSenderAccountId)
+                                .setReceiverAccountID(nftReceiverAccountId)
+                                .build());
+        final var txn = cryptoTransferTransaction(payer, basicCryptoTransfer, basicNftTransfer);
+
+        given(accounts.get(nftSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftSenderAccount));
+        given(accounts.get(nftReceiverAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftReceiverAccount));
+        given(accounts.get(cryptoTransferSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(cryptoTransferSenderAccount));
+        given(nftSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(cryptoTransferSenderAccount.isReceiverSigRequired()).willReturn(true);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, false, null),
+                                null));
 
         final var meta = subject.preHandleCryptoTransfer(txn);
 
         assertEquals(txn, meta.getTxn());
-        basicMetadataAssertions(meta, 1, false, OK);
+        basicMetadataAssertions(meta, 3, false, OK);
         assertTrue(meta.getReqKeys().contains(payerKey));
     }
 
     @Test
     void preHandleCryptoTransferFailsIfNoPayer() {
-        final var txn = cryptoTransferTransaction(owner);
+        final var txn = cryptoTransferTransaction(owner, null, null);
 
         final var meta = subject.preHandleCryptoTransfer(txn);
 
@@ -617,7 +654,12 @@ class CryptoPreTransactionHandlerImplTest {
                 .build();
     }
 
-    private TransactionBody cryptoTransferTransaction(final AccountID id) {
+    private TransactionBody cryptoTransferTransaction(
+            final AccountID id,
+            List<AccountAmount> cryptoTransfers,
+            List<NftTransfer> nftTransfers) {
+        cryptoTransfers = cryptoTransfers == null ? new ArrayList<>() : cryptoTransfers;
+        nftTransfers = nftTransfers == null ? new ArrayList<>() : nftTransfers;
         if (id.equals(payer)) {
             setUpPayer();
         }
@@ -625,7 +667,19 @@ class CryptoPreTransactionHandlerImplTest {
                 TransactionID.newBuilder()
                         .setAccountID(id)
                         .setTransactionValidStart(consensusTimestamp);
-        final var transferTxnBody = CryptoTransferTransactionBody.newBuilder().build();
+        final var transferTxnBody =
+                CryptoTransferTransactionBody.newBuilder()
+                        .addTokenTransfers(
+                                TokenTransferList.newBuilder()
+                                        .addAllTransfers(cryptoTransfers)
+                                        .addAllNftTransfers(nftTransfers)
+                                        .setToken(
+                                                TokenID.newBuilder()
+                                                        .setTokenNum(666)
+                                                        .setRealmNum(0)
+                                                        .setShardNum(0)
+                                                        .build()))
+                        .build();
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
                 .setCryptoTransfer(transferTxnBody)
