@@ -34,7 +34,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -42,9 +44,12 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
@@ -58,6 +63,7 @@ import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
@@ -101,6 +107,8 @@ class GetTokenExpiryInfoPrecompileTest {
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+    @Mock private NetworkInfo networkInfo;
 
     public static final Bytes GET_EXPIRY_INFO_FOR_TOKEN_INPUT =
             Bytes.fromHexString(
@@ -172,8 +180,10 @@ class GetTokenExpiryInfoPrecompileTest {
                 .thenReturn(getTokenExpiryInfoWrapper);
 
         given(encoder.encodeGetTokenExpiryInfo(any())).willReturn(successResult);
-        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.of(tokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -207,8 +217,10 @@ class GetTokenExpiryInfoPrecompileTest {
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
 
-        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
-        given(stateView.infoForToken(tokenMerkleId)).willReturn(Optional.empty());
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
+                .willReturn(Optional.empty());
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();

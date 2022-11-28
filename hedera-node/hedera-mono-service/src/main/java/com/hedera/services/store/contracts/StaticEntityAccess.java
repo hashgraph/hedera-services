@@ -31,13 +31,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.*;
+import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
@@ -48,9 +55,16 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
@@ -270,6 +284,20 @@ public class StaticEntityAccess implements EntityAccess {
         return (relStatus != null) ? relStatus.getBalance() : 0;
     }
 
+    public JKey keyOf(final TokenID tokenId, TokenProperty keyType) {
+        final var token = lookupToken(tokenId);
+        return switch (keyType) {
+            case ADMIN_KEY -> token.getAdminKey();
+            case KYC_KEY -> token.getKycKey();
+            case FREEZE_KEY -> token.getFreezeKey();
+            case WIPE_KEY -> token.getWipeKey();
+            case SUPPLY_KEY -> token.getSupplyKey();
+            case FEE_SCHEDULE_KEY -> token.getFeeScheduleKey();
+            case PAUSE_KEY -> token.getPauseKey();
+            default -> throw new InvalidTransactionException(ResponseCodeEnum.INVALID_KEY_ENCODING);
+        };
+    }
+
     /**
      * Returns the frozen status of the given token for the given account.
      *
@@ -284,6 +312,24 @@ public class StaticEntityAccess implements EntityAccess {
         final var isFrozenKey = fromAccountTokenRel(accountId, tokenId);
         final var relStatus = tokenAssociations.get(isFrozenKey);
         return relStatus != null && relStatus.isFrozen();
+    }
+
+    public Optional<TokenInfo> infoForToken(final TokenID tokenId) {
+        return view.infoForToken(tokenId);
+    }
+
+    public Optional<TokenNftInfo> infoForNft(final NftID target) {
+        final var nft =
+                nfts.get(
+                        NftId.withDefaultShardRealm(
+                                EntityNum.fromTokenId(target.getTokenID()).longValue(),
+                                target.getSerialNumber()));
+        validateTrueOrRevert(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+        return view.infoForNft(target);
+    }
+
+    public List<CustomFee> infoForTokenCustomFees(final TokenID tokenId) {
+        return view.infoForTokenCustomFees(tokenId);
     }
 
     /**

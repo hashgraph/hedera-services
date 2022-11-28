@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -41,9 +42,12 @@ import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.ledger.TransactionalLedger;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
+import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -58,6 +62,7 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 import java.util.List;
@@ -101,6 +106,8 @@ class TokenGetCustomFeesPrecompileTest {
     @Mock private HbarCentExchange exchange;
     @Mock private FeeObject mockFeeObject;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
+    @Mock private NetworkInfo networkInfo;
 
     private static final Bytes GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT =
             Bytes.fromHexString(
@@ -169,8 +176,8 @@ class TokenGetCustomFeesPrecompileTest {
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
-        given(stateView.tokenCustomFees(tokenMerkleId)).willReturn(List.of(fractionalFee));
-        given(stateView.tokenExists(tokenMerkleId)).willReturn(true);
+        given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
+                .willReturn(Optional.of(List.of(fractionalFee)));
         given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);

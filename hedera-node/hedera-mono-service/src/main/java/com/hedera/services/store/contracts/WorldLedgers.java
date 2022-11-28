@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
+import static com.hedera.services.context.primitives.StateView.WILDCARD_OWNER;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hedera.services.ledger.interceptors.AutoAssocTokenRelsCommitInterceptor.forKnownAutoAssociatingOp;
@@ -38,6 +39,7 @@ import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContr
 import static com.hedera.services.utils.EntityIdUtils.ECDSA_SECP256K1_ALIAS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -54,6 +56,7 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
@@ -63,17 +66,27 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.customfees.LedgerCustomFeeSchedules;
+import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public class WorldLedgers {
+    private static final Logger log = LogManager.getLogger(WorldLedgers.class);
     public static final ByteString ECDSA_KEY_ALIAS_PREFIX =
             ByteString.copyFrom(new byte[] {0x3a, 0x21});
 
@@ -132,6 +145,74 @@ public class WorldLedgers {
     public boolean defaultKycStatus(final TokenID tokenId) {
         return propertyOf(
                 tokenId, ACC_KYC_GRANTED_BY_DEFAULT, StaticEntityAccess::defaultKycStatus);
+    }
+
+    public Optional<TokenInfo> infoForToken(final TokenID tokenId, final ByteString ledgerId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.infoForToken(tokenId);
+        } else {
+            final var token = tokensLedger.getImmutableRef(tokenId);
+            if (token == null) {
+                return Optional.empty();
+            }
+            return Optional.of(token.asTokenInfo(tokenId, ledgerId));
+        }
+    }
+
+    public Optional<TokenNftInfo> infoForNft(final NftID target, final ByteString ledgerId) {
+        if (staticEntityAccess != null) {
+            return staticEntityAccess.infoForNft(target);
+        } else {
+            final var tokenId = EntityNum.fromTokenId(target.getTokenID());
+            final var targetKey =
+                    NftId.withDefaultShardRealm(tokenId.longValue(), target.getSerialNumber());
+            if (!nftsLedger.contains(targetKey)) {
+                return Optional.empty();
+            }
+            final var targetNft = nftsLedger.getImmutableRef(targetKey);
+            var accountId = targetNft.getOwner().toGrpcAccountId();
+
+            if (WILDCARD_OWNER.equals(accountId)) {
+                var merkleToken = tokensLedger.getImmutableRef(target.getTokenID());
+                if (merkleToken == null) {
+                    return Optional.empty();
+                }
+                accountId = merkleToken.treasury().toGrpcAccountId();
+            }
+
+            final var spenderId = targetNft.getSpender().toGrpcAccountId();
+
+            final var info =
+                    TokenNftInfo.newBuilder()
+                            .setLedgerId(ledgerId)
+                            .setNftID(target)
+                            .setAccountID(accountId)
+                            .setCreationTime(targetNft.getCreationTime().toGrpc())
+                            .setMetadata(ByteString.copyFrom(targetNft.getMetadata()))
+                            .setSpenderId(spenderId)
+                            .build();
+            return Optional.of(info);
+        }
+    }
+
+    public Optional<List<CustomFee>> infoForTokenCustomFees(final TokenID tokenId) {
+        if (staticEntityAccess != null) {
+            return Optional.of(staticEntityAccess.infoForTokenCustomFees(tokenId));
+        } else {
+            try {
+                final var token = tokensLedger.getImmutableRef(tokenId);
+                if (token == null) {
+                    return Optional.empty();
+                }
+                return Optional.of(token.grpcFeeSchedule());
+            } catch (Exception unexpected) {
+                log.warn(
+                        "Unexpected failure getting custom fees for token {}!",
+                        readableId(tokenId),
+                        unexpected);
+                return Optional.empty();
+            }
+        }
     }
 
     public String nameOf(final TokenID tokenId) {
@@ -256,6 +337,13 @@ public class WorldLedgers {
         return nftsLedger.exists(nftId)
                 ? new String((byte[]) nftsLedger.get(nftId, METADATA))
                 : URI_QUERY_NON_EXISTING_TOKEN_ERROR;
+    }
+
+    public JKey keyOf(final TokenID tokenId, final TokenProperty keyType) {
+        if (!areMutable()) {
+            return staticEntityAccess.keyOf(tokenId, keyType);
+        }
+        return (JKey) tokensLedger.get(tokenId, keyType);
     }
 
     public Address canonicalAddress(final Address addressOrAlias) {

@@ -331,7 +331,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
      * @return whether the zero rewards were due to having zero stake
      */
     private boolean earnedZeroRewardsBecauseOfZeroStake(final HederaAccount account) {
-        return Objects.requireNonNull(account.getStakePeriodStart())
+        return Objects.requireNonNull(account).getStakePeriodStart()
                 < stakePeriodManager.firstNonRewardableStakePeriod();
     }
 

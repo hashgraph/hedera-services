@@ -15,6 +15,16 @@
  */
 package com.hedera.node.app.hapi.utils.ethereum;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.CHAINID_TESTNET;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TINYBARS_2_IN_WEIBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TINYBARS_57_IN_WEIBARS;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_ADDRESS;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY;
+import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.ZERO_BYTES;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,24 +102,23 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
+                        LEGACY_ETHEREUM,
                         null,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
         assertArrayEquals(null, signedTx.chainId());
         assertArrayEquals(new byte[] {27}, signedTx.v());
@@ -122,26 +131,25 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.ZERO_BYTES,
+                        LEGACY_ETHEREUM,
+                        ZERO_BYTES,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
-        Assertions.assertArrayEquals(TestingConstants.ZERO_BYTES, signedTx.chainId());
+        Assertions.assertArrayEquals(ZERO_BYTES, signedTx.chainId());
         assertArrayEquals(new byte[] {27}, signedTx.v());
         assertNotNull(tx.r());
         assertNotNull(tx.s());
@@ -153,16 +161,16 @@ class EthTxSigsTest {
                 new EthTxData(
                         null,
                         EthTxData.EthTransactionType.EIP2930,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
@@ -170,7 +178,7 @@ class EthTxSigsTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY));
+                () -> EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 
     @Test
@@ -179,23 +187,22 @@ class EthTxSigsTest {
                 new EthTxData(
                         null,
                         EthTxData.EthTransactionType.EIP1559,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
         assertNotNull(signedTx.r());
         assertNotNull(signedTx.s());
@@ -206,26 +213,25 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.CHAINID_TESTNET,
+                        LEGACY_ETHEREUM,
+                        CHAINID_TESTNET,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
-        Assertions.assertArrayEquals(TestingConstants.CHAINID_TESTNET, signedTx.chainId());
+        Assertions.assertArrayEquals(CHAINID_TESTNET, signedTx.chainId());
         assertArrayEquals(new byte[] {2, 116}, signedTx.v());
     }
 
@@ -234,29 +240,28 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.CHAINID_TESTNET,
+                        LEGACY_ETHEREUM,
+                        CHAINID_TESTNET,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
 
         final EthTxSigs sigs = EthTxSigs.extractSignatures(signedTx);
 
-        Assertions.assertArrayEquals(TestingConstants.TRUFFLE0_ADDRESS, sigs.address());
-        Assertions.assertArrayEquals(TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY, sigs.publicKey());
+        Assertions.assertArrayEquals(TRUFFLE0_ADDRESS, sigs.address());
+        Assertions.assertArrayEquals(TRUFFLE0_PUBLIC_ECDSA_KEY, sigs.publicKey());
     }
 
     @Test
@@ -264,28 +269,25 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.CHAINID_TESTNET,
+                        LEGACY_ETHEREUM,
+                        CHAINID_TESTNET,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[0],
                         new byte[0]);
 
-        final EthTxData signedTx =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
-        final EthTxData signedTxAgain =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY);
-        final EthTxData signedTx1 =
-                EthTxSigs.signMessage(tx, TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTxAgain = EthTxSigs.signMessage(tx, TRUFFLE0_PRIVATE_ECDSA_KEY);
+        final EthTxData signedTx1 = EthTxSigs.signMessage(tx, TRUFFLE1_PRIVATE_ECDSA_KEY);
 
         final EthTxSigs sigs = EthTxSigs.extractSignatures(signedTx);
         final EthTxSigs sigsAgain = EthTxSigs.extractSignatures(signedTxAgain);
@@ -310,17 +312,17 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.CHAINID_TESTNET,
+                        LEGACY_ETHEREUM,
+                        CHAINID_TESTNET,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         3,
                         new byte[0],
                         allFs,
@@ -334,17 +336,17 @@ class EthTxSigsTest {
         final var tx =
                 new EthTxData(
                         null,
-                        EthTxData.EthTransactionType.LEGACY_ETHEREUM,
-                        TestingConstants.CHAINID_TESTNET,
+                        LEGACY_ETHEREUM,
+                        CHAINID_TESTNET,
                         1,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
-                        TestingConstants.TINYBARS_2_IN_WEIBARS,
-                        TestingConstants.TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
+                        TINYBARS_2_IN_WEIBARS,
+                        TINYBARS_57_IN_WEIBARS,
                         1_000_000L,
-                        TestingConstants.TRUFFLE1_ADDRESS,
+                        TRUFFLE1_ADDRESS,
                         BigInteger.ZERO,
-                        TestingConstants.ZERO_BYTES,
-                        TestingConstants.ZERO_BYTES,
+                        ZERO_BYTES,
+                        ZERO_BYTES,
                         1,
                         new byte[0],
                         new byte[32],
@@ -357,10 +359,9 @@ class EthTxSigsTest {
     void extractsAddress() {
         // good recovery
         Assertions.assertArrayEquals(
-                TestingConstants.TRUFFLE0_ADDRESS,
-                EthTxSigs.recoverAddressFromPubKey(TestingConstants.TRUFFLE0_PUBLIC_ECDSA_KEY));
+                TRUFFLE0_ADDRESS, EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
-        assertNull(EthTxSigs.recoverAddressFromPubKey(TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertNull(EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 }
