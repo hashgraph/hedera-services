@@ -124,6 +124,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             AccountID sponsor = txnCtx.activePayer();
 
             CryptoCreateTransactionBody op = cryptoCreateTxn.getCryptoCreateAccount();
+//            cryptoCreateTxn.getCryptoCreateAccount().getEvmAddress();
             long balance = op.getInitialBalance();
             final var customizer = asCustomizer(op);
             final var created = ledger.create(sponsor, balance, customizer);
@@ -233,21 +234,16 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
             return memoValidity;
         }
 
-        if (!op.getAlias().isEmpty() && op.getAlias().size() < EVM_ADDRESS_SIZE) {
+        if (!op.getAlias().isEmpty() && op.getAlias().size() <= EVM_ADDRESS_SIZE) {
             return INVALID_ALIAS_KEY;
         }
 
-        var noAliasValidity = validateNoAliasCase(op);
+        var noAliasValidity = validateNoEVMAddressCase(op);
         if (noAliasValidity != OK) {
             return noAliasValidity;
         }
 
-        var aliasBiggerThanEVMAddressSizeValidity = validateAliasBiggerThanEVMAddressSizeCase(op);
-        if (aliasBiggerThanEVMAddressSizeValidity != OK) {
-            return aliasBiggerThanEVMAddressSizeValidity;
-        }
-
-        var aliasIsEVMAddressValidity = validateAliasIsEVMAddressCase(op);
+        var aliasIsEVMAddressValidity = validateEVMAddressCase(op);
         if (aliasIsEVMAddressValidity != OK) {
             return aliasIsEVMAddressValidity;
         }
@@ -291,83 +287,66 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         return OK;
     }
 
-    private ResponseCodeEnum validateNoAliasCase(final CryptoCreateTransactionBody op) {
-        if (op.getAlias().isEmpty() || op.hasKey()) {
-            if (!op.hasKey()) {
+    private ResponseCodeEnum validateNoEVMAddressCase(final CryptoCreateTransactionBody op) {
+        if (op.getEvmAddress().isEmpty() || op.hasKey() || !op.getAlias().isEmpty()) {
+            if (!op.hasKey() && op.getAlias().isEmpty()) {
                 return KEY_REQUIRED;
             }
 
-            final var keyValidity = validateKey(op);
-            if (keyValidity != OK) {
-                return keyValidity;
+            final var keyAndNoAliasValidity = validateKeyAndNoAlias(op);
+            if (keyAndNoAliasValidity != OK) {
+                return keyAndNoAliasValidity;
             }
 
-            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
-                var isKeyUsedAsAliasValidity = isUsedAsAliasCheck(op.getKey().getECDSASecp256K1());
-
-                if (isKeyUsedAsAliasValidity != OK) {
-                    return isKeyUsedAsAliasValidity;
-                }
-
-                return tryToRecoverEVMAddressAndCheckValidity(
-                        op.getKey().getECDSASecp256K1().toByteArray());
-            }
-        }
-        return OK;
-    }
-
-    private ResponseCodeEnum validateAliasBiggerThanEVMAddressSizeCase(
-            final CryptoCreateTransactionBody op) {
-        var alias = op.getAlias();
-        if (!alias.isEmpty() && alias.size() > EVM_ADDRESS_SIZE) {
-            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
-                return NOT_SUPPORTED;
+            final var keyAndAliasValidity = validateKeyAndAlias(op);
+            if (keyAndAliasValidity != OK) {
+                return keyAndAliasValidity;
             }
 
-            var isAliasUsedCheck = isUsedAsAliasCheck(alias);
-
-            if (isAliasUsedCheck != OK) {
-                return isAliasUsedCheck;
-            }
-
-            var keyFromAlias = asPrimitiveKeyUnchecked(alias);
-            var key = op.getKey();
-            if ((!key.getEd25519().isEmpty() || !key.getECDSASecp256K1().isEmpty())
-                    && !key.equals(keyFromAlias)) {
-                return INVALID_ALIAS_KEY;
-            }
-
-            if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
-
-                return tryToRecoverEVMAddressAndCheckValidity(
-                        keyFromAlias.getECDSASecp256K1().toByteArray());
+            final var aliasAndNoKeyValidity = validateAliasAndNoKey(op);
+            if (aliasAndNoKeyValidity != OK) {
+                return aliasAndNoKeyValidity;
             }
         }
         return OK;
     }
 
-    private ResponseCodeEnum validateAliasIsEVMAddressCase(final CryptoCreateTransactionBody op) {
-        var alias = op.getAlias();
-        if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
+    private ResponseCodeEnum validateEVMAddressCase(final CryptoCreateTransactionBody op) {
+        var evmAddress = op.getEvmAddress();
+        if (!evmAddress.isEmpty() && evmAddress.size() == EVM_ADDRESS_SIZE) {
             if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
                 return NOT_SUPPORTED;
             }
 
-            var isAliasUsedCheck = isUsedAsAliasCheck(alias);
-
+            var isAliasUsedCheck = isUsedAsAliasCheck(evmAddress);
             if (isAliasUsedCheck != OK) {
                 return isAliasUsedCheck;
             }
 
-            if (op.hasKey()) {
-                final var ecdsaKey = op.getKey().getECDSASecp256K1();
-                if (ecdsaKey.isEmpty()) {
-                    return INVALID_ADMIN_KEY;
+            if (op.hasKey() && op.getAlias().isEmpty()) {
+                final var ecdsaKeyValidity = validateEcdsaKey(
+                    op.getKey().getECDSASecp256K1(), evmAddress.toByteArray());
+                if (ecdsaKeyValidity != OK) {
+                    return ecdsaKeyValidity;
                 }
-                final var recoveredEvmAddress =
-                        recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
-                if (!Arrays.equals(recoveredEvmAddress, alias.toByteArray())) {
+            } else if (op.hasKey() && !op.getAlias().isEmpty()) {
+                var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+                if (!op.getKey().equals(keyFromAlias)) {
                     return INVALID_ALIAS_KEY;
+                }
+
+                final var ecdsaKeyValidity = validateEcdsaKey(
+                    op.getKey().getECDSASecp256K1(), evmAddress.toByteArray());
+                if (ecdsaKeyValidity != OK) {
+                    return ecdsaKeyValidity;
+                }
+            } else if (!op.hasKey() && !op.getAlias().isEmpty()) {
+                var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+
+                final var ecdsaKeyValidity = validateEcdsaKey(
+                    keyFromAlias.getECDSASecp256K1(), evmAddress.toByteArray());
+                if (ecdsaKeyValidity != OK) {
+                    return ecdsaKeyValidity;
                 }
             } else if (!dynamicProperties.isLazyCreationEnabled()) {
                 return NOT_SUPPORTED;
@@ -394,6 +373,104 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         }
         if (!fcKey.isValid()) {
             return INVALID_ADMIN_KEY;
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateKeyAndAlias(final CryptoCreateTransactionBody op) {
+        if (op.hasKey() && !op.getAlias().isEmpty()) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+                return NOT_SUPPORTED;
+            }
+
+            final var keyValidity = validateKey(op);
+            if (keyValidity != OK) {
+                return keyValidity;
+            }
+
+            var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+            var key = op.getKey();
+            if ((!key.getEd25519().isEmpty() || !key.getECDSASecp256K1().isEmpty())
+                && !key.equals(keyFromAlias)) {
+                return INVALID_ALIAS_KEY;
+            }
+
+            var isAliasUsedCheck = isUsedAsAliasCheck(op.getAlias());
+
+            if (isAliasUsedCheck != OK) {
+                return isAliasUsedCheck;
+            }
+
+            if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
+
+                return tryToRecoverEVMAddressAndCheckValidity(
+                    keyFromAlias.getECDSASecp256K1().toByteArray());
+            }
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateAliasAndNoKey(final CryptoCreateTransactionBody op) {
+        if (!op.hasKey() && !op.getAlias().isEmpty()) {
+            if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+                return NOT_SUPPORTED;
+            }
+
+            var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+            if (!validator.hasGoodEncoding(keyFromAlias)) {
+                return BAD_ENCODING;
+            }
+            var fcKey = asFcKeyUnchecked(keyFromAlias);
+            if (fcKey.isEmpty()) {
+                return KEY_REQUIRED;
+            }
+
+            var isAliasUsedCheck = isUsedAsAliasCheck(op.getAlias());
+
+            if (isAliasUsedCheck != OK) {
+                return isAliasUsedCheck;
+            }
+
+            if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
+
+                return tryToRecoverEVMAddressAndCheckValidity(
+                    keyFromAlias.getECDSASecp256K1().toByteArray());
+            }
+
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateKeyAndNoAlias(final CryptoCreateTransactionBody op) {
+        if (op.hasKey() && op.getAlias().isEmpty()) {
+
+            final var keyValidity = validateKey(op);
+            if (keyValidity != OK) {
+                return keyValidity;
+            }
+
+            if (!op.getKey().getECDSASecp256K1().isEmpty()) {
+                var isKeyUsedAsAliasValidity = isUsedAsAliasCheck(op.getKey().getECDSASecp256K1());
+
+                if (isKeyUsedAsAliasValidity != OK) {
+                    return isKeyUsedAsAliasValidity;
+                }
+
+                return tryToRecoverEVMAddressAndCheckValidity(
+                    op.getKey().getECDSASecp256K1().toByteArray());
+            }
+        }
+        return OK;
+    }
+
+    private ResponseCodeEnum validateEcdsaKey(final ByteString ecdsaKey, final byte[] evmAddress) {
+        if (ecdsaKey.isEmpty()) {
+            return INVALID_ADMIN_KEY;
+        }
+        final var recoveredEvmAddress =
+            recoverAddressFromPubKey(ecdsaKey.toByteArray());
+        if (!Arrays.equals(recoveredEvmAddress, evmAddress)) {
+            return INVALID_ALIAS_KEY;
         }
         return OK;
     }
