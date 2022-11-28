@@ -26,9 +26,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 public class StakingUtils {
     // Sentinel value for a field that wasn't applicable to this transaction
@@ -41,13 +41,13 @@ public class StakingUtils {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static long getAccountStakeeNum(@NotNull final Map<AccountProperty, Object> changes) {
+    public static long getAccountStakeeNum(@NonNull final Map<AccountProperty, Object> changes) {
         final var entityId = (long) changes.getOrDefault(STAKED_ID, 0L);
         // Node ids are negative and account ids are positive
         return (entityId < 0) ? 0 : entityId;
     }
 
-    public static long getNodeStakeeNum(@NotNull final Map<AccountProperty, Object> changes) {
+    public static long getNodeStakeeNum(@NonNull final Map<AccountProperty, Object> changes) {
         final var entityId = (long) changes.getOrDefault(STAKED_ID, 0L);
         // Node ids are negative
         return (entityId < 0) ? entityId : 0;
@@ -55,7 +55,7 @@ public class StakingUtils {
 
     public static long finalBalanceGiven(
             @Nullable final HederaAccount account,
-            @NotNull final Map<AccountProperty, Object> changes) {
+            @NonNull final Map<AccountProperty, Object> changes) {
         if (changes.containsKey(BALANCE)) {
             return (long) changes.get(BALANCE);
         } else {
@@ -65,7 +65,7 @@ public class StakingUtils {
 
     public static boolean finalDeclineRewardGiven(
             @Nullable final HederaAccount account,
-            @NotNull final Map<AccountProperty, Object> changes) {
+            @NonNull final Map<AccountProperty, Object> changes) {
         if (changes.containsKey(DECLINE_REWARD)) {
             return (Boolean) changes.get(DECLINE_REWARD);
         } else {
@@ -76,7 +76,7 @@ public class StakingUtils {
     public static long finalStakedToMeGiven(
             final int stakeeI,
             @Nullable final HederaAccount account,
-            @NotNull final long[] stakedToMeUpdates) {
+            @NonNull final long[] stakedToMeUpdates) {
         if (stakedToMeUpdates[stakeeI] != NA) {
             return stakedToMeUpdates[stakeeI];
         } else {
@@ -87,8 +87,8 @@ public class StakingUtils {
     public static void updateStakedToMe(
             final int stakeeI,
             final long delta,
-            @NotNull final long[] stakedToMeUpdates,
-            @NotNull
+            @NonNull final long[] stakedToMeUpdates,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (stakedToMeUpdates[stakeeI] != NA) {
@@ -105,7 +105,7 @@ public class StakingUtils {
     public static void updateBalance(
             final long delta,
             final int rewardAccountI,
-            @NotNull
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         final var mutableChanges = pendingChanges.changes(rewardAccountI);
@@ -118,7 +118,7 @@ public class StakingUtils {
     }
 
     public static boolean hasStakeMetaChanges(
-            @NotNull final Map<AccountProperty, Object> changes,
+            @NonNull final Map<AccountProperty, Object> changes,
             @Nullable final HederaAccount account) {
         return (changes.containsKey(DECLINE_REWARD)
                         && (account == null
@@ -129,7 +129,7 @@ public class StakingUtils {
                                 || account.getStakedId() != (long) changes.get(STAKED_ID)));
     }
 
-    public static long roundedToHbar(long value) {
+    public static long roundedToHbar(final long value) {
         return (value / HBARS_TO_TINYBARS) * HBARS_TO_TINYBARS;
     }
 

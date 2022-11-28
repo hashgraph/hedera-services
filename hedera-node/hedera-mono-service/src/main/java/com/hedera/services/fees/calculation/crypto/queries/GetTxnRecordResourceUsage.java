@@ -30,10 +30,10 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

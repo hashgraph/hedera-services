@@ -18,7 +18,11 @@ package com.hedera.services.txns.span;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
@@ -42,9 +46,13 @@ import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.virtualmap.VirtualMap;
-import java.util.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -108,7 +116,7 @@ public class SpanMapManager {
         this.aliasManager = aliasManager;
     }
 
-    public void expandSpan(TxnAccessor accessor) {
+    public void expandSpan(final TxnAccessor accessor) {
         final var function = accessor.getFunction();
         if (function == CryptoTransfer) {
             expandImpliedTransfers(accessor);
@@ -149,7 +157,7 @@ public class SpanMapManager {
         final var linkedRefs = new LinkedRefs(signedStateChildren.signedAt());
         try {
             expandEthContext(accessor, signedStateChildren, accessor.getSpanMap(), linkedRefs);
-        } catch (UnsupportedOperationException ignore) {
+        } catch (final UnsupportedOperationException ignore) {
             // Thrown if the span map is immutable; means pre-fetch is somehow backlogged and the
             // handleTransaction thread already rationalized and set the authoritative span map
         }
@@ -256,7 +264,7 @@ public class SpanMapManager {
             final var ethTxSigs = sigsFunction.apply(ethTxData);
             spanMapAccessor.setEthTxSigsMeta(spanMap, ethTxSigs);
             return null;
-        } catch (IllegalArgumentException ignore) {
+        } catch (final IllegalArgumentException ignore) {
             return new EthTxExpansion(linkedRefs, INVALID_ETHEREUM_TRANSACTION);
         }
     }
@@ -315,7 +323,7 @@ public class SpanMapManager {
                 VirtualBlobKey.Type.FILE_METADATA, codeFromNum(fileId.getFileNum()));
     }
 
-    private void rationalizeImpliedTransfers(TxnAccessor accessor) {
+    private void rationalizeImpliedTransfers(final TxnAccessor accessor) {
         final var impliedTransfers = spanMapAccessor.getImpliedTransfers(accessor);
         if (!impliedTransfers
                 .getMeta()
@@ -324,7 +332,7 @@ public class SpanMapManager {
         }
     }
 
-    private void expandImpliedTransfers(TxnAccessor accessor) {
+    private void expandImpliedTransfers(final TxnAccessor accessor) {
         final var op = accessor.getTxn().getCryptoTransfer();
         final var impliedTransfers =
                 impliedTransfersMarshal.unmarshalFromGrpc(op, accessor.getPayer());
@@ -334,13 +342,13 @@ public class SpanMapManager {
     }
 
     public static void reCalculateXferMeta(
-            TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+            final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
         final var xferMeta = accessor.availXferUsageMeta();
 
         var customFeeTokenTransfers = 0;
         var customFeeHbarTransfers = 0;
         final Set<EntityId> involvedTokens = new HashSet<>();
-        for (var assessedFee : impliedTransfers.getAssessedCustomFees()) {
+        for (final var assessedFee : impliedTransfers.getAssessedCustomFees()) {
             if (assessedFee.isForHbar()) {
                 customFeeHbarTransfers++;
             } else {

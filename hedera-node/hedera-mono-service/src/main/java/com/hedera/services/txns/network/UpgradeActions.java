@@ -23,6 +23,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;
 import com.swirlds.common.system.SwirldDualState;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
@@ -159,7 +159,7 @@ public class UpgradeActions {
                                 desc,
                                 artifactsLoc);
                         writeSecondMarker(marker, now);
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         log.error("Failed to unzip archive for NMT consumption", e);
                         log.error(MANUAL_REMEDIATION_ALERT);
                     }
@@ -198,7 +198,8 @@ public class UpgradeActions {
         extractSoftwareUpgrade(archiveData).join();
     }
 
-    private void withNonNullDualState(String actionDesc, Consumer<SwirldDualState> action) {
+    private void withNonNullDualState(
+            final String actionDesc, final Consumer<SwirldDualState> action) {
         final var curDualState = dualState.get();
         Objects.requireNonNull(
                 curDualState, "Cannot " + actionDesc + " without access to the dual state");
@@ -223,7 +224,7 @@ public class UpgradeActions {
             final var contents = (now == null) ? MARK : ("" + now.getEpochSecond());
             fileStringWriter.writeString(path, contents);
             log.info("Wrote marker {}", path);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.error("Failed to write NMT marker {}", path, e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
@@ -235,7 +236,7 @@ public class UpgradeActions {
     }
 
     /* --- Only used by unit tests --- */
-    void setFileStringWriter(FileStringWriter fileStringWriter) {
+    void setFileStringWriter(final FileStringWriter fileStringWriter) {
         this.fileStringWriter = fileStringWriter;
     }
 }

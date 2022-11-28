@@ -31,10 +31,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ScheduleGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -49,35 +49,38 @@ public class GetScheduleInfoAnswer implements AnswerService {
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getScheduleGetInfo().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(
                 query.getScheduleGetInfo().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
     @Override
     public Response responseGiven(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Map<String, Object> queryCtx) {
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Map<String, Object> queryCtx) {
         return responseFor(query, view, validity, cost, Optional.of(queryCtx));
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        var schedule = query.getScheduleGetInfo().getScheduleID();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final var schedule = query.getScheduleGetInfo().getScheduleID();
 
         return view.scheduleExists(schedule) ? OK : INVALID_SCHEDULE_ID;
     }
@@ -88,26 +91,26 @@ public class GetScheduleInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getScheduleGetInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        var paymentTxn = query.getScheduleGetInfo().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final var paymentTxn = query.getScheduleGetInfo().getHeader().getPayment();
         return Optional.ofNullable(uncheckedFrom(paymentTxn));
     }
 
     private Response responseFor(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
-        var op = query.getScheduleGetInfo();
-        var response = ScheduleGetInfoResponse.newBuilder();
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
+        final var op = query.getScheduleGetInfo();
+        final var response = ScheduleGetInfoResponse.newBuilder();
 
-        var type = op.getHeader().getResponseType();
+        final var type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
         } else {
@@ -122,13 +125,13 @@ public class GetScheduleInfoAnswer implements AnswerService {
     }
 
     private void setAnswerOnly(
-            ScheduleGetInfoResponse.Builder response,
-            StateView view,
-            ScheduleGetInfoQuery op,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
+            final ScheduleGetInfoResponse.Builder response,
+            final StateView view,
+            final ScheduleGetInfoQuery op,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
         if (queryCtx.isPresent()) {
-            var ctx = queryCtx.get();
+            final var ctx = queryCtx.get();
             if (!ctx.containsKey(SCHEDULE_INFO_CTX_KEY)) {
                 response.setHeader(answerOnlyHeader(INVALID_SCHEDULE_ID));
             } else {
@@ -136,7 +139,7 @@ public class GetScheduleInfoAnswer implements AnswerService {
                 response.setScheduleInfo((ScheduleInfo) ctx.get(SCHEDULE_INFO_CTX_KEY));
             }
         } else {
-            var info = view.infoForSchedule(op.getScheduleID());
+            final var info = view.infoForSchedule(op.getScheduleID());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_SCHEDULE_ID));
             } else {

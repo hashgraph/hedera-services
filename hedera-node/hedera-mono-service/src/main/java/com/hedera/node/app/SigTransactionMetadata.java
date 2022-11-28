@@ -25,11 +25,11 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -151,7 +151,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
      */
-    private boolean isNotNeeded(@NotNull final AccountID id) {
+    private boolean isNotNeeded(@NonNull final AccountID id) {
         return id.equals(payer)
                 || id.equals(AccountID.getDefaultInstance())
                 || designatesAccountRemoval(id)
@@ -164,7 +164,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
      * @param id given accountId
      * @return true if the given accountID is
      */
-    private boolean designatesAccountRemoval(@NotNull AccountID id) {
+    private boolean designatesAccountRemoval(@NonNull final AccountID id) {
         return id.getShardNum() == 0
                 && id.getRealmNum() == 0
                 && id.getAccountNum() == 0

@@ -36,10 +36,10 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -107,7 +107,7 @@ public final class EntityIdUtils {
                     .setRealmNum(parts[1])
                     .setAccountNum(parts[2])
                     .build();
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
             throw new IllegalArgumentException(
                     String.format("Argument 'literal=%s' is not an account", literal), e);
         }
@@ -127,7 +127,7 @@ public final class EntityIdUtils {
                                     + right);
                 }
                 return Pair.of(left, right);
-            } catch (NumberFormatException nfe) {
+            } catch (final NumberFormatException nfe) {
                 throw new IllegalArgumentException(
                         "Argument literal='" + literal + "' has malformatted long value");
             }
@@ -141,7 +141,7 @@ public final class EntityIdUtils {
         final long[] triple = new long[3];
         int i = 0;
         long v = 0;
-        for (char c : dotDelimited.toCharArray()) {
+        for (final char c : dotDelimited.toCharArray()) {
             if (c == '.') {
                 triple[i++] = v;
                 v = 0;
@@ -240,7 +240,7 @@ public final class EntityIdUtils {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 
-    public static String asHexedEvmAddress(Id id) {
+    public static String asHexedEvmAddress(final Id id) {
         return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
 
@@ -296,7 +296,7 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    public static TokenID tokenIdFromEvmAddress(byte[] bytes) {
+    public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
         return TokenID.newBuilder()
                 .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
                 .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
@@ -313,7 +313,7 @@ public final class EntityIdUtils {
         return String.format(ENTITY_ID_FORMAT, id.getShardNum(), id.getRealmNum(), id.getFileNum());
     }
 
-    public static String asRelationshipLiteral(long packedNumbers) {
+    public static String asRelationshipLiteral(final long packedNumbers) {
         final var leftNum = unsignedHighOrder32From(packedNumbers);
         final var rightNum = unsignedLowOrder32From(packedNumbers);
         return "("
@@ -323,11 +323,11 @@ public final class EntityIdUtils {
                 + ")";
     }
 
-    public static String asIdLiteral(int num) {
+    public static String asIdLiteral(final int num) {
         return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(num));
     }
 
-    public static String asScopedSerialNoLiteral(long scopedSerialNo) {
+    public static String asScopedSerialNoLiteral(final long scopedSerialNo) {
         final var leftNum = unsignedHighOrder32From(scopedSerialNo);
         final var rightNum = unsignedLowOrder32From(scopedSerialNo);
         return STATIC_PROPERTIES.scopedIdLiteralWith(leftNum) + "." + rightNum;

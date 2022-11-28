@@ -21,7 +21,7 @@ import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.migration.UniqueTokenMapAdapter;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.MapValueListMutation;
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class UniqueTokensListMutation implements MapValueListMutation<NftId, UniqueTokenAdapter> {
 

@@ -47,6 +47,7 @@ import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -55,7 +56,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 
 /**
  * @deprecated Scheduled transactions are now stored in {@link MerkleScheduledTransactions}
@@ -92,8 +92,8 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
         /* RuntimeConstructable */
     }
 
-    static MerkleSchedule from(byte[] bodyBytes, long consensusExpiry) {
-        var to = new MerkleSchedule();
+    static MerkleSchedule from(final byte[] bodyBytes, final long consensusExpiry) {
+        final var to = new MerkleSchedule();
         to.expiry = consensusExpiry;
         to.bodyBytes = bodyBytes;
         to.initFromBodyBytes();
@@ -102,7 +102,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     }
 
     /* Notary functions */
-    boolean witnessValidSignature(byte[] key) {
+    boolean witnessValidSignature(final byte[] key) {
         final var usableKey = copyFrom(key);
         if (notary.contains(usableKey)) {
             return false;
@@ -135,7 +135,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
                 .build();
     }
 
-    boolean hasValidSignatureFor(byte[] key) {
+    boolean hasValidSignatureFor(final byte[] key) {
         return notary.contains(copyFrom(key));
     }
 
@@ -147,7 +147,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
      * @return whether {@code this} and {@code o} are identical
      */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -155,7 +155,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
             return false;
         }
 
-        var that = (MerkleSchedule) o;
+        final var that = (MerkleSchedule) o;
         return Objects.equals(this.memo, that.memo)
                 && Objects.equals(this.scheduledTxn, that.scheduledTxn)
                 && Objects.equals(this.grpcAdminKey, that.grpcAdminKey);
@@ -168,7 +168,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
 
     @Override
     public String toString() {
-        var helper =
+        final var helper =
                 MoreObjects.toStringHelper(MerkleSchedule.class)
                         .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
                         .add("scheduledTxn", scheduledTxn)
@@ -192,7 +192,8 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         expiry = in.readLong();
         bodyBytes = in.readByteArray(Integer.MAX_VALUE);
         executed = in.readBoolean();
@@ -209,14 +210,14 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(expiry);
         out.writeByteArray(bodyBytes);
         out.writeBoolean(executed);
         out.writeBoolean(deleted);
         writeNullable(resolutionTime, out, RichInstant::serialize);
         out.writeInt(signatories.size());
-        for (byte[] key : signatories) {
+        for (final byte[] key : signatories) {
             out.writeByteArray(key);
         }
         out.writeInt(number);
@@ -240,7 +241,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     @Override
     public MerkleSchedule copy() {
         setImmutable(true);
-        var fc = new MerkleSchedule();
+        final var fc = new MerkleSchedule();
 
         /* These fields are all immutable or effectively immutable, we can share them between copies */
         fc.grpcAdminKey = grpcAdminKey;
@@ -259,7 +260,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
         fc.number = number;
 
         /* Signatories are mutable */
-        for (byte[] signatory : signatories) {
+        for (final byte[] signatory : signatories) {
             fc.witnessValidSignature(signatory);
         }
 
@@ -272,7 +273,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     }
 
     @Override
-    public void setKey(EntityNum phi) {
+    public void setKey(final EntityNum phi) {
         number = phi.intValue();
     }
 
@@ -284,12 +285,12 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
         return Optional.ofNullable(adminKey);
     }
 
-    void setAdminKey(JKey adminKey) {
+    void setAdminKey(final JKey adminKey) {
         throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
         this.adminKey = adminKey;
     }
 
-    void setPayer(EntityId payer) {
+    void setPayer(final EntityId payer) {
         throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
         this.payer = payer;
     }
@@ -323,7 +324,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
         return signatories;
     }
 
-    void setExpiry(long expiry) {
+    void setExpiry(final long expiry) {
         throwIfImmutable("Cannot change this schedule's expiry time if it's immutable.");
         this.expiry = expiry;
     }
@@ -332,13 +333,13 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
         return expiry;
     }
 
-    void markDeleted(Instant at) {
+    void markDeleted(final Instant at) {
         throwIfImmutable("Cannot change this schedule to deleted if it's immutable.");
         resolutionTime = RichInstant.fromJava(at);
         deleted = true;
     }
 
-    void markExecuted(Instant at) {
+    void markExecuted(final Instant at) {
         throwIfImmutable("Cannot change this schedule to executed if it's immutable.");
         resolutionTime = RichInstant.fromJava(at);
         executed = true;
@@ -373,7 +374,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
     HederaFunctionality scheduledFunction() {
         try {
             return MiscUtils.functionOf(ordinaryScheduledTxn);
-        } catch (UnknownHederaFunctionality ignore) {
+        } catch (final UnknownHederaFunctionality ignore) {
             return NONE;
         }
     }
@@ -392,8 +393,8 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
 
     private void initFromBodyBytes() {
         try {
-            var parentTxn = TransactionBody.parseFrom(bodyBytes);
-            var creationOp = parentTxn.getScheduleCreate();
+            final var parentTxn = TransactionBody.parseFrom(bodyBytes);
+            final var creationOp = parentTxn.getScheduleCreate();
 
             if (!creationOp.getMemo().isEmpty()) {
                 memo = creationOp.getMemo();
@@ -413,7 +414,7 @@ public class MerkleSchedule extends PartialMerkleLeaf implements Keyed<EntityNum
             schedulingTXValidStart =
                     RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
             ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, scheduledTransactionId());
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(
                     String.format(
                             "Argument bodyBytes=0x%s was not a TransactionBody!",

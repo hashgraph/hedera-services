@@ -25,10 +25,10 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
-import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -49,7 +49,7 @@ public class UpdateTrackingLedgerAccount<A extends Account> extends UpdatedHeder
 
     private TransactionalLedger<AccountID, AccountProperty, HederaAccount> trackingAccounts;
 
-    @Nullable private A account;
+    @Nullable private final A account;
     @Nullable private Bytes updatedCode;
     @Nullable private Hash updatedCodeHash;
     private boolean storageWasCleared = false;
