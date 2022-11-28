@@ -23,9 +23,9 @@ import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 public class IterableStorageUtils {
     private static final String NO_ITERABLE_NFTS = "[]";
@@ -102,11 +102,11 @@ public class IterableStorageUtils {
      * @return the new root key, for convenience
      */
     public static ContractKey inPlaceUpsertMapping(
-            @NotNull final ContractKey key,
-            @NotNull final IterableContractValue value,
+            @NonNull final ContractKey key,
+            @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NotNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
         return internalUpsertMapping(key, value, rootKey, rootValue, storage, true);
     }
 
@@ -130,11 +130,11 @@ public class IterableStorageUtils {
      * @return the new root key, for convenience
      */
     public static ContractKey overwritingUpsertMapping(
-            @NotNull final ContractKey key,
-            @NotNull final IterableContractValue value,
+            @NonNull final ContractKey key,
+            @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NotNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
         return internalUpsertMapping(key, value, rootKey, rootValue, storage, false);
     }
 
@@ -149,20 +149,20 @@ public class IterableStorageUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable ContractKey removeMapping(
-            @NotNull final ContractKey key,
-            @NotNull final ContractKey root,
-            @NotNull final VirtualMap<ContractKey, IterableContractValue> storage) {
+            @NonNull final ContractKey key,
+            @NonNull final ContractKey root,
+            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage) {
         return removeFromMapValueList(
                 key, root, new ContractStorageListMutation(key.getContractId(), storage));
     }
 
     private static ContractKey internalUpsertMapping(
-            @NotNull final ContractKey key,
-            @NotNull final IterableContractValue value,
+            @NonNull final ContractKey key,
+            @NonNull final IterableContractValue value,
             @Nullable final ContractKey rootKey,
             @Nullable final IterableContractValue rootValue,
-            @NotNull final VirtualMap<ContractKey, IterableContractValue> storage,
-            boolean useGetForModify) {
+            @NonNull final VirtualMap<ContractKey, IterableContractValue> storage,
+            final boolean useGetForModify) {
         final IterableContractValue oldValue;
         if (useGetForModify) {
             oldValue = storage.getForModify(key);

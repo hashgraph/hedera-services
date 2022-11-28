@@ -27,6 +27,7 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,7 +36,6 @@ import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class DecodingFacade {
@@ -91,7 +91,7 @@ public class DecodingFacade {
     }
 
     public static List<TokenKeyWrapper> decodeTokenKeys(
-            @NotNull final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple[] tokenKeysTuples, final UnaryOperator<byte[]> aliasResolver) {
         final List<TokenKeyWrapper> tokenKeys = new ArrayList<>(tokenKeysTuples.length);
         for (final var tokenKeyTuple : tokenKeysTuples) {
             final var keyType = (int) tokenKeyTuple.get(0);
@@ -123,7 +123,7 @@ public class DecodingFacade {
     }
 
     public static TokenExpiryWrapper decodeTokenExpiry(
-            @NotNull final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple expiryTuple, final UnaryOperator<byte[]> aliasResolver) {
         final var second = (long) expiryTuple.get(0);
         final var autoRenewAccount =
                 convertLeftPaddedAddressToAccountId(expiryTuple.get(1), aliasResolver);
@@ -135,7 +135,7 @@ public class DecodingFacade {
     }
 
     public static Tuple decodeFunctionCall(
-            @NotNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
+            @NonNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
         if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
             throw new IllegalArgumentException(
                     "Selector does not match, expected "
@@ -147,7 +147,7 @@ public class DecodingFacade {
     }
 
     public static List<AccountID> decodeAccountIds(
-            @NotNull final byte[][] accountBytesArray, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final byte[][] accountBytesArray, final UnaryOperator<byte[]> aliasResolver) {
         final List<AccountID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertLeftPaddedAddressToAccountId(account, aliasResolver));
@@ -156,7 +156,7 @@ public class DecodingFacade {
     }
 
     public static List<TokenID> decodeTokenIDsFromBytesArray(
-            @NotNull final byte[][] accountBytesArray) {
+            @NonNull final byte[][] accountBytesArray) {
         final List<TokenID> accountIDs = new ArrayList<>();
         for (final var account : accountBytesArray) {
             accountIDs.add(convertAddressBytesToTokenID(account));
@@ -165,7 +165,7 @@ public class DecodingFacade {
     }
 
     public static AccountID convertLeftPaddedAddressToAccountId(
-            final byte[] leftPaddedAddress, @NotNull final UnaryOperator<byte[]> aliasResolver) {
+            final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
                 Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
@@ -181,7 +181,7 @@ public class DecodingFacade {
 
     public static List<SyntheticTxnFactory.NftExchange> bindNftExchangesFrom(
             final TokenID tokenType,
-            @NotNull final Tuple[] abiExchanges,
+            @NonNull final Tuple[] abiExchanges,
             final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
@@ -202,7 +202,7 @@ public class DecodingFacade {
 
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
-            @NotNull final Tuple[] abiTransfers,
+            @NonNull final Tuple[] abiTransfers,
             final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
@@ -219,7 +219,7 @@ public class DecodingFacade {
     }
 
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
-            @NotNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
+            @NonNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final AccountID accountID =

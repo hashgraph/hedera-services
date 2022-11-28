@@ -22,9 +22,9 @@ import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.utils.NonAtomicReference;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.system.Platform;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

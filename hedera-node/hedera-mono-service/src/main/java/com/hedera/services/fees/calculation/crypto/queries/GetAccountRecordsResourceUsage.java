@@ -26,8 +26,8 @@ import com.hedera.services.queries.answering.AnswerFunctions;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

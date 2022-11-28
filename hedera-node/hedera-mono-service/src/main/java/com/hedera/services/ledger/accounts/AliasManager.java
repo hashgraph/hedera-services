@@ -31,6 +31,7 @@ import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -43,7 +44,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart,

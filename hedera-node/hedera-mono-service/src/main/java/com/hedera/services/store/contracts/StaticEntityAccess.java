@@ -63,10 +63,10 @@ import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -127,7 +127,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(Address address) {
+    public boolean isUsable(final Address address) {
         final var account = accounts.get(fromEvmAddress(address));
         if (account == null || account.isDeleted()) {
             return false;
@@ -145,31 +145,31 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isTokenAccount(Address address) {
+    public boolean isTokenAccount(final Address address) {
         return view.tokenExists(EntityIdUtils.tokenIdFromEvmAddress(address));
     }
 
     @Override
-    public void putStorage(AccountID id, Bytes key, Bytes value) {
+    public void putStorage(final AccountID id, final Bytes key, final Bytes value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public UInt256 getStorage(Address address, Bytes key) {
+    public UInt256 getStorage(final Address address, final Bytes key) {
         final var num = numFromEvmAddress(address.toArrayUnsafe());
         final var contractKey = new ContractKey(num, key.toArray());
-        IterableContractValue value = storage.get(contractKey);
+        final IterableContractValue value = storage.get(contractKey);
         return value == null ? UInt256.ZERO : UInt256.fromBytes(Bytes32.wrap(value.getValue()));
     }
 
     @Override
     public void flushStorage(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void storeCode(AccountID id, Bytes code) {
+    public void storeCode(final AccountID id, final Bytes code) {
         throw new UnsupportedOperationException();
     }
 
@@ -195,7 +195,7 @@ public class StaticEntityAccess implements EntityAccess {
 
     @Override
     public void recordNewKvUsageTo(
-            TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger) {
         throw new UnsupportedOperationException();
     }
 
@@ -427,7 +427,7 @@ public class StaticEntityAccess implements EntityAccess {
     }
 
     private <T> T nftPropertyOf(final NftId nftId, final Function<UniqueTokenAdapter, T> getter) {
-        var nft = nfts.get(nftId);
+        final var nft = nfts.get(nftId);
         validateTrue(nft != null, INVALID_TOKEN_NFT_SERIAL_NUMBER);
         return getter.apply(nft);
     }

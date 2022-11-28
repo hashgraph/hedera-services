@@ -15,7 +15,10 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.services.state.tasks.SystemTaskResult.DONE;
+import static com.hedera.services.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+import static com.hedera.services.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.services.state.tasks.SystemTaskResult.NO_CAPACITY_LEFT;
 
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -28,9 +31,9 @@ import com.hedera.services.state.tasks.SystemTaskManager;
 import com.hedera.services.state.tasks.SystemTaskResult;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
