@@ -15,10 +15,10 @@
  */
 package com.hedera.services.utils.accessors;
 
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hedera.services.utils.MiscUtils.hasUnknownFields;
@@ -45,6 +45,17 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.consensus.SubmitMessageMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoTransferMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.grpc.marshalling.AliasResolver;
@@ -52,17 +63,6 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.SubmitMessageMeta;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoTransferMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

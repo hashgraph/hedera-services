@@ -17,12 +17,12 @@ package com.hedera.services.fees.calculation.utils;
 
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 
+import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.calc.OverflowCheckingCalc;
 import com.hedera.services.fees.annotations.GenericPriceMultiplier;
 import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -40,34 +40,40 @@ public class PricedUsageCalculator {
 
     @Inject
     public PricedUsageCalculator(
-            AccessorBasedUsages accessorBasedUsages,
-            @GenericPriceMultiplier FeeMultiplierSource feeMultiplierSource,
-            OverflowCheckingCalc calculator) {
+            final AccessorBasedUsages accessorBasedUsages,
+            @GenericPriceMultiplier final FeeMultiplierSource feeMultiplierSource,
+            final OverflowCheckingCalc calculator) {
         this.accessorBasedUsages = accessorBasedUsages;
         this.feeMultiplierSource = feeMultiplierSource;
         this.calculator = calculator;
     }
 
-    public boolean supports(HederaFunctionality function) {
+    public boolean supports(final HederaFunctionality function) {
         return accessorBasedUsages.supports(function);
     }
 
     public FeeObject inHandleFees(
-            TxnAccessor accessor, FeeData resourcePrices, ExchangeRate rate, JKey payerKey) {
+            final TxnAccessor accessor,
+            final FeeData resourcePrices,
+            final ExchangeRate rate,
+            final JKey payerKey) {
         return fees(accessor, resourcePrices, rate, payerKey, handleScopedAccumulator);
     }
 
     public FeeObject extraHandleFees(
-            TxnAccessor accessor, FeeData resourcePrices, ExchangeRate rate, JKey payerKey) {
+            final TxnAccessor accessor,
+            final FeeData resourcePrices,
+            final ExchangeRate rate,
+            final JKey payerKey) {
         return fees(accessor, resourcePrices, rate, payerKey, new UsageAccumulator());
     }
 
     private FeeObject fees(
-            TxnAccessor accessor,
-            FeeData resourcePrices,
-            ExchangeRate rate,
-            JKey payerKey,
-            UsageAccumulator accumulator) {
+            final TxnAccessor accessor,
+            final FeeData resourcePrices,
+            final ExchangeRate rate,
+            final JKey payerKey,
+            final UsageAccumulator accumulator) {
         final var sigUsage = accessor.usageGiven(numSimpleKeys(payerKey));
 
         accessorBasedUsages.assess(sigUsage, accessor, accumulator);

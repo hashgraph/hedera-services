@@ -28,9 +28,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.file.ExtantFileContext;
-import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;

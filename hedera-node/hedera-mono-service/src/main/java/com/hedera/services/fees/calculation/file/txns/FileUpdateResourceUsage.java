@@ -17,12 +17,12 @@ package com.hedera.services.fees.calculation.file.txns;
 
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.file.ExtantFileContext;
-import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -34,25 +34,26 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
     private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileUpdateResourceUsage(FileOpsUsage fileOpsUsage) {
+    public FileUpdateResourceUsage(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasFileUpdate();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view) {
-        var op = txn.getFileUpdate();
-        var sigUsage =
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view) {
+        final var op = txn.getFileUpdate();
+        final var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-        var info = view.infoForFile(op.getFileID());
+        final var info = view.infoForFile(op.getFileID());
         if (info.isPresent()) {
-            var details = info.get();
-            var ctx =
+            final var details = info.get();
+            final var ctx =
                     ExtantFileContext.newBuilder()
                             .setCurrentSize(details.getSize())
                             .setCurrentWacl(details.getKeys())
@@ -61,12 +62,12 @@ public class FileUpdateResourceUsage implements TxnResourceUsageEstimator {
                             .build();
             return fileOpsUsage.fileUpdateUsage(txn, sigUsage, ctx);
         } else {
-            long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
+            final long now = txn.getTransactionID().getTransactionValidStart().getSeconds();
             return fileOpsUsage.fileUpdateUsage(txn, sigUsage, missingCtx(now));
         }
     }
 
-    static ExtantFileContext missingCtx(long now) {
+    static ExtantFileContext missingCtx(final long now) {
         return ExtantFileContext.newBuilder()
                 .setCurrentExpiry(now)
                 .setCurrentMemo(DEFAULT_MEMO)
