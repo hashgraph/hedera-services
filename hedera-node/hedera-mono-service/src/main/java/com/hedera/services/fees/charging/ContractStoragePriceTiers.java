@@ -15,9 +15,9 @@
  */
 package com.hedera.services.fees.charging;
 
+import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 import static com.hedera.node.app.hapi.utils.sysfiles.ParsingUtils.fromTwoPartDelimited;
-import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
 
 import com.hedera.services.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;

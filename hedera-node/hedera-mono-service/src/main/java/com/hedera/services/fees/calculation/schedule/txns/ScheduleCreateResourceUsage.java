@@ -15,13 +15,13 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -34,21 +34,23 @@ public class ScheduleCreateResourceUsage implements TxnResourceUsageEstimator {
 
     @Inject
     public ScheduleCreateResourceUsage(
-            ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties dynamicProperties) {
+            final ScheduleOpsUsage scheduleOpsUsage,
+            final GlobalDynamicProperties dynamicProperties) {
         this.scheduleOpsUsage = scheduleOpsUsage;
         this.dynamicProperties = dynamicProperties;
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasScheduleCreate();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        var op = txn.getScheduleCreate();
-        var sigUsage =
+        final var op = txn.getScheduleCreate();
+        final var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 

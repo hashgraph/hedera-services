@@ -15,20 +15,20 @@
  */
 package com.hedera.services.txns.span;
 
-import static com.hedera.services.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN_OPS_USAGE_UTILS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
@@ -129,7 +129,7 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForCryptoCreateMetaAsExpected() {
-        var opMeta =
+        final var opMeta =
                 new CryptoCreateMeta.Builder()
                         .baseSize(1_234)
                         .lifeTime(1_234_567L)
@@ -188,8 +188,8 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForEthTxDataMeta() {
-        var oneByte = new byte[] {1};
-        var ethTxData =
+        final var oneByte = new byte[] {1};
+        final var ethTxData =
                 new EthTxData(
                         oneByte,
                         EthTxData.EthTransactionType.EIP1559,
@@ -214,8 +214,8 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForEthTxSigs() {
-        var oneByte = new byte[] {1};
-        var ethTxSigs = new EthTxSigs(oneByte, oneByte);
+        final var oneByte = new byte[] {1};
+        final var ethTxSigs = new EthTxSigs(oneByte, oneByte);
 
         subject.setEthTxSigsMeta(accessor, ethTxSigs);
         assertEquals(ethTxSigs, subject.getEthTxSigsMeta(accessor));
@@ -223,7 +223,7 @@ class ExpandHandleSpanMapAccessorTest {
 
     @Test
     void testsForEthTxBody() {
-        var txBody = TransactionBody.newBuilder().build();
+        final var txBody = TransactionBody.newBuilder().build();
 
         subject.setEthTxBodyMeta(accessor, txBody);
         assertEquals(txBody, subject.getEthTxBodyMeta(accessor));

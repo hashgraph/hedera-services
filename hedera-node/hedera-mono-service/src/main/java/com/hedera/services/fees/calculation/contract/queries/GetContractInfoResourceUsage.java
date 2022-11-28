@@ -18,12 +18,12 @@ package com.hedera.services.fees.calculation.contract.queries;
 import static com.hedera.services.queries.contract.GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.node.app.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.usage.contract.ContractGetInfoUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import java.util.Map;

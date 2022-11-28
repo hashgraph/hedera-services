@@ -15,10 +15,10 @@
  */
 package com.hedera.services.fees.calculation;
 
+import static com.hedera.node.app.hapi.fees.pricing.BaseOperationUsage.CANONICAL_NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.services.fees.calculation.AutoRenewCalcs.countSerials;
-import static com.hedera.services.pricing.BaseOperationUsage.CANONICAL_NUM_CONTRACT_KV_PAIRS;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getCryptoAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getFungibleTokenAllowancesList;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.getNftApprovedForAll;
@@ -31,6 +31,8 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -40,8 +42,6 @@ import com.hedera.services.state.submerkle.FcTokenAllowance;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.extensions.LogCaptor;
@@ -143,16 +143,18 @@ class AutoRenewCalcsTest {
 
     @Test
     void computesExpectedUsdPriceForThreeMonthAccountRenewal() {
-        long expectedFeeInTinycents = 2200000L;
-        long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-        long threeMonthsInSeconds = 7776000L;
+        final long expectedFeeInTinycents = 2200000L;
+        final long expectedFeeInTinybars =
+                getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+        final long threeMonthsInSeconds = 7776000L;
         setupSuperStandardAccountWith(Long.MAX_VALUE);
 
         // when:
-        var maxRenewalAndFee =
+        final var maxRenewalAndFee =
                 subject.assessCryptoRenewal(
                         expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
-        var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
+        final var percentageOfExpected =
+                (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
         // then:
         assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
@@ -161,56 +163,58 @@ class AutoRenewCalcsTest {
 
     @Test
     void computesExpectedUsdPriceInFreeTierForThreeMonthContractRenewal() {
-        long expectedFeeInTinycents = 259991900L; // storage fee is 0 since it is < 100M
-        long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-        long threeMonthsInSeconds = 7776000L;
+        final long expectedFeeInTinycents = 259991900L; // storage fee is 0 since it is < 100M
+        final long expectedFeeInTinybars =
+                getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+        final long threeMonthsInSeconds = 7776000L;
         setupSuperStandardContractWith(Long.MAX_VALUE);
 
-        var preCutoffAssessment =
+        final var preCutoffAssessment =
                 subject.assessCryptoRenewal(
                         expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
 
-        var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        final var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
         assertEquals(100.0, prePercent, 5.0);
         assertEquals(threeMonthsInSeconds, preCutoffAssessment.renewalPeriod());
 
-        var postCutoffAssessment =
+        final var postCutoffAssessment =
                 subject.assessCryptoRenewal(
                         expiredEntity,
                         threeMonthsInSeconds,
                         postCutoff,
                         activeRates,
                         expiredEntity);
-        var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        final var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
         assertEquals(100.0, postPercent, 5.0);
         assertEquals(threeMonthsInSeconds, postCutoffAssessment.renewalPeriod());
     }
 
     @Test
     void computesExpectedUsdPriceInNonFreeTierForThreeMonthContractRenewal() {
-        long expectedFeeInTinycents =
+        final long expectedFeeInTinycents =
                 986561196830L; // the storage fee is added since KV pairs are > 100M
-        long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-        long threeMonthsInSeconds = 7776000L;
+        final long expectedFeeInTinybars =
+                getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+        final long threeMonthsInSeconds = 7776000L;
         setupContractWithNonFreeTierKvPairs(Long.MAX_VALUE);
 
-        var preCutoffAssessment =
+        final var preCutoffAssessment =
                 subject.assessCryptoRenewal(
                         expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
 
-        var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        final var prePercent = (1.0 * preCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
         System.out.println(preCutoffAssessment.fee());
         assertEquals(100.0, prePercent, 5.0);
         assertEquals(threeMonthsInSeconds, preCutoffAssessment.renewalPeriod());
 
-        var postCutoffAssessment =
+        final var postCutoffAssessment =
                 subject.assessCryptoRenewal(
                         expiredEntity,
                         threeMonthsInSeconds,
                         postCutoff,
                         activeRates,
                         expiredEntity);
-        var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
+        final var postPercent = (1.0 * postCutoffAssessment.fee()) / expectedFeeInTinybars * 100.0;
         assertEquals(100.0, postPercent, 5.0);
         assertEquals(threeMonthsInSeconds, postCutoffAssessment.renewalPeriod());
     }
@@ -218,16 +222,18 @@ class AutoRenewCalcsTest {
     @Test
     void computesExpectedUsdPriceForSlightlyMoreThanThreeMonthRenewal() {
         // setup:
-        long expectedFeeInTinycents = 2200000L;
-        long expectedFeeInTinybars = getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
-        long threeMonthsInSeconds = 7776001L;
+        final long expectedFeeInTinycents = 2200000L;
+        final long expectedFeeInTinybars =
+                getTinybarsFromTinyCents(activeRates, expectedFeeInTinycents);
+        final long threeMonthsInSeconds = 7776001L;
         setupSuperStandardAccountWith(Long.MAX_VALUE);
 
         // when:
-        var maxRenewalAndFee =
+        final var maxRenewalAndFee =
                 subject.assessCryptoRenewal(
                         expiredEntity, threeMonthsInSeconds, preCutoff, activeRates, expiredEntity);
-        var percentageOfExpected = (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
+        final var percentageOfExpected =
+                (1.0 * maxRenewalAndFee.fee()) / expectedFeeInTinybars * 100.0;
 
         // then:
         assertEquals(threeMonthsInSeconds, maxRenewalAndFee.renewalPeriod());
@@ -269,7 +275,7 @@ class AutoRenewCalcsTest {
         setupAccountWith(0L);
 
         // when:
-        var maxRenewalAndFee =
+        final var maxRenewalAndFee =
                 subject.assessCryptoRenewal(
                         expiredEntity, 7776000L, preCutoff, activeRates, expiredEntity);
 
@@ -283,7 +289,7 @@ class AutoRenewCalcsTest {
         setupAccountWith(0L);
 
         // given:
-        var expectedCtx =
+        final var expectedCtx =
                 ExtantCryptoContext.newBuilder()
                         .setCurrentExpiry(0L)
                         .setCurrentKey(MiscUtils.asKeyUnchecked(expiredEntity.getAccountKey()))
@@ -307,7 +313,7 @@ class AutoRenewCalcsTest {
         final var spender1 = asAccount("0.0.1000");
         final var token1 = asToken("0.0.1000");
         final var token2 = asToken("0.0.1000");
-        Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
+        final Map<FcTokenAllowanceId, FcTokenAllowance> nftAllowances = new TreeMap<>();
         final var id =
                 FcTokenAllowanceId.from(
                         EntityNum.fromTokenId(token1), EntityNum.fromAccountId(spender1));
@@ -320,9 +326,9 @@ class AutoRenewCalcsTest {
     }
 
     private Triple<Map<SubType, FeeData>, Instant, Map<SubType, FeeData>> frozenPricesFrom(
-            String resource, HederaFunctionality autoRenewFunction) throws Exception {
-        var schedules = FeesJsonToProtoSerde.loadFeeScheduleFromJson(resource);
-        var prePrices =
+            final String resource, final HederaFunctionality autoRenewFunction) throws Exception {
+        final var schedules = FeesJsonToProtoSerde.loadFeeScheduleFromJson(resource);
+        final var prePrices =
                 schedules.getCurrentFeeSchedule().getTransactionFeeScheduleList().stream()
                         .filter(
                                 transactionFeeSchedule ->
@@ -331,24 +337,24 @@ class AutoRenewCalcsTest {
                         .findFirst()
                         .get()
                         .getFeesList();
-        var prePricesMap = toSubTypeMap(prePrices);
+        final var prePricesMap = toSubTypeMap(prePrices);
 
-        var postPricesMap = toPostPrices(prePricesMap);
+        final var postPricesMap = toPostPrices(prePricesMap);
         return Triple.of(prePricesMap, cutoff, postPricesMap);
     }
 
-    private Map<SubType, FeeData> toSubTypeMap(List<FeeData> feesList) {
-        Map<SubType, FeeData> result = new HashMap<>();
-        for (FeeData feeData : feesList) {
+    private Map<SubType, FeeData> toSubTypeMap(final List<FeeData> feesList) {
+        final Map<SubType, FeeData> result = new HashMap<>();
+        for (final FeeData feeData : feesList) {
             result.put(feeData.getSubType(), feeData);
         }
         return result;
     }
 
-    private Map<SubType, FeeData> toPostPrices(Map<SubType, FeeData> feeDataMap) {
-        var changeableMap = new HashMap<>(feeDataMap);
-        for (FeeData feeData : feeDataMap.values()) {
-            var postPrices =
+    private Map<SubType, FeeData> toPostPrices(final Map<SubType, FeeData> feeDataMap) {
+        final var changeableMap = new HashMap<>(feeDataMap);
+        for (final FeeData feeData : feeDataMap.values()) {
+            final var postPrices =
                     feeData.toBuilder()
                             .setServicedata(
                                     feeData.getServicedata().toBuilder()
@@ -359,7 +365,7 @@ class AutoRenewCalcsTest {
         return changeableMap;
     }
 
-    private void setupAccountWith(long balance) {
+    private void setupAccountWith(final long balance) {
         expiredEntity =
                 MerkleAccountFactory.newAccount()
                         .accountKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asJKeyUnchecked())
@@ -372,7 +378,7 @@ class AutoRenewCalcsTest {
                         .get();
     }
 
-    private void setupSuperStandardAccountWith(long balance) {
+    private void setupSuperStandardAccountWith(final long balance) {
         expiredEntity =
                 MerkleAccountFactory.newAccount()
                         .accountKeys(TxnHandlingScenario.SIMPLE_NEW_ADMIN_KT.asJKeyUnchecked())
@@ -380,7 +386,7 @@ class AutoRenewCalcsTest {
                         .get();
     }
 
-    private void setupSuperStandardContractWith(long balance) {
+    private void setupSuperStandardContractWith(final long balance) {
         expiredEntity =
                 MerkleAccountFactory.newAccount()
                         .isSmartContract(true)
@@ -392,7 +398,7 @@ class AutoRenewCalcsTest {
         given(storage.size()).willReturn((long) CANONICAL_NUM_CONTRACT_KV_PAIRS);
     }
 
-    private void setupContractWithNonFreeTierKvPairs(long balance) {
+    private void setupContractWithNonFreeTierKvPairs(final long balance) {
         expiredEntity =
                 MerkleAccountFactory.newAccount()
                         .isSmartContract(true)

@@ -15,12 +15,12 @@
  */
 package com.hedera.services.fees.calculation.file.txns;
 
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.file.FileOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
@@ -31,19 +31,20 @@ public class FileCreateResourceUsage implements TxnResourceUsageEstimator {
     private final FileOpsUsage fileOpsUsage;
 
     @Inject
-    public FileCreateResourceUsage(FileOpsUsage fileOpsUsage) {
+    public FileCreateResourceUsage(final FileOpsUsage fileOpsUsage) {
         this.fileOpsUsage = fileOpsUsage;
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasFileCreate();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        var sigUsage =
+        final var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         return fileOpsUsage.fileCreateUsage(txn, sigUsage);

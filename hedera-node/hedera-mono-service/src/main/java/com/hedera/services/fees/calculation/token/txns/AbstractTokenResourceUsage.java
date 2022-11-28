@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import com.hedera.services.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 
 public class AbstractTokenResourceUsage {
     protected final EstimatorFactory estimatorFactory;
