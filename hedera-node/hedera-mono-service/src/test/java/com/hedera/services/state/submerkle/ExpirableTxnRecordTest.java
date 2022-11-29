@@ -33,8 +33,6 @@ import static org.mockito.BDDMockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.crypto.validators;
 
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
