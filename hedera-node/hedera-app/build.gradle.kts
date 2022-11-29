@@ -20,14 +20,14 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
-    implementation(project(":modules:hedera-admin-service-impl"))
-    implementation(project(":modules:hedera-consensus-service-impl"))
-    implementation(project(":modules:hedera-file-service-impl"))
-    implementation(project(":modules:hedera-network-service-impl"))
-    implementation(project(":modules:hedera-schedule-service-impl"))
-    implementation(project(":modules:hedera-smart-contract-service-impl"))
-    implementation(project(":modules:hedera-token-service-impl"))
-    implementation(project(":modules:hedera-util-service-impl"))
+    implementation(project(":hedera-node:hedera-admin-service-impl"))
+    implementation(project(":hedera-node:hedera-consensus-service-impl"))
+    implementation(project(":hedera-node:hedera-file-service-impl"))
+    implementation(project(":hedera-node:hedera-network-service-impl"))
+    implementation(project(":hedera-node:hedera-schedule-service-impl"))
+    implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    implementation(project(":hedera-node:hedera-token-service-impl"))
+    implementation(project(":hedera-node:hedera-util-service-impl"))
 
     implementation(libs.jsr305.annotation)
     implementation(libs.hapi)
