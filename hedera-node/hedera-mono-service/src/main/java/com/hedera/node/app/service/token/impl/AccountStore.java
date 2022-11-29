@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
 import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.service.token.impl.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.service.token.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.token.util.AliasUtils.fromMirror;
-import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;

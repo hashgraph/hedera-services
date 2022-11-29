@@ -18,6 +18,7 @@ package com.hedera.services.contracts;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 import static org.hyperledger.besu.evm.operation.SStoreOperation.FRONTIER_MINIMUM;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.ContractsModule.V_0_30;
@@ -34,7 +35,6 @@ import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

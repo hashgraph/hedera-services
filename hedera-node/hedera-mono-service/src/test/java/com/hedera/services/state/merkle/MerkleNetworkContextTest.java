@@ -16,8 +16,8 @@
 package com.hedera.services.state.merkle;
 
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
-import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
+import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.CURRENT_VERSION;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NEVER_USED_SNAPSHOT;

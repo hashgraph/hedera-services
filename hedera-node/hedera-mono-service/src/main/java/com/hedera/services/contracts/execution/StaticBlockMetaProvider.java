@@ -15,8 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
-import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.services.context.primitives.SignedStateViewFactory;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;

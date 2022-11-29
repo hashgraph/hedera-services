@@ -15,6 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE;
@@ -24,7 +25,6 @@ import static com.hedera.services.contracts.execution.traceability.CallOperation
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CALL;
 import static com.hedera.services.contracts.execution.traceability.ContractActionType.CREATE;
-import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
