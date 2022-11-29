@@ -21,7 +21,7 @@ import java.util.Optional;
 
 /** An Account entity represents a Hedera Account. */
 public interface Account {
-    static final long HBARS_TO_TINYBARS = 100_000_000L;
+    long HBARS_TO_TINYBARS = 100_000_000L;
     /**
      * Account's shard number
      *

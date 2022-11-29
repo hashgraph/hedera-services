@@ -52,18 +52,13 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
 
-    public AccountBuilderImpl() {
-        copyOf = null;
-        /* Default Constructor */
-    }
-
     /**
      * Create a builder for creating {@link Account}s, using the given copy as the basis for all
      * settings that are not overridden.
      *
      * @param copyOf The instance to copy
      */
-    public AccountBuilderImpl(@NonNull AccountImpl copyOf) {
+    public AccountBuilderImpl(@NonNull Account copyOf) {
         this.copyOf = Objects.requireNonNull(copyOf);
         this.key = copyOf.key();
         this.expiry = copyOf.expiry();
