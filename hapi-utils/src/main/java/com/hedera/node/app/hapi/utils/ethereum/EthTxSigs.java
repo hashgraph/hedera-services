@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.hapi.utils.ethereum;
 
-import static com.hedera.services.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
-import static com.hedera.services.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType.LEGACY_ETHEREUM;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.SECP256K1_EC_COMPRESSED;
 import static com.hedera.services.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
