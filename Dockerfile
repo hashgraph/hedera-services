@@ -38,8 +38,6 @@ WORKDIR /opt/hedera/services
 COPY .env /opt/hedera/services
 RUN for PIECE in $(cat .env | head -1 | tr '=' ' '); do \
   if [ "$IS_VERSION" = "true" ]; then echo $PIECE >> .VERSION ; else IS_VERSION=true; fi done
-RUN mkdir /opt/hedera/services/modules
-COPY modules /opt/hedera/services/modules
 RUN mkdir /opt/hedera/services/hedera-node
 COPY hedera-node /opt/hedera/services/hedera-node
 RUN mkdir /opt/hedera/services/test-clients
