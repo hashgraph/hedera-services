@@ -46,7 +46,7 @@ import java.util.Set;
  * this to segregate the code. This class is <strong>only</strong> responsible for the gRPC call,
  * the workflows are responsible for working with protobuf.
  *
- * @ThreadSafe (annotation missing in spotbugs annotations)
+ * FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to class
  */
 public final class GrpcServiceBuilder {
 	/** Logger */

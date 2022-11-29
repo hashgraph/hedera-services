@@ -29,7 +29,7 @@ import java.util.Objects;
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
  * single instance of this class is used by all query threads in the node.
  *
- * @ThreadSafe (annotation missing in spotbugs annotations)
+ * FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to class
  */
 final class QueryMethod extends MethodBase {
 	private static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";

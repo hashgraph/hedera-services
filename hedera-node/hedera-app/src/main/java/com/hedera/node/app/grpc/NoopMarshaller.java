@@ -28,7 +28,7 @@ import java.util.Objects;
  * implementation of this class is designed to be used by multiple threads, including by multiple
  * app instances within a single JVM!
  *
- * @ThreadSafe (annotation missing in spotbugs annotations)
+ * FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to class
  */
 final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
 	// NOTE: This needs to come from config, but because of the thread local, has to be
