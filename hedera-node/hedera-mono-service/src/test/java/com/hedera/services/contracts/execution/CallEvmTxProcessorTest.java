@@ -360,6 +360,8 @@ class CallEvmTxProcessorTest {
         given(globalDynamicProperties.fundingAccountAddress())
                 .willReturn(new Id(0, 0, 1010).asEvmAddress());
         givenSenderWithBalance(350_000L);
+        given(globalDynamicProperties.enabledSidecars())
+                .willReturn(EnumSet.of(SidecarType.CONTRACT_ACTION));
         given(aliasManager.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
         final var action =
