@@ -85,6 +85,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
     private Optional<ByteString> alias = Optional.empty();
+    private Optional<ByteString> evmAddress = Optional.empty();
 
     @Override
     public HederaFunctionality type() {
@@ -210,6 +211,11 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
+    public HapiCryptoCreate evmAddress(final ByteString evmAddress) {
+        this.evmAddress = Optional.of(evmAddress);
+        return this;
+    }
+
     @Override
     protected HapiCryptoCreate self() {
         return this;
@@ -249,9 +255,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
                         .<CryptoCreateTransactionBody, CryptoCreateTransactionBody.Builder>body(
                                 CryptoCreateTransactionBody.class,
                                 b -> {
-                                    if (alias.isPresent()) {
-                                        b.setAlias(alias.get());
+                                    if (alias.isPresent() || evmAddress.isPresent()) {
                                         keyName.ifPresent(s -> b.setKey(spec.registry().getKey(s)));
+                                        alias.ifPresent(b::setAlias);
+                                        evmAddress.ifPresent(b::setEvmAddress);
                                     } else {
                                         b.setKey(key);
                                     }

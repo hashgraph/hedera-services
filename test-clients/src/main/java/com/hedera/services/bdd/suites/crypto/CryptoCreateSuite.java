@@ -47,6 +47,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -616,7 +617,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
+                                                    .evmAddress(evmAddressBytes)
                                                     .balance(100 * ONE_HBAR);
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
@@ -628,8 +629,13 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .alias(ecdsaKey.toByteString())
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(evmAddressBytes)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
 
-                                    allRunFor(spec, op, op2, op3);
+                                    allRunFor(spec, op, op2, op3, op4);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .has(
@@ -760,8 +766,9 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .alias(evmAddressBytes)
-                                                    .balance(100 * ONE_HBAR);
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .via("createTxn");
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -783,8 +790,14 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                     .alias(ByteString.copyFromUtf8("Invalid alias"))
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
-                                    allRunFor(spec, op, op2, op3, op4, op5);
+                                    allRunFor(spec, op, op2, op3, op4, op5, op6);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .has(
@@ -795,7 +808,13 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    final var getTxnRecord =
+                                            getTxnRecord("createTxn")
+                                                    .hasPriority(
+                                                            TransactionRecordAsserts.recordWith()
+                                                                    .evmAddress(evmAddressBytes)
+                                                                    .hasNoAlias());
+                                    allRunFor(spec, hapiGetAccountInfo, getTxnRecord);
                                 }))
                 .then(
                         UtilVerbs.resetToDefault(
