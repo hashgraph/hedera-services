@@ -15,28 +15,34 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hederahashgraph.api.proto.java.Key;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static com.hedera.node.app.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.Key;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class AccountImplTest {
     private AccountImpl subject;
-    private final HederaKey key = asHederaKey(Key.newBuilder()
-            .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678911"))
-            .build()).get();
+    private final HederaKey key =
+            asHederaKey(
+                            Key.newBuilder()
+                                    .setEd25519(
+                                            ByteString.copyFromUtf8(
+                                                    "01234567890123456789012345678911"))
+                                    .build())
+                    .get();
+
     @BeforeEach
-    void setUp(){
+    void setUp() {
         subject = setUpAccount();
     }
+
     @Test
-    void equalsWorks(){
+    void equalsWorks() {
         final var o1 = subject;
         final var o2 = o1.copy().build();
         final var o3 = o1.copy().memo("test1").build();
@@ -54,12 +60,15 @@ class AccountImplTest {
     @Test
     void toStringWorks() {
         final var actual = subject.toString();
-        final var expected = "AccountImpl[accountNumber=2,alias=Optional.empty,key=Optional[<JEd25519Key: ed25519 hex=3031323334353637383930313233343536373839303132333435363738393131>],expiry=123456789,balance=20000000000,memo=test,isDeleted=true,isSmartContract=true,isReceiverSigRequired=true,numberOfOwnedNfts=100,maxAutoAssociations=200,usedAutoAssociations=10,numAssociations=20,numPositiveBalances=10,ethereumNonce=20,stakedToMe=1000000,stakePeriodStart=123456,stakedNum=2,declineReward=false,stakeAtStartOfLastRewardedPeriod=1000,autoRenewAccountNumber=3000,autoRenewSecs=360000]";
-                assertEquals(expected, actual);
+        final var expected =
+                "AccountImpl[accountNumber=2,alias=Optional.empty,key=Optional[<JEd25519Key:"
+                    + " ed25519"
+                    + " hex=3031323334353637383930313233343536373839303132333435363738393131>],expiry=123456789,balance=20000000000,memo=test,isDeleted=true,isSmartContract=true,isReceiverSigRequired=true,numberOfOwnedNfts=100,maxAutoAssociations=200,usedAutoAssociations=10,numAssociations=20,numPositiveBalances=10,ethereumNonce=20,stakedToMe=1000000,stakePeriodStart=123456,stakedNum=2,declineReward=false,stakeAtStartOfLastRewardedPeriod=1000,autoRenewAccountNumber=3000,autoRenewSecs=360000]";
+        assertEquals(expected, actual);
     }
 
     @Test
-    void gettersWork(){
+    void gettersWork() {
         assertEquals(2, subject.accountNumber());
         assertEquals(Optional.empty(), subject.alias());
         assertEquals(key, subject.key().get());
@@ -83,17 +92,19 @@ class AccountImplTest {
         assertEquals(3000L, subject.autoRenewAccountNumber());
         assertEquals(360000, subject.autoRenewSecs());
     }
-    private AccountImpl setUpAccount(){
-        return new AccountImpl(2,
+
+    private AccountImpl setUpAccount() {
+        return new AccountImpl(
+                2,
                 Optional.empty(),
                 Optional.of(key),
-        123456789L,
-                20000000000L ,
-        "test",
-        true,
-        true,
-        true,
-        100,
+                123456789L,
+                20000000000L,
+                "test",
+                true,
+                true,
+                true,
+                100,
                 200,
                 10,
                 20,
@@ -105,7 +116,6 @@ class AccountImplTest {
                 false,
                 1000L,
                 3000L,
-                360000
-        );
-        }
+                360000);
+    }
 }

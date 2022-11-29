@@ -15,29 +15,28 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
-import com.hedera.node.app.service.token.entity.AccountBuilder;
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.services.utils.KeyUtils;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static com.hedera.node.app.Utils.asHederaKey;
 import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.services.utils.KeyUtils;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class AccountBuilderImplTest {
     private AccountBuilder subject;
     private final HederaKey key = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         subject = new AccountBuilderImpl(setUpAccount());
     }
 
     @Test
-    void constructorWorks(){
+    void constructorWorks() {
         assertNotNull(subject);
         final var account = subject.build();
 
@@ -67,7 +66,7 @@ class AccountBuilderImplTest {
     }
 
     @Test
-    void settersWork(){
+    void settersWork() {
         final var newKey = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
         subject.key(newKey);
         subject.expiry(1234567890L);
@@ -89,8 +88,6 @@ class AccountBuilderImplTest {
         subject.stakeAtStartOfLastRewardedPeriod(10000L);
         subject.autoRenewAccountNumber(30000L);
         subject.autoRenewSecs(3600000);
-
-
 
         final var account = subject.build();
         assertEquals(2, account.accountNumber());
@@ -118,12 +115,13 @@ class AccountBuilderImplTest {
         assertEquals(3600000, account.autoRenewSecs());
     }
 
-    private AccountImpl setUpAccount(){
-        return new AccountImpl(2,
+    private AccountImpl setUpAccount() {
+        return new AccountImpl(
+                2,
                 Optional.empty(),
                 Optional.of(key),
                 123456789L,
-                20000000000L ,
+                20000000000L,
                 "test",
                 true,
                 true,
@@ -140,7 +138,6 @@ class AccountBuilderImplTest {
                 false,
                 1000L,
                 3000L,
-                360000
-        );
+                360000);
     }
 }

@@ -19,13 +19,10 @@ import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.builder.EqualsBuilder;
+import java.util.Optional;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-
-import java.util.Objects;
-import java.util.Optional;
 
 /** An implementation of {@link Account}. */
 public record AccountImpl(
