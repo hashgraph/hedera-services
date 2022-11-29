@@ -1,4 +1,4 @@
-module com.hedera.services.evm.implementation {
-    requires com.hedera.services.evm;
-    requires static com.github.spotbugs.annotations;
+module com.hedera.node.app.service.evm.impl {
+	requires com.hedera.node.app.service.evm;
+	requires static com.github.spotbugs.annotations;
 }

@@ -34,7 +34,7 @@ import com.hedera.services.contracts.operation.HederaSStoreOperation;
 import com.hedera.services.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.services.contracts.operation.HederaStaticCallOperation;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

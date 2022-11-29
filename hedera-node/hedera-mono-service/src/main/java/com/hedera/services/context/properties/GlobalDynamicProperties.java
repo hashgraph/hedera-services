@@ -24,7 +24,7 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;

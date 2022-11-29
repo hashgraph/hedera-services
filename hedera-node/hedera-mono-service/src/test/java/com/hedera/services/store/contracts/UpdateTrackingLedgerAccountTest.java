@@ -24,8 +24,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
-import com.hedera.services.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;

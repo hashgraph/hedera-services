@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
-import static com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -41,8 +41,8 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.context.properties.NodeLocalProperties;
 import com.hedera.services.contracts.operation.HederaOperationUtil;
-import com.hedera.services.evm.store.contracts.HederaEvmWorldStateTokenAccount;
-import com.hedera.services.evm.store.contracts.WorldStateAccount;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
+import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.ContractCustomizer;

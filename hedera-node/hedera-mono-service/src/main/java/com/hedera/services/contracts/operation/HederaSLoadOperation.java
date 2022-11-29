@@ -38,7 +38,7 @@ package com.hedera.services.contracts.operation;
  */
 
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.evm.contracts.operations.HederaEvmSLoadOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.services.stream.proto.SidecarType;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes32;

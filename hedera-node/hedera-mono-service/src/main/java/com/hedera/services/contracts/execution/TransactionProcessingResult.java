@@ -16,7 +16,7 @@
 package com.hedera.services.contracts.execution;
 
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
