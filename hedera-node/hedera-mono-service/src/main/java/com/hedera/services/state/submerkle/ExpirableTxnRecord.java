@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.submerkle;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.services.context.SideEffectsTracker.MISSING_NUMBER;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
@@ -31,8 +31,8 @@ import static java.util.stream.Collectors.joining;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -122,7 +122,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         /* RuntimeConstructable */
     }
 
-    public ExpirableTxnRecord(Builder builder) {
+    public ExpirableTxnRecord(final Builder builder) {
         this.receipt =
                 (builder.receiptBuilder != null) ? builder.receiptBuilder.build() : builder.receipt;
         this.txnHash = builder.txnHash;
@@ -151,7 +151,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     /* --- Object --- */
     @Override
     public String toString() {
-        var helper =
+        final var helper =
                 MoreObjects.toStringHelper(this)
                         .omitNullValues()
                         .add("numChildRecords", numChildRecords)
@@ -182,8 +182,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
 
         if (tokens != NO_TOKENS) {
-            int n = tokens.size();
-            var readable =
+            final int n = tokens.size();
+            final var readable =
                     IntStream.range(0, n)
                             .mapToObj(
                                     i ->
@@ -199,7 +199,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
 
         if (assessedCustomFees != NO_CUSTOM_FEES) {
-            var readable =
+            final var readable =
                     assessedCustomFees.stream()
                             .map(assessedCustomFee -> String.format("(%s)", assessedCustomFee))
                             .collect(joining(", "));
@@ -207,7 +207,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
 
         if (newTokenAssociations != NO_NEW_TOKEN_ASSOCIATIONS) {
-            var readable =
+            final var readable =
                     newTokenAssociations.stream()
                             .map(newTokenAssociation -> String.format("(%s)", newTokenAssociation))
                             .collect(joining(", "));
@@ -227,14 +227,14 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || ExpirableTxnRecord.class != o.getClass()) {
             return false;
         }
-        var that = (ExpirableTxnRecord) o;
+        final var that = (ExpirableTxnRecord) o;
         return this.fee == that.fee
                 && this.numChildRecords == that.numChildRecords
                 && this.packedParentConsensusTime == that.packedParentConsensusTime
@@ -307,7 +307,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         writeNullableSerializable(receipt, out);
 
         out.writeByteArray(txnHash);
@@ -363,7 +363,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         receipt = readNullableSerializable(in);
         txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
         txnId = readNullableSerializable(in);
@@ -421,7 +422,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
     }
 
-    private void deserializeAllowanceMaps(SerializableDataInputStream in, final int version)
+    private void deserializeAllowanceMaps(final SerializableDataInputStream in, final int version)
             throws IOException {
         if (version < RELEASE_0250_VERSION) {
             // In release 0.24.x and 0.23.0 three _always-empty_ map sizes were serialized here
@@ -437,7 +438,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     @Override
-    public void setHash(Hash hash) {
+    public void setHash(final Hash hash) {
         this.hash = hash;
     }
 
@@ -502,7 +503,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         return expiry;
     }
 
-    public void setExpiry(long expiry) {
+    public void setExpiry(final long expiry) {
         this.expiry = expiry;
     }
 
@@ -510,7 +511,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         return submittingMember;
     }
 
-    public void setSubmittingMember(long submittingMember) {
+    public void setSubmittingMember(final long submittingMember) {
         this.submittingMember = submittingMember;
     }
 
@@ -546,7 +547,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         return ethereumHash;
     }
 
-    public void setEthereumHash(byte[] ethereumHash) {
+    public void setEthereumHash(final byte[] ethereumHash) {
         this.ethereumHash = ethereumHash;
     }
 
@@ -577,12 +578,12 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         return this;
     }
 
-    public static List<TransactionRecord> allToGrpc(List<ExpirableTxnRecord> records) {
+    public static List<TransactionRecord> allToGrpc(final List<ExpirableTxnRecord> records) {
         return records.stream().map(ExpirableTxnRecord::asGrpc).toList();
     }
 
     public TransactionRecord asGrpc() {
-        var grpc = TransactionRecord.newBuilder();
+        final var grpc = TransactionRecord.newBuilder();
 
         grpc.setTransactionFee(fee);
         if (receipt != null) {
@@ -647,12 +648,12 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     }
 
     private static void setGrpcTokens(
-            TransactionRecord.Builder grpcBuilder,
+            final TransactionRecord.Builder grpcBuilder,
             final List<EntityId> tokens,
             final List<CurrencyAdjustments> tokenAdjustments,
             final List<NftAdjustments> nftTokenAdjustments) {
         for (int i = 0, n = tokens.size(); i < n; i++) {
-            var tokenTransferList =
+            final var tokenTransferList =
                     TokenTransferList.newBuilder().setToken(tokens.get(i).toGrpcTokenId());
             if (tokenAdjustments != null && !tokenAdjustments.isEmpty()) {
                 final var choice = tokenAdjustments.get(i);
@@ -701,87 +702,88 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         private byte[] pseudoRandomBytes = MISSING_PSEUDORANDOM_BYTES;
         private boolean onlyExternalizedIfSuccessful = false;
 
-        public Builder setFee(long fee) {
+        public Builder setFee(final long fee) {
             this.fee = fee;
             return this;
         }
 
-        public Builder setTxnId(TxnId txnId) {
+        public Builder setTxnId(final TxnId txnId) {
             this.txnId = txnId;
             return this;
         }
 
-        public Builder setTxnHash(byte[] txnHash) {
+        public Builder setTxnHash(final byte[] txnHash) {
             this.txnHash = txnHash;
             return this;
         }
 
-        public Builder setMemo(String memo) {
+        public Builder setMemo(final String memo) {
             this.memo = memo;
             return this;
         }
 
-        public Builder setReceipt(TxnReceipt receipt) {
+        public Builder setReceipt(final TxnReceipt receipt) {
             this.receipt = receipt;
             return this;
         }
 
-        public Builder setReceiptBuilder(TxnReceipt.Builder receiptBuilder) {
+        public Builder setReceiptBuilder(final TxnReceipt.Builder receiptBuilder) {
             this.receiptBuilder = receiptBuilder;
             return this;
         }
 
-        public Builder setConsensusTime(RichInstant consensusTime) {
+        public Builder setConsensusTime(final RichInstant consensusTime) {
             this.consensusTime = consensusTime;
             return this;
         }
 
-        public Builder setHbarAdjustments(CurrencyAdjustments hbarAdjustments) {
+        public Builder setHbarAdjustments(final CurrencyAdjustments hbarAdjustments) {
             this.hbarAdjustments = hbarAdjustments;
             return this;
         }
 
-        public Builder setStakingRewardsPaid(CurrencyAdjustments stakingRewardsPaid) {
+        public Builder setStakingRewardsPaid(final CurrencyAdjustments stakingRewardsPaid) {
             this.stakingRewardsPaid = stakingRewardsPaid;
             return this;
         }
 
-        public Builder setContractCallResult(EvmFnResult contractCallResult) {
+        public Builder setContractCallResult(final EvmFnResult contractCallResult) {
             this.contractCallResult = contractCallResult;
             return this;
         }
 
-        public Builder setContractCreateResult(EvmFnResult contractCreateResult) {
+        public Builder setContractCreateResult(final EvmFnResult contractCreateResult) {
             this.contractCreateResult = contractCreateResult;
             return this;
         }
 
-        public Builder setTokens(List<EntityId> tokens) {
+        public Builder setTokens(final List<EntityId> tokens) {
             this.tokens = tokens;
             return this;
         }
 
-        public Builder setTokenAdjustments(List<CurrencyAdjustments> tokenAdjustments) {
+        public Builder setTokenAdjustments(final List<CurrencyAdjustments> tokenAdjustments) {
             this.tokenAdjustments = tokenAdjustments;
             return this;
         }
 
-        public Builder setNftTokenAdjustments(List<NftAdjustments> nftTokenAdjustments) {
+        public Builder setNftTokenAdjustments(final List<NftAdjustments> nftTokenAdjustments) {
             this.nftTokenAdjustments = nftTokenAdjustments;
             return this;
         }
 
-        public Builder setScheduleRef(EntityId scheduleRef) {
+        public Builder setScheduleRef(final EntityId scheduleRef) {
             this.scheduleRef = scheduleRef;
             return this;
         }
 
-        public Builder setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
+        public Builder setAssessedCustomFees(final List<FcAssessedCustomFee> assessedCustomFees) {
             this.assessedCustomFees = assessedCustomFees;
             return this;
         }
 
-        public Builder setNewTokenAssociations(List<FcTokenAssociation> newTokenAssociations) {
+        public Builder setNewTokenAssociations(
+                final List<FcTokenAssociation> newTokenAssociations) {
             this.newTokenAssociations = newTokenAssociations;
             return this;
         }
@@ -797,12 +799,12 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             return this;
         }
 
-        public Builder setAlias(ByteString alias) {
+        public Builder setAlias(final ByteString alias) {
             this.alias = alias;
             return this;
         }
 
-        public Builder setEthereumHash(byte[] ethereumHash) {
+        public Builder setEthereumHash(final byte[] ethereumHash) {
             this.ethereumHash = ethereumHash;
             return this;
         }
@@ -906,7 +908,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             this.hbarAdjustments.accountNums = Arrays.copyOfRange(netChanged, 0, k);
         }
 
-        private void nullOutSideEffectFields(boolean removeCallResult) {
+        private void nullOutSideEffectFields(final boolean removeCallResult) {
             hbarAdjustments = null;
             stakingRewardsPaid = null;
             contractCreateResult = null;

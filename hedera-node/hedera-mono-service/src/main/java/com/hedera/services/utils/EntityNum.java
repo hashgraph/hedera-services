@@ -31,9 +31,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in
@@ -44,15 +44,15 @@ public class EntityNum implements Comparable<EntityNum> {
 
     private final int value;
 
-    public EntityNum(int value) {
+    public EntityNum(final int value) {
         this.value = value;
     }
 
-    public static EntityNum fromInt(int i) {
+    public static EntityNum fromInt(final int i) {
         return new EntityNum(i);
     }
 
-    public static EntityNum fromLong(long l) {
+    public static EntityNum fromLong(final long l) {
         if (!isValidNum(l)) {
             return MISSING_NUM;
         }
@@ -60,14 +60,14 @@ public class EntityNum implements Comparable<EntityNum> {
         return new EntityNum(value);
     }
 
-    public static EntityNum fromModel(Id id) {
+    public static EntityNum fromModel(final Id id) {
         if (!areValidNums(id.shard(), id.realm())) {
             return MISSING_NUM;
         }
         return fromLong(id.num());
     }
 
-    public static EntityNum fromAccountId(AccountID grpc) {
+    public static EntityNum fromAccountId(final AccountID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
@@ -88,28 +88,28 @@ public class EntityNum implements Comparable<EntityNum> {
         return EntityNum.fromLong(numFromEvmAddress(evmAddress));
     }
 
-    public static EntityNum fromTokenId(TokenID grpc) {
+    public static EntityNum fromTokenId(final TokenID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getTokenNum());
     }
 
-    public static EntityNum fromTopicId(TopicID grpc) {
+    public static EntityNum fromTopicId(final TopicID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getTopicNum());
     }
 
-    public static EntityNum fromContractId(ContractID grpc) {
+    public static EntityNum fromContractId(final ContractID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
         return fromLong(grpc.getContractNum());
     }
 
-    public static EntityNum fromScheduleId(ScheduleID grpc) {
+    public static EntityNum fromScheduleId(final ScheduleID grpc) {
         if (!areValidNums(grpc.getShardNum(), grpc.getRealmNum())) {
             return MISSING_NUM;
         }
@@ -169,7 +169,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -177,12 +177,12 @@ public class EntityNum implements Comparable<EntityNum> {
             return false;
         }
 
-        var that = (EntityNum) o;
+        final var that = (EntityNum) o;
 
         return this.value == that.value;
     }
 
-    static boolean areValidNums(long shard, long realm) {
+    static boolean areValidNums(final long shard, final long realm) {
         return shard == STATIC_PROPERTIES.getShard() && realm == STATIC_PROPERTIES.getRealm();
     }
 
@@ -192,7 +192,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     @Override
-    public int compareTo(@NotNull final EntityNum that) {
+    public int compareTo(@NonNull final EntityNum that) {
         return Integer.compare(this.value, that.value);
     }
 }

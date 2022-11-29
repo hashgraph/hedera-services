@@ -20,10 +20,10 @@ import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import javax.annotation.Nullable;
 
 public class IoUtils {
     public static void serializeKey(final JKey key, final DataOutputStream out) throws IOException {
@@ -77,10 +77,10 @@ public class IoUtils {
         }
     }
 
-    public static byte[] byteStream(JKeySerializer.StreamConsumer<DataOutputStream> consumer)
+    public static byte[] byteStream(final JKeySerializer.StreamConsumer<DataOutputStream> consumer)
             throws IOException {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (DataOutputStream dos = new DataOutputStream(bos)) {
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            try (final DataOutputStream dos = new DataOutputStream(bos)) {
                 consumer.accept(dos);
                 dos.flush();
                 bos.flush();

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.MutableAccount;
 

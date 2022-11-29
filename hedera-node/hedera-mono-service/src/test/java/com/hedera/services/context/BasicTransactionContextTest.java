@@ -42,7 +42,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.charging.NarratedCharging;
 import com.hedera.services.ledger.ids.EntityIdSource;

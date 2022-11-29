@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
+import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoDeleteAllowance;
@@ -42,11 +42,12 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -59,7 +60,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -70,7 +70,7 @@ import javax.inject.Provider;
 
 public class PrecompilePricingUtils {
     static class CanonicalOperationsUnloadableException extends RuntimeException {
-        public CanonicalOperationsUnloadableException(Exception e) {
+        public CanonicalOperationsUnloadableException(final Exception e) {
             super("Canonical prices for precompiles are not available", e);
         }
     }
@@ -94,7 +94,7 @@ public class PrecompilePricingUtils {
 
     @Inject
     public PrecompilePricingUtils(
-            AssetsLoader assetsLoader,
+            final AssetsLoader assetsLoader,
             final HbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
             final UsagePricesProvider resourceCosts,
@@ -107,15 +107,15 @@ public class PrecompilePricingUtils {
         this.accessorFactory = accessorFactory;
 
         canonicalOperationCostsInTinyCents = new EnumMap<>(GasCostType.class);
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices;
         try {
             canonicalPrices = assetsLoader.loadCanonicalPrices();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new CanonicalOperationsUnloadableException(e);
         }
-        for (var costType : GasCostType.values()) {
+        for (final var costType : GasCostType.values()) {
             if (canonicalPrices.containsKey(costType.functionality)) {
-                BigDecimal costInUSD =
+                final BigDecimal costInUSD =
                         canonicalPrices.get(costType.functionality).get(costType.subtype);
                 if (costInUSD != null) {
                     canonicalOperationCostsInTinyCents.put(
@@ -125,11 +125,12 @@ public class PrecompilePricingUtils {
         }
     }
 
-    public long getCanonicalPriceInTinyCents(GasCostType gasCostType) {
+    public long getCanonicalPriceInTinyCents(final GasCostType gasCostType) {
         return canonicalOperationCostsInTinyCents.getOrDefault(gasCostType, COST_PROHIBITIVE);
     }
 
-    public long getMinimumPriceInTinybars(GasCostType gasCostType, Timestamp timestamp) {
+    public long getMinimumPriceInTinybars(
+            final GasCostType gasCostType, final Timestamp timestamp) {
         return FeeBuilder.getTinybarsFromTinyCents(
                 exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
@@ -233,7 +234,7 @@ public class PrecompilePricingUtils {
         final HederaFunctionality functionality;
         final SubType subtype;
 
-        GasCostType(HederaFunctionality functionality, SubType subtype) {
+        GasCostType(final HederaFunctionality functionality, final SubType subtype) {
             this.functionality = functionality;
             this.subtype = subtype;
         }

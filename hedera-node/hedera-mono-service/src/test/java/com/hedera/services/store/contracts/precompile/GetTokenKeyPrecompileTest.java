@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -37,7 +38,6 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -109,11 +109,11 @@ class GetTokenKeyPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenGetInfo, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -367,7 +367,7 @@ class GetTokenKeyPrecompileTest {
     }
 
     private void givenMinimalContextForCall() {
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

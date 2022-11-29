@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -51,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;

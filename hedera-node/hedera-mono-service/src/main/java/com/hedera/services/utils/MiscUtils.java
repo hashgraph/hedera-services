@@ -15,6 +15,8 @@
  */
 package com.hedera.services.utils;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.grpc.controllers.ConsensusController.CREATE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.DELETE_TOPIC_METRIC;
 import static com.hedera.services.grpc.controllers.ConsensusController.GET_TOPIC_INFO_METRIC;
@@ -56,8 +58,6 @@ import static com.hedera.services.grpc.controllers.NetworkController.GET_EXECUTI
 import static com.hedera.services.grpc.controllers.NetworkController.GET_VERSION_INFO_METRIC;
 import static com.hedera.services.grpc.controllers.NetworkController.UNCHECKED_SUBMIT_METRIC;
 import static com.hedera.services.legacy.core.jproto.JKey.mapJKey;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.signedLowOrder32From;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.services.stats.ServicesStatsConfig.SYSTEM_DELETE_METRIC;
@@ -160,7 +160,8 @@ import static java.util.stream.Collectors.toSet;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
@@ -168,7 +169,6 @@ import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.throttles.DeterministicThrottle;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -188,9 +188,18 @@ import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -198,7 +207,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.logging.log4j.LogManager;
@@ -445,7 +453,7 @@ public final class MiscUtils {
     public static JKey asFcKeyUnchecked(final Key key) {
         try {
             return JKey.mapKey(key);
-        } catch (DecoderException impermissible) {
+        } catch (final DecoderException impermissible) {
             throw new IllegalArgumentException(
                     "Key " + key + " should have been decode-able!", impermissible);
         }
@@ -458,7 +466,7 @@ public final class MiscUtils {
                 return Optional.empty();
             }
             return Optional.of(fcKey);
-        } catch (DecoderException ignore) {
+        } catch (final DecoderException ignore) {
             return Optional.empty();
         }
     }
@@ -466,7 +474,7 @@ public final class MiscUtils {
     public static Key asKeyUnchecked(final JKey fcKey) {
         try {
             return mapJKey(fcKey);
-        } catch (Exception impossible) {
+        } catch (final Exception impossible) {
             return Key.getDefaultInstance();
         }
     }
@@ -558,7 +566,7 @@ public final class MiscUtils {
     static String getTxnStat(final TransactionBody txn) {
         try {
             return BASE_STAT_NAMES.get(functionOf(txn));
-        } catch (UnknownHederaFunctionality unknownHederaFunctionality) {
+        } catch (final UnknownHederaFunctionality unknownHederaFunctionality) {
             return "NotImplemented";
         }
     }
@@ -730,7 +738,7 @@ public final class MiscUtils {
         }
         try {
             return mapJKey(k).toString();
-        } catch (DecoderException ignore) {
+        } catch (final DecoderException ignore) {
             return "<N/A>";
         }
     }
@@ -902,14 +910,14 @@ public final class MiscUtils {
      * @return - whether this {@link HederaFunctionality} should be throttled by the consensus
      *     throttle
      */
-    public static boolean isGasThrottled(HederaFunctionality hederaFunctionality) {
+    public static boolean isGasThrottled(final HederaFunctionality hederaFunctionality) {
         return CONSENSUS_THROTTLED_FUNCTIONS.contains(hederaFunctionality);
     }
 
     public static long getGasLimitForContractTx(
             final TransactionBody txn,
             final HederaFunctionality function,
-            @Nullable Supplier<EthTxData> getEthData) {
+            @Nullable final Supplier<EthTxData> getEthData) {
         return switch (function) {
             case ContractCreate -> txn.getContractCreateInstance().getGas();
             case ContractCall -> txn.getContractCall().getGas();
@@ -939,7 +947,7 @@ public final class MiscUtils {
             } else {
                 return false;
             }
-        } catch (InvalidProtocolBufferException ignore) {
+        } catch (final InvalidProtocolBufferException ignore) {
             return false;
         }
     }
@@ -954,15 +962,15 @@ public final class MiscUtils {
             final List<DeterministicThrottle> throttles,
             final DeterministicThrottle.UsageSnapshot[] snapshots,
             final String source) {
-        var currUsageSnapshots =
+        final var currUsageSnapshots =
                 throttles.stream().map(DeterministicThrottle::usageSnapshot).toList();
         for (int i = 0, n = snapshots.length; i < n; i++) {
-            var savedUsageSnapshot = snapshots[i];
-            var throttle = throttles.get(i);
+            final var savedUsageSnapshot = snapshots[i];
+            final var throttle = throttles.get(i);
             try {
                 throttle.resetUsageTo(savedUsageSnapshot);
                 log.info("Reset {} with saved usage snapshot", throttle);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 log.warn(
                         "Saved {} usage snapshot #{} was not compatible with the corresponding"
                                 + " active throttle ({}) not performing a reset !",
@@ -995,8 +1003,8 @@ public final class MiscUtils {
     }
 
     private static void resetUnconditionally(
-            List<DeterministicThrottle> throttles,
-            List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
+            final List<DeterministicThrottle> throttles,
+            final List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
         for (int i = 0, n = knownCompatible.size(); i < n; i++) {
             throttles.get(i).resetUsageTo(knownCompatible.get(i));
         }
@@ -1015,7 +1023,7 @@ public final class MiscUtils {
     public static Key asPrimitiveKeyUnchecked(final ByteString alias) {
         try {
             return Key.parseFrom(alias);
-        } catch (InvalidProtocolBufferException internal) {
+        } catch (final InvalidProtocolBufferException internal) {
             throw new IllegalStateException(internal);
         }
     }

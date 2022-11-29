@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -48,11 +48,14 @@ public class GetContractRecordsAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        ContractGetRecordsQuery op = query.getContractGetRecords();
-        ContractGetRecordsResponse.Builder response = ContractGetRecordsResponse.newBuilder();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final ContractGetRecordsQuery op = query.getContractGetRecords();
+        final ContractGetRecordsResponse.Builder response = ContractGetRecordsResponse.newBuilder();
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {

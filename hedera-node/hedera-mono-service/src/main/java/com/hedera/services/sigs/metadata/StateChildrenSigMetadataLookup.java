@@ -50,11 +50,11 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
     private final FileNumbers fileNumbers;
@@ -199,7 +199,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
             return SafeLookupResult.failure(INVALID_CONTRACT);
         } else {
-            JKey key;
+            final JKey key;
             if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
                 return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
             } else {

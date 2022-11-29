@@ -55,10 +55,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;

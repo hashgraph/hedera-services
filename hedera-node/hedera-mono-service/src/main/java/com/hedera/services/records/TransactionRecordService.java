@@ -18,9 +18,9 @@ package com.hedera.services.records;
 import static com.hedera.services.utils.ResponseCodeUtil.getStatusOrDefault;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Topic;

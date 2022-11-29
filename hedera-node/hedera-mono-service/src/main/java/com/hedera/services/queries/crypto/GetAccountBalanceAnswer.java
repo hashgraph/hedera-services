@@ -39,9 +39,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenBalance;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -62,29 +62,32 @@ public class GetAccountBalanceAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        AccountStorageAdapter accounts = view.accounts();
-        CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final AccountStorageAdapter accounts = view.accounts();
+        final CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
         return validityOf(op, accounts);
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final CryptoGetAccountBalanceQuery op = query.getCryptogetAccountBalance();
 
         final var id = targetOf(op);
-        CryptoGetAccountBalanceResponse.Builder opAnswer =
+        final CryptoGetAccountBalanceResponse.Builder opAnswer =
                 CryptoGetAccountBalanceResponse.newBuilder()
                         .setHeader(answerOnlyHeader(validity))
                         .setAccountID(id);
@@ -114,7 +117,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 
@@ -158,7 +161,7 @@ public class GetAccountBalanceAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
     }
 

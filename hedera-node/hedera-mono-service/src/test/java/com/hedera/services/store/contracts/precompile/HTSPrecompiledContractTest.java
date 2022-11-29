@@ -102,6 +102,9 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
@@ -112,7 +115,6 @@ import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.expiry.ExpiringCreations;
@@ -155,7 +157,6 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -199,6 +200,7 @@ class HTSPrecompiledContractTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
     @Mock private TokenInfoWrapper tokenInfoWrapper;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private NetworkInfo networkInfo;
 
     private HTSPrecompiledContract subject;
     private PrecompilePricingUtils precompilePricingUtils;
@@ -313,9 +315,9 @@ class HTSPrecompiledContractTest {
 
     @Test
     void gasRequirementReturnsCorrectValueForInvalidInput() {
-        Bytes input = Bytes.of(4, 3, 2, 1);
+        final Bytes input = Bytes.of(4, 3, 2, 1);
         // when
-        var gas = subject.gasRequirement(input);
+        final var gas = subject.gasRequirement(input);
 
         // then
         assertEquals(0L, gas);
@@ -335,7 +337,7 @@ class HTSPrecompiledContractTest {
     void computeCostedWorksForRedirectView() {
         given(worldUpdater.trackingLedgers()).willReturn(wrappedLedgers);
         given(wrappedLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-        Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
+        final Bytes input = prerequisitesForRedirect(ABI_ID_ERC_NAME);
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.isInTransaction()).willReturn(false);
@@ -371,7 +373,7 @@ class HTSPrecompiledContractTest {
 
     @Test
     void computeCostedWorksForView() {
-        Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
+        final Bytes input = prerequisites(ABI_ID_GET_TOKEN_INFO);
         tokenInfoPrecompile
                 .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
@@ -401,7 +403,10 @@ class HTSPrecompiledContractTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(stateView.infoForToken(fungible)).willReturn(Optional.of(tokenInfo));
+        given(stateView.getNetworkInfo()).willReturn(networkInfo);
+        given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
+        given(wrappedLedgers.infoForToken(fungible, networkInfo.ledgerId()))
+                .willReturn(Optional.of(tokenInfo));
         final var encodedResult =
                 Bytes.fromHexString(
                         "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000360000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000003c0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000005cc00000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044e414d45000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002465400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044d454d4f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043078303300000000000000000000000000000000000000000000000000000000");
@@ -432,7 +437,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCryptoTransfer() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -448,7 +453,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForCryptoTransferV2() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -465,7 +470,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForTransferTokens() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -481,7 +486,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForTransferToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -497,7 +502,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForTransferNfts() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -513,7 +518,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForTransferNft() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -529,7 +534,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForMintToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -545,7 +550,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForMintTokenV2() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN_V2));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -561,7 +566,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForBurnToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -577,7 +582,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForBurnTokenV2() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -593,7 +598,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForAssociateTokens() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKENS));
         final var builder = TokenAssociateTransactionBody.newBuilder();
         builder.setAccount(multiDissociateOp.accountId());
         builder.addAllTokens(multiDissociateOp.tokenIds());
@@ -614,7 +619,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForAssociateToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_ASSOCIATE_TOKEN));
         associatePrecompile
                 .when(() -> AssociatePrecompile.decodeAssociation(any(), any()))
                 .thenReturn(associateOp);
@@ -633,7 +638,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForDissociateTokens() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKENS));
         multiDissociatePrecompile
                 .when(() -> MultiDissociatePrecompile.decodeMultipleDissociations(any(), any()))
                 .thenReturn(multiDissociateOp);
@@ -656,7 +661,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleToken() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
                 .when(() -> TokenCreatePrecompile.decodeFungibleCreate(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -669,7 +674,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleToken() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
                 .when(() -> TokenCreatePrecompile.decodeNonFungibleCreate(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -687,7 +692,7 @@ class HTSPrecompiledContractTest {
         final var autoRenewId = EntityId.fromIdentityCode(10);
         final var tokenCreateWrapper = mock(TokenCreateWrapper.class);
         given(tokenCreateWrapper.hasAutoRenewAccount()).willReturn(false);
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN));
         tokenCreatePrecompile
                 .when(() -> TokenCreatePrecompile.decodeNonFungibleCreate(any(), any()))
                 .thenReturn(tokenCreateWrapper);
@@ -709,7 +714,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleTokenWithFeesV2() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V2));
         tokenCreatePrecompile
                 .when(() -> decodeFungibleCreateWithFeesV2(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -722,7 +727,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleTokenWithFeesV3() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES_V3));
         tokenCreatePrecompile
                 .when(() -> decodeFungibleCreateWithFeesV3(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -735,7 +740,8 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFeesV2() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
+        final Bytes input =
+                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V2));
         tokenCreatePrecompile
                 .when(() -> decodeNonFungibleCreateWithFeesV2(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -748,7 +754,8 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFeesV3() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3));
+        final Bytes input =
+                Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_V3));
         tokenCreatePrecompile
                 .when(() -> decodeNonFungibleCreateWithFeesV3(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -761,7 +768,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleTokenV2() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V2));
         tokenCreatePrecompile
                 .when(() -> decodeFungibleCreateV2(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -774,7 +781,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleTokenV3() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V3));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_V3));
         tokenCreatePrecompile
                 .when(() -> decodeFungibleCreateV3(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -787,7 +794,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleTokenV2() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V2));
         tokenCreatePrecompile
                 .when(() -> decodeNonFungibleCreateV2(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -800,7 +807,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleTokenV3() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_V3));
         tokenCreatePrecompile
                 .when(() -> decodeNonFungibleCreateV3(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -813,7 +820,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateFungibleTokenWithFees() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN_WITH_FEES));
         tokenCreatePrecompile
                 .when(() -> TokenCreatePrecompile.decodeFungibleCreateWithFees(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -826,7 +833,7 @@ class HTSPrecompiledContractTest {
     @Test
     void computeCallsCorrectImplementationForCreateNonFungibleTokenWithFees() {
         // given
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES));
         tokenCreatePrecompile
                 .when(() -> TokenCreatePrecompile.decodeNonFungibleCreateWithFees(any(), any()))
                 .thenReturn(createTokenCreateWrapperWithKeys(Collections.emptyList()));
@@ -836,7 +843,7 @@ class HTSPrecompiledContractTest {
         prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(input);
     }
 
-    private void prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(Bytes input) {
+    private void prepareAndAssertCorrectInstantiationOfTokenCreatePrecompile(final Bytes input) {
         // given
         givenFrameContext();
         given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(true);
@@ -857,7 +864,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForDissociateToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_DISSOCIATE_TOKEN));
         dissociatePrecompile
                 .when(() -> DissociatePrecompile.decodeDissociate(any(), any()))
                 .thenReturn(dissociateToken);
@@ -876,14 +883,14 @@ class HTSPrecompiledContractTest {
     void computeReturnsNullForWrongInput() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(0, 0, 0, 0);
+        final Bytes input = Bytes.of(0, 0, 0, 0);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
-        var result = subject.computePrecompile(input, messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
 
         // then
         assertNull(result.getOutput());
@@ -893,7 +900,7 @@ class HTSPrecompiledContractTest {
     void computeReturnsNullForEmptyTransactionBody() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         mintPrecompile
                 .when(() -> MintPrecompile.decodeMint(any()))
                 .thenReturn(fungibleMintAmountOversize);
@@ -905,7 +912,7 @@ class HTSPrecompiledContractTest {
         subject.prepareComputation(input, a -> a);
 
         // then
-        var result = subject.computePrecompile(input, messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
         assertNull(result.getOutput());
     }
 
@@ -913,7 +920,7 @@ class HTSPrecompiledContractTest {
     void computeReturnsNullForBurnEmptyTransactionBody() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
         burnPrecompile.when(() -> BurnPrecompile.decodeBurnV2(any())).thenReturn(nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -923,7 +930,7 @@ class HTSPrecompiledContractTest {
         subject.prepareComputation(input, a -> a);
 
         // then
-        var result = subject.computePrecompile(input, messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
         assertNull(result.getOutput());
     }
 
@@ -934,14 +941,14 @@ class HTSPrecompiledContractTest {
         given(dynamicProperties.isHTSPrecompileCreateEnabled()).willReturn(false);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CREATE_FUNGIBLE_TOKEN));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         // when
         subject.prepareFields(messageFrame);
         subject.prepareComputation(input, a -> a);
-        var result = subject.computePrecompile(input, messageFrame);
+        final var result = subject.computePrecompile(input, messageFrame);
 
         // then
         assertNull(result.getOutput());
@@ -964,7 +971,7 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
         mintPrecompile.when(() -> MintPrecompile.decodeMint(any())).thenReturn(fungibleMint);
         given(messageFrame.getRemainingGas()).willReturn(0L);
         given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
@@ -994,7 +1001,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForPauseFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
         pausePrecompile.when(() -> PausePrecompile.decodePause(any())).thenReturn(fungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1011,7 +1018,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForPauseNonFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
         pausePrecompile.when(() -> PausePrecompile.decodePause(any())).thenReturn(nonFungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1028,7 +1035,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUnpauseFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         unpausePrecompile
                 .when(() -> UnpausePrecompile.decodeUnpause(any()))
                 .thenReturn(fungibleUnpause);
@@ -1047,7 +1054,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUnpauseNonFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UNPAUSE_TOKEN));
         unpausePrecompile
                 .when(() -> UnpausePrecompile.decodeUnpause(any()))
                 .thenReturn(nonFungibleUnpause);
@@ -1067,7 +1074,7 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
                         () ->
@@ -1090,7 +1097,7 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM));
         ercTransferPrecompile
                 .when(
                         () ->
@@ -1113,7 +1120,7 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
         ercTransferPrecompile
                 .when(
                         () ->
@@ -1136,7 +1143,7 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         given(dynamicProperties.areAllowancesEnabled()).willReturn(false);
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_FROM_NFT));
         ercTransferPrecompile
                 .when(
                         () ->
@@ -1158,7 +1165,7 @@ class HTSPrecompiledContractTest {
     void defaultHandleHbarsThrows() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(messageFrame.getValue()).willReturn(Wei.of(1));
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1180,7 +1187,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForWipeFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE));
         wipeFungiblePrecompile
                 .when(() -> WipeFungiblePrecompile.decodeWipe(any(), any()))
                 .thenReturn(fungibleWipe);
@@ -1199,7 +1206,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForWipeFungibleTokenV2() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE_V2));
         wipeFungiblePrecompile
                 .when(() -> WipeFungiblePrecompile.decodeWipeV2(any(), any()))
                 .thenReturn(fungibleWipe);
@@ -1218,7 +1225,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForWipeNonFungibleToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_WIPE_TOKEN_ACCOUNT_NFT));
         wipeNonFungiblePrecompile
                 .when(() -> WipeNonFungiblePrecompile.decodeWipeNFT(any(), any()))
                 .thenReturn(nonFungibleWipe);
@@ -1237,7 +1244,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForGetTokenCustomFees() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES));
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(any()))
                 .thenReturn(customFeesWrapper);
@@ -1256,7 +1263,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForGetExpiryInfoForToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO));
         getTokenExpiryInfoPrecompile
                 .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(any()))
                 .thenReturn(getTokenExpiryInfoWrapper);
@@ -1275,7 +1282,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUpdateExpiryInfoForToken() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO));
         updateTokenExpiryInfoPrecompile
                 .when(
                         () ->
@@ -1297,7 +1304,7 @@ class HTSPrecompiledContractTest {
     void computeCallsCorrectImplementationForUpdateExpiryInfoV2() {
         // given
         givenFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_EXPIRY_INFO_V2));
         updateTokenExpiryInfoPrecompile
                 .when(
                         () ->

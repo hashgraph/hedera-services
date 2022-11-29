@@ -37,9 +37,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -64,8 +64,8 @@ public class GetAccountInfoAnswer implements AnswerService {
 
     @Override
     public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
-        AccountID id = query.getCryptoGetInfo().getAccountID();
-        var entityNum =
+        final AccountID id = query.getCryptoGetInfo().getAccountID();
+        final var entityNum =
                 id.getAlias().isEmpty()
                         ? EntityNum.fromAccountId(id)
                         : aliasManager.lookupIdBy(id.getAlias());
@@ -88,8 +88,8 @@ public class GetAccountInfoAnswer implements AnswerService {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                AccountID id = op.getAccountID();
-                var optionalInfo =
+                final AccountID id = op.getAccountID();
+                final var optionalInfo =
                         Objects.requireNonNull(view)
                                 .infoForAccount(
                                         id,
@@ -119,12 +119,12 @@ public class GetAccountInfoAnswer implements AnswerService {
 
     @Override
     public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
-        Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
+        final Transaction paymentTxn = query.getCryptoGetInfo().getHeader().getPayment();
         return Optional.of(SignedTxnAccessor.uncheckedFrom(paymentTxn));
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getCryptoGetInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 

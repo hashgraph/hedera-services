@@ -22,6 +22,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -31,7 +32,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.fee.FeeBuilder;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;

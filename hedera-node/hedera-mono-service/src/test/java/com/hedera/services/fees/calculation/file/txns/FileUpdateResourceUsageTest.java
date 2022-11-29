@@ -25,9 +25,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.file.ExtantFileContext;
-import com.hedera.services.usage.file.FileOpsUsage;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -38,7 +39,6 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,10 +93,10 @@ class FileUpdateResourceUsageTest {
     @Test
     void missingCtxScans() {
         // setup:
-        long now = 1_234_567L;
+        final long now = 1_234_567L;
 
         // given:
-        var ctx = FileUpdateResourceUsage.missingCtx(now);
+        final var ctx = FileUpdateResourceUsage.missingCtx(now);
 
         // expect:
         assertEquals(0, ctx.currentSize());
@@ -110,19 +110,20 @@ class FileUpdateResourceUsageTest {
         // setup:
         expected = mock(FeeData.class);
         // and:
-        ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
+        final ArgumentCaptor<ExtantFileContext> captor =
+                ArgumentCaptor.forClass(ExtantFileContext.class);
 
         given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
         given(view.infoForFile(fid)).willReturn(Optional.empty());
 
         // when:
         fileUpdateTxn = txnAt(now);
-        var actual = subject.usageGiven(fileUpdateTxn, svo, view);
+        final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
 
         // then:
         assertSame(expected, actual);
         // and:
-        var ctxUsed = captor.getValue();
+        final var ctxUsed = captor.getValue();
         assertEquals(now, ctxUsed.currentExpiry());
     }
 
@@ -131,7 +132,7 @@ class FileUpdateResourceUsageTest {
         // setup:
         expected = mock(FeeData.class);
         // and:
-        var info =
+        final var info =
                 FileGetInfoResponse.FileInfo.newBuilder()
                         .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
                         .setMemo(memo)
@@ -139,27 +140,28 @@ class FileUpdateResourceUsageTest {
                         .setSize(size)
                         .build();
         // and:
-        ArgumentCaptor<ExtantFileContext> captor = ArgumentCaptor.forClass(ExtantFileContext.class);
+        final ArgumentCaptor<ExtantFileContext> captor =
+                ArgumentCaptor.forClass(ExtantFileContext.class);
 
         given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
         given(view.infoForFile(fid)).willReturn(Optional.of(info));
 
         // when:
         fileUpdateTxn = txnAt(now);
-        var actual = subject.usageGiven(fileUpdateTxn, svo, view);
+        final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
 
         // then:
         assertSame(expected, actual);
         // and:
-        var ctxUsed = captor.getValue();
+        final var ctxUsed = captor.getValue();
         assertEquals(expiry, ctxUsed.currentExpiry());
         assertEquals(memo, ctxUsed.currentMemo());
         assertEquals(wacl, ctxUsed.currentWacl());
         assertEquals(size, ctxUsed.currentSize());
     }
 
-    private TransactionBody txnAt(long now) {
-        var op =
+    private TransactionBody txnAt(final long now) {
+        final var op =
                 FileUpdateTransactionBody.newBuilder()
                         .setFileID(fid)
                         .setContents(
