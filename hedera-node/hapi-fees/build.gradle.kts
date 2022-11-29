@@ -24,7 +24,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation(project(":hapi-utils"))
+    implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
     implementation(libs.hapi)

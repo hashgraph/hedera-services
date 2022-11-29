@@ -39,8 +39,8 @@ sourceSets {
 }
 
 dependencies {
-    implementation(project(":hapi-utils"))
-    implementation(project(":hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
     implementation(libs.bundles.besu) {
         exclude("javax.annotation", "javax.annotation-api")
     }
