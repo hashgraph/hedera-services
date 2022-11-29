@@ -42,8 +42,8 @@ dependencies {
     api(project(":hedera-node:hedera-token-service"))
     api(project(":hedera-node:hedera-util-service"))
 
-    implementation(project(":hapi-fees"))
-    implementation(project(":hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
 
     implementation(libs.bundles.besu) {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
@@ -69,7 +69,7 @@ dependencies {
     testImplementation(testLibs.classgraph)
     testCompileOnly(libs.spotbugs.annotations)
 
-    testFixturesApi(project(":hapi-utils"))
+    testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)
     testFixturesApi(libs.hapi)
