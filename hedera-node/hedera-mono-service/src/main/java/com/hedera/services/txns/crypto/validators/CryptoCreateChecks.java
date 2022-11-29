@@ -195,35 +195,35 @@ public class CryptoCreateChecks {
         return OK;
     }
 
-    private boolean onlyKeyProvided(CryptoCreateTransactionBody op) {
+    public static boolean onlyKeyProvided(CryptoCreateTransactionBody op) {
         return op.hasKey() && op.getAlias().isEmpty() && op.getEvmAddress().isEmpty();
     }
 
-    private boolean keyAndAliasProvided(CryptoCreateTransactionBody op) {
+    public static boolean keyAndAliasProvided(CryptoCreateTransactionBody op) {
         return op.hasKey() && !op.getAlias().isEmpty() && op.getEvmAddress().isEmpty();
     }
 
-    private boolean keyAndAliasAndEvmAddressProvided(CryptoCreateTransactionBody op) {
+    public static boolean keyAndAliasAndEvmAddressProvided(CryptoCreateTransactionBody op) {
         return op.hasKey() && !op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
     }
 
-    private boolean keyAndEvmAddressProvided(CryptoCreateTransactionBody op) {
+    public static boolean keyAndEvmAddressProvided(CryptoCreateTransactionBody op) {
         return op.hasKey() && op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
     }
 
-    private boolean noKeyAndNoAliasAndNoEvmAddressProvided(CryptoCreateTransactionBody op) {
+    private static boolean noKeyAndNoAliasAndNoEvmAddressProvided(CryptoCreateTransactionBody op) {
         return !op.hasKey() && op.getAlias().isEmpty() && op.getEvmAddress().isEmpty();
     }
 
-    private boolean onlyAliasProvided(CryptoCreateTransactionBody op) {
+    public static boolean onlyAliasProvided(CryptoCreateTransactionBody op) {
         return !op.hasKey() && !op.getAlias().isEmpty() && op.getEvmAddress().isEmpty();
     }
 
-    private boolean aliasAndEvmAddressProvided(CryptoCreateTransactionBody op) {
+    public static boolean aliasAndEvmAddressProvided(CryptoCreateTransactionBody op) {
         return !op.hasKey() && !op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
     }
 
-    private boolean onlyEvmAddressProvided(CryptoCreateTransactionBody op) {
+    public static boolean onlyEvmAddressProvided(CryptoCreateTransactionBody op) {
         return !op.hasKey() && op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
     }
 
