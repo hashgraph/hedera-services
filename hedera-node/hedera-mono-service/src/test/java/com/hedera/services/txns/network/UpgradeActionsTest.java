@@ -41,6 +41,7 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.platform.state.DualStateImpl;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +49,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -384,7 +384,7 @@ class UpgradeActionsTest {
         assertTrue(subject.isFreezeScheduled());
     }
 
-    private void rmIfPresent(String file) {
+    private void rmIfPresent(final String file) {
         rmIfPresent(markerFilesLoc, file);
     }
 

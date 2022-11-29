@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.config.AccountNumbers;
 import com.hedera.services.context.domain.security.HapiOpPermissions;
 import com.hedera.services.context.primitives.StateView;
@@ -41,13 +42,12 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.fee.FeeObject;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class StakedAnswerFlow implements AnswerFlow {
     private final FeeCalculator fees;
@@ -138,7 +138,7 @@ public final class StakedAnswerFlow implements AnswerFlow {
         return service.responseGiven(query, view, OK, fee, queryCtx);
     }
 
-    private ResponseCodeEnum tryToPay(@Nonnull final SignedTxnAccessor payment, final long fee) {
+    private ResponseCodeEnum tryToPay(@NonNull final SignedTxnAccessor payment, final long fee) {
         if (accountNums.isSuperuser(payment.getPayer().getAccountNum())) {
             return OK;
         }

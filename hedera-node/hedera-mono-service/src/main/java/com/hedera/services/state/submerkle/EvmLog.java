@@ -19,7 +19,7 @@ import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -100,11 +100,12 @@ public class EvmLog implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         data = in.readByteArray(MAX_DATA_BYTES);
         bloom = in.readByteArray(MAX_BLOOM_BYTES);
         contractId = readNullableSerializable(in);
-        int numTopics = in.readInt();
+        final int numTopics = in.readInt();
         if (numTopics > 0) {
             topics = new LinkedList<>();
             for (int i = 0; i < numTopics; i++) {
@@ -114,12 +115,12 @@ public class EvmLog implements SelfSerializable {
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(data);
         out.writeByteArray(bloom);
         writeNullableSerializable(contractId, out);
         out.writeInt(topics.size());
-        for (byte[] topic : topics) {
+        for (final byte[] topic : topics) {
             out.writeByteArray(topic);
         }
     }
@@ -133,16 +134,16 @@ public class EvmLog implements SelfSerializable {
         if (o == null || EvmLog.class != o.getClass()) {
             return false;
         }
-        EvmLog that = (EvmLog) o;
+        final EvmLog that = (EvmLog) o;
         return Objects.equals(contractId, that.contractId)
                 && Arrays.equals(bloom, that.bloom)
                 && Arrays.equals(data, that.data)
                 && areSameTopics(topics, that.topics);
     }
 
-    private static boolean areSameTopics(List<byte[]> a, List<byte[]> b) {
-        int aLen = Optional.ofNullable(a).map(List::size).orElse(-1);
-        int bLen = Optional.ofNullable(b).map(List::size).orElse(-1);
+    private static boolean areSameTopics(final List<byte[]> a, final List<byte[]> b) {
+        final int aLen = Optional.ofNullable(a).map(List::size).orElse(-1);
+        final int bLen = Optional.ofNullable(b).map(List::size).orElse(-1);
         if (aLen != bLen) {
             return false;
         } else {
@@ -189,12 +190,12 @@ public class EvmLog implements SelfSerializable {
         return data;
     }
 
-    public void setBloom(byte[] bloom) {
+    public void setBloom(final byte[] bloom) {
         this.bloom = bloom;
     }
 
     public ContractLoginfo toGrpc() {
-        var grpc = ContractLoginfo.newBuilder();
+        final var grpc = ContractLoginfo.newBuilder();
         if (contractId != null) {
             grpc.setContractID(contractId.toGrpcContractId());
         }

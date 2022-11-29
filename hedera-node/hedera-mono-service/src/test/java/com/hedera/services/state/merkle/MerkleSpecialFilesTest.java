@@ -27,7 +27,7 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.primitives.Longs;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -90,7 +90,7 @@ class MerkleSpecialFilesTest {
                 subject.getFileContents(),
                 copySub.getFileContents(),
                 "copy() should create new file contents map");
-        for (var entry : subject.getFileContents().entrySet()) {
+        for (final var entry : subject.getFileContents().entrySet()) {
             assertNotSame(entry.getValue(), copySub.getFileContents().get(entry.getKey()));
         }
     }
@@ -295,7 +295,7 @@ class MerkleSpecialFilesTest {
 
     @Test
     void checkHashCodesDiverse() {
-        Set<Integer> hashCodes = new HashSet<>();
+        final Set<Integer> hashCodes = new HashSet<>();
         hashCodes.add(subject.hashCode());
         subject.append(fid, "hello".getBytes());
         hashCodes.add(subject.hashCode());
@@ -328,8 +328,8 @@ class MerkleSpecialFilesTest {
         // Matching initial contents
         assertEquals(new MerkleSpecialFiles(), new MerkleSpecialFiles());
         // Matching added contents
-        var msf1 = new MerkleSpecialFiles();
-        var msf2 = new MerkleSpecialFiles();
+        final var msf1 = new MerkleSpecialFiles();
+        final var msf2 = new MerkleSpecialFiles();
         msf1.append(fid, "hello".getBytes());
         msf2.append(fid, "hello".getBytes());
         assertEquals(msf2, msf1);

@@ -24,8 +24,8 @@ import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 
 /**
  * Encapsulates storage of <i>payer records</i>, which summarize the results of a transaction and

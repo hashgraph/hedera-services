@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.STAKING_NOT_ENABLED;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.TransactionContext;
@@ -48,7 +49,6 @@ import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.records.TransactionRecordService;
 import com.hedera.services.state.EntityCreator;
@@ -137,7 +137,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
     @Override
     public void doStateTransition() {
         // --- Translate from gRPC types ---
-        var contractCreateTxn = txnCtx.accessor().getTxn();
+        final var contractCreateTxn = txnCtx.accessor().getTxn();
         final var senderId = Id.fromGrpcAccount(txnCtx.activePayer());
         doStateTransitionOperation(contractCreateTxn, senderId, false, null, 0, null);
     }
@@ -150,7 +150,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final long maxGasAllowance,
             final BigInteger userOfferedGasPrice) {
         // --- Translate from gRPC types ---
-        var op = contractCreateTxn.getContractCreateInstance();
+        final var op = contractCreateTxn.getContractCreateInstance();
         var key =
                 op.hasAdminKey()
                         ? validator.attemptToDecodeOrThrow(op.getAdminKey(), SERIALIZATION_FAILED)
@@ -174,7 +174,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         final var consensusTime = txnCtx.consensusTime();
         final var codeWithConstructorArgs = prepareCodeWithConstructorArguments(op);
 
-        Address newContractAddress;
+        final Address newContractAddress;
 
         if (relayerId == null) {
             newContractAddress = worldState.newContractAddress(sender.getId().asEvmAddress());
@@ -190,7 +190,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         }
 
         // --- Do the business logic ---
-        ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
+        final ContractCustomizer hapiSenderCustomizer = fromHapiCreation(key, consensusTime, op);
         if (!properties.areContractAutoAssociationsEnabled()) {
             hapiSenderCustomizer.accountCustomizer().maxAutomaticAssociations(0);
         }
@@ -302,8 +302,8 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         return this::validate;
     }
 
-    public ResponseCodeEnum validate(TransactionBody contractCreateTxn) {
-        var op = contractCreateTxn.getContractCreateInstance();
+    public ResponseCodeEnum validate(final TransactionBody contractCreateTxn) {
+        final var op = contractCreateTxn.getContractCreateInstance();
 
         if (!op.hasAutoRenewPeriod() || op.getAutoRenewPeriod().getSeconds() < 1) {
             return INVALID_RENEWAL_PERIOD;
@@ -345,15 +345,15 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
         return validator.memoCheck(op.getMemo());
     }
 
-    Bytes prepareCodeWithConstructorArguments(ContractCreateTransactionBody op) {
+    Bytes prepareCodeWithConstructorArguments(final ContractCreateTransactionBody op) {
         if (op.getInitcodeSourceCase() == INITCODE) {
             return Bytes.wrap(ByteStringUtils.unwrapUnsafelyIfPossible(op.getInitcode()));
         } else {
-            var bytecodeSrc = op.getFileID();
-            byte[] bytecode;
+            final var bytecodeSrc = op.getFileID();
+            final byte[] bytecode;
             try {
                 bytecode = hfs.cat(bytecodeSrc);
-            } catch (IllegalArgumentException e) {
+            } catch (final IllegalArgumentException e) {
                 final var failureReason =
                         TieredHederaFs.IllegalArgumentType.valueOf(e.getMessage())
                                 .suggestedStatus();
@@ -369,7 +369,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             }
             try {
                 return Bytes.fromHexString(contractByteCodeString);
-            } catch (IllegalArgumentException e) {
+            } catch (final IllegalArgumentException e) {
                 throw new InvalidTransactionException(ResponseCodeEnum.ERROR_DECODING_BYTESTRING);
             }
         }
@@ -380,7 +380,7 @@ public class ContractCreateTransitionLogic implements TransitionLogic {
             final byte[] newContractAddress,
             final ContractCustomizer opCustomizer,
             final TransactionSidecarRecord.Builder contractBytecodeSidecar) {
-        var childRecordId = recordsHistorian.nextChildRecordSourceId();
+        final var childRecordId = recordsHistorian.nextChildRecordSourceId();
 
         final var syntheticOp = syntheticTxnFactory.contractCreation(opCustomizer);
 

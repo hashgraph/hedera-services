@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.hedera.node.app.service.token.CryptoSignatureWaivers;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -28,16 +28,17 @@ import org.apache.commons.lang3.NotImplementedException;
  * NOTE: FUTURE - These will be implemented in the coming PR and this class should be a singleton.
  */
 public class CryptoSignatureWaiversImpl implements CryptoSignatureWaivers {
-    public CryptoSignatureWaiversImpl(@Nonnull final HederaAccountNumbers accountNumbers) {}
+    public CryptoSignatureWaiversImpl(@NonNull final HederaAccountNumbers accountNumbers) {}
 
     @Override
     public boolean isTargetAccountSignatureWaived(
-            TransactionBody cryptoUpdateTxn, AccountID payer) {
+            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
-    public boolean isNewKeySignatureWaived(TransactionBody cryptoUpdateTxn, AccountID payer) {
+    public boolean isNewKeySignatureWaived(
+            final TransactionBody cryptoUpdateTxn, final AccountID payer) {
         throw new NotImplementedException();
     }
 }

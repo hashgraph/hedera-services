@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.crypto.RunningHash;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.Assertions;
 
 public class RecordsRunningHashLeafSerdeTest
@@ -50,7 +50,7 @@ public class RecordsRunningHashLeafSerdeTest
             assertEqualRunningHashes(a.getNMinus1RunningHash(), b.getNMinus1RunningHash());
             assertEqualRunningHashes(a.getNMinus2RunningHash(), b.getNMinus2RunningHash());
             assertEqualRunningHashes(a.getNMinus3RunningHash(), b.getNMinus3RunningHash());
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
             Assertions.fail("RunningHashes are unequal");
         }
     }

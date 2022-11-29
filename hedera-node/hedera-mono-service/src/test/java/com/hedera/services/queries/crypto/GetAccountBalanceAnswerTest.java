@@ -33,13 +33,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
@@ -86,18 +86,20 @@ class GetAccountBalanceAnswerTest {
     @Test
     void requiresNothing() {
         // setup:
-        CryptoGetAccountBalanceQuery costAnswerOp =
+        final CryptoGetAccountBalanceQuery costAnswerOp =
                 CryptoGetAccountBalanceQuery.newBuilder()
                         .setHeader(
                                 QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER))
                         .build();
-        Query costAnswerQuery = Query.newBuilder().setCryptogetAccountBalance(costAnswerOp).build();
-        CryptoGetAccountBalanceQuery answerOnlyOp =
+        final Query costAnswerQuery =
+                Query.newBuilder().setCryptogetAccountBalance(costAnswerOp).build();
+        final CryptoGetAccountBalanceQuery answerOnlyOp =
                 CryptoGetAccountBalanceQuery.newBuilder()
                         .setHeader(
                                 QueryHeader.newBuilder().setResponseType(ResponseType.ANSWER_ONLY))
                         .build();
-        Query answerOnlyQuery = Query.newBuilder().setCryptogetAccountBalance(answerOnlyOp).build();
+        final Query answerOnlyQuery =
+                Query.newBuilder().setCryptogetAccountBalance(answerOnlyOp).build();
 
         // expect:
         assertFalse(subject.requiresNodePayment(costAnswerQuery));
@@ -115,11 +117,11 @@ class GetAccountBalanceAnswerTest {
     @Test
     void syntaxCheckRequiresId() {
         // given:
-        CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
-        Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+        final CryptoGetAccountBalanceQuery op = CryptoGetAccountBalanceQuery.newBuilder().build();
+        final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
         // when:
-        ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());
+        final ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());
 
         // expect:
         assertEquals(INVALID_ACCOUNT_ID, status);
@@ -127,8 +129,8 @@ class GetAccountBalanceAnswerTest {
 
     @Test
     void syntaxCheckValidatesCidIfPresent() {
-        String contractIdLit = "0.0.12346";
-        ContractID cid = asContract(contractIdLit);
+        final String contractIdLit = "0.0.12346";
+        final ContractID cid = asContract(contractIdLit);
         given(optionValidator.queryableContractStatus(cid, accounts)).willReturn(CONTRACT_DELETED);
 
         final var query = contractQueryWith(cid);
@@ -153,7 +155,7 @@ class GetAccountBalanceAnswerTest {
     @Test
     void getsValidity() {
         // given:
-        Response response =
+        final Response response =
                 Response.newBuilder()
                         .setCryptogetAccountBalance(
                                 CryptoGetAccountBalanceResponse.newBuilder()
@@ -169,16 +171,17 @@ class GetAccountBalanceAnswerTest {
     @Test
     void requiresOkMetaValidity() {
         // setup:
-        AccountID id = asAccount(accountIdLit);
+        final AccountID id = asAccount(accountIdLit);
 
         // given:
-        CryptoGetAccountBalanceQuery op =
+        final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
-        Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+        final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
         // when:
-        Response response = subject.responseGiven(query, wellKnownView(), PLATFORM_NOT_ACTIVE);
-        ResponseCodeEnum status =
+        final Response response =
+                subject.responseGiven(query, wellKnownView(), PLATFORM_NOT_ACTIVE);
+        final ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
 
         // expect:
@@ -189,17 +192,17 @@ class GetAccountBalanceAnswerTest {
     @Test
     void syntaxCheckValidatesIdIfPresent() {
         // setup:
-        AccountID id = asAccount(accountIdLit);
+        final AccountID id = asAccount(accountIdLit);
 
         // given:
-        CryptoGetAccountBalanceQuery op =
+        final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
-        Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+        final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
         // and:
         given(optionValidator.queryableAccountStatus(id, accounts)).willReturn(ACCOUNT_DELETED);
 
         // when:
-        ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());
+        final ResponseCodeEnum status = subject.checkValidity(query, wellKnownView());
 
         // expect:
         assertEquals(ACCOUNT_DELETED, status);
@@ -233,14 +236,14 @@ class GetAccountBalanceAnswerTest {
         given(accounts.get(wellKnownId)).willReturn(accountV);
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
 
-        CryptoGetAccountBalanceQuery op =
+        final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(aliasId).build();
-        Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
+        final Query query = Query.newBuilder().setCryptogetAccountBalance(op).build();
 
-        Response response = subject.responseGiven(query, wellKnownView(), OK);
-        ResponseCodeEnum status =
+        final Response response = subject.responseGiven(query, wellKnownView(), OK);
+        final ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
-        long answer = response.getCryptogetAccountBalance().getBalance();
+        final long answer = response.getCryptogetAccountBalance().getBalance();
 
         assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
         assertEquals(
@@ -259,7 +262,7 @@ class GetAccountBalanceAnswerTest {
 
     @Test
     void answersWithAccountBalance() {
-        AccountID id = asAccount(accountIdLit);
+        final AccountID id = asAccount(accountIdLit);
         final var query = accountQueryWith(id);
         final var wellKnownId = EntityNum.fromLong(12345L);
         accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
@@ -267,10 +270,10 @@ class GetAccountBalanceAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
 
         // when:
-        Response response = subject.responseGiven(query, wellKnownView(), OK);
-        ResponseCodeEnum status =
+        final Response response = subject.responseGiven(query, wellKnownView(), OK);
+        final ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
-        long answer = response.getCryptogetAccountBalance().getBalance();
+        final long answer = response.getCryptogetAccountBalance().getBalance();
 
         // expect:
         assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
@@ -288,8 +291,8 @@ class GetAccountBalanceAnswerTest {
 
     @Test
     void answersWithAccountBalanceWhenTheAccountIDIsContractID() {
-        ContractID id = asContract(accountIdLit);
-        Query query = contractQueryWith(id);
+        final ContractID id = asContract(accountIdLit);
+        final Query query = contractQueryWith(id);
 
         accountV.setKey(EntityNum.fromAccountId(asAccount(accountIdLit)));
         final var view = wellKnownView();
@@ -297,10 +300,10 @@ class GetAccountBalanceAnswerTest {
         given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenRels);
 
         // when:
-        Response response = subject.responseGiven(query, view, OK);
-        ResponseCodeEnum status =
+        final Response response = subject.responseGiven(query, view, OK);
+        final ResponseCodeEnum status =
                 response.getCryptogetAccountBalance().getHeader().getNodeTransactionPrecheckCode();
-        long answer = response.getCryptogetAccountBalance().getBalance();
+        final long answer = response.getCryptogetAccountBalance().getBalance();
 
         // expect:
         assertTrue(response.getCryptogetAccountBalance().hasHeader(), "Missing response header!");
@@ -317,13 +320,13 @@ class GetAccountBalanceAnswerTest {
     }
 
     private Query contractQueryWith(final ContractID id) {
-        CryptoGetAccountBalanceQuery op =
+        final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setContractID(id).build();
         return Query.newBuilder().setCryptogetAccountBalance(op).build();
     }
 
     private Query accountQueryWith(final AccountID id) {
-        CryptoGetAccountBalanceQuery op =
+        final CryptoGetAccountBalanceQuery op =
                 CryptoGetAccountBalanceQuery.newBuilder().setAccountID(id).build();
         return Query.newBuilder().setCryptogetAccountBalance(op).build();
     }
@@ -343,7 +346,8 @@ class GetAccountBalanceAnswerTest {
     }
 
     private StateView wellKnownView() {
-        TokenRelStorageAdapter tokenRels = TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
+        final TokenRelStorageAdapter tokenRels =
+                TokenRelStorageAdapter.fromInMemory(new MerkleMap<>());
         tokenRels.put(aKey, aRel);
         aRel.setNext(bToken.getTokenNum());
         tokenRels.put(bKey, bRel);
@@ -355,13 +359,13 @@ class GetAccountBalanceAnswerTest {
         tokenRels.put(dKey, dRel);
         dRel.setPrev(cToken.getTokenNum());
 
-        MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
+        final MerkleMap<EntityNum, MerkleToken> tokens = new MerkleMap<>();
         tokens.put(EntityNum.fromTokenId(aToken), notDeleted);
         tokens.put(EntityNum.fromTokenId(bToken), alsoNotDeleted);
         tokens.put(EntityNum.fromTokenId(cToken), deleted);
         tokens.put(EntityNum.fromTokenId(dToken), andAlsoNotDeleted);
 
-        ScheduleStore scheduleStore = mock(ScheduleStore.class);
+        final ScheduleStore scheduleStore = mock(ScheduleStore.class);
 
         final MutableStateChildren children = new MutableStateChildren();
         children.setTokens(tokens);

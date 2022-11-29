@@ -58,9 +58,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;

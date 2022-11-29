@@ -35,9 +35,9 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -46,19 +46,19 @@ public class GetTopicInfoAnswer implements AnswerService {
     private final OptionValidator optionValidator;
 
     @Inject
-    public GetTopicInfoAnswer(OptionValidator optionValidator) {
+    public GetTopicInfoAnswer(final OptionValidator optionValidator) {
         this.optionValidator = optionValidator;
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
-        ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final MerkleMap<EntityNum, MerkleTopic> topics = view.topics();
+        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
         return validityOf(op, topics);
     }
 
     private ResponseCodeEnum validityOf(
-            ConsensusGetTopicInfoQuery op, MerkleMap<EntityNum, MerkleTopic> topics) {
+            final ConsensusGetTopicInfoQuery op, final MerkleMap<EntityNum, MerkleTopic> topics) {
         if (op.hasTopicID()) {
             return optionValidator.queryableTopicStatus(op.getTopicID(), topics);
         } else {
@@ -67,37 +67,41 @@ public class GetTopicInfoAnswer implements AnswerService {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        Transaction paymentTxn = query.getConsensusGetTopicInfo().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final Transaction paymentTxn = query.getConsensusGetTopicInfo().getHeader().getPayment();
         return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(
                 query.getConsensusGetTopicInfo().getHeader().getResponseType());
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getConsensusGetTopicInfo().getHeader().getResponseType();
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
-        ConsensusGetTopicInfoResponse.Builder response = ConsensusGetTopicInfoResponse.newBuilder();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final ConsensusGetTopicInfoQuery op = query.getConsensusGetTopicInfo();
+        final ConsensusGetTopicInfoResponse.Builder response =
+                ConsensusGetTopicInfoResponse.newBuilder();
         response.setTopicID(op.getTopicID());
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
         } else {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                var optionalInfo = Objects.requireNonNull(view).infoForTopic(op.getTopicID());
+                final var optionalInfo = Objects.requireNonNull(view).infoForTopic(op.getTopicID());
                 if (optionalInfo.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK));
                     response.setTopicInfo(optionalInfo.get());
@@ -111,7 +115,7 @@ public class GetTopicInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getConsensusGetTopicInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 

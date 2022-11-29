@@ -15,17 +15,25 @@
  */
 package com.hedera.services.state.virtual.entities;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.virtual.KeyPackingUtils.*;
+import static com.hedera.services.state.virtual.KeyPackingUtils.MISSING_KEY_SENTINEL;
+import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBytes;
+import static com.hedera.services.state.virtual.KeyPackingUtils.deserializeUint256Key;
+import static com.hedera.services.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
 import static com.hedera.services.state.virtual.utils.EntityIoUtils.readBytes;
 import static com.hedera.services.state.virtual.utils.EntityIoUtils.writeBytes;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.SerializationUtils.*;
+import static com.hedera.services.utils.SerializationUtils.deserializeFungibleAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.deserializeNftOperatorApprovals;
+import static com.hedera.services.utils.SerializationUtils.serializeFungibleAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeHbarAllowances;
+import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorApprovals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.exceptions.NegativeAccountBalanceException;
@@ -46,12 +54,17 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.*;
-import org.jetbrains.annotations.Nullable;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.SortedMap;
 
 public class OnDiskAccount implements VirtualValue, HederaAccount {
     private static final int CURRENT_VERSION = 1;
@@ -716,7 +729,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void setProxy(EntityId proxy) {
+    public void setProxy(final EntityId proxy) {
         // Intentional no-op
     }
 
@@ -736,7 +749,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
     }
 
     @Override
-    public void setUsedAutomaticAssociations(int usedAutoAssociations) {
+    public void setUsedAutomaticAssociations(final int usedAutoAssociations) {
         setUsedAutoAssociations(usedAutoAssociations);
     }
 
@@ -893,10 +906,10 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     // Generated code
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        OnDiskAccount that = (OnDiskAccount) o;
+        final OnDiskAccount that = (OnDiskAccount) o;
         return flags == that.flags
                 && firstStorageKeyNonZeroBytes == that.firstStorageKeyNonZeroBytes
                 && equalUpToDecodability(this.key, that.key)

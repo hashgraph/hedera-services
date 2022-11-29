@@ -45,8 +45,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -73,12 +73,12 @@ import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TokenNftInfo;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -375,7 +375,8 @@ public class WorldLedgers {
                 return Address.wrap(Bytes.wrap(alias.toByteArray()));
             } else if (alias.size() == ECDSA_SECP256K1_ALIAS_SIZE
                     && alias.startsWith(ECDSA_KEY_ALIAS_PREFIX)) {
-                byte[] value = EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                final byte[] value =
+                        EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
                 if (value != null) {
                     return Address.wrap(Bytes.wrap(value));
                 }

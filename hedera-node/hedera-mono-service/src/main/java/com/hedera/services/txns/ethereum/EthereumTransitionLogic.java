@@ -15,10 +15,10 @@
  */
 package com.hedera.services.txns.ethereum;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.ledger.properties.AccountProperty.ETHEREUM_NONCE;
-import static com.hedera.services.legacy.proto.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
@@ -28,9 +28,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_CHAIN_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.SynthCreationCustomizer;
@@ -173,7 +173,7 @@ public class EthereumTransitionLogic implements PreFetchableTransition {
     public void preFetch(final TxnAccessor accessor) {
         try {
             spanMapManager.expandEthereumSpan(accessor);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Pre-fetch failed for {}", accessor.getSignedTxnWrapper(), e);
         }
     }

@@ -24,12 +24,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.StateChildren;
 import com.hedera.services.context.primitives.SignedStateViewFactory;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.files.MetadataMapFactory;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;

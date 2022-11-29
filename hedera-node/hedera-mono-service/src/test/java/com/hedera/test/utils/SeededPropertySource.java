@@ -23,6 +23,7 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBy
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.services.context.properties.EntityType;
 import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.*;
@@ -39,7 +40,6 @@ import com.hedera.services.state.virtual.VirtualBlobValue;
 import com.hedera.services.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
-import com.hedera.services.throttles.DeterministicThrottle;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;

@@ -23,7 +23,11 @@ import static com.hedera.services.ledger.properties.AccountProperty.FUNGIBLE_TOK
 import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
@@ -35,16 +39,16 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, AccountProperty> {
     private final OptionValidator validator;
 
     private BalanceChange balanceChange;
-    private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
+    private final TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nftsLedger;
 
     public MerkleAccountScopedCheck(
             final OptionValidator validator,

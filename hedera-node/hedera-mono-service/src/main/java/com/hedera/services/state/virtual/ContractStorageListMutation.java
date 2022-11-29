@@ -17,7 +17,7 @@ package com.hedera.services.state.virtual;
 
 import com.hedera.services.utils.MapValueListMutation;
 import com.swirlds.virtualmap.VirtualMap;
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class ContractStorageListMutation
         implements MapValueListMutation<ContractKey, IterableContractValue> {
@@ -76,7 +76,7 @@ public class ContractStorageListMutation
 
     /** {@inheritDoc} */
     @Override
-    public void updateNext(IterableContractValue contractValue, ContractKey next) {
+    public void updateNext(final IterableContractValue contractValue, final ContractKey next) {
         contractValue.setNextKey(next.getKey());
     }
 
