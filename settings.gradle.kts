@@ -39,7 +39,7 @@ include(":hedera-node:hedera-util-service-impl")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
-include(":hedera-node:hedera-evm-api")
+include(":hedera-node:hedera-evm-impl")
 include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 
