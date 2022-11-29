@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -64,7 +65,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
-import org.jetbrains.annotations.Nullable;
 
 public class OnDiskAccount implements VirtualValue, HederaAccount {
     private static final int CURRENT_VERSION = 1;

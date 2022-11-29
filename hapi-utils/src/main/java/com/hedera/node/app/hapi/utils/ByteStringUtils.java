@@ -19,18 +19,18 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /** Protobuf related utilities shared by client and server. */
 public final class ByteStringUtils {
     private static final Logger log = LogManager.getLogger(ByteStringUtils.class);
 
-    public static ByteString wrapUnsafely(@NotNull final byte[] bytes) {
+    public static ByteString wrapUnsafely(@NonNull final byte[] bytes) {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }
 
@@ -47,7 +47,7 @@ public final class ByteStringUtils {
      * @param byteString to convert
      * @return bytes extracted from the ByteString
      */
-    public static byte[] unwrapUnsafelyIfPossible(@NotNull final ByteString byteString) {
+    public static byte[] unwrapUnsafelyIfPossible(@NonNull final ByteString byteString) {
         if (UnsafeByteOutput.supports(byteString)) {
             return internalUnwrap(byteString, new UnsafeByteOutput());
         }

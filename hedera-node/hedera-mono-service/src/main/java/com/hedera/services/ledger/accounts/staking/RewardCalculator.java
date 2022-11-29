@@ -23,11 +23,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.HederaAccount;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class RewardCalculator {
@@ -60,7 +60,7 @@ public class RewardCalculator {
     public boolean applyReward(
             final long reward,
             @Nullable final HederaAccount account,
-            @NotNull final Map<AccountProperty, Object> changes) {
+            @NonNull final Map<AccountProperty, Object> changes) {
         if (reward > 0) {
             final var isDeclined =
                     (account != null)
@@ -135,7 +135,7 @@ public class RewardCalculator {
     }
 
     @VisibleForTesting
-    public void setRewardsPaidInThisTxn(long rewards) {
+    public void setRewardsPaidInThisTxn(final long rewards) {
         rewardsPaid = rewards;
     }
 }

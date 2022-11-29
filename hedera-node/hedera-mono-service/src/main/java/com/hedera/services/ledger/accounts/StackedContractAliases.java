@@ -19,6 +19,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,7 +28,6 @@ import java.util.function.Predicate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
 
 public class StackedContractAliases extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LogManager.getLogger(StackedContractAliases.class);

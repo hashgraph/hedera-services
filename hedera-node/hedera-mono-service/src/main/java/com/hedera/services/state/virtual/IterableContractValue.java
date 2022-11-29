@@ -23,6 +23,8 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -30,8 +32,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /** Representation of a 256bit unsigned int, stored internally as a big-endian byte array. */
 @SuppressWarnings({"PointlessBitwiseExpression", "unused"})
@@ -78,7 +78,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param value long value to be used
      */
-    public IterableContractValue(long value) {
+    public IterableContractValue(final long value) {
         setValue(value);
     }
 
@@ -87,7 +87,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param value BigInteger value to be used
      */
-    public IterableContractValue(BigInteger value) {
+    public IterableContractValue(final BigInteger value) {
         Objects.requireNonNull(value);
         setValue(value);
     }
@@ -98,7 +98,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param bigEndianValue big endian value to be used
      */
-    public IterableContractValue(byte[] bigEndianValue) {
+    public IterableContractValue(final byte[] bigEndianValue) {
         Objects.requireNonNull(bigEndianValue);
         setValue(bigEndianValue);
     }
@@ -174,12 +174,12 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param value BigInteger, should really be unsigned and less than or equal to 32 bytes
      */
-    public void setValue(BigInteger value) {
+    public void setValue(final BigInteger value) {
         Objects.requireNonNull(value);
         if (isImmutable) {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }
-        byte[] bigIntegerBytes = value.toByteArray();
+        final byte[] bigIntegerBytes = value.toByteArray();
         bigIntegerBytes[0] &= 0b01111111; // remove sign
         if (bigIntegerBytes.length == 32) {
             this.uint256Value = bigIntegerBytes;
@@ -204,7 +204,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param value long value
      */
-    public void setValue(long value) {
+    public void setValue(final long value) {
         if (isImmutable) {
             throw new IllegalStateException(IMMUTABLE_CONTRACT_VALUE_MANIPULATION_ERROR);
         }
@@ -225,7 +225,7 @@ public class IterableContractValue implements VirtualValue {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -338,7 +338,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param evmKey the EVM key of the previous mapping in the owning contract's storage
      */
-    public void setPrevKey(@NotNull final int[] evmKey) {
+    public void setPrevKey(@NonNull final int[] evmKey) {
         throwIfImmutable("Cannot set the previous key on an immutable value");
         setExplicitPrevKey(evmKey);
     }
@@ -349,7 +349,7 @@ public class IterableContractValue implements VirtualValue {
      *
      * @param evmKey the EVM key of the next mapping in the owning contract's storage
      */
-    public void setNextKey(@NotNull final int[] evmKey) {
+    public void setNextKey(@NonNull final int[] evmKey) {
         throwIfImmutable("Cannot set the next key on an immutable value");
         setExplicitNextKey(evmKey);
     }

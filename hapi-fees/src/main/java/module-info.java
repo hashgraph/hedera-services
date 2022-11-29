@@ -17,6 +17,6 @@ module com.hedera.node.app.hapi.fees {
     requires javax.inject;
     requires com.google.protobuf;
     requires org.apache.commons.lang3;
-    requires annotations;
     requires com.google.common;
+    requires static com.github.spotbugs.annotations;
 }
