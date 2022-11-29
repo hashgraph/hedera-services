@@ -15,10 +15,8 @@
  */
 package com.hedera.services.txns.contract;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -136,8 +134,6 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
         } else {
             sender.incrementEthereumNonce();
             accountStore.commitAccount(sender);
-
-            validateTrue(sender.getBalance() >= op.getAmount(), INSUFFICIENT_ACCOUNT_BALANCE);
 
             result =
                     evmTxProcessor.executeEth(

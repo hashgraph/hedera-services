@@ -277,7 +277,26 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void throwsWhenSenderCannotCoverUpfrontCost() {
-        givenValidMock(123, false);
+        given(worldState.updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
+        var evmAccount = mock(EvmAccount.class);
+
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
+
+        var senderMutableAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(senderMutableAccount.getBalance()).willReturn(Wei.of(123));
+
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
         Address receiver = this.receiver.getId().asEvmAddress();
@@ -290,7 +309,24 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void throwsWhenIntrinsicGasCostExceedsGasLimit() {
-        givenValidMock(-1, false);
+        given(worldState.updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
+        var evmAccount = mock(EvmAccount.class);
+
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
+
+        var senderMutableAccount = mock(MutableAccount.class);
+
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(100_000L);
 
         Address receiver = this.receiver.getId().asEvmAddress();
@@ -303,7 +339,17 @@ class CreateEvmTxProcessorTest {
 
     @Test
     void throwsWhenIntrinsicGasCostExceedsGasLimitAndGasLimitIsEqualToMaxGasLimit() {
-        givenValidMock(-1, false);
+        given(worldState.updater()).willReturn(updater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
+        var evmAccount = mock(EvmAccount.class);
+
+        given(updater.getOrCreateSenderAccount(sender.getId().asEvmAddress()))
+                .willReturn(evmAccount);
+
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true)).willReturn(0L);
+
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, true))
                 .willReturn(MAX_GAS_LIMIT + 1L);
 

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -415,6 +416,11 @@ class ContractCallTransitionLogicTest {
                                         target.getContractNum())))
                 .willReturn(contractAccount);
 
+        given(
+                        evmTxProcessor.executeEth(
+                                any(), any(), anyLong(), anyLong(), any(), any(), any(), any(),
+                                anyLong()))
+                .willThrow(InvalidTransactionException.class);
         // then:
         assertThrows(
                 InvalidTransactionException.class,

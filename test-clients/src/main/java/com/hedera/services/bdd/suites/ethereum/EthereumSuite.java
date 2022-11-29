@@ -58,7 +58,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -1022,7 +1022,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .sending(ONE_HUNDRED_HBARS)
                                                     .gasLimit(1_000_000L)
                                                     .via("createTokenTxn")
-                                                    .hasKnownStatus(INSUFFICIENT_ACCOUNT_BALANCE);
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
                                     allRunFor(spec, call);
                                 }));
     }

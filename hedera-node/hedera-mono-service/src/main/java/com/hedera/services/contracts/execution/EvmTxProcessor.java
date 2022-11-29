@@ -118,22 +118,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
 
-        // Enable tracing of contract actions if action sidecars are enabled and this is not a
-        // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
-
-        super.setOperationTracer(hederaTracer);
-        super.execute(
-                sender,
-                receiver,
-                gasPrice,
-                gasLimit,
-                value,
-                payload,
-                contractCreation,
-                isStatic,
-                mirrorReceiver);
+        super.setupFields(contractCreation);
 
         final var chargingResult =
                 chargeForGas(
@@ -149,6 +134,15 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         sender.getId().asEvmAddress(),
                         relayer == null ? null : relayer.getId().asEvmAddress(),
                         (HederaWorldState.Updater) updater);
+
+        // Enable tracing of contract actions if action sidecars are enabled and this is not a
+        // static call
+        final HederaTracer hederaTracer =
+                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+
+        super.setOperationTracer(hederaTracer);
+        super.execute(
+                sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
 
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
