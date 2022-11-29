@@ -19,13 +19,40 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractDeleteSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractGetInfoSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractMusicalChairsSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.BalanceOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallCodeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.CreateOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC20ContractInteractions;
+import com.hedera.services.bdd.suites.contract.openzeppelin.ERC721ContractInteractions;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
+import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
@@ -157,12 +184,12 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompileEth() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+                    				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+                    				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
                 });
     }
 
@@ -188,9 +215,9 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompile2Eth() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new), TODO FAILS
-                    //				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
+                    				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new), // TODO FAILS
+                    				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
+                    				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
                 });
     }
 
@@ -210,9 +237,9 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpenZeppelinEth() {
         return List.of(
-                //				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
-                //				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
-                //				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
+                				extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
+                				extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
+                				extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new)
                 );
     }
 
@@ -231,8 +258,8 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractRecordsEth() {
         return List.of(
-                //				extractSpecsFromSuiteForEth(LogsSuite::new),
-                //				extractSpecsFromSuiteForEth(RecordsSuite::new)
+                				extractSpecsFromSuiteForEth(LogsSuite::new),
+                				extractSpecsFromSuiteForEth(RecordsSuite::new)
                 );
     }
 
@@ -261,18 +288,18 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractOpcodesEth() {
         return List.of(
-                //				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(CallOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(CreateOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
-                //				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
-                //				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
-                //				extractSpecsFromSuiteForEth(SStoreSuite::new)
+                				extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
+                				extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
+                				extractSpecsFromSuiteForEth(CallOperationSuite::new),
+                				extractSpecsFromSuiteForEth(CreateOperationSuite::new),
+                				extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
+                				extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
+                				extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
+                				extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
+                				extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
+                				extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
+                				extractSpecsFromSuiteForEth(SelfDestructSuite::new),
+                				extractSpecsFromSuiteForEth(SStoreSuite::new)
                 );
     }
 
@@ -299,14 +326,14 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractHapiEth() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractCallSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
+                    				extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractCallSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
+                    				extractSpecsFromSuiteForEth(ContractUpdateSuite::new)
                 });
     }
 
