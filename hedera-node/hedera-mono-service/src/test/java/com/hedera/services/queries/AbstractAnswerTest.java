@@ -34,9 +34,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -79,10 +79,10 @@ class AbstractAnswerTest {
                         validityCheck) {
                     @Override
                     public Response responseGiven(
-                            Query query,
-                            @Nullable StateView view,
-                            ResponseCodeEnum validity,
-                            long cost) {
+                            final Query query,
+                            @Nullable final StateView view,
+                            final ResponseCodeEnum validity,
+                            final long cost) {
                         throw new UnsupportedOperationException();
                     }
                 };
@@ -93,7 +93,7 @@ class AbstractAnswerTest {
         given(validityCheck.apply(query, view)).willReturn(FILE_DELETED);
 
         // when:
-        ResponseCodeEnum validity = subject.checkValidity(query, view);
+        final ResponseCodeEnum validity = subject.checkValidity(query, view);
 
         // then:
         assertEquals(FILE_DELETED, validity);
@@ -138,7 +138,7 @@ class AbstractAnswerTest {
         given(statusExtractor.apply(response)).willReturn(RESULT_SIZE_LIMIT_EXCEEDED);
 
         // when:
-        var status = subject.extractValidityFrom(response);
+        final var status = subject.extractValidityFrom(response);
 
         // expect:
         assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, status);

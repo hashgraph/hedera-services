@@ -35,9 +35,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
+import com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.services.config.FileNumbers;
-import com.hedera.services.sysfiles.domain.throttling.ThrottleBucket;
-import com.hedera.services.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -77,7 +77,7 @@ class ThrottleDefsManagerTest {
     @Mock
     Function<
                     ThrottleDefinitions,
-                    com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions>
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
             mockToPojo;
 
     @Mock Consumer<ThrottleDefinitions> postUpdateCb;
@@ -155,7 +155,8 @@ class ThrottleDefsManagerTest {
     void reusesResponseCodeFromMapperFailure() {
         // setup:
         int nodes = 7;
-        var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
+        var pojoDefs =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
         pojoDefs.getBuckets().add(bucket);
 
         given(book.getSize()).willReturn(nodes);
@@ -182,7 +183,8 @@ class ThrottleDefsManagerTest {
     void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
         // setup:
         int nodes = 7;
-        var pojoDefs = new com.hedera.services.sysfiles.domain.throttling.ThrottleDefinitions();
+        var pojoDefs =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
         pojoDefs.getBuckets().add(bucket);
 
         given(book.getSize()).willReturn(nodes);

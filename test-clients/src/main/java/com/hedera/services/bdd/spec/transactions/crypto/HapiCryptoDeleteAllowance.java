@@ -20,14 +20,14 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoApprove
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;

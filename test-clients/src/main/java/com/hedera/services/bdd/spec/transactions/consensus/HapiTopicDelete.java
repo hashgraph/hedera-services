@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTopicId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -29,7 +30,6 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.hederahashgraph.fee.ConsensusServiceFeeBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

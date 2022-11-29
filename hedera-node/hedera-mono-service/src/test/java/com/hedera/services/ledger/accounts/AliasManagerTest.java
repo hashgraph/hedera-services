@@ -29,9 +29,9 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
@@ -71,9 +71,9 @@ class AliasManagerTest {
                     .build()
                     .toByteArray();
 
-    private FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
+    private final FCHashMap<ByteString, EntityNum> aliases = new FCHashMap<>();
 
-    private AliasManager subject = new AliasManager(() -> aliases);
+    private final AliasManager subject = new AliasManager(() -> aliases);
 
     @Test
     void resolvesLinkedNonMirrorAsExpected() {
@@ -118,9 +118,9 @@ class AliasManagerTest {
     @Test
     void canLinkAndUnlinkEthereumAddresses()
             throws InvalidProtocolBufferException, DecoderException {
-        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
-        JKey jKey = JKey.mapKey(key);
-        boolean added = subject.maybeLinkEvmAddress(jKey, num);
+        final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        final JKey jKey = JKey.mapKey(key);
+        final boolean added = subject.maybeLinkEvmAddress(jKey, num);
         assertTrue(added);
         assertEquals(
                 Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num), subject.getAliases());
@@ -140,9 +140,9 @@ class AliasManagerTest {
     @Test
     void skipsUnrecoverableEthereumAddresses()
             throws InvalidProtocolBufferException, DecoderException {
-        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
-        JKey jKey = JKey.mapKey(key);
-        boolean added = subject.maybeLinkEvmAddress(jKey, num, any -> null);
+        final Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        final JKey jKey = JKey.mapKey(key);
+        final boolean added = subject.maybeLinkEvmAddress(jKey, num, any -> null);
         assertFalse(added);
     }
 
@@ -153,10 +153,11 @@ class AliasManagerTest {
 
     @Test
     void wontLinkOrUnlinked25519Key() throws DecoderException {
-        var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
-        Key key = Key.newBuilder().setEd25519(keyData).build();
-        JKey jKey = JKey.mapKey(key);
-        boolean added = subject.maybeLinkEvmAddress(jKey, num, EthTxSigs::recoverAddressFromPubKey);
+        final var keyData = ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes());
+        final Key key = Key.newBuilder().setEd25519(keyData).build();
+        final JKey jKey = JKey.mapKey(key);
+        final boolean added =
+                subject.maybeLinkEvmAddress(jKey, num, EthTxSigs::recoverAddressFromPubKey);
         assertFalse(added);
         assertEquals(Map.of(), subject.getAliases());
 

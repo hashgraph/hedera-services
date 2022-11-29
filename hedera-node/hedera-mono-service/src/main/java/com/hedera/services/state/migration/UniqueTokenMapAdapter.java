@@ -23,7 +23,7 @@ import com.hedera.services.utils.EntityNumPair;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Adaptor for NFT store that allows dropping in a MerkleMap/VirtualMap instances in places where

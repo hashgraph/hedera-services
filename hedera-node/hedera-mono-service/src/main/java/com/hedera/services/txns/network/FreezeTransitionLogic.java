@@ -41,12 +41,12 @@ import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -110,7 +110,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
         return this::validateBasics;
     }
 
-    private ResponseCodeEnum validateBasics(TransactionBody freezeTxn) {
+    private ResponseCodeEnum validateBasics(final TransactionBody freezeTxn) {
         final var op = freezeTxn.getFreeze();
 
         if (op.getStartHour() != 0
@@ -167,7 +167,7 @@ public class FreezeTransitionLogic implements TransitionLogic {
         return isInTheFuture(freezeStartTime, now) ? OK : FREEZE_START_TIME_MUST_BE_FUTURE;
     }
 
-    private void assertValidityAtCons(FreezeTransactionBody op) {
+    private void assertValidityAtCons(final FreezeTransactionBody op) {
         final var freezeType = op.getFreezeType();
         switch (freezeType) {
             case FREEZE_UPGRADE:

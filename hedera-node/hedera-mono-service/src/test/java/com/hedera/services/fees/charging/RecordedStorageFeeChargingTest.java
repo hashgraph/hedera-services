@@ -15,7 +15,11 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.ledger.properties.AccountProperty.*;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.services.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.services.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.services.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -54,12 +58,12 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,7 +78,8 @@ class RecordedStorageFeeChargingTest {
     private static final long MAX_TOTAL_SLOTS = 500_000_000L;
     private static final ContractStoragePriceTiers STORAGE_PRICE_TIERS =
             ContractStoragePriceTiers.from(
-                    "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M,1000til350M,2000til400M,5000til450M,10000til500M",
+                    "10til50M,50til100M,100til150M,200til200M,500til250M,700til300M,1000til350M,2000til400M,"
+                        + "5000til450M,10000til500M",
                     FREE_TIER_LIMIT,
                     MAX_TOTAL_SLOTS,
                     REFERENCE_LIFETIME);
@@ -643,7 +648,7 @@ class RecordedStorageFeeChargingTest {
             final AccountID id,
             final long amount,
             final long expiry,
-            @Nullable AccountID autoRenewId) {
+            @Nullable final AccountID autoRenewId) {
         if (amount > -1) {
             given(accountsLedger.get(id, BALANCE)).willReturn(amount);
         }
@@ -661,7 +666,7 @@ class RecordedStorageFeeChargingTest {
             final AccountID id,
             final long amount,
             final long expiry,
-            @Nullable AccountID autoRenewId) {
+            @Nullable final AccountID autoRenewId) {
         if (amount > -1) {
             given(accountsLedger.get(id, BALANCE)).willReturn(amount);
         }

@@ -27,7 +27,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -46,11 +46,14 @@ public class GetBySolidityIdAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        GetBySolidityIDQuery op = query.getGetBySolidityID();
-        ResponseType type = op.getHeader().getResponseType();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final GetBySolidityIDQuery op = query.getGetBySolidityID();
+        final ResponseType type = op.getHeader().getResponseType();
 
-        GetBySolidityIDResponse.Builder response = GetBySolidityIDResponse.newBuilder();
+        final GetBySolidityIDResponse.Builder response = GetBySolidityIDResponse.newBuilder();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {

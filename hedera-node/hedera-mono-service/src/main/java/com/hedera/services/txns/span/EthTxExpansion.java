@@ -17,6 +17,6 @@ package com.hedera.services.txns.span;
 
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public record EthTxExpansion(@Nullable LinkedRefs linkedRefs, ResponseCodeEnum result) {}

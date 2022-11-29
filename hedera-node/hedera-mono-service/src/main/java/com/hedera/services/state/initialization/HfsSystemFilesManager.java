@@ -16,6 +16,7 @@
 package com.hedera.services.state.initialization;
 
 import static com.google.protobuf.TextFormat.escapeBytes;
+import static com.hedera.node.app.hapi.utils.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_FEE_SCHEDULE_JSON_RESOURCE;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_HAPI_PERMISSIONS_PATH;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_NETWORK_PROPERTIES_PATH;
@@ -27,12 +28,12 @@ import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RAT
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_RATES_NEXT_HBAR_EQUIV;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_SYSTEM_ENTITY_EXPIRY;
 import static com.hedera.services.context.properties.PropertyNames.BOOTSTRAP_THROTTLE_DEF_JSON_RESOURCE;
-import static com.hedera.services.sysfiles.serdes.FeesJsonToProtoSerde.loadFeeScheduleFromStream;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static com.swirlds.common.system.address.Address.ipString;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
@@ -42,7 +43,6 @@ import com.hedera.services.files.TieredHederaFs;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -57,6 +57,7 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -69,7 +70,6 @@ import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -145,7 +145,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
             }
             final var replacement = newBuilder.build();
             hfs.getData().put(detailsFid, replacement.toByteArray());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.error("Existing address book was missing or corrupt", e);
         }
     }
@@ -264,7 +264,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
 
     private void bootstrapInto(
             final FileID disFid, final String resource, final BootstrapLoader loader) {
-        byte[] rawProps;
+        final byte[] rawProps;
         try {
             rawProps = loader.get();
         } catch (final Exception e) {
@@ -283,7 +283,7 @@ public final class HfsSystemFilesManager implements SystemFilesManager {
         }
     }
 
-    private boolean isUpdateFile(long num) {
+    private boolean isUpdateFile(final long num) {
         return num >= fileNumbers.firstSoftwareUpdateFile()
                 && num <= fileNumbers.lastSoftwareUpdateFile();
     }

@@ -48,6 +48,7 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -58,7 +59,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 
 /**
  * This is currently used in a MerkleMap due to issues with virtual map in the 0.27 release. It
@@ -96,7 +96,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         /* RuntimeConstructable */
     }
 
-    public ScheduleVirtualValue(ScheduleVirtualValue toCopy) {
+    public ScheduleVirtualValue(final ScheduleVirtualValue toCopy) {
 
         /* These fields are all immutable or effectively immutable, we can share them between copies */
         this.grpcAdminKey = toCopy.grpcAdminKey;
@@ -118,26 +118,26 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         this.number = toCopy.number;
 
         /* Signatories are mutable */
-        for (byte[] signatory : toCopy.signatories) {
+        for (final byte[] signatory : toCopy.signatories) {
             this.witnessValidSignature(signatory);
         }
     }
 
-    public ScheduleVirtualValue(MerkleSchedule toCopy) {
+    public ScheduleVirtualValue(final MerkleSchedule toCopy) {
         bodyBytes = toCopy.bodyBytes();
         calculatedExpirationTime = new RichInstant(toCopy.expiry(), 0);
         executed = toCopy.isExecuted();
         deleted = toCopy.isDeleted();
         resolutionTime = toCopy.getResolutionTime();
-        for (var sig : toCopy.signatories()) {
+        for (final var sig : toCopy.signatories()) {
             witnessValidSignature(sig);
         }
 
         initFromBodyBytes();
     }
 
-    public static ScheduleVirtualValue from(byte[] bodyBytes, long consensusExpiry) {
-        var to = new ScheduleVirtualValue();
+    public static ScheduleVirtualValue from(final byte[] bodyBytes, final long consensusExpiry) {
+        final var to = new ScheduleVirtualValue();
         to.calculatedExpirationTime = new RichInstant(consensusExpiry, 0);
         to.bodyBytes = bodyBytes;
         to.initFromBodyBytes();
@@ -147,8 +147,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @VisibleForTesting
-    static ScheduleVirtualValue from(byte[] bodyBytes, RichInstant consensusExpiry) {
-        var to = new ScheduleVirtualValue();
+    static ScheduleVirtualValue from(final byte[] bodyBytes, final RichInstant consensusExpiry) {
+        final var to = new ScheduleVirtualValue();
         to.calculatedExpirationTime = consensusExpiry;
         to.bodyBytes = bodyBytes;
         to.initFromBodyBytes();
@@ -158,7 +158,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     /* Notary functions */
-    public boolean witnessValidSignature(byte[] key) {
+    public boolean witnessValidSignature(final byte[] key) {
         final var usableKey = copyFrom(key);
         if (notary.contains(usableKey)) {
             return false;
@@ -191,7 +191,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
                 .build();
     }
 
-    public boolean hasValidSignatureFor(byte[] key) {
+    public boolean hasValidSignatureFor(final byte[] key) {
         return notary.contains(copyFrom(key));
     }
 
@@ -205,7 +205,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
      * @return whether {@code this} and {@code o} are identical
      */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -213,7 +213,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             return false;
         }
 
-        var that = (ScheduleVirtualValue) o;
+        final var that = (ScheduleVirtualValue) o;
         return Objects.equals(this.memo, that.memo)
                 && Objects.equals(this.scheduledTxn, that.scheduledTxn)
                 && Objects.equals(this.grpcAdminKey, that.grpcAdminKey)
@@ -250,7 +250,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     @Override
     public String toString() {
-        var helper =
+        final var helper =
                 MoreObjects.toStringHelper(ScheduleVirtualValue.class)
                         .add("scheduledTxn", scheduledTxn)
                         .add("expirationTimeProvided", expirationTimeProvided)
@@ -275,7 +275,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         int n = in.readInt();
         bodyBytes = new byte[n];
         in.readFully(bodyBytes);
@@ -292,10 +293,10 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         } else {
             resolutionTime = null;
         }
-        int k = in.readInt();
+        final int k = in.readInt();
         for (int x = 0; x < k; ++x) {
             n = in.readInt();
-            byte[] bytes = new byte[n];
+            final byte[] bytes = new byte[n];
             in.readFully(bytes);
             witnessValidSignature(bytes);
         }
@@ -305,7 +306,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(bodyBytes.length);
         out.write(bodyBytes);
         if (calculatedExpirationTime == null) {
@@ -326,7 +327,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             out.writeInt(resolutionTime.getNanos());
         }
         out.writeInt(signatories.size());
-        for (byte[] k : signatories) {
+        for (final byte[] k : signatories) {
             out.writeInt(k.length);
             out.write(k);
         }
@@ -334,7 +335,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(ByteBuffer in, int version) throws IOException {
+    public void deserialize(final ByteBuffer in, final int version) throws IOException {
         var n = in.getInt();
         bodyBytes = new byte[n];
         in.get(bodyBytes);
@@ -351,10 +352,10 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         } else {
             resolutionTime = null;
         }
-        int k = in.getInt();
+        final int k = in.getInt();
         for (int x = 0; x < k; ++x) {
             n = in.getInt();
-            byte[] bytes = new byte[n];
+            final byte[] bytes = new byte[n];
             in.get(bytes);
             witnessValidSignature(bytes);
         }
@@ -364,7 +365,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @Override
-    public void serialize(ByteBuffer out) throws IOException {
+    public void serialize(final ByteBuffer out) throws IOException {
         out.putInt(bodyBytes.length);
         out.put(bodyBytes);
         if (calculatedExpirationTime == null) {
@@ -385,7 +386,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             out.putInt(resolutionTime.getNanos());
         }
         out.putInt(signatories.size());
-        for (byte[] k : signatories) {
+        for (final byte[] k : signatories) {
             out.putInt(k.length);
             out.put(k);
         }
@@ -427,13 +428,13 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @VisibleForTesting
-    public final void setAdminKey(JKey adminKey) {
+    public final void setAdminKey(final JKey adminKey) {
         throwIfImmutable("Cannot change this schedule's adminKey if it's immutable.");
         this.adminKey = adminKey;
     }
 
     @VisibleForTesting
-    public void setPayer(EntityId payer) {
+    public void setPayer(final EntityId payer) {
         throwIfImmutable("Cannot change this schedule's payer if it's immutable.");
         this.payer = payer;
     }
@@ -455,7 +456,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     }
 
     @VisibleForTesting
-    void setSchedulingAccount(EntityId schedulingAccount) {
+    void setSchedulingAccount(final EntityId schedulingAccount) {
         this.schedulingAccount = schedulingAccount;
     }
 
@@ -480,13 +481,13 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         this.calculatedExpirationTime = calculatedExpirationTime;
     }
 
-    public void markDeleted(Instant at) {
+    public void markDeleted(final Instant at) {
         throwIfImmutable("Cannot change this schedule to deleted if it's immutable.");
         resolutionTime = RichInstant.fromJava(at);
         deleted = true;
     }
 
-    public void markExecuted(Instant at) {
+    public void markExecuted(final Instant at) {
         throwIfImmutable("Cannot change this schedule to executed if it's immutable.");
         resolutionTime = RichInstant.fromJava(at);
         executed = true;
@@ -522,7 +523,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     public HederaFunctionality scheduledFunction() {
         try {
             return MiscUtils.functionOf(ordinaryScheduledTxn);
-        } catch (UnknownHederaFunctionality ignore) {
+        } catch (final UnknownHederaFunctionality ignore) {
             return NONE;
         }
     }
@@ -545,8 +546,8 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
 
     private void initFromBodyBytes() {
         try {
-            var parentTxn = TransactionBody.parseFrom(bodyBytes);
-            var creationOp = parentTxn.getScheduleCreate();
+            final var parentTxn = TransactionBody.parseFrom(bodyBytes);
+            final var creationOp = parentTxn.getScheduleCreate();
 
             if (!creationOp.getMemo().isEmpty()) {
                 memo = creationOp.getMemo();
@@ -571,7 +572,7 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
             schedulingTXValidStart =
                     RichInstant.fromGrpc(parentTxn.getTransactionID().getTransactionValidStart());
             ordinaryScheduledTxn = MiscUtils.asOrdinary(scheduledTxn, scheduledTransactionId());
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             throw new IllegalArgumentException(
                     String.format(
                             "Argument bodyBytes=0x%s was not a TransactionBody!",
@@ -582,14 +583,14 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public ScheduleVirtualValue asReadOnly() {
-        var c = new ScheduleVirtualValue(this);
+        final var c = new ScheduleVirtualValue(this);
         c.setImmutable(true);
         return c;
     }
 
     @Override
     public ScheduleVirtualValue copy() {
-        var fc = new ScheduleVirtualValue(this);
+        final var fc = new ScheduleVirtualValue(this);
 
         this.setImmutable(true);
 
@@ -605,10 +606,10 @@ public class ScheduleVirtualValue extends PartialMerkleLeaf
         return new ScheduleVirtualValue(this);
     }
 
-    private static HashCode buildEqualityHash(byte[]... a) {
-        var hasher = Hashing.sha256().newHasher();
+    private static HashCode buildEqualityHash(final byte[]... a) {
+        final var hasher = Hashing.sha256().newHasher();
 
-        for (byte[] bytes : a) {
+        for (final byte[] bytes : a) {
             hasher.putInt(bytes.length);
             hasher.putBytes(bytes);
         }

@@ -15,22 +15,22 @@
  */
 package com.hedera.services.txns.span;
 
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.FeeScheduleUpdateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenPauseMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnfreezeMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnpauseMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
+import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.usage.crypto.CryptoApproveAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoCreateMeta;
-import com.hedera.services.usage.crypto.CryptoDeleteAllowanceMeta;
-import com.hedera.services.usage.crypto.CryptoUpdateMeta;
-import com.hedera.services.usage.token.meta.FeeScheduleUpdateMeta;
-import com.hedera.services.usage.token.meta.TokenBurnMeta;
-import com.hedera.services.usage.token.meta.TokenCreateMeta;
-import com.hedera.services.usage.token.meta.TokenFreezeMeta;
-import com.hedera.services.usage.token.meta.TokenPauseMeta;
-import com.hedera.services.usage.token.meta.TokenUnfreezeMeta;
-import com.hedera.services.usage.token.meta.TokenUnpauseMeta;
-import com.hedera.services.usage.token.meta.TokenWipeMeta;
-import com.hedera.services.usage.util.UtilPrngMeta;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;
@@ -65,109 +65,116 @@ public class ExpandHandleSpanMapAccessor {
     }
 
     public void setFeeScheduleUpdateMeta(
-            TxnAccessor accessor, FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
+            final TxnAccessor accessor, final FeeScheduleUpdateMeta feeScheduleUpdateMeta) {
         accessor.getSpanMap().put(FEE_SCHEDULE_UPDATE_META_KEY, feeScheduleUpdateMeta);
     }
 
-    public FeeScheduleUpdateMeta getFeeScheduleUpdateMeta(TxnAccessor accessor) {
+    public FeeScheduleUpdateMeta getFeeScheduleUpdateMeta(final TxnAccessor accessor) {
         return (FeeScheduleUpdateMeta) accessor.getSpanMap().get(FEE_SCHEDULE_UPDATE_META_KEY);
     }
 
-    public void setImpliedTransfers(TxnAccessor accessor, ImpliedTransfers impliedTransfers) {
+    public void setImpliedTransfers(
+            final TxnAccessor accessor, final ImpliedTransfers impliedTransfers) {
         accessor.getSpanMap().put(IMPLIED_TRANSFERS_KEY, impliedTransfers);
     }
 
-    public ImpliedTransfers getImpliedTransfers(TxnAccessor accessor) {
+    public ImpliedTransfers getImpliedTransfers(final TxnAccessor accessor) {
         return (ImpliedTransfers) accessor.getSpanMap().get(IMPLIED_TRANSFERS_KEY);
     }
 
-    public void setTokenCreateMeta(TxnAccessor accessor, TokenCreateMeta tokenCreateMeta) {
+    public void setTokenCreateMeta(
+            final TxnAccessor accessor, final TokenCreateMeta tokenCreateMeta) {
         accessor.getSpanMap().put(TOKEN_CREATE_META_KEY, tokenCreateMeta);
     }
 
-    public TokenCreateMeta getTokenCreateMeta(TxnAccessor accessor) {
+    public TokenCreateMeta getTokenCreateMeta(final TxnAccessor accessor) {
         return (TokenCreateMeta) accessor.getSpanMap().get(TOKEN_CREATE_META_KEY);
     }
 
-    public void setTokenBurnMeta(TxnAccessor accessor, TokenBurnMeta tokenBurnMeta) {
+    public void setTokenBurnMeta(final TxnAccessor accessor, final TokenBurnMeta tokenBurnMeta) {
         accessor.getSpanMap().put(TOKEN_BURN_META_KEY, tokenBurnMeta);
     }
 
-    public TokenBurnMeta getTokenBurnMeta(TxnAccessor accessor) {
+    public TokenBurnMeta getTokenBurnMeta(final TxnAccessor accessor) {
         return (TokenBurnMeta) accessor.getSpanMap().get(TOKEN_BURN_META_KEY);
     }
 
-    public void setTokenWipeMeta(TxnAccessor accessor, TokenWipeMeta tokenWipeMeta) {
+    public void setTokenWipeMeta(final TxnAccessor accessor, final TokenWipeMeta tokenWipeMeta) {
         accessor.getSpanMap().put(TOKEN_WIPE_META_KEY, tokenWipeMeta);
     }
 
-    public TokenWipeMeta getTokenWipeMeta(TxnAccessor accessor) {
+    public TokenWipeMeta getTokenWipeMeta(final TxnAccessor accessor) {
         return (TokenWipeMeta) accessor.getSpanMap().get(TOKEN_WIPE_META_KEY);
     }
 
-    public void setTokenFreezeMeta(TxnAccessor accessor, TokenFreezeMeta tokenFreezeMeta) {
+    public void setTokenFreezeMeta(
+            final TxnAccessor accessor, final TokenFreezeMeta tokenFreezeMeta) {
         accessor.getSpanMap().put(TOKEN_FREEZE_META_KEY, tokenFreezeMeta);
     }
 
-    public TokenFreezeMeta getTokenFreezeMeta(TxnAccessor accessor) {
+    public TokenFreezeMeta getTokenFreezeMeta(final TxnAccessor accessor) {
         return (TokenFreezeMeta) accessor.getSpanMap().get(TOKEN_FREEZE_META_KEY);
     }
 
-    public void setTokenUnfreezeMeta(TxnAccessor accessor, TokenUnfreezeMeta tokenUnfreezeMeta) {
+    public void setTokenUnfreezeMeta(
+            final TxnAccessor accessor, final TokenUnfreezeMeta tokenUnfreezeMeta) {
         accessor.getSpanMap().put(TOKEN_UNFREEZE_META_KEY, tokenUnfreezeMeta);
     }
 
-    public TokenUnfreezeMeta getTokenUnfreezeMeta(TxnAccessor accessor) {
+    public TokenUnfreezeMeta getTokenUnfreezeMeta(final TxnAccessor accessor) {
         return (TokenUnfreezeMeta) accessor.getSpanMap().get(TOKEN_UNFREEZE_META_KEY);
     }
 
-    public void setTokenPauseMeta(TxnAccessor accessor, TokenPauseMeta tokenPauseMeta) {
+    public void setTokenPauseMeta(final TxnAccessor accessor, final TokenPauseMeta tokenPauseMeta) {
         accessor.getSpanMap().put(TOKEN_PAUSE_META_KEY, tokenPauseMeta);
     }
 
-    public TokenPauseMeta getTokenPauseMeta(TxnAccessor accessor) {
+    public TokenPauseMeta getTokenPauseMeta(final TxnAccessor accessor) {
         return (TokenPauseMeta) accessor.getSpanMap().get(TOKEN_PAUSE_META_KEY);
     }
 
-    public void setTokenUnpauseMeta(TxnAccessor accessor, TokenUnpauseMeta tokenUnpauseMeta) {
+    public void setTokenUnpauseMeta(
+            final TxnAccessor accessor, final TokenUnpauseMeta tokenUnpauseMeta) {
         accessor.getSpanMap().put(TOKEN_UNPAUSE_META_KEY, tokenUnpauseMeta);
     }
 
-    public TokenUnpauseMeta getTokenUnpauseMeta(TxnAccessor accessor) {
+    public TokenUnpauseMeta getTokenUnpauseMeta(final TxnAccessor accessor) {
         return (TokenUnpauseMeta) accessor.getSpanMap().get(TOKEN_UNPAUSE_META_KEY);
     }
 
-    public void setCryptoCreateMeta(TxnAccessor accessor, CryptoCreateMeta cryptoCreateMeta) {
+    public void setCryptoCreateMeta(
+            final TxnAccessor accessor, final CryptoCreateMeta cryptoCreateMeta) {
         accessor.getSpanMap().put(CRYPTO_CREATE_META_KEY, cryptoCreateMeta);
     }
 
-    public CryptoCreateMeta getCryptoCreateMeta(TxnAccessor accessor) {
+    public CryptoCreateMeta getCryptoCreateMeta(final TxnAccessor accessor) {
         return (CryptoCreateMeta) accessor.getSpanMap().get(CRYPTO_CREATE_META_KEY);
     }
 
-    public void setCryptoUpdate(TxnAccessor accessor, CryptoUpdateMeta cryptoUpdateMeta) {
+    public void setCryptoUpdate(
+            final TxnAccessor accessor, final CryptoUpdateMeta cryptoUpdateMeta) {
         accessor.getSpanMap().put(CRYPTO_UPDATE_META_KEY, cryptoUpdateMeta);
     }
 
-    public CryptoUpdateMeta getCryptoUpdateMeta(TxnAccessor accessor) {
+    public CryptoUpdateMeta getCryptoUpdateMeta(final TxnAccessor accessor) {
         return (CryptoUpdateMeta) accessor.getSpanMap().get(CRYPTO_UPDATE_META_KEY);
     }
 
     public void setCryptoApproveMeta(
-            TxnAccessor accessor, CryptoApproveAllowanceMeta cryptoApproveMeta) {
+            final TxnAccessor accessor, final CryptoApproveAllowanceMeta cryptoApproveMeta) {
         accessor.getSpanMap().put(CRYPTO_APPROVE_META_KEY, cryptoApproveMeta);
     }
 
-    public CryptoApproveAllowanceMeta getCryptoApproveMeta(TxnAccessor accessor) {
+    public CryptoApproveAllowanceMeta getCryptoApproveMeta(final TxnAccessor accessor) {
         return (CryptoApproveAllowanceMeta) accessor.getSpanMap().get(CRYPTO_APPROVE_META_KEY);
     }
 
     public void setCryptoDeleteAllowanceMeta(
-            TxnAccessor accessor, CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta) {
+            final TxnAccessor accessor, final CryptoDeleteAllowanceMeta cryptoDeleteAllowanceMeta) {
         accessor.getSpanMap().put(CRYPTO_DELETE_ALLOWANCE_META_KEY, cryptoDeleteAllowanceMeta);
     }
 
-    public CryptoDeleteAllowanceMeta getCryptoDeleteAllowanceMeta(TxnAccessor accessor) {
+    public CryptoDeleteAllowanceMeta getCryptoDeleteAllowanceMeta(final TxnAccessor accessor) {
         return (CryptoDeleteAllowanceMeta)
                 accessor.getSpanMap().get(CRYPTO_DELETE_ALLOWANCE_META_KEY);
     }
@@ -180,7 +187,7 @@ public class ExpandHandleSpanMapAccessor {
         spanMap.put(ETH_TX_DATA_META_KEY, ethTxData);
     }
 
-    public EthTxData getEthTxDataMeta(TxnAccessor accessor) {
+    public EthTxData getEthTxDataMeta(final TxnAccessor accessor) {
         return (EthTxData) accessor.getSpanMap().get(ETH_TX_DATA_META_KEY);
     }
 
@@ -188,7 +195,7 @@ public class ExpandHandleSpanMapAccessor {
         return (EthTxData) spanMap.get(ETH_TX_DATA_META_KEY);
     }
 
-    public void setEthTxSigsMeta(TxnAccessor accessor, EthTxSigs ethTxSigs) {
+    public void setEthTxSigsMeta(final TxnAccessor accessor, final EthTxSigs ethTxSigs) {
         accessor.getSpanMap().put(ETH_TX_SIGS_META_KEY, ethTxSigs);
     }
 
@@ -196,11 +203,11 @@ public class ExpandHandleSpanMapAccessor {
         spanMap.put(ETH_TX_SIGS_META_KEY, ethTxSigs);
     }
 
-    public EthTxSigs getEthTxSigsMeta(TxnAccessor accessor) {
+    public EthTxSigs getEthTxSigsMeta(final TxnAccessor accessor) {
         return (EthTxSigs) accessor.getSpanMap().get(ETH_TX_SIGS_META_KEY);
     }
 
-    public void setEthTxBodyMeta(TxnAccessor accessor, TransactionBody txBody) {
+    public void setEthTxBodyMeta(final TxnAccessor accessor, final TransactionBody txBody) {
         accessor.getSpanMap().put(ETH_TX_BODY_META_KEY, txBody);
     }
 
@@ -208,7 +215,7 @@ public class ExpandHandleSpanMapAccessor {
         spanMap.put(ETH_TX_BODY_META_KEY, txBody);
     }
 
-    public TransactionBody getEthTxBodyMeta(TxnAccessor accessor) {
+    public TransactionBody getEthTxBodyMeta(final TxnAccessor accessor) {
         return (TransactionBody) accessor.getSpanMap().get(ETH_TX_BODY_META_KEY);
     }
 
@@ -225,11 +232,11 @@ public class ExpandHandleSpanMapAccessor {
         return (EthTxExpansion) accessor.getSpanMap().get(ETH_TX_EXPANSION_KEY);
     }
 
-    public UtilPrngMeta getUtilPrngMeta(TxnAccessor accessor) {
+    public UtilPrngMeta getUtilPrngMeta(final TxnAccessor accessor) {
         return (UtilPrngMeta) accessor.getSpanMap().get(UTIL_PRNG_META_KEY);
     }
 
-    public void setUtilPrngMeta(TxnAccessor accessor, UtilPrngMeta utilPrngMeta) {
+    public void setUtilPrngMeta(final TxnAccessor accessor, final UtilPrngMeta utilPrngMeta) {
         accessor.getSpanMap().put(UTIL_PRNG_META_KEY, utilPrngMeta);
     }
 }
