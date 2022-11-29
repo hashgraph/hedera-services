@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
@@ -67,7 +68,6 @@ import static com.hedera.services.store.contracts.precompile.impl.TransferPrecom
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,6 +87,9 @@ import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -105,7 +108,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -133,8 +135,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -246,7 +249,7 @@ class TransferPrecompilesTest {
 
     @BeforeEach
     void setUp() {
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -279,7 +282,7 @@ class TransferPrecompilesTest {
     @Test
     void transferFailsFastGivenWrongSyntheticValidity() {
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -288,7 +291,7 @@ class TransferPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getRemainingGas()).willReturn(300L);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
 
@@ -328,7 +331,7 @@ class TransferPrecompilesTest {
         // then:
         assertEquals(
                 UInt256.valueOf(ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN_VALUE), result);
-        ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
+        final ArgumentCaptor<EvmFnResult> captor = ArgumentCaptor.forClass(EvmFnResult.class);
         verify(mockRecordBuilder).setContractCallResult(captor.capture());
         assertEquals(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN.name(), captor.getValue().getError());
         assertEquals(100L, captor.getValue().getGas());
@@ -338,7 +341,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         givenMinimalFrameContext();
         givenLedgers();
         givenPricingUtilsContext();
@@ -421,7 +424,7 @@ class TransferPrecompilesTest {
     @Test
     void abortsIfImpliedCustomFeesCannotBeAssessed() throws InvalidProtocolBufferException {
         givenPricingUtilsContext();
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -434,7 +437,7 @@ class TransferPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getRemainingGas()).willReturn(300L);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
 
         given(
@@ -487,7 +490,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenWithSenderOnlyHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -568,7 +571,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferTokenWithReceiverOnlyHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -649,7 +652,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferNftsHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -730,7 +733,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferNftHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
         final var senderId = Id.fromGrpcAccount(sender);
@@ -829,7 +832,7 @@ class TransferPrecompilesTest {
 
     @Test
     void cryptoTransferHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -908,7 +911,7 @@ class TransferPrecompilesTest {
 
     @Test
     void hbarOnlyTransferHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -988,7 +991,7 @@ class TransferPrecompilesTest {
 
     @Test
     void hbarFungibleTransferHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -1070,7 +1073,7 @@ class TransferPrecompilesTest {
 
     @Test
     void hbarNFTTransferHappyPathWorks() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -1150,7 +1153,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferFailsAndCatchesProperly() throws InvalidProtocolBufferException {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
 
         givenMinimalFrameContext();
         givenLedgers();
@@ -1230,7 +1233,7 @@ class TransferPrecompilesTest {
 
     @Test
     void transferWithWrongInput() {
-        Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+        final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -1243,7 +1246,7 @@ class TransferPrecompilesTest {
                 .thenThrow(new IndexOutOfBoundsException());
 
         subject.prepareFields(frame);
-        var result = subject.computePrecompile(pretendArguments, frame);
+        final var result = subject.computePrecompile(pretendArguments, frame);
 
         assertDoesNotThrow(() -> subject.prepareComputation(pretendArguments, a -> a));
         assertNull(result.getOutput());
@@ -1254,7 +1257,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFTS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1276,7 +1279,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1287,7 +1290,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1309,7 +1312,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1320,7 +1323,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1342,7 +1345,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1353,7 +1356,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1384,7 +1387,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1395,7 +1398,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKENS));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1417,7 +1420,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1428,7 +1431,7 @@ class TransferPrecompilesTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_TOKEN));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1451,7 +1454,7 @@ class TransferPrecompilesTest {
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
 
-        long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -1459,11 +1462,11 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsHbarOnlyCryptoTransfer() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
         // given
         givenMinFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1487,7 +1490,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
 
         // then
         assertEquals(TEST_CRYPTO_TRANSFER_MIN_FEE, minimumFeeInTinybars);
@@ -1497,11 +1500,11 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsTwoHbarCryptoTransfer() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
         // given
         givenMinFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1525,7 +1528,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
 
         // then
         // expect 2 times the fee as there are two transfers
@@ -1536,11 +1539,11 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsHbarFungibleCryptoTransfer() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
         // given
         givenMinFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1564,7 +1567,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
 
         // then
         // 1 for hbars and 1 for fungible tokens
@@ -1575,11 +1578,11 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsHbarNftCryptoTransfer() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
         // given
         givenMinFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1603,7 +1606,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
 
         // then
         // 2 for nfts transfers and 1 for hbars
@@ -1614,11 +1617,11 @@ class TransferPrecompilesTest {
 
     @Test
     void minimumFeeInTinybarsHbarFungibleNftCryptoTransfer() {
-        var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
+        final var feeBuilder = Mockito.mockStatic(FeeBuilder.class);
 
         // given
         givenMinFrameContext();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_CRYPTO_TRANSFER_V2));
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1642,7 +1645,7 @@ class TransferPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
+        final var minimumFeeInTinybars = subject.getPrecompile().getMinimumFeeInTinybars(timestamp);
 
         // then
         // 1 for fungible + 2 for nfts transfers + 1 for hbars
@@ -1970,7 +1973,7 @@ class TransferPrecompilesTest {
         assertNftTransfers(nonFungibleTransfers1, nonFungibleTransfers2);
     }
 
-    private void assertHbarTransfers(List<SyntheticTxnFactory.HbarTransfer> hbarTransfers) {
+    private void assertHbarTransfers(final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers) {
         assertEquals(10, hbarTransfers.get(0).amount());
         assertTrue(!hbarTransfers.get(0).isApproval());
         assertNull(hbarTransfers.get(0).sender());
@@ -1983,7 +1986,7 @@ class TransferPrecompilesTest {
     }
 
     private void assertFungibleTransfers(
-            List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTokenTransfers) {
+            final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTokenTransfers) {
         assertEquals(10, fungibleTokenTransfers.get(0).amount());
         assertTrue(fungibleTokenTransfers.get(0).isApproval());
         assertNull(fungibleTokenTransfers.get(0).sender());
@@ -1998,8 +2001,8 @@ class TransferPrecompilesTest {
     }
 
     private void assertNftTransfers(
-            List<SyntheticTxnFactory.NftExchange> nftExchanges1,
-            List<SyntheticTxnFactory.NftExchange> nftExchanges2) {
+            final List<SyntheticTxnFactory.NftExchange> nftExchanges1,
+            final List<SyntheticTxnFactory.NftExchange> nftExchanges2) {
         assertEquals(6, nftExchanges1.get(0).getTokenType().getTokenNum());
         assertEquals(2, nftExchanges1.get(0).getSerialNo());
         assertEquals(7, nftExchanges1.get(0).asGrpc().getSenderAccountID().getAccountNum());
@@ -2018,7 +2021,7 @@ class TransferPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }

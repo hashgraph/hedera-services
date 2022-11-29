@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -34,18 +34,18 @@ public class AccessorFactory {
         this.dynamicProperties = dynamicProperties;
     }
 
-    public TxnAccessor nonTriggeredTxn(byte[] transactionBytes)
+    public TxnAccessor nonTriggeredTxn(final byte[] transactionBytes)
             throws InvalidProtocolBufferException {
         return internalSpecializedConstruction(
                 transactionBytes, Transaction.parseFrom(transactionBytes));
     }
 
     public TxnAccessor triggeredTxn(
-            Transaction transaction,
+            final Transaction transaction,
             final AccountID payer,
-            ScheduleID parent,
-            boolean markThrottleExempt,
-            boolean markCongestionExempt)
+            final ScheduleID parent,
+            final boolean markThrottleExempt,
+            final boolean markCongestionExempt)
             throws InvalidProtocolBufferException {
         final var subtype = constructSpecializedAccessor(transaction);
         subtype.setScheduleRef(parent);
@@ -85,7 +85,7 @@ public class AccessorFactory {
     public TxnAccessor uncheckedSpecializedAccessor(final Transaction transaction) {
         try {
             return constructSpecializedAccessor(transaction);
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             throw new IllegalArgumentException("Not a valid signed transaction");
         }
     }

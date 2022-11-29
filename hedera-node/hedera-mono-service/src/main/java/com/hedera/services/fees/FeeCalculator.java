@@ -15,6 +15,7 @@
  */
 package com.hedera.services.fees;
 
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.legacy.core.jproto.JKey;
@@ -25,7 +26,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.fee.FeeObject;
 import java.time.Instant;
 import java.util.Map;
 

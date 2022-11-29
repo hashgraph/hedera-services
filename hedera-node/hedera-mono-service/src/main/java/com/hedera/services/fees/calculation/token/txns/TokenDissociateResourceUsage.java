@@ -15,19 +15,19 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.function.BiFunction;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,29 +39,31 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage
             factory = TokenDissociateUsage::newEstimate;
 
     @Inject
-    public TokenDissociateResourceUsage(EstimatorFactory estimatorFactory) {
+    public TokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
         super(estimatorFactory);
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasTokenDissociate();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        var op = txn.getTokenDissociate();
-        var account = view.accounts().get(fromAccountId(op.getAccount()));
+        final var op = txn.getTokenDissociate();
+        final var account = view.accounts().get(fromAccountId(op.getAccount()));
         if (account == null) {
             return FeeData.getDefaultInstance();
         } else {
-            var sigUsage =
+            final var sigUsage =
                     new SigUsage(
                             svo.getTotalSigCount(),
                             svo.getSignatureSize(),
                             svo.getPayerAcctSigCount());
-            var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+            final var estimate =
+                    factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
             return estimate.get();
         }
     }

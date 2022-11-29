@@ -14,6 +14,7 @@ module com.hedera.services.evm {
     requires org.apache.commons.lang3;
     requires org.bouncycastle.provider;
     requires com.sun.jna;
+    requires static com.github.spotbugs.annotations;
 
     exports com.hedera.services.evm.store.contracts.utils;
     exports com.hedera.services.evm.contracts.execution;

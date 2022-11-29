@@ -16,8 +16,8 @@
 package com.hedera.services.utils;
 
 import com.google.protobuf.BytesValue;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
@@ -47,7 +47,7 @@ public class SidecarUtils {
     }
 
     public static TransactionSidecarRecord.Builder createContractBytecodeSidecarFrom(
-            ContractID contractID, byte[] runtimeCode) {
+            final ContractID contractID, final byte[] runtimeCode) {
         return TransactionSidecarRecord.newBuilder()
                 .setBytecode(
                         ContractBytecode.newBuilder()

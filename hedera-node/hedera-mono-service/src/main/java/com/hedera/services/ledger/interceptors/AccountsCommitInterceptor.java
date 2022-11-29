@@ -24,9 +24,9 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link CommitInterceptor} implementation that tracks the hbar adjustments being committed, and
@@ -100,7 +100,7 @@ public class AccountsCommitInterceptor
     private void trackBalanceChangeIfAny(
             final long accountNum,
             @Nullable final HederaAccount merkleAccount,
-            @NotNull final Map<AccountProperty, Object> accountChanges) {
+            @NonNull final Map<AccountProperty, Object> accountChanges) {
         if (accountChanges.containsKey(AccountProperty.BALANCE)) {
             final long newBalance = (long) accountChanges.get(AccountProperty.BALANCE);
             if (newBalance < 0) {

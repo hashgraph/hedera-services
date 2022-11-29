@@ -24,18 +24,18 @@ import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.calc.OverflowCheckingCalc;
+import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.fee.FeeObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,13 +61,13 @@ class PricedUsageCalculatorTest {
                     .setRbh(3L)
                     .setSbh(4L)
                     .build();
-    private FeeData mockPrices =
+    private final FeeData mockPrices =
             FeeData.newBuilder()
                     .setNetworkdata(mockComps)
                     .setNodedata(mockComps)
                     .setServicedata(mockComps)
                     .build();
-    private FeeObject mockFees = new FeeObject(1L, 2L, 3L);
+    private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
 
     @Mock private TxnAccessor accessor;
     @Mock private AccessorBasedUsages accessorBasedUsages;
@@ -112,9 +112,9 @@ class PricedUsageCalculatorTest {
     @Test
     void computesExtraHandleAsExpected() {
         // setup:
-        ArgumentCaptor<UsageAccumulator> feesCaptor =
+        final ArgumentCaptor<UsageAccumulator> feesCaptor =
                 ArgumentCaptor.forClass(UsageAccumulator.class);
-        ArgumentCaptor<UsageAccumulator> assessCaptor =
+        final ArgumentCaptor<UsageAccumulator> assessCaptor =
                 ArgumentCaptor.forClass(UsageAccumulator.class);
 
         final var inHandleAccum = subject.getHandleScopedAccumulator();

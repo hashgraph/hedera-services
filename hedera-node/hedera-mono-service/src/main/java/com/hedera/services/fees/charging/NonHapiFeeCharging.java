@@ -26,7 +26,7 @@ import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 
 /**
@@ -75,7 +75,7 @@ public class NonHapiFeeCharging {
             final boolean isLastResort,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts,
             final ResponseCodeEnum failureStatus) {
-        long paid;
+        final long paid;
         final var balance = (long) accounts.get(payer, BALANCE);
         if (amount > balance) {
             validateResourceLimit(!isLastResort, failureStatus);

@@ -30,6 +30,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -43,7 +45,6 @@ import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.ledger.properties.NftProperty;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.ledger.properties.TokenRelProperty;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.merkle.MerkleToken;
@@ -61,7 +62,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
 import java.io.IOException;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -119,7 +119,7 @@ class IsKycPrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        PrecompilePricingUtils precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -166,7 +166,7 @@ class IsKycPrecompileTest {
         givenLedgers();
         given(wrappedLedgers.isKyc(any(), any())).willReturn(true);
         givenMinimalContextForSuccessfulCall();
-        Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC));
+        final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_IS_KYC));
         given(syntheticTxnFactory.createTransactionCall(1L, pretendArguments))
                 .willReturn(mockSynthBodyBuilder);
         isKycPrecompile.when(() -> decodeIsKyc(any(), any())).thenReturn(grantRevokeKycWrapper);
@@ -200,7 +200,7 @@ class IsKycPrecompileTest {
     }
 
     private void givenMinimalContextForSuccessfulCall() {
-        Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))

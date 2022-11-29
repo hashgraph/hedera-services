@@ -33,16 +33,16 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 
+import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.consensus.ConsensusOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
+import com.hedera.node.app.hapi.fees.usage.util.UtilOpsUsage;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.usage.BaseTransactionMeta;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.consensus.ConsensusOpsUsage;
-import com.hedera.services.usage.crypto.CryptoOpsUsage;
-import com.hedera.services.usage.file.FileOpsUsage;
-import com.hedera.services.usage.state.UsageAccumulator;
-import com.hedera.services.usage.token.TokenOpsUsage;
-import com.hedera.services.usage.util.UtilOpsUsage;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.EnumSet;

@@ -83,9 +83,9 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -323,7 +323,7 @@ class TxnAwareEvmSigsVerifierTest {
 
     @Test
     void testsEmptyKeyList() {
-        JKeyList emptyKeyList = new JKeyList();
+        final JKeyList emptyKeyList = new JKeyList();
 
         given(ledgers.accounts()).willReturn(accountsLedger);
         given(accountsLedger.exists(account)).willReturn(true);
@@ -417,7 +417,7 @@ class TxnAwareEvmSigsVerifierTest {
 
         given(activationTest.test(eq(expectedKey), eq(pkToCryptoSigsFn), any())).willReturn(true);
 
-        boolean sigRequiredFlag =
+        final boolean sigRequiredFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true,
                         EntityIdUtils.asTypedEvmAddress(sigRequired),
@@ -431,7 +431,7 @@ class TxnAwareEvmSigsVerifierTest {
     void filtersPayerSinceSigIsGuaranteed() {
         given(txnCtx.activePayer()).willReturn(payer);
 
-        boolean payerFlag =
+        final boolean payerFlag =
                 subject.hasActiveKeyOrNoReceiverSigReq(
                         true, EntityIdUtils.asTypedEvmAddress(payer), PRETEND_SENDER_ADDR, ledgers);
 

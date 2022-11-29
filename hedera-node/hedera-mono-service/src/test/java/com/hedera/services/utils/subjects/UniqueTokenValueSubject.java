@@ -25,8 +25,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.utils.NftNumPair;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import org.jetbrains.annotations.Nullable;
 
 public class UniqueTokenValueSubject extends Subject {
     /** Truth extension hook for UniqueTokenValue to UniqueTokenValueSubject. */

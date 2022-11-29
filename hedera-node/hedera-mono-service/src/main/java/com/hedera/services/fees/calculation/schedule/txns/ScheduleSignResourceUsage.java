@@ -15,15 +15,15 @@
  */
 package com.hedera.services.fees.calculation.schedule.txns;
 
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.SigValueObj;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -34,31 +34,32 @@ public class ScheduleSignResourceUsage implements TxnResourceUsageEstimator {
 
     @Inject
     public ScheduleSignResourceUsage(
-            ScheduleOpsUsage scheduleOpsUsage, GlobalDynamicProperties properties) {
+            final ScheduleOpsUsage scheduleOpsUsage, final GlobalDynamicProperties properties) {
         this.scheduleOpsUsage = scheduleOpsUsage;
         this.properties = properties;
     }
 
     @Override
-    public boolean applicableTo(TransactionBody txn) {
+    public boolean applicableTo(final TransactionBody txn) {
         return txn.hasScheduleSign();
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, StateView view)
+    public FeeData usageGiven(
+            final TransactionBody txn, final SigValueObj svo, final StateView view)
             throws InvalidTxBodyException {
-        var op = txn.getScheduleSign();
-        var sigUsage =
+        final var op = txn.getScheduleSign();
+        final var sigUsage =
                 new SigUsage(
                         svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
-        var optionalInfo = view.infoForSchedule(op.getScheduleID());
+        final var optionalInfo = view.infoForSchedule(op.getScheduleID());
         if (optionalInfo.isPresent()) {
-            var info = optionalInfo.get();
+            final var info = optionalInfo.get();
             return scheduleOpsUsage.scheduleSignUsage(
                     txn, sigUsage, info.getExpirationTime().getSeconds());
         } else {
-            long latestExpiry =
+            final long latestExpiry =
                     txn.getTransactionID().getTransactionValidStart().getSeconds()
                             + properties.scheduledTxExpiryTimeSecs();
             return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);

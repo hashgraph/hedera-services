@@ -20,7 +20,15 @@ import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.F
 import static com.hedera.services.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
 import static com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 import static com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
-import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
+import static com.hedera.services.throttling.MapAccessType.NFTS_GET;
+import static com.hedera.services.throttling.MapAccessType.NFTS_GET_FOR_MODIFY;
+import static com.hedera.services.throttling.MapAccessType.NFTS_REMOVE;
+import static com.hedera.services.throttling.MapAccessType.TOKENS_GET;
+import static com.hedera.services.throttling.MapAccessType.TOKEN_ASSOCIATIONS_GET;
+import static com.hedera.services.throttling.MapAccessType.TOKEN_ASSOCIATIONS_GET_FOR_MODIFY;
+import static com.hedera.services.throttling.MapAccessType.TOKEN_ASSOCIATIONS_REMOVE;
 import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -40,10 +48,10 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListUtils;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -180,7 +188,7 @@ public class TreasuryReturns {
                 returnHelper.updateNftReturns(
                         expiredNum, tokenNum, token, returnedSerialNo, tokenTypes, returnExchanges);
                 n++;
-            } catch (Exception unrecoverable) {
+            } catch (final Exception unrecoverable) {
                 log.error(
                         "Unable to return all NFTs from account 0.0.{} (failed with 0.0.{}.{})",
                         expiredNum.longValue(),
@@ -234,7 +242,7 @@ public class TreasuryReturns {
                 }
                 relKey = relRemover.removeNext(relKey, relKey, listRemoval);
                 n++;
-            } catch (Exception unrecoverable) {
+            } catch (final Exception unrecoverable) {
                 log.error(
                         "Unable to return all fungible units from account 0.0.{}",
                         expiredNum.longValue(),

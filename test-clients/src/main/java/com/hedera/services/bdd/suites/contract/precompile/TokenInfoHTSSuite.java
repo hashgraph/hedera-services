@@ -48,13 +48,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -142,7 +142,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     private static final int MAX_SUPPLY = 1000;
     public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TokenInfoHTSSuite().runSuiteSync();
     }
 
@@ -1603,7 +1603,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private ArrayList<CustomFee> getCustomFeeForNFT(HapiApiSpec spec) {
+    private ArrayList<CustomFee> getCustomFeeForNFT(final HapiApiSpec spec) {
         final var fraction =
                 Fraction.newBuilder().setNumerator(NUMERATOR).setDenominator(DENOMINATOR).build();
         final var fallbackFee =

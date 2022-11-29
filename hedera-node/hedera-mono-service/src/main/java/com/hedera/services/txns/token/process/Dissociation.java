@@ -30,9 +30,9 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 public class Dissociation {
     private final TokenRelationship dissociatingAccountRel;
@@ -41,7 +41,8 @@ public class Dissociation {
     private boolean modelsAreUpdated = false;
     private boolean expiredTokenTreasuryReceivedBalance = false;
 
-    public static Dissociation loadFrom(TypedTokenStore tokenStore, Account account, Id tokenId) {
+    public static Dissociation loadFrom(
+            final TypedTokenStore tokenStore, final Account account, final Id tokenId) {
         final var token = tokenStore.loadPossiblyDeletedOrAutoRemovedToken(tokenId);
         final var dissociatingAccountRel = tokenStore.loadTokenRelationship(token, account);
         if (token.isBelievedToHaveBeenAutoRemoved()) {
@@ -55,8 +56,8 @@ public class Dissociation {
     }
 
     public Dissociation(
-            TokenRelationship dissociatingAccountRel,
-            @Nullable TokenRelationship dissociatedTokenTreasuryRel) {
+            final TokenRelationship dissociatingAccountRel,
+            @Nullable final TokenRelationship dissociatedTokenTreasuryRel) {
         Objects.requireNonNull(dissociatingAccountRel);
 
         this.dissociatingAccountRel = dissociatingAccountRel;
@@ -132,7 +133,7 @@ public class Dissociation {
         }
     }
 
-    private void updateModelsForDissociationFromActiveToken(OptionValidator validator) {
+    private void updateModelsForDissociationFromActiveToken(final OptionValidator validator) {
         Objects.requireNonNull(dissociatedTokenTreasuryRel);
         final var token = dissociatingAccountRel.getToken();
         final var isAccountTreasuryOfDissociatedToken =
@@ -156,7 +157,7 @@ public class Dissociation {
         }
     }
 
-    public void addUpdatedModelRelsTo(List<TokenRelationship> accumulator) {
+    public void addUpdatedModelRelsTo(final List<TokenRelationship> accumulator) {
         if (!modelsAreUpdated) {
             throw new IllegalStateException("Cannot reveal changed relationships before update");
         }
