@@ -41,10 +41,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCryptoT
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -53,6 +55,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -67,11 +70,12 @@ import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -94,7 +98,12 @@ public class EthereumSuite extends HapiApiSuite {
 
     private static final Logger log = LogManager.getLogger(EthereumSuite.class);
     private static final long depositAmount = 20_000L;
+    private static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
+
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
+    private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
+    private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
+    private static final String ERC721_CONTRACT = "NewERC721Contract";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
     private static final long GAS_LIMIT = 1_000_000;
 
@@ -109,26 +118,205 @@ public class EthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return Stream.concat(
-                        Stream.of(setChainId()),
-                        Stream.concat(
-                                feePaymentMatrix().stream(),
-                                Stream.of(
-                                        invalidTxData(),
-                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        ETX_010_transferToCryptoAccountSucceeds(),
-                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                        ETX_014_contractCreateInheritsSignerProperties(),
-                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        originAndSenderAreEthereumSigner(),
-                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode())))
+        return Stream.concat(Stream.of(setChainId()), Stream.of(debuggingLocalNodeIssue()))
                 .toList();
+    }
+
+    HapiApiSpec debuggingLocalNodeIssue() {
+
+        final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
+        final AtomicReference<String> tokenTransferContractID = new AtomicReference<>();
+        final AtomicReference<String> erc721ContractID = new AtomicReference<>();
+        final AtomicReference<Address> createdTokenAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("Debugging Local Node Issue")
+                .given(
+                        /** Generate random ECDSA keys */
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(SECP_256K1_RECEIVER_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        /** Create the Relayer account */
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        /** Create two ECDSA accounts via account auto-create transactions */
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
+                                .via("autoAccount"),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS,
+                                                SECP_256K1_RECEIVER_SOURCE_KEY,
+                                                ONE_HUNDRED_HBARS))
+                                .via("autoAccount2"),
+                        /** Upload contract bytecodes */
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_TRANSFER_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_TRANSFER_CONTRACT)),
+                        createLargeFile(
+                                GENESIS,
+                                ERC721_CONTRACT,
+                                TxnUtils.literalInitcodeFor(ERC721_CONTRACT)),
+                        /** Deploy the contracts and expose their EVM Address Aliases */
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(
+                                        address -> tokenCreateContractID.set("0x" + address)),
+                        ethereumContractCreate(TOKEN_TRANSFER_CONTRACT)
+                                .type(EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(1)
+                                .bytecode(TOKEN_TRANSFER_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS),
+                        getContractInfo(TOKEN_TRANSFER_CONTRACT)
+                                .exposingEvmAddress(
+                                        address -> tokenTransferContractID.set("0x" + address)),
+                        ethereumContractCreate(ERC721_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(2)
+                                .bytecode(ERC721_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS),
+                        getContractInfo(ERC721_CONTRACT)
+                                .exposingEvmAddress(
+                                        address -> erc721ContractID.set("0x" + address)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /** Create HTS token via call to TokenCreateContract */
+                                    var createNFTPublicFunctionCall =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            asHeadlongAddress(
+                                                                    tokenCreateContractID.get()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(3)
+                                                    .gasPrice(10L)
+                                                    .sending(10000000000L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatusFrom(
+                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
+                                    /**
+                                     * Save the created token address exposed through the txn record
+                                     */
+                                    var getNewTokenAddressFromCreateRecord =
+                                            getTxnRecord("createTokenTxn")
+                                                    .exposingFilteredCallResultVia(
+                                                            getABIForContract(
+                                                                    TOKEN_CREATE_CONTRACT),
+                                                            "CreatedToken",
+                                                            data ->
+                                                                    createdTokenAddress.set(
+                                                                            (Address) data.get(0)));
+
+                                    allRunFor(
+                                            spec,
+                                            createNFTPublicFunctionCall,
+                                            getNewTokenAddressFromCreateRecord);
+                                }),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /**
+                                     * Mint an NFT via call to token create contract mint function
+                                     */
+                                    var mintTokenPublicFunctionCall =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "mintTokenPublic",
+                                                            createdTokenAddress.get(),
+                                                            BigInteger.ZERO,
+                                                            new byte[][] {new byte[] {(byte) 0x01}})
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(4)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("mintTokenTxn")
+                                                    .hasKnownStatusFrom(
+                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
+                                    allRunFor(spec, mintTokenPublicFunctionCall);
+                                }))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    // todo get aliased account info
+                                    //                                    System.out.println(
+                                    //                                            "*** acc address:
+                                    // "
+                                    //                                                    +
+                                    // Address.wrap(
+                                    //
+                                    // "0x"
+                                    //
+                                    //      + ByteString.copyFrom(
+                                    //
+                                    //              Objects.requireNonNull(
+                                    //
+                                    //                      EthTxSigs
+                                    //
+                                    //                              .recoverAddressFromPubKey(
+                                    //
+                                    //                                      spec.registry()
+                                    //
+                                    //                                              .getKey(
+                                    //
+                                    //
+                                    // SECP_256K1_SOURCE_KEY)
+                                    //
+                                    //
+                                    // .getECDSASecp256K1()
+                                    //
+                                    //
+                                    // .toByteArray())))));
+                                    /**
+                                     * Transfer the minted NFT from the created contract address to
+                                     * the account alias address
+                                     */
+                                    var transferNFTPublicCall =
+                                            ethereumCall(
+                                                            TOKEN_TRANSFER_CONTRACT,
+                                                            "transferNFTPublic",
+                                                            createdTokenAddress.get(),
+                                                            // todo created contract address
+                                                            // todo account alias address
+                                                            new byte[][] {new byte[] {(byte) 0x01}})
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(5)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("transferNFTTxn")
+                                                    .hasKnownStatusFrom(
+                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
+                                    //                                    allRunFor(spec,
+                                    // transferNFTPublicCall);
+                                }));
     }
 
     HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
@@ -501,8 +689,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -569,8 +756,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -639,8 +825,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 () ->
                                         contractCreate(
                                                 HELLO_WORLD_MINT_CONTRACT,
-                                                HapiParserUtil.asHeadlongAddress(
-                                                        asAddress(fungible.get())))),
+                                                asHeadlongAddress(asAddress(fungible.get())))),
                         ethereumCall(HELLO_WORLD_MINT_CONTRACT, "brrr", BigInteger.valueOf(5))
                                 .type(EthTxData.EthTransactionType.EIP1559)
                                 .nonce(0)
@@ -871,17 +1056,17 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                 SECP_256K1_SOURCE_KEY)
                                                                         .getECDSASecp256K1()
                                                                         .toByteArray(),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
                                                                                                 feeCollector))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getTokenID(
                                                                                                 EXISTING_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
+                                                                asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
                                                                                         .getAccountID(
