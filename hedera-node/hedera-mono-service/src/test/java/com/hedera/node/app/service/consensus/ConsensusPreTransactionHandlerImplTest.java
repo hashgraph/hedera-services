@@ -128,7 +128,7 @@ class ConsensusPreTransactionHandlerImplTest {
         final var result = subject.preHandleCreateTopic(newCreateTxn(protoPayerKey, null));
 
         assertOkResponse(result);
-        Assertions.assertEquals(List.of(payerKey), result.getReqKeys());
+        Assertions.assertEquals(List.of(payerKey, payerKey), result.getReqKeys());
     }
 
     @Test
@@ -139,7 +139,7 @@ class ConsensusPreTransactionHandlerImplTest {
         final var result = subject.preHandleCreateTopic(newCreateTxn(null, protoPayerKey));
 
         assertOkResponse(result);
-        Assertions.assertEquals(List.of(payerKey), result.getReqKeys());
+        Assertions.assertEquals(List.of(payerKey, payerKey), result.getReqKeys());
     }
 
     @Test
