@@ -15,21 +15,21 @@
  */
 package com.hedera.services.bdd.spec.fees;
 
-import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
-import static com.hederahashgraph.fee.FeeBuilder.getSignatureCount;
-import static com.hederahashgraph.fee.FeeBuilder.getSignatureSize;
-import static com.hederahashgraph.fee.FeeBuilder.getTotalFeeforRequest;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getSignatureCount;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getSignatureSize;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTotalFeeforRequest;
 
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.fee.FeeObject;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +51,7 @@ public class FeeCalculator {
 
     private int tokenTransferUsageMultiplier = 1;
 
-    public FeeCalculator(HapiSpecSetup setup, FeesAndRatesProvider provider) {
+    public FeeCalculator(final HapiSpecSetup setup, final FeesAndRatesProvider provider) {
         this.setup = setup;
         this.provider = provider;
     }
@@ -66,7 +66,7 @@ public class FeeCalculator {
             fixedFee = setup.fixedFee();
             return;
         }
-        FeeSchedule feeSchedule = provider.currentSchedule();
+        final FeeSchedule feeSchedule = provider.currentSchedule();
         feeSchedule
                 .getTransactionFeeScheduleList()
                 .forEach(
@@ -77,15 +77,15 @@ public class FeeCalculator {
         tokenTransferUsageMultiplier = setup.feesTokenTransferUsageMultiplier();
     }
 
-    public static Map<SubType, FeeData> feesListToMap(List<FeeData> feesList) {
-        Map<SubType, FeeData> feeDataMap = new HashMap<>();
-        for (FeeData feeData : feesList) {
+    public static Map<SubType, FeeData> feesListToMap(final List<FeeData> feesList) {
+        final Map<SubType, FeeData> feeDataMap = new HashMap<>();
+        for (final FeeData feeData : feesList) {
             feeDataMap.put(feeData.getSubType(), feeData);
         }
         return feeDataMap;
     }
 
-    private long maxFeeTinyBars(SubType subType) {
+    private long maxFeeTinyBars(final SubType subType) {
         return usingFixedFee
                 ? fixedFee
                 : Arrays.stream(HederaFunctionality.values())
@@ -119,7 +119,7 @@ public class FeeCalculator {
         return maxFeeTinyBars(SubType.DEFAULT);
     }
 
-    public long forOp(HederaFunctionality op, FeeData knownActivity) {
+    public long forOp(final HederaFunctionality op, final FeeData knownActivity) {
         return forOp(op, SubType.DEFAULT, knownActivity);
     }
 
@@ -129,77 +129,79 @@ public class FeeCalculator {
     }
 
     public long forActivityBasedOp(
-            HederaFunctionality op,
-            ActivityMetrics metricsCalculator,
-            Transaction txn,
-            int numPayerSigs)
+            final HederaFunctionality op,
+            final ActivityMetrics metricsCalculator,
+            final Transaction txn,
+            final int numPayerSigs)
             throws Throwable {
-        FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+        final FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
         final var subType = activityMetrics.getSubType();
         return forOp(op, subType, activityMetrics);
     }
 
     public long forActivityBasedOpWithDetails(
-            HederaFunctionality op,
-            ActivityMetrics metricsCalculator,
-            Transaction txn,
-            int numPayerSigs,
-            AtomicReference<FeeObject> obs)
+            final HederaFunctionality op,
+            final ActivityMetrics metricsCalculator,
+            final Transaction txn,
+            final int numPayerSigs,
+            final AtomicReference<FeeObject> obs)
             throws Throwable {
-        FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+        final FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
         return forOpWithDetails(op, SubType.DEFAULT, activityMetrics, obs);
     }
 
     public long forActivityBasedOp(
-            HederaFunctionality op,
-            SubType subType,
-            ActivityMetrics metricsCalculator,
-            Transaction txn,
-            int numPayerSigs)
+            final HederaFunctionality op,
+            final SubType subType,
+            final ActivityMetrics metricsCalculator,
+            final Transaction txn,
+            final int numPayerSigs)
             throws Throwable {
-        FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
+        final FeeData activityMetrics = metricsFor(txn, numPayerSigs, metricsCalculator);
         return forOp(op, subType, activityMetrics);
     }
 
-    private FeeData metricsFor(Transaction txn, int numPayerSigs, ActivityMetrics metricsCalculator)
+    private FeeData metricsFor(
+            final Transaction txn, final int numPayerSigs, final ActivityMetrics metricsCalculator)
             throws Throwable {
-        SigValueObj sigUsage = sigUsageGiven(txn, numPayerSigs);
-        TransactionBody body = CommonUtils.extractTransactionBody(txn);
+        final SigValueObj sigUsage = sigUsageGiven(txn, numPayerSigs);
+        final TransactionBody body = CommonUtils.extractTransactionBody(txn);
         return metricsCalculator.compute(body, sigUsage);
     }
 
-    private long forOp(HederaFunctionality op, SubType subType, FeeData knownActivity) {
+    private long forOp(
+            final HederaFunctionality op, final SubType subType, final FeeData knownActivity) {
         if (usingFixedFee) {
             return fixedFee;
         }
         try {
-            Map<SubType, FeeData> activityPrices = opFeeData.get(op);
+            final Map<SubType, FeeData> activityPrices = opFeeData.get(op);
             return getTotalFeeforRequest(
                     activityPrices.get(subType), knownActivity, provider.rates());
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             log.warn("Unable to calculate fee for op {}, using max fee!", op, t);
         }
         return maxFeeTinyBars(subType);
     }
 
     public long forOpWithDetails(
-            HederaFunctionality op,
-            SubType subType,
-            FeeData knownActivity,
-            AtomicReference<FeeObject> obs) {
+            final HederaFunctionality op,
+            final SubType subType,
+            final FeeData knownActivity,
+            final AtomicReference<FeeObject> obs) {
         try {
             final var activityPrices = opFeeData.get(op).get(subType);
             final var fees = getFeeObject(activityPrices, knownActivity, provider.rates());
             obs.set(fees);
             return getTotalFeeforRequest(activityPrices, knownActivity, provider.rates());
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             throw new IllegalArgumentException("Calculation not observable!", t);
         }
     }
 
-    private SigValueObj sigUsageGiven(Transaction txn, int numPayerSigs) {
-        int size = getSignatureSize(txn);
-        int totalNumSigs = getSignatureCount(txn);
+    private SigValueObj sigUsageGiven(final Transaction txn, final int numPayerSigs) {
+        final int size = getSignatureSize(txn);
+        final int totalNumSigs = getSignatureCount(txn);
         return new SigValueObj(totalNumSigs, numPayerSigs, size);
     }
 

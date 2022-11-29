@@ -31,12 +31,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class QueryFeeCheck {
@@ -51,10 +51,10 @@ public class QueryFeeCheck {
     }
 
     public ResponseCodeEnum nodePaymentValidity(
-            @NotNull final List<AccountAmount> transfers,
+            @NonNull final List<AccountAmount> transfers,
             final long queryFee,
             final AccountID node) {
-        var plausibility = transfersPlausibility(transfers);
+        final var plausibility = transfersPlausibility(transfers);
         if (plausibility != OK) {
             return plausibility;
         }
@@ -86,7 +86,7 @@ public class QueryFeeCheck {
         return OK;
     }
 
-    ResponseCodeEnum transfersPlausibility(List<AccountAmount> transfers) {
+    ResponseCodeEnum transfersPlausibility(final List<AccountAmount> transfers) {
         if (transfers.isEmpty()) {
             return INVALID_ACCOUNT_AMOUNTS;
         }
@@ -106,10 +106,10 @@ public class QueryFeeCheck {
         return (net == 0) ? OK : INVALID_ACCOUNT_AMOUNTS;
     }
 
-    ResponseCodeEnum adjustmentPlausibility(AccountAmount adjustment) {
-        var id = adjustment.getAccountID();
-        var key = fromAccountId(id);
-        long amount = adjustment.getAmount();
+    ResponseCodeEnum adjustmentPlausibility(final AccountAmount adjustment) {
+        final var id = adjustment.getAccountID();
+        final var key = fromAccountId(id);
+        final long amount = adjustment.getAmount();
 
         if (amount == Long.MIN_VALUE) {
             return INVALID_ACCOUNT_AMOUNTS;
@@ -134,16 +134,16 @@ public class QueryFeeCheck {
      * @param txn the transaction body to validate
      * @return the corresponding {@link ResponseCodeEnum} after the validation
      */
-    public ResponseCodeEnum validateQueryPaymentTransfers(TransactionBody txn) {
-        AccountID transactionPayer = txn.getTransactionID().getAccountID();
-        TransferList transferList = txn.getCryptoTransfer().getTransfers();
-        List<AccountAmount> transfers = transferList.getAccountAmountsList();
-        long transactionFee = txn.getTransactionFee();
+    public ResponseCodeEnum validateQueryPaymentTransfers(final TransactionBody txn) {
+        final AccountID transactionPayer = txn.getTransactionID().getAccountID();
+        final TransferList transferList = txn.getCryptoTransfer().getTransfers();
+        final List<AccountAmount> transfers = transferList.getAccountAmountsList();
+        final long transactionFee = txn.getTransactionFee();
 
         final var currentAccounts = accounts.get();
         ResponseCodeEnum status;
-        for (AccountAmount accountAmount : transfers) {
-            var id = accountAmount.getAccountID();
+        for (final AccountAmount accountAmount : transfers) {
+            final var id = accountAmount.getAccountID();
             long amount = accountAmount.getAmount();
 
             if (amount < 0) {
@@ -151,7 +151,7 @@ public class QueryFeeCheck {
                 if (id.equals(transactionPayer)) {
                     try {
                         amount = Math.addExact(amount, transactionFee);
-                    } catch (ArithmeticException e) {
+                    } catch (final ArithmeticException e) {
                         return INSUFFICIENT_PAYER_BALANCE;
                     }
                 }
@@ -163,7 +163,8 @@ public class QueryFeeCheck {
         return OK;
     }
 
-    private ResponseCodeEnum balanceCheck(@Nullable HederaAccount payingAccount, long req) {
+    private ResponseCodeEnum balanceCheck(
+            @Nullable final HederaAccount payingAccount, final long req) {
         if (payingAccount == null) {
             return ACCOUNT_ID_DOES_NOT_EXIST;
         }

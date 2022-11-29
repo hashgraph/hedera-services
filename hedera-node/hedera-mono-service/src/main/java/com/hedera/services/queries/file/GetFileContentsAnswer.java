@@ -32,9 +32,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,29 +43,32 @@ public class GetFileContentsAnswer implements AnswerService {
     private final OptionValidator validator;
 
     @Inject
-    public GetFileContentsAnswer(OptionValidator validator) {
+    public GetFileContentsAnswer(final OptionValidator validator) {
         this.validator = validator;
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getFileGetContents().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(
                 query.getFileGetContents().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        var op = query.getFileGetContents();
-        var target = op.getFileID();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final var op = query.getFileGetContents();
+        final var target = op.getFileID();
 
-        FileGetContentsResponse.Builder response = FileGetContentsResponse.newBuilder();
-        ResponseType type = op.getHeader().getResponseType();
+        final FileGetContentsResponse.Builder response = FileGetContentsResponse.newBuilder();
+        final ResponseType type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
             response.setFileContents(from(target, Optional.empty()));
@@ -83,16 +86,17 @@ public class GetFileContentsAnswer implements AnswerService {
         return Response.newBuilder().setFileGetContents(response).build();
     }
 
-    private FileGetContentsResponse.FileContents from(FileID id, Optional<byte[]> contents) {
-        FileGetContentsResponse.FileContents.Builder wrapper =
+    private FileGetContentsResponse.FileContents from(
+            final FileID id, final Optional<byte[]> contents) {
+        final FileGetContentsResponse.FileContents.Builder wrapper =
                 FileGetContentsResponse.FileContents.newBuilder().setFileID(id);
         contents.ifPresent(d -> wrapper.setContents(ByteString.copyFrom(d)));
         return wrapper.build();
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        var id = query.getFileGetContents().getFileID();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final var id = query.getFileGetContents().getFileID();
 
         return validator.queryableFileStatus(id, view);
     }
@@ -103,13 +107,13 @@ public class GetFileContentsAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getFileGetContents().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        Transaction paymentTxn = query.getFileGetContents().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final Transaction paymentTxn = query.getFileGetContents().getHeader().getPayment();
         return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
     }
 }

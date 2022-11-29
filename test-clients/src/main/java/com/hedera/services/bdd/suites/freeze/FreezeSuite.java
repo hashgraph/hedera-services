@@ -20,9 +20,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,7 +38,7 @@ public class FreezeSuite extends HapiApiSuite {
 
     private static String uploadPath = "updateSettings";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         if (args.length > 0) {
             uploadPath = args[0];
         }
@@ -65,11 +65,11 @@ public class FreezeSuite extends HapiApiSuite {
         }
 
         log.info("Uploading file " + uploadFile);
-        File f = new File(uploadFile);
+        final File f = new File(uploadFile);
         byte[] bytes = new byte[0];
         try {
             bytes = Files.readAllBytes(f.toPath());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
         final byte[] hash = CommonUtils.noThrowSha384HashOf(bytes);

@@ -23,8 +23,8 @@ import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -41,7 +41,7 @@ public class TokenStore {
      *
      * @param states The state to use.
      */
-    public TokenStore(@Nonnull final ReadableStates states) {
+    public TokenStore(@NonNull final ReadableStates states) {
         this.tokenState = states.get("TOKENS");
     }
 

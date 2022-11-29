@@ -21,19 +21,26 @@ plugins {
 
 description = "Hedera Application - MONO Service Implementation"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+}
+
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     api(project(":hedera-node:hedera-evm-api"))
     api(project(":hedera-node:hedera-app-spi"))
-    api(project(":modules:hedera-admin-service"))
-    api(project(":modules:hedera-consensus-service"))
-    api(project(":modules:hedera-file-service"))
-    api(project(":modules:hedera-network-service"))
-    api(project(":modules:hedera-schedule-service"))
-    api(project(":modules:hedera-smart-contract-service"))
-    api(project(":modules:hedera-token-service"))
-    api(project(":modules:hedera-util-service"))
+    api(project(":hedera-node:hedera-admin-service"))
+    api(project(":hedera-node:hedera-consensus-service"))
+    api(project(":hedera-node:hedera-file-service"))
+    api(project(":hedera-node:hedera-network-service"))
+    api(project(":hedera-node:hedera-schedule-service"))
+    api(project(":hedera-node:hedera-smart-contract-service"))
+    api(project(":hedera-node:hedera-token-service"))
+    api(project(":hedera-node:hedera-util-service"))
 
     implementation(project(":hapi-fees"))
     implementation(project(":hapi-utils"))
@@ -56,9 +63,11 @@ dependencies {
     implementation(libs.commons.io)
     implementation(libs.commons.collections4)
     implementation(libs.eclipse.collections)
+    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
+    testCompileOnly(libs.spotbugs.annotations)
 
     testFixturesApi(project(":hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
@@ -74,6 +83,7 @@ dependencies {
 
 val apt = configurations.create("apt")
 dependencies {
+    testImplementation("org.jetbrains:annotations:20.1.0")
     @Suppress("UnstableApiUsage")
     apt(libs.dagger.compiler)
 }

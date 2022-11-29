@@ -19,21 +19,23 @@ plugins {
 
 description = "Hedera Services API Utilities"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+}
+
 dependencies {
+    implementation(libs.hapi)
     implementation(libs.bundles.logging)
     implementation(libs.protobuf.java)
-    implementation(libs.hapi) {
-        exclude("javax.annotation", "javax.annotation-api")
-    }
     implementation(libs.jackson)
     implementation(libs.swirlds.common)
     implementation(libs.javax.inject)
     implementation(libs.bundles.bouncycastle)
-    implementation(libs.jetbrains.annotation)
     implementation(libs.headlong)
     implementation(libs.besu.secp256k1)
     implementation(libs.commons.codec)
     implementation(libs.jna)
+    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
     itestImplementation(libs.hapi)

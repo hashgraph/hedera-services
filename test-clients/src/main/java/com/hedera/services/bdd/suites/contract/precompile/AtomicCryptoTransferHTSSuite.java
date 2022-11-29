@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -70,7 +71,6 @@ import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -101,7 +101,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
 
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new AtomicCryptoTransferHTSSuite().runSuiteAsync();
     }
 
@@ -945,7 +945,8 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                     final var receiver = spec.registry().getAccountID(RECEIVER);
 
                                     /*
-                                     We will be covering the following test cases.  These test cover fungible token transfers
+                                     We will be covering the following test cases.  These test cover fungible token
+                                     transfers
                                      1. Transfer more than allowance amount
                                      2. Transfer when there is no approval
                                      3. Transfer 1/2 the allowance amount

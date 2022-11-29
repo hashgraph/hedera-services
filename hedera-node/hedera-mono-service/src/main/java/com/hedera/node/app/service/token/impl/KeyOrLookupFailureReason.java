@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Record representing the result of a key lookup for signature requirements. If the key lookup

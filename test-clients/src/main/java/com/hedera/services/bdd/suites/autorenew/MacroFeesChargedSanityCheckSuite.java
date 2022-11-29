@@ -16,6 +16,9 @@
 package com.hedera.services.bdd.suites.autorenew;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.hapi.fees.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -35,17 +38,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.propsForAccountAutoRenewOnWith;
-import static com.hedera.services.usage.crypto.entities.CryptoEntitySizes.CRYPTO_ENTITY_SIZES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.usage.crypto.ExtantCryptoContext;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.Collections;
@@ -63,7 +63,7 @@ import org.junit.jupiter.api.Assertions;
 public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(MacroFeesChargedSanityCheckSuite.class);
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new MacroFeesChargedSanityCheckSuite().runSuiteSync();
     }
 
@@ -191,7 +191,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
                                     final var tbFee = autoRenewFeesFor(spec, cryptoCtx).totalTb(1);
                                     opLog.info("Expected fee in tinybars: {}", tbFee);
 
-                                    var infoOp =
+                                    final var infoOp =
                                             getAccountInfo(target)
                                                     .exposingBalance(finalBalance::set)
                                                     .exposingExpiry(finalExpiry::set);
@@ -211,7 +211,7 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
                         cryptoDelete(target));
     }
 
-    private long inTinybars(long nominalFee, ExchangeRate rate) {
+    private long inTinybars(final long nominalFee, final ExchangeRate rate) {
         return getTinybarsFromTinyCents(rate, nominalFee / FEE_DIVISOR_FACTOR);
     }
 
@@ -233,7 +233,8 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
                 };
     }
 
-    private RenewalFeeComponents autoRenewFeesFor(HapiApiSpec spec, ExtantCryptoContext extantCtx) {
+    private RenewalFeeComponents autoRenewFeesFor(
+            final HapiApiSpec spec, final ExtantCryptoContext extantCtx) {
         @SuppressWarnings("java:S1874")
         final var prices =
                 spec.ratesProvider().currentSchedule().getTransactionFeeScheduleList().stream()
@@ -267,12 +268,12 @@ public class MacroFeesChargedSanityCheckSuite extends HapiApiSuite {
         private final long fixedTb;
         private final long hourlyTb;
 
-        public RenewalFeeComponents(long fixedTb, long hourlyTb) {
+        public RenewalFeeComponents(final long fixedTb, final long hourlyTb) {
             this.fixedTb = fixedTb;
             this.hourlyTb = hourlyTb;
         }
 
-        public long totalTb(int n) {
+        public long totalTb(final int n) {
             return fixedTb + n * hourlyTb;
         }
     }

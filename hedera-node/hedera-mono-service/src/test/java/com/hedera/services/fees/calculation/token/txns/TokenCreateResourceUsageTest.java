@@ -15,20 +15,27 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenCreateUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenCreateUsage;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +67,8 @@ class TokenCreateResourceUsageTest {
 
         tokenCreateTxn = mock(TransactionBody.class);
         given(tokenCreateTxn.hasTokenCreation()).willReturn(true);
-        var tokenCreation = TokenCreateTransactionBody.newBuilder().setTreasury(treasury).build();
+        final var tokenCreation =
+                TokenCreateTransactionBody.newBuilder().setTreasury(treasury).build();
         given(tokenCreateTxn.getTokenCreation()).willReturn(tokenCreation);
         given(tokenCreateTxn.getTransactionID()).willReturn(txnId);
 
@@ -71,7 +79,7 @@ class TokenCreateResourceUsageTest {
         given(usage.get()).willReturn(expected);
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
-        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
         given(estimatorFactory.get(sigUsage, tokenCreateTxn, ESTIMATOR_UTILS))
                 .willReturn(txnUsageEstimator);
         subject = new TokenCreateResourceUsage(estimatorFactory);
@@ -91,7 +99,7 @@ class TokenCreateResourceUsageTest {
                 .when(() -> TokenCreateUsage.newEstimate(tokenCreateTxn, txnUsageEstimator))
                 .thenReturn(usage);
         // when:
-        var actual = subject.usageGiven(tokenCreateTxn, obj, view);
+        final var actual = subject.usageGiven(tokenCreateTxn, obj, view);
 
         // expect:
         assertSame(expected, actual);

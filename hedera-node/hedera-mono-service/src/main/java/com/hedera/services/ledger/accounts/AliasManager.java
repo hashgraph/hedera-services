@@ -21,16 +21,17 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -43,7 +44,6 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart,
@@ -71,7 +71,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     @Override
-    public void filterPendingChanges(Predicate<Address> filter) {
+    public void filterPendingChanges(final Predicate<Address> filter) {
         throw new UnsupportedOperationException(NON_TRANSACTIONAL_MSG);
     }
 
@@ -136,7 +136,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
             // Only compressed keys are stored at the moment
             final var keyBytes = key.getECDSASecp256k1Key();
             if (keyBytes.length == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                var evmAddress = addressRecovery.apply(keyBytes);
+                final var evmAddress = addressRecovery.apply(keyBytes);
                 if (evmAddress != null) {
                     return evmAddress;
                 } else {
@@ -184,7 +184,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                                 if (maybeLinkEvmAddress(jKey, EntityNum.fromInt(v.number()))) {
                                     numEOAliases.incrementAndGet();
                                 }
-                            } catch (InvalidProtocolBufferException
+                            } catch (final InvalidProtocolBufferException
                                     | DecoderException
                                     | IllegalArgumentException ignore) {
                                 // any expected exception means no eth mapping
@@ -215,21 +215,21 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
 
     public void forgetEvmAddress(final ByteString alias) {
         try {
-            var key = Key.parseFrom(alias);
-            var jKey = JKey.mapKey(key);
+            final var key = Key.parseFrom(alias);
+            final var jKey = JKey.mapKey(key);
             if (jKey.hasECDSAsecp256k1Key()) {
                 // ecdsa keys from alias are currently only stored in compressed form.
-                byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
+                final byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
                 // trust, but verify
                 if (rawCompressedKey.length
                         == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
+                    final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
                     if (evmAddress != null) {
                         curAliases().remove(ByteString.copyFrom(evmAddress));
                     }
                 }
             }
-        } catch (InvalidProtocolBufferException | DecoderException internal) {
+        } catch (final InvalidProtocolBufferException | DecoderException internal) {
             // any parse error means it's not a evm address
         }
     }

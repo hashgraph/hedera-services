@@ -20,6 +20,12 @@ plugins {
 group = "com.hedera.evm"
 description = "Hedera EVM - Implementation"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+}
+
 dependencies {
     api(project(":hedera-node:hedera-evm-api"))
+    compileOnly(libs.spotbugs.annotations)
 }

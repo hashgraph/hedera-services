@@ -32,8 +32,8 @@ import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 
 /**
  * Provides methods for interacting with the underlying data storage mechanisms for working with
@@ -52,7 +52,7 @@ public final class AccountStore {
      *
      * @param states The state to use.
      */
-    public AccountStore(@Nonnull ReadableStates states) {
+    public AccountStore(@NonNull final ReadableStates states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.legacy.proto.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -98,7 +98,7 @@ class BytesElementTest {
 
     @Test
     void checkHashCodeDiverse() {
-        Set<Integer> hashCodes = new HashSet<>();
+        final Set<Integer> hashCodes = new HashSet<>();
         hashCodes.add(new BytesElement("DATA1".getBytes()).hashCode());
         hashCodes.add(new BytesElement("DATA2".getBytes()).hashCode());
         hashCodes.add(new BytesElement("dATA1".getBytes()).hashCode());

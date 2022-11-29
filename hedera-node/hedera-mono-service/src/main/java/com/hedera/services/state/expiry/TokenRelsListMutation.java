@@ -21,7 +21,7 @@ import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.MapValueListMutation;
-import org.jetbrains.annotations.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenRelsListMutation implements MapValueListMutation<EntityNumPair, HederaTokenRel> {
     private static final long MISSING_KEY = MISSING_NUM.longValue();

@@ -34,7 +34,7 @@ public final class OnDiskState<K extends VirtualKey<? super K>, V extends Virtua
         extends MutableStateBase<K, V> {
     private final VirtualMap<K, V> virtualMap;
 
-    public OnDiskState(@NonNull final String stateKey, @NonNull VirtualMap<K, V> virtualMap) {
+    public OnDiskState(@NonNull final String stateKey, @NonNull final VirtualMap<K, V> virtualMap) {
         super(stateKey);
         this.virtualMap = Objects.requireNonNull(virtualMap);
     }

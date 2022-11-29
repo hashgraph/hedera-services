@@ -16,7 +16,6 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -30,14 +29,15 @@ public interface Service {
      * @return A new {@link PreTransactionHandler}
      */
     @NonNull
-    PreTransactionHandler createPreTransactionHandler(@NonNull ReadableStates states);
+    PreTransactionHandler createPreTransactionHandler(
+            @NonNull ReadableStates states, @NonNull PreHandleContext ctx);
 
     /**
      * Creates and returns a new {@link TransactionHandler}
      *
      * @return A new {@link TransactionHandler}
      */
-    default @NonNull TransactionHandler createTransactionHandler(@NonNull WritableStates states) {
+    default @NonNull TransactionHandler createTransactionHandler(@NonNull ReadableStates states) {
         throw new UnsupportedOperationException();
     }
 

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.services.state.merkle.MerkleAccount;
@@ -31,6 +32,7 @@ class CryptoServiceImplTest {
     @Mock private ReadableState<Long, MerkleAccount> aliases;
     @Mock private ReadableState<Long, MerkleAccount> accounts;
     @Mock ReadableStates states;
+    @Mock PreHandleContext ctx;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -43,8 +45,8 @@ class CryptoServiceImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        final var serviceImpl = subject.createPreTransactionHandler(states);
-        final var serviceImpl1 = subject.createPreTransactionHandler(states);
+        final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 }

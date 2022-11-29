@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -42,30 +42,33 @@ public class GetTxnReceiptAnswer implements AnswerService {
     private final RecordCache recordCache;
 
     @Inject
-    public GetTxnReceiptAnswer(RecordCache recordCache) {
+    public GetTxnReceiptAnswer(final RecordCache recordCache) {
         this.recordCache = recordCache;
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
-        TransactionGetReceiptResponse.Builder opResponse =
+            final Query query,
+            @Nullable final StateView view,
+            ResponseCodeEnum validity,
+            final long cost) {
+        final TransactionGetReceiptQuery op = query.getTransactionGetReceipt();
+        final TransactionGetReceiptResponse.Builder opResponse =
                 TransactionGetReceiptResponse.newBuilder();
 
         if (validity == OK) {
-            var txnId = op.getTransactionID();
-            var receipt = recordCache.getPriorityReceipt(txnId);
+            final var txnId = op.getTransactionID();
+            final var receipt = recordCache.getPriorityReceipt(txnId);
             if (receipt == null) {
                 validity = RECEIPT_NOT_FOUND;
             } else {
@@ -85,14 +88,15 @@ public class GetTxnReceiptAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        boolean isOk = (!defaultTxnId.equals(query.getTransactionGetReceipt().getTransactionID()));
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final boolean isOk =
+                (!defaultTxnId.equals(query.getTransactionGetReceipt().getTransactionID()));
 
         return isOk ? OK : INVALID_TRANSACTION_ID;
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getTransactionGetReceipt().getHeader().getNodeTransactionPrecheckCode();
     }
 
@@ -102,7 +106,7 @@ public class GetTxnReceiptAnswer implements AnswerService {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 }
