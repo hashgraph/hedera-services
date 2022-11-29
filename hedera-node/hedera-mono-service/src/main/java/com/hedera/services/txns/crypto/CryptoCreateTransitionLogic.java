@@ -24,6 +24,7 @@ import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.keyA
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyAliasProvided;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyEvmAddressProvided;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
+import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -41,6 +42,7 @@ import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.crypto.validators.CryptoCreateChecks;
@@ -114,9 +116,15 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             if (!op.getAlias().isEmpty()) {
                 aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
-                final var key = asPrimitiveKeyUnchecked(op.getAlias());
-                final var jKey = asFcKeyUnchecked(key);
-                aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
+                if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
+                    final var key = asPrimitiveKeyUnchecked(op.getAlias());
+                    final var jKey = asFcKeyUnchecked(key);
+                    aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
+                    txnCtx.setEvmAddress(
+                            ByteStringUtils.wrapUnsafely(
+                                    recoverAddressFromPubKey(
+                                            key.getECDSASecp256K1().toByteArray())));
+                }
             } else {
                 if (op.hasKey()
                         && !op.getKey().getECDSASecp256K1().isEmpty()
@@ -125,6 +133,9 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                             (ByteString)
                                     ledger.getAccountsLedger().get(created, AccountProperty.ALIAS),
                             EntityNum.fromAccountId(created));
+                    txnCtx.setEvmAddress(
+                            (ByteString)
+                                    ledger.getAccountsLedger().get(created, AccountProperty.ALIAS));
                 }
 
                 if (!op.getEvmAddress().isEmpty()) {
