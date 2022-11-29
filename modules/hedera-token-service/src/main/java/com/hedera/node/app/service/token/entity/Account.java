@@ -59,7 +59,7 @@ public interface Account {
 
     /**
      * The keys on the account. This may return an empty {@link Optional} if the account is a
-     * "hollow" account (as determined by {@link #isHollow()()}).
+     * "hollow" account (as determined by {@link #isHollow()}).
      *
      * @return An optional key list. This will always be set unless the account is hollow.
      */

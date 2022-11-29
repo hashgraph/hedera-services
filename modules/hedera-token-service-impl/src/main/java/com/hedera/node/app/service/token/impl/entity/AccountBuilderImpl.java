@@ -52,6 +52,11 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
 
+    public AccountBuilderImpl() {
+        copyOf = null;
+        /* Default Constructor */
+    }
+
     /**
      * Create a builder for creating {@link Account}s, using the given copy as the basis for all
      * settings that are not overridden.
