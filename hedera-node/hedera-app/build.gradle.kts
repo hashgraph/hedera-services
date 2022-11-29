@@ -49,6 +49,7 @@ dependencies {
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.helidon.grpc.client)
     itestImplementation(testLibs.bundles.mockito)
+    itestCompileOnly(libs.spotbugs.annotations)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.mockito)
