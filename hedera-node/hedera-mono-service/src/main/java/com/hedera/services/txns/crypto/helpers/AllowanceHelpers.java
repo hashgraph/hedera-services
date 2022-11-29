@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
+import com.hedera.node.app.hapi.fees.usage.crypto.AllowanceId;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
@@ -29,7 +30,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.UniqueToken;
-import com.hedera.services.usage.crypto.AllowanceId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.GrantedCryptoAllowance;
 import com.hederahashgraph.api.proto.java.GrantedNftAllowance;

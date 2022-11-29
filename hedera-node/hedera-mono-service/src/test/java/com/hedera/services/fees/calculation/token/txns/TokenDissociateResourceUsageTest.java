@@ -15,23 +15,29 @@
  */
 package com.hedera.services.fees.calculation.token.txns;
 
-import static com.hedera.services.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
+import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.TxnUsageEstimator;
-import com.hedera.services.usage.token.TokenDissociateUsage;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.*;
-import com.hederahashgraph.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,7 +92,7 @@ class TokenDissociateResourceUsageTest {
         given(usage.get()).willReturn(expected);
 
         txnUsageEstimator = mock(TxnUsageEstimator.class);
-        EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
         given(estimatorFactory.get(sigUsage, tokenDissociateTxn, ESTIMATOR_UTILS))
                 .willReturn(txnUsageEstimator);
         subject = new TokenDissociateResourceUsage(estimatorFactory);

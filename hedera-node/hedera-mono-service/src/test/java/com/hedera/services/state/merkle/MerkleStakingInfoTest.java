@@ -30,8 +30,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.ByteUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
@@ -241,7 +241,7 @@ class MerkleStakingInfoTest {
     void gettersAndSettersWork() {
         final var props = mock(BootstrapProperties.class);
         given(props.getIntProperty(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS)).willReturn(2);
-        var subject = new MerkleStakingInfo(props);
+        final var subject = new MerkleStakingInfo(props);
 
         subject.setKey(key);
         subject.setMinStake(minStake);
@@ -267,7 +267,7 @@ class MerkleStakingInfoTest {
 
     @Test
     void copyWorks() {
-        var copy = subject.copy();
+        final var copy = subject.copy();
 
         assertTrue(subject.isImmutable());
         assertEquals(subject, copy);

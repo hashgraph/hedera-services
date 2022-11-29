@@ -15,6 +15,7 @@
  */
 package com.hedera.services.fees.charging;
 
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.context.NodeInfo;
 import com.hedera.services.fees.FeeExemptions;
 import com.hedera.services.ledger.HederaLedger;
@@ -22,7 +23,6 @@ import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.fee.FeeObject;
 import java.util.Optional;
 import java.util.function.Supplier;
 import javax.inject.Inject;

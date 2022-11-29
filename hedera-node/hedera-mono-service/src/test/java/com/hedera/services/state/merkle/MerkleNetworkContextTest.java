@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
+import static com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 import static com.hedera.services.evm.contracts.execution.BlockMetaSource.UNAVAILABLE_BLOCK_HASH;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ALL_PRE_EXISTING_ENTITIES_SCANNED;
@@ -25,7 +26,6 @@ import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_PREPARED_UPDATE_FILE_NUM;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.NO_SNAPSHOTS;
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
-import static com.hedera.services.sysfiles.domain.KnownBlockValues.MISSING_BLOCK_VALUES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -46,13 +46,13 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
+import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.SequenceNumber;
-import com.hedera.services.throttles.DeterministicThrottle;
-import com.hedera.services.throttles.GasLimitDeterministicThrottle;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.test.extensions.LogCaptor;

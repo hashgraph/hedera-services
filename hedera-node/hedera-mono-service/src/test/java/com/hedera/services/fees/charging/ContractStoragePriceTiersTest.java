@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.calc.OverflowCheckingCalc.tinycentsToTinybars;
+import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.THOUSANDTHS_TO_TINY;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedAddition;
 import static com.hedera.services.fees.charging.ContractStoragePriceTiers.cappedMultiplication;

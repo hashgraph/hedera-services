@@ -48,10 +48,10 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
@@ -112,7 +112,7 @@ public class TransferLogic {
         var validity = OK;
         var autoCreationFee = 0L;
         var updatedPayerBalance = Long.MIN_VALUE;
-        for (var change : changes) {
+        for (final var change : changes) {
             // If the change consists of any repeated aliases, replace the alias with the account
             // number
             replaceAliasWithIdIfExisting(change);
@@ -187,7 +187,7 @@ public class TransferLogic {
     }
 
     private void adjustBalancesAndAllowances(final List<BalanceChange> changes) {
-        for (var change : changes) {
+        for (final var change : changes) {
             final var accountId = change.accountId();
             if (change.isForHbar()) {
                 final var newBalance = change.getNewBalance();
@@ -221,7 +221,7 @@ public class TransferLogic {
     }
 
     @SuppressWarnings("unchecked")
-    private void adjustCryptoAllowance(BalanceChange change, AccountID ownerID) {
+    private void adjustCryptoAllowance(final BalanceChange change, final AccountID ownerID) {
         final var payerNum = EntityNum.fromAccountId(change.getPayerID());
         final var hbarAllowances =
                 new TreeMap<>(

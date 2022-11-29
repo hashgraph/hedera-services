@@ -22,10 +22,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.usage.SigUsage;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
@@ -34,7 +35,6 @@ import com.hederahashgraph.api.proto.java.ScheduleInfo;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.hederahashgraph.fee.SigValueObj;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,8 +105,8 @@ class ScheduleDeleteResourceUsageTest {
     @Test
     void returnsDefaultIfInfoMissing() throws Exception {
         // setup:
-        long start = 1_234_567L;
-        TransactionID txnId =
+        final long start = 1_234_567L;
+        final TransactionID txnId =
                 TransactionID.newBuilder()
                         .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
                         .build();

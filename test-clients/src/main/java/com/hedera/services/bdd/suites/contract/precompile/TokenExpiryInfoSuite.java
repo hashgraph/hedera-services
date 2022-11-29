@@ -44,12 +44,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -71,6 +71,8 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     private static final String ADMIN_KEY = TokenKeyType.ADMIN_KEY.name();
     public static final String UPDATE_EXPIRY_INFO_FOR_TOKEN = "updateExpiryInfoForToken";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN = "getExpiryInfoForToken";
+    public static final String UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO =
+            "updateExpiryInfoForTokenAndReadLatestInfo";
 
     public static void main(String... args) {
         new TokenExpiryInfoSuite().runSuiteSync();
@@ -83,7 +85,10 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(getExpiryInfoForToken(), updateExpiryInfoForToken());
+        return List.of(
+                getExpiryInfoForToken(),
+                updateExpiryInfoForToken(),
+                updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
     private HapiApiSpec getExpiryInfoForToken() {
@@ -362,5 +367,80 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                                     .getAccountID(UPDATED_AUTO_RENEW_ACCOUNT));
                                     assertEquals(autoRenewPeriod, MONTH_IN_SECONDS);
                                 }));
+    }
+
+    private HapiApiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
+
+        return defaultHapiSpec("UpdateExpiryInfoForTokenAndReadLatestInfo")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
+                        cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
+                                .balance(0L)
+                                .exposingCreatedIdTo(updatedAutoRenewAccountID::set),
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(TOKEN_EXPIRY_CONTRACT),
+                        contractCreate(TOKEN_EXPIRY_CONTRACT).gas(1_000_000L),
+                        tokenCreate(VANILLA_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .treasury(TOKEN_TREASURY)
+                                .expiry(100)
+                                .autoRenewAccount(AUTO_RENEW_ACCOUNT)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
+                                .maxSupply(1000)
+                                .initialSupply(500L)
+                                .adminKey(ADMIN_KEY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_EXPIRY_CONTRACT,
+                                                                UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                DEFAULT_MAX_LIFETIME - 12_345L,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                updatedAutoRenewAccountID
+                                                                                        .get())),
+                                                                MONTH_IN_SECONDS)
+                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .via("updateExpiryAndReadLatestInfoTxn")
+                                                        .gas(GAS_TO_OFFER)
+                                                        .payingWith(GENESIS))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                childRecordsCheck(
+                                                        "updateExpiryAndReadLatestInfoTxn",
+                                                        SUCCESS,
+                                                        recordWith().status(SUCCESS),
+                                                        recordWith()
+                                                                .status(SUCCESS)
+                                                                .contractCallResult(
+                                                                        resultWith()
+                                                                                .contractCallResult(
+                                                                                        htsPrecompileResult()
+                                                                                                .forFunction(
+                                                                                                        FunctionType
+                                                                                                                .HAPI_GET_TOKEN_EXPIRY_INFO)
+                                                                                                .withStatus(
+                                                                                                        SUCCESS)
+                                                                                                .withExpiry(
+                                                                                                        DEFAULT_MAX_LIFETIME
+                                                                                                                - 12_345L,
+                                                                                                        updatedAutoRenewAccountID
+                                                                                                                .get(),
+                                                                                                        MONTH_IN_SECONDS)))))));
     }
 }

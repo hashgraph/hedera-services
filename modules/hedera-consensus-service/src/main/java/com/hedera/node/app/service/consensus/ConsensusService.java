@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.consensus;
 
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
@@ -35,7 +36,8 @@ public interface ConsensusService extends Service {
      */
     @Override
     @NonNull
-    ConsensusPreTransactionHandler createPreTransactionHandler(@NonNull States states);
+    ConsensusPreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

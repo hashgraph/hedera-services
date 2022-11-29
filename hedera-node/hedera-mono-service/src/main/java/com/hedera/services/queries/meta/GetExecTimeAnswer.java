@@ -28,9 +28,9 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -39,7 +39,7 @@ public class GetExecTimeAnswer extends AbstractAnswer {
     private final ExecutionTimeTracker executionTimeTracker;
 
     @Inject
-    public GetExecTimeAnswer(ExecutionTimeTracker executionTimeTracker) {
+    public GetExecTimeAnswer(final ExecutionTimeTracker executionTimeTracker) {
         super(
                 NetworkGetExecutionTime,
                 query -> query.getNetworkGetExecutionTime().getHeader().getPayment(),
@@ -55,11 +55,14 @@ public class GetExecTimeAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        var op = query.getNetworkGetExecutionTime();
-        var response = NetworkGetExecutionTimeResponse.newBuilder();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final var op = query.getNetworkGetExecutionTime();
+        final var response = NetworkGetExecutionTimeResponse.newBuilder();
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
         } else {
@@ -68,7 +71,7 @@ public class GetExecTimeAnswer extends AbstractAnswer {
             } else {
                 boolean failed = false;
                 final List<Long> ans = new ArrayList<>();
-                for (var txnId : op.getTransactionIdsList()) {
+                for (final var txnId : op.getTransactionIdsList()) {
                     final var execNanos = executionTimeTracker.getExecNanosIfPresentFor(txnId);
                     if (execNanos != null) {
                         ans.add(execNanos);

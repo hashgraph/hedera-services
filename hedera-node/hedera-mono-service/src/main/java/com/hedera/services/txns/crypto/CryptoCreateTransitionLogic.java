@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.aliasAndEvmAddressProvided;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.keyAndAliasAndEvmAddressProvided;

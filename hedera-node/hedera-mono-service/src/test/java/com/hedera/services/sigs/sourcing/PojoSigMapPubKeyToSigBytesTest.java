@@ -32,8 +32,8 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
@@ -138,8 +138,9 @@ class PojoSigMapPubKeyToSigBytesTest {
     @Test
     void getsExpectedSigBytesForOtherParties() throws Throwable {
         // given:
-        Transaction signedTxn = newSignedSystemDelete().payerKt(payerKt).nonPayerKts(otherKt).get();
-        PubKeyToSigBytes subject =
+        final Transaction signedTxn =
+                newSignedSystemDelete().payerKt(payerKt).nonPayerKts(otherKt).get();
+        final PubKeyToSigBytes subject =
                 new PojoSigMapPubKeyToSigBytes(
                         SignedTxnAccessor.uncheckedFrom(signedTxn).getSigMap());
 
@@ -159,16 +160,17 @@ class PojoSigMapPubKeyToSigBytesTest {
     @Test
     void rejectsNonUniqueSigBytes() {
         // given:
-        String str = "TEST_STRING";
-        byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);
-        SignaturePair sigPair =
+        final String str = "TEST_STRING";
+        final byte[] pubKey = str.getBytes(StandardCharsets.UTF_8);
+        final SignaturePair sigPair =
                 SignaturePair.newBuilder().setPubKeyPrefix(ByteString.copyFromUtf8(str)).build();
-        SignatureMap sigMap =
+        final SignatureMap sigMap =
                 SignatureMap.newBuilder().addSigPair(sigPair).addSigPair(sigPair).build();
-        PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(sigMap);
+        final PojoSigMapPubKeyToSigBytes sigMapPubKeyToSigBytes =
+                new PojoSigMapPubKeyToSigBytes(sigMap);
 
         // expect:
-        KeyPrefixMismatchException exception =
+        final KeyPrefixMismatchException exception =
                 assertThrows(
                         KeyPrefixMismatchException.class,
                         () -> {
@@ -181,20 +183,24 @@ class PojoSigMapPubKeyToSigBytesTest {
                 exception.getMessage());
     }
 
-    private void lookupsMatch(KeyTree kt, KeyFactory factory, byte[] data, PubKeyToSigBytes subject)
+    private void lookupsMatch(
+            final KeyTree kt,
+            final KeyFactory factory,
+            final byte[] data,
+            final PubKeyToSigBytes subject)
             throws Exception {
-        AtomicReference<Exception> thrown = new AtomicReference<>();
+        final AtomicReference<Exception> thrown = new AtomicReference<>();
         kt.traverseLeaves(
                 leaf -> {
-                    byte[] pubKey = pubKeyFor(leaf, factory);
+                    final byte[] pubKey = pubKeyFor(leaf, factory);
                     byte[] sigBytes = EMPTY_SIG;
                     try {
                         sigBytes = subject.sigBytesFor(pubKey);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         thrown.set(e);
                     }
                     if (pubKey.length == 32) {
-                        byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
+                        final byte[] expectedSigBytes = expectedSigFor(leaf, factory, data);
                         if (thrown.get() == null) {
                             assertArrayEquals(expectedSigBytes, sigBytes);
                         }
@@ -207,8 +213,8 @@ class PojoSigMapPubKeyToSigBytesTest {
         }
     }
 
-    private byte[] pubKeyFor(KeyTreeLeaf leaf, KeyFactory factory) {
-        Key key = leaf.asKey(factory);
+    private byte[] pubKeyFor(final KeyTreeLeaf leaf, final KeyFactory factory) {
+        final Key key = leaf.asKey(factory);
         if (key.getEd25519() != ByteString.EMPTY) {
             return key.getEd25519().toByteArray();
         } else if (key.getECDSASecp256K1() != ByteString.EMPTY) {
@@ -221,7 +227,8 @@ class PojoSigMapPubKeyToSigBytesTest {
         throw new AssertionError("Impossible leaf type!");
     }
 
-    private byte[] expectedSigFor(KeyTreeLeaf leaf, KeyFactory factory, byte[] data) {
+    private byte[] expectedSigFor(
+            final KeyTreeLeaf leaf, final KeyFactory factory, final byte[] data) {
         if (!leaf.isUsedToSign()) {
             return EMPTY_SIG;
         } else {

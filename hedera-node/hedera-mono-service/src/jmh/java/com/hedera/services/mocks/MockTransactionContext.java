@@ -16,8 +16,8 @@
 package com.hedera.services.mocks;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.ethereum.EthTxData;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.state.expiry.ExpiringEntity;
@@ -35,10 +35,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -52,12 +52,12 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void addSidecarRecord(TransactionSidecarRecord.Builder sidecar) {
+    public void addSidecarRecord(final TransactionSidecarRecord.Builder sidecar) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void addFeeChargedToPayer(long amount) {
+    public void addFeeChargedToPayer(final long amount) {
         throw new UnsupportedOperationException();
     }
 
@@ -68,7 +68,9 @@ public class MockTransactionContext implements TransactionContext {
 
     @Override
     public void resetFor(
-            @Nullable TxnAccessor accessor, Instant consensusTime, long submittingMember) {
+            @Nullable final TxnAccessor accessor,
+            final Instant consensusTime,
+            final long submittingMember) {
         now = consensusTime;
     }
 
@@ -123,17 +125,17 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void setStatus(ResponseCodeEnum status) {
+    public void setStatus(final ResponseCodeEnum status) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCreated(FileID id) {
+    public void setCreated(final FileID id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCreated(AccountID id) {
+    public void setCreated(final AccountID id) {
         throw new UnsupportedOperationException();
     }
 
@@ -143,37 +145,37 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void setTargetedContract(ContractID id) {
+    public void setTargetedContract(final ContractID id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCreated(TopicID id) {
+    public void setCreated(final TopicID id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCreated(ScheduleID id) {
+    public void setCreated(final ScheduleID id) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setScheduledTxnId(TransactionID txnId) {
+    public void setScheduledTxnId(final TransactionID txnId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCallResult(EvmFnResult result) {
+    public void setCallResult(final EvmFnResult result) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void updateForEvmCall(EthTxData callContext, EntityId senderId) {
+    public void updateForEvmCall(final EthTxData callContext, final EntityId senderId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setCreateResult(EvmFnResult result) {
+    public void setCreateResult(final EvmFnResult result) {
         throw new UnsupportedOperationException();
     }
 
@@ -183,12 +185,12 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void setTopicRunningHash(byte[] runningHash, long sequenceNumber) {
+    public void setTopicRunningHash(final byte[] runningHash, final long sequenceNumber) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void trigger(TxnAccessor accessor) {
+    public void trigger(final TxnAccessor accessor) {
         throw new UnsupportedOperationException();
     }
 
@@ -198,7 +200,7 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void addExpiringEntities(Collection<ExpiringEntity> expiringEntities) {
+    public void addExpiringEntities(final Collection<ExpiringEntity> expiringEntities) {
         throw new UnsupportedOperationException();
     }
 
@@ -208,7 +210,7 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void setAssessedCustomFees(List<FcAssessedCustomFee> assessedCustomFees) {
+    public void setAssessedCustomFees(final List<FcAssessedCustomFee> assessedCustomFees) {
         throw new UnsupportedOperationException();
     }
 
@@ -223,12 +225,12 @@ public class MockTransactionContext implements TransactionContext {
     }
 
     @Override
-    public void recordBeneficiaryOfDeleted(long accountNum, long beneficiaryNum) {
+    public void recordBeneficiaryOfDeleted(final long accountNum, final long beneficiaryNum) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long getBeneficiaryOfDeleted(long accountNum) {
+    public long getBeneficiaryOfDeleted(final long accountNum) {
         throw new UnsupportedOperationException();
     }
 

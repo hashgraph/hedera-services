@@ -34,7 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
@@ -50,9 +49,10 @@ import com.hedera.services.store.contracts.precompile.impl.IsTokenPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.services.store.contracts.precompile.impl.TokenInfoPrecompile;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -103,7 +103,10 @@ public class ViewExecutor {
         switch (selector) {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -111,7 +114,10 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -120,7 +126,10 @@ public class ViewExecutor {
             case ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -129,7 +138,9 @@ public class ViewExecutor {
                                 .setTokenID(wrapper.tokenID())
                                 .setSerialNumber(wrapper.serialNumber())
                                 .build();
-                final var nonFungibleTokenInfo = stateView.infoForNft(nftID).orElse(null);
+                final var nonFungibleTokenInfo =
+                        ledgers.infoForNft(nftID, stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
                 validateTrueOrRevert(
                         nonFungibleTokenInfo != null,
                         ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER);
@@ -138,60 +149,85 @@ public class ViewExecutor {
             }
             case ABI_ID_IS_FROZEN -> {
                 final var wrapper = IsFrozenPrecompile.decodeIsFrozen(input, a -> a);
-                final var isFrozen = ledgers.isFrozen(wrapper.account(), wrapper.token());
 
+                validateTrueOrRevert(
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var isFrozen = ledgers.isFrozen(wrapper.account(), wrapper.token());
                 return encoder.encodeIsFrozen(isFrozen);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> {
                 final var wrapper =
                         GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
-                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
 
+                validateTrueOrRevert(
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
                 return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
                 final var wrapper = GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
-                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
 
+                validateTrueOrRevert(
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {
                 final var wrapper = IsKycPrecompile.decodeIsKyc(input, a -> a);
-                final var isKyc = ledgers.isKyc(wrapper.account(), wrapper.token());
 
+                validateTrueOrRevert(
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var isKyc = ledgers.isKyc(wrapper.account(), wrapper.token());
                 return encoder.encodeIsKyc(isKyc);
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-                validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
-                        ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var customFees = stateView.tokenCustomFees(wrapper.tokenID());
+                final var customFees =
+                        ledgers.infoForTokenCustomFees(wrapper.tokenID()).orElse(null);
+
+                validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+
                 return encoder.encodeTokenGetCustomFees(customFees);
             }
             case ABI_ID_IS_TOKEN -> {
                 final var wrapper = IsTokenPrecompile.decodeIsToken(input);
-                final var isToken = stateView.tokenExists(wrapper.tokenID());
+
+                validateTrueOrRevert(
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ResponseCodeEnum.INVALID_TOKEN_ID);
+
+                final var isToken =
+                        ledgers.isTokenAddress(
+                                EntityIdUtils.asTypedEvmAddress((wrapper.tokenID())));
                 return encoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {
                 final var wrapper = GetTokenTypePrecompile.decodeGetTokenType(input);
+
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var token = stateView.tokens().get(EntityNum.fromTokenId(wrapper.tokenID()));
-                return encoder.encodeGetTokenType(token.tokenType().ordinal());
+
+                final var tokenType = ledgers.typeOf(wrapper.tokenID());
+                return encoder.encodeGetTokenType(tokenType.ordinal());
             }
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
-                validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
-                        ResponseCodeEnum.INVALID_TOKEN_ID);
-                final var tokenInfo = stateView.infoForToken(wrapper.tokenID()).orElse(null);
+                final var tokenInfo =
+                        ledgers.infoForToken(
+                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                .orElse(null);
 
-                if (tokenInfo == null) {
-                    throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TOKEN_ID, true);
-                }
+                validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
+                Objects.requireNonNull(tokenInfo);
 
                 final var expiryInfo =
                         new TokenExpiryWrapper(
@@ -203,10 +239,12 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_TOKEN_KEY -> {
                 final var wrapper = GetTokenKeyPrecompile.decodeGetTokenKey(input);
+
                 validateTrueOrRevert(
-                        stateView.tokenExists(wrapper.tokenID()),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
-                JKey key = (JKey) ledgers.tokens().get(wrapper.tokenID(), wrapper.tokenKeyType());
+
+                final var key = ledgers.keyOf(wrapper.tokenID(), wrapper.tokenKeyType());
                 return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
             }
                 // Only view functions can be used inside a ContractCallLocal
