@@ -17,7 +17,6 @@ package com.hedera.node.app.grpc;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.KnownLength;
-
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -28,63 +27,63 @@ import java.util.Objects;
  * ByteBuffer}, with optimal implementations for the InputStream methods.
  */
 final class KnownLengthStream extends InputStream implements KnownLength {
-	private final ByteBuffer buf;
+    private final ByteBuffer buf;
 
-	public KnownLengthStream(final ByteBuffer buf) {
-		this.buf = Objects.requireNonNull(buf);
-	}
+    public KnownLengthStream(final ByteBuffer buf) {
+        this.buf = Objects.requireNonNull(buf);
+    }
 
-	@Override
-	public int read() {
-		if (this.buf.remaining() == 0) {
-			return -1;
-		}
+    @Override
+    public int read() {
+        if (this.buf.remaining() == 0) {
+            return -1;
+        }
 
-		return this.buf.get() & 0xFF;
-	}
+        return this.buf.get() & 0xFF;
+    }
 
-	@Override
-	public int read(@NonNull final byte[] b) {
-		final int remaining = buf.remaining();
-		if (remaining == 0) {
-			return -1;
-		}
+    @Override
+    public int read(@NonNull final byte[] b) {
+        final int remaining = buf.remaining();
+        if (remaining == 0) {
+            return -1;
+        }
 
-		final int numBytesToRead = Math.min(remaining, b.length);
-		buf.get(b, 0, numBytesToRead);
-		return numBytesToRead;
-	}
+        final int numBytesToRead = Math.min(remaining, b.length);
+        buf.get(b, 0, numBytesToRead);
+        return numBytesToRead;
+    }
 
-	@Override
-	public int read(@NonNull final byte[] b, final int off, final int len) {
-		final int remaining = buf.remaining();
-		if (remaining == 0) {
-			return -1;
-		}
+    @Override
+    public int read(@NonNull final byte[] b, final int off, final int len) {
+        final int remaining = buf.remaining();
+        if (remaining == 0) {
+            return -1;
+        }
 
-		final int numBytesToRead = Math.min(remaining, len);
-		buf.get(b, off, numBytesToRead);
-		return numBytesToRead;
-	}
+        final int numBytesToRead = Math.min(remaining, len);
+        buf.get(b, off, numBytesToRead);
+        return numBytesToRead;
+    }
 
-	@Override
-	public long skip(final long n) {
-		if (n <= 0) {
-			return 0;
-		}
+    @Override
+    public long skip(final long n) {
+        if (n <= 0) {
+            return 0;
+        }
 
-		final int remaining = buf.remaining();
-		if (remaining == 0) {
-			return 0;
-		}
+        final int remaining = buf.remaining();
+        if (remaining == 0) {
+            return 0;
+        }
 
-		final int numBytesToSkip = Math.min(remaining, (int) n);
-		buf.position(buf.position() + numBytesToSkip);
-		return numBytesToSkip;
-	}
+        final int numBytesToSkip = Math.min(remaining, (int) n);
+        buf.position(buf.position() + numBytesToSkip);
+        return numBytesToSkip;
+    }
 
-	@Override
-	public int available() {
-		return buf.remaining();
-	}
+    @Override
+    public int available() {
+        return buf.remaining();
+    }
 }

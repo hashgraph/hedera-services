@@ -22,23 +22,18 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * this set is made available to the service during transaction handling by the application.
  */
 public interface States {
-	/**
-	 * Gets the {@link State} associated with the given stateKey. If the state cannot be found, an
-	 * exception is thrown. This should **never** happen in an application, and represents a fatal
-	 * bug.
-	 *
-	 * @param stateKey
-	 * 		The key used for looking up state
-	 * @param <K>
-	 * 		The key type in the State.
-	 * @param <V>
-	 * 		The value type in the State.
-	 * @return The State for that key. This will never be null.
-	 * @throws NullPointerException
-	 * 		if stateKey is null.
-	 * @throws IllegalArgumentException
-	 * 		if the state cannot be found.
-	 */
-	@NonNull
-	<K, V> State<K, V> get(@NonNull String stateKey);
+    /**
+     * Gets the {@link State} associated with the given stateKey. If the state cannot be found, an
+     * exception is thrown. This should **never** happen in an application, and represents a fatal
+     * bug.
+     *
+     * @param stateKey The key used for looking up state
+     * @param <K> The key type in the State.
+     * @param <V> The value type in the State.
+     * @return The State for that key. This will never be null.
+     * @throws NullPointerException if stateKey is null.
+     * @throws IllegalArgumentException if the state cannot be found.
+     */
+    @NonNull
+    <K, V> State<K, V> get(@NonNull String stateKey);
 }

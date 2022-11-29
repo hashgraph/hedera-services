@@ -18,7 +18,6 @@ package com.hedera.node.app.spi;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 /**
@@ -28,14 +27,13 @@ import java.util.Objects;
  * construct its own {@link SigWaivers} to check for signature waivers using the information
  * provided in this class.
  *
- * @param accountNumbers
- * 		provides information about signature waiver special cases for some
- * 		transactions
+ * @param accountNumbers provides information about signature waiver special cases for some
+ *     transactions
  */
 public record PreHandleContext(
-		@NonNull HederaAccountNumbers accountNumbers, @NonNull HederaFileNumbers fileNumbers) {
-	public PreHandleContext {
-		Objects.requireNonNull(accountNumbers);
-		Objects.requireNonNull(fileNumbers);
-	}
+        @NonNull HederaAccountNumbers accountNumbers, @NonNull HederaFileNumbers fileNumbers) {
+    public PreHandleContext {
+        Objects.requireNonNull(accountNumbers);
+        Objects.requireNonNull(fileNumbers);
+    }
 }

@@ -17,7 +17,6 @@ package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -25,11 +24,11 @@ import java.nio.ByteBuffer;
  * href="https://github.com/hashgraph/hedera-services/issues/4209">#4209</a>.
  */
 public final class IngestWorkflowImpl implements IngestWorkflow {
-	@Override
-	public void handleTransaction(
-			@NonNull final SessionContext session,
-			@NonNull final ByteBuffer requestBuffer,
-			@NonNull final ByteBuffer responseBuffer) {
-		// Implementation to be completed by Issue #4209
-	}
+    @Override
+    public void handleTransaction(
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
+        // Implementation to be completed by Issue #4209
+    }
 }

@@ -17,7 +17,6 @@ package com.hedera.node.app.workflows.query;
 
 import com.hedera.node.app.SessionContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -25,11 +24,11 @@ import java.nio.ByteBuffer;
  * href="https://github.com/hashgraph/hedera-services/issues/4208">#4208</a>.
  */
 public final class QueryWorkflowImpl implements QueryWorkflow {
-	@Override
-	public void handleQuery(
-			@NonNull final SessionContext session,
-			@NonNull final ByteBuffer requestBuffer,
-			@NonNull final ByteBuffer responseBuffer) {
-		// To be implemented by Issue #4208
-	}
+    @Override
+    public void handleQuery(
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
+        // To be implemented by Issue #4208
+    }
 }

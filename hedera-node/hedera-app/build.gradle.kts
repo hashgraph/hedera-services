@@ -44,7 +44,6 @@ dependencies {
 
     compileOnly(libs.spotbugs.annotations)
 
-
     itestImplementation(libs.hapi)
     itestImplementation(libs.bundles.helidon)
     itestImplementation(libs.bundles.swirlds)
