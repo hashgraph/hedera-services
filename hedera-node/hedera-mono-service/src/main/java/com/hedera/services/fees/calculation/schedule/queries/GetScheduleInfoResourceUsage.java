@@ -18,14 +18,14 @@ package com.hedera.services.fees.calculation.schedule.queries;
 import static com.hedera.services.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
+import com.hedera.node.app.hapi.fees.usage.schedule.ExtantScheduleContext;
+import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.usage.schedule.ExtantScheduleContext;
-import com.hedera.services.usage.schedule.ScheduleOpsUsage;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

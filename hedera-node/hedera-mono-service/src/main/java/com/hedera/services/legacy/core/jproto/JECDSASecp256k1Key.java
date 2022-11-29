@@ -15,14 +15,14 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 
 /** Maps to proto Key of type ECDSA_secp256k1Key */
 public class JECDSASecp256k1Key extends JKey {
-    private byte[] ecdsaSecp256k1Key;
+    private final byte[] ecdsaSecp256k1Key;
 
     private static final byte ODD_PARITY = (byte) 0x03;
     private static final byte EVEN_PARITY = (byte) 0x02;
@@ -71,7 +71,7 @@ public class JECDSASecp256k1Key extends JKey {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (o == this) {
             return true;
         }

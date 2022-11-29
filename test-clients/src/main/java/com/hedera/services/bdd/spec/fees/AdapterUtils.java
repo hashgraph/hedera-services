@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.spec.fees;
 
-import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
 
-import com.hedera.services.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 

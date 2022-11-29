@@ -19,15 +19,18 @@ plugins {
 
 description = "Hedera Services API Fees"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+}
+
 dependencies {
     implementation(project(":hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
-    implementation(libs.hapi) {
-        exclude("javax.annotation", "javax.annotation-api")
-    }
+    implementation(libs.hapi)
     implementation(libs.javax.inject)
     implementation(libs.jackson)
-    implementation(libs.jetbrains.annotation)
+    compileOnly(libs.spotbugs.annotations)
+
     testImplementation(testLibs.bundles.testing)
 }

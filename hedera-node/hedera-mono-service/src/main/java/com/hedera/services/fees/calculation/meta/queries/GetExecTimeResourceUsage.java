@@ -15,11 +15,11 @@
  */
 package com.hedera.services.fees.calculation.meta.queries;
 
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
-import static com.hederahashgraph.fee.FeeBuilder.BASIC_TX_ID_SIZE;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hederahashgraph.fee.FeeBuilder.LONG_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;

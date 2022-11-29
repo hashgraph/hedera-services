@@ -34,8 +34,8 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import javax.annotation.Nullable;
 
 /** A process object to help discriminate the stages of token creation. */
 public class Creation {
@@ -143,23 +143,23 @@ public class Creation {
     }
 
     /* --- Only used by unit tests --- */
-    void setProvisionalId(Id provisionalId) {
+    void setProvisionalId(final Id provisionalId) {
         this.provisionalId = provisionalId;
     }
 
-    void setProvisionalToken(Token provisionalToken) {
+    void setProvisionalToken(final Token provisionalToken) {
         this.provisionalToken = provisionalToken;
     }
 
-    void setTreasury(Account treasury) {
+    void setTreasury(final Account treasury) {
         this.treasury = treasury;
     }
 
-    void setAutoRenew(Account autoRenew) {
+    void setAutoRenew(final Account autoRenew) {
         this.autoRenew = autoRenew;
     }
 
-    void setNewRels(List<TokenRelationship> newRels) {
+    void setNewRels(final List<TokenRelationship> newRels) {
         this.newRels = newRels;
     }
 

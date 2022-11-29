@@ -19,7 +19,43 @@ import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.f
 import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.services.throttling.MapAccessType.STORAGE_REMOVE;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
-import static com.hedera.services.utils.MiscUtils.*;
+import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
+import static com.hedera.services.utils.MiscUtils.SCHEDULE_CREATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.SCHEDULE_DELETE_METRIC;
+import static com.hedera.services.utils.MiscUtils.SCHEDULE_SIGN_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_ASSOCIATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_BURN_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_CREATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_DELETE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_DISSOCIATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_FEE_SCHEDULE_UPDATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_FREEZE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_GRANT_KYC_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_MINT_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_PAUSE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_REVOKE_KYC_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_UNFREEZE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_UNPAUSE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_UPDATE_METRIC;
+import static com.hedera.services.utils.MiscUtils.TOKEN_WIPE_ACCOUNT_METRIC;
+import static com.hedera.services.utils.MiscUtils.UTIL_PRNG_METRIC;
+import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
+import static com.hedera.services.utils.MiscUtils.asOrdinary;
+import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hedera.services.utils.MiscUtils.baseStatNameOf;
+import static com.hedera.services.utils.MiscUtils.canonicalDiffRepr;
+import static com.hedera.services.utils.MiscUtils.canonicalRepr;
+import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hedera.services.utils.MiscUtils.functionOf;
+import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
+import static com.hedera.services.utils.MiscUtils.getTxnStat;
+import static com.hedera.services.utils.MiscUtils.isGasThrottled;
+import static com.hedera.services.utils.MiscUtils.isSchedulable;
+import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
+import static com.hedera.services.utils.MiscUtils.perm64;
+import static com.hedera.services.utils.MiscUtils.readableNftTransferList;
+import static com.hedera.services.utils.MiscUtils.readableProperty;
+import static com.hedera.services.utils.MiscUtils.readableTransferList;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hedera.test.utils.TxnUtils.withAdjustments;
@@ -93,14 +129,20 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.ethereum.EthTxSigs;
+import com.hedera.node.app.hapi.utils.CommonUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.grpc.controllers.ConsensusController;
 import com.hedera.services.grpc.controllers.ContractController;
@@ -109,7 +151,6 @@ import com.hedera.services.grpc.controllers.FileController;
 import com.hedera.services.grpc.controllers.FreezeController;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -117,7 +158,88 @@ import com.hedera.services.stats.ServicesStatsConfig;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractGetBytecodeQuery;
+import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ContractGetRecordsQuery;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetLiveHashQuery;
+import com.hederahashgraph.api.proto.java.CryptoGetStakersQuery;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
+import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.GetAccountDetailsQuery;
+import com.hederahashgraph.api.proto.java.GetByKeyQuery;
+import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
+import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.QueryHeader;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleGetInfoQuery;
+import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGetAccountNftInfosQuery;
+import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfoQuery;
+import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionGetReceiptQuery;
+import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.utility.KeyedMerkleLong;
 import com.swirlds.common.system.address.Address;
@@ -196,7 +318,7 @@ class MiscUtilsTest {
         verify(mockConsumer).accept(key2, new KeyedMerkleLong<>(key2, 2L));
     }
 
-    private void putValue(long value, MerkleMap<FcLong, KeyedMerkleLong<FcLong>> mm) {
+    private void putValue(final long value, final MerkleMap<FcLong, KeyedMerkleLong<FcLong>> mm) {
         final var newValue = new KeyedMerkleLong(value);
         mm.put(new FcLong(value), newValue);
     }
@@ -529,7 +651,7 @@ class MiscUtilsTest {
 
     @Test
     void isSchedulableWorksAsExpected() {
-        for (var fun : HederaFunctionality.values()) {
+        for (final var fun : HederaFunctionality.values()) {
             if (QUERY_FUNCTIONS.contains(fun) || fun == ScheduleCreate || fun == ScheduleSign) {
                 assertFalse(isSchedulable(fun));
             } else {
@@ -547,7 +669,7 @@ class MiscUtilsTest {
                             .findFirst()
                             .get();
             return (boolean) method.invoke(txn);
-        } catch (Exception ignore) {
+        } catch (final Exception ignore) {
         }
         return false;
     }
@@ -801,7 +923,7 @@ class MiscUtilsTest {
                     }
                 };
 
-        for (var setter : setters) {
+        for (final var setter : setters) {
             final var query = Query.newBuilder();
             setter.setActiveHeaderFor(query);
             assertEquals(ANSWER_ONLY, activeHeaderFrom(query.build()).get().getResponseType());
@@ -943,7 +1065,7 @@ class MiscUtilsTest {
                     try {
                         final var input = txn.build();
                         assertEquals(function, functionOf(input));
-                    } catch (UnknownHederaFunctionality uhf) {
+                    } catch (final UnknownHederaFunctionality uhf) {
                         throw new IllegalStateException(uhf);
                     }
                 });
@@ -1233,9 +1355,9 @@ class MiscUtilsTest {
         assertThrows(IllegalStateException.class, () -> MiscUtils.asPrimitiveKeyUnchecked(alias));
     }
 
-    public static String byteArrayToBinaryString(byte[] bytes) {
-        StringBuilder result = new StringBuilder();
-        for (byte b1 : bytes) {
+    public static String byteArrayToBinaryString(final byte[] bytes) {
+        final StringBuilder result = new StringBuilder();
+        for (final byte b1 : bytes) {
             result.append(
                     String.format("%8s", Integer.toBinaryString(b1 & 0xFF)).replace(' ', '0'));
         }
@@ -1246,7 +1368,7 @@ class MiscUtilsTest {
     public static class BodySetter<T, B> {
         private final Class<T> type;
 
-        public BodySetter(Class<T> type) {
+        public BodySetter(final Class<T> type) {
             this.type = type;
         }
 
@@ -1256,7 +1378,7 @@ class MiscUtilsTest {
                 final var defaultGetter = type.getDeclaredMethod("getDefaultInstance");
                 final T defaultInstance = (T) defaultGetter.invoke(null);
                 setter.invoke(builder, defaultInstance);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -1272,7 +1394,7 @@ class MiscUtilsTest {
                         opBuilder, QueryHeader.newBuilder().setResponseType(ANSWER_ONLY));
                 final var setter = getSetter(builder, opBuilderClass);
                 setter.invoke(builder, opBuilder);
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new IllegalStateException(e);
             }
         }

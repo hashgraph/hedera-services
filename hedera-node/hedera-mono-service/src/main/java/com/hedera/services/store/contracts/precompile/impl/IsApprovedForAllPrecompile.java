@@ -15,10 +15,10 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.BOOL;
-import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BOOL;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.ledger.properties.AccountProperty.APPROVE_FOR_ALL_NFTS_ALLOWANCES;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;

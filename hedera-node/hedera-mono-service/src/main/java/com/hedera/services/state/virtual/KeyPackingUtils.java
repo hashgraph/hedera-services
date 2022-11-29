@@ -16,12 +16,12 @@
 package com.hedera.services.state.virtual;
 
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.jetbrains.annotations.Nullable;
 
 public class KeyPackingUtils {
     public static final byte MISSING_KEY_SENTINEL = (byte) -1;
@@ -57,7 +57,7 @@ public class KeyPackingUtils {
      * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for
      *     value 0
      */
-    static byte computeNonZeroBytes(int num) {
+    static byte computeNonZeroBytes(final int num) {
         if (num == 0) {
             return (byte) 1;
         }
@@ -71,7 +71,7 @@ public class KeyPackingUtils {
      * @return the number of non-zero bytes, Minimum 1, we always write at least 1 byte even for
      *     value 0
      */
-    static byte computeNonZeroBytes(long num) {
+    static byte computeNonZeroBytes(final long num) {
         if (num == 0) {
             return (byte) 1;
         }

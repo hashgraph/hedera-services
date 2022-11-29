@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -64,7 +64,8 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var tokenInfo = stateView.infoForToken(tokenId).orElse(null);
+        final var tokenInfo =
+                ledgers.infoForToken(tokenId, stateView.getNetworkInfo().ledgerId()).orElse(null);
         validateTrue(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
         return encoder.encodeGetFungibleTokenInfo(tokenInfo);

@@ -33,9 +33,9 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 class Expansion {
     private final SigRequirements sigReqs;
@@ -106,7 +106,7 @@ class Expansion {
 
     private ResponseCodeEnum expand(
             final Role role, final PubKeyToSigBytes pkToSigFn, final SigReqsFunction sigReqsFn) {
-        var orderResult =
+        final var orderResult =
                 sigReqsFn.apply(
                         txnAccessor.getTxn(),
                         CODE_ORDER_RESULT_FACTORY,

@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,11 +43,14 @@ public class GetStakersAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        CryptoGetStakersQuery op = query.getCryptoGetProxyStakers();
-        ResponseType type = op.getHeader().getResponseType();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final CryptoGetStakersQuery op = query.getCryptoGetProxyStakers();
+        final ResponseType type = op.getHeader().getResponseType();
 
-        CryptoGetStakersResponse.Builder response = CryptoGetStakersResponse.newBuilder();
+        final CryptoGetStakersResponse.Builder response = CryptoGetStakersResponse.newBuilder();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {
@@ -57,12 +60,12 @@ public class GetStakersAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getCryptoGetProxyStakers().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         return NOT_SUPPORTED;
     }
 
@@ -72,17 +75,17 @@ public class GetStakersAnswer implements AnswerService {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 }

@@ -30,8 +30,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosResponse;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -50,11 +50,14 @@ public class GetTokenNftInfosAnswer extends AbstractAnswer {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        TokenGetNftInfosQuery op = query.getTokenGetNftInfos();
-        TokenGetNftInfosResponse.Builder response = TokenGetNftInfosResponse.newBuilder();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final TokenGetNftInfosQuery op = query.getTokenGetNftInfos();
+        final TokenGetNftInfosResponse.Builder response = TokenGetNftInfosResponse.newBuilder();
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
         } else {
@@ -64,17 +67,17 @@ public class GetTokenNftInfosAnswer extends AbstractAnswer {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 }

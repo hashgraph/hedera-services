@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
@@ -60,7 +61,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.fee.SmartContractFeeBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

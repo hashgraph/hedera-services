@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionGetFastRecordResponse;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -43,11 +43,14 @@ public class GetFastTxnRecordAnswer implements AnswerService {
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        TransactionGetFastRecordQuery op = query.getTransactionGetFastRecord();
-        ResponseType type = op.getHeader().getResponseType();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final TransactionGetFastRecordQuery op = query.getTransactionGetFastRecord();
+        final ResponseType type = op.getHeader().getResponseType();
 
-        TransactionGetFastRecordResponse.Builder response =
+        final TransactionGetFastRecordResponse.Builder response =
                 TransactionGetFastRecordResponse.newBuilder();
         if (type == COST_ANSWER) {
             response.setHeader(costAnswerHeader(NOT_SUPPORTED, 0L));
@@ -58,12 +61,12 @@ public class GetFastTxnRecordAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getTransactionGetFastRecord().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
         return NOT_SUPPORTED;
     }
 
@@ -73,17 +76,17 @@ public class GetFastTxnRecordAnswer implements AnswerService {
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
         return Optional.empty();
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return false;
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return false;
     }
 }

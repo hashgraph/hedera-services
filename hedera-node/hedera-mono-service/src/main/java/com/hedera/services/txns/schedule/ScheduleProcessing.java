@@ -51,13 +51,13 @@ import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -102,19 +102,19 @@ public class ScheduleProcessing {
      * Expires all scheduled transactions, that are in a final state, having an expiry before
      * consensusTime, and having an expiry before any transaction that is ready to execute.
      */
-    public void expire(Instant consensusTime) {
+    public void expire(final Instant consensusTime) {
 
         // we _really_ don't want to loop forever. If the database isn't working, then it's
         // possible. So we put
         // an upper limit on the number of iterations here.
         for (long i = 0; i < getMaxProcessingLoopIterations(); ++i) {
 
-            List<ScheduleID> scheduleIdsToExpire = store.nextSchedulesToExpire(consensusTime);
+            final List<ScheduleID> scheduleIdsToExpire = store.nextSchedulesToExpire(consensusTime);
             if (scheduleIdsToExpire.isEmpty()) {
                 return;
             }
 
-            for (var txnId : scheduleIdsToExpire) {
+            for (final var txnId : scheduleIdsToExpire) {
                 store.expire(txnId);
                 sigImpactHistorian.markEntityChanged(txnId.getScheduleNum());
             }
@@ -137,7 +137,9 @@ public class ScheduleProcessing {
      */
     @Nullable
     public TxnAccessor triggerNextTransactionExpiringAsNeeded(
-            Instant consensusTime, @Nullable TxnAccessor previous, boolean onlyExpire) {
+            final Instant consensusTime,
+            @Nullable final TxnAccessor previous,
+            final boolean onlyExpire) {
 
         LongHashSet seen = null;
 
@@ -145,7 +147,7 @@ public class ScheduleProcessing {
 
             expire(consensusTime);
 
-            var next = store.nextScheduleToEvaluate(consensusTime);
+            final var next = store.nextScheduleToEvaluate(consensusTime);
 
             if (next == null) {
                 return null;
@@ -160,7 +162,7 @@ public class ScheduleProcessing {
                 }
             }
 
-            var nextLong = next.getScheduleNum();
+            final var nextLong = next.getScheduleNum();
 
             if (!seen.add(nextLong)) {
                 log.error("tried to process the same transaction twice! {}", next);
@@ -181,7 +183,7 @@ public class ScheduleProcessing {
                     continue;
                 }
 
-                var schedule = store.get(next);
+                final var schedule = store.get(next);
 
                 if (!this.isFullySigned.test(schedule)) {
 
@@ -196,7 +198,7 @@ public class ScheduleProcessing {
 
                 } else {
 
-                    var triggerResult =
+                    final var triggerResult =
                             scheduleExecutor.getTriggeredTxnAccessor(next, store, false);
 
                     if (triggerResult.getLeft() != OK) {
@@ -210,7 +212,7 @@ public class ScheduleProcessing {
                         return triggerResult.getRight();
                     }
                 }
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 log.error(
                         "SCHEDULED TRANSACTION SKIPPED!! Failed to triggered transaction due"
                                 + " unexpected error! {}",
@@ -278,7 +280,7 @@ public class ScheduleProcessing {
                                                                     id,
                                                                     existing);
                                                         } else {
-                                                            var list =
+                                                            final var list =
                                                                     transactionsInExecutionOrder
                                                                             .computeIfAbsent(
                                                                                     existing
@@ -301,14 +303,14 @@ public class ScheduleProcessing {
                                                 }));
             }
 
-            var list =
+            final var list =
                     transactionsInExecutionOrder.computeIfAbsent(
                             schedule.calculatedExpirationTime(), k -> new ArrayList<>());
             list.add(getTxnAccessorForThrottleCheck(scheduleId, schedule));
 
             Instant timestamp = Instant.ofEpochSecond(curSecond);
-            for (var entry : transactionsInExecutionOrder.entrySet()) {
-                for (var t : entry.getValue()) {
+            for (final var entry : transactionsInExecutionOrder.entrySet()) {
+                for (final var t : entry.getValue()) {
                     if (scheduleThrottling.shouldThrottleTxn(t, timestamp)) {
                         if (scheduleThrottling.wasLastTxnGasThrottled()) {
                             return SCHEDULE_FUTURE_GAS_LIMIT_EXCEEDED;
@@ -331,7 +333,7 @@ public class ScheduleProcessing {
      * @param consensusTime the current consensus time
      * @return true if we should process scheduled transactions for consensusTime
      */
-    public boolean shouldProcessScheduledTransactions(Instant consensusTime) {
+    public boolean shouldProcessScheduledTransactions(final Instant consensusTime) {
         return consensusTime.getEpochSecond() > schedules.get().getCurrentMinSecond();
     }
 
@@ -347,7 +349,7 @@ public class ScheduleProcessing {
             final ScheduleID scheduleId, final ScheduleVirtualValue schedule) {
         try {
             return scheduleExecutor.getTxnAccessor(scheduleId, schedule, false);
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             throw new IllegalStateException(e);
         }
     }
