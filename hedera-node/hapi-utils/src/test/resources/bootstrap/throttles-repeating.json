@@ -1,0 +1,83 @@
+{
+  "buckets": [
+	{
+	  "name": "A",
+	  "burstPeriodMs": 2000,
+	  "throttleGroups": [
+		{
+		  "operations": [
+			"CryptoTransfer",
+			"CryptoTransfer",
+			"CryptoCreate",
+			"CryptoCreate"
+		  ],
+		  "milliOpsPerSec": 10000000
+		},
+		{
+		  "operations": [
+			"ContractCall",
+			"ContractCall"
+		  ],
+		  "milliOpsPerSec": 12000
+		},
+		{
+		  "operations": [
+			"TokenMint",
+			"TokenMint"
+		  ],
+		  "milliOpsPerSec": 3000000
+		}
+	  ]
+	},
+	{
+	  "name": "B",
+	  "burstPeriodMs": 2000,
+	  "throttleGroups": [
+		{
+		  "operations": [
+			"ContractCall",
+			"ContractCall"
+		  ],
+		  "milliOpsPerSec": 10000
+		}
+	  ]
+	},
+	{
+	  "name": "C",
+	  "burstPeriodMs": 3000,
+	  "throttleGroups": [
+		{
+		  "operations": [
+			"CryptoCreate",
+			"CryptoCreate"
+		  ],
+		  "milliOpsPerSec": 2000
+		},
+		{
+		  "operations": [
+			"TokenCreate",
+			"TokenCreate",
+			"TokenAssociateToAccount",
+			"TokenAssociateToAccount"
+		  ],
+		  "milliOpsPerSec": 100000
+		}
+	  ]
+	},
+	{
+	  "name": "D",
+	  "burstPeriodMs": 4000,
+	  "throttleGroups": [
+		{
+		  "operations": [
+			"CryptoGetAccountBalance",
+			"CryptoGetAccountBalance",
+			"TransactionGetReceipt",
+			"TransactionGetReceipt"
+		  ],
+		  "milliOpsPerSec": 1000000000
+		}
+	  ]
+	}
+  ]
+}

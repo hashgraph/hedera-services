@@ -1,0 +1,32 @@
+{
+  "buckets": [
+	{
+	  "name": "A",
+	  "burstPeriod": 1,
+	  "throttleGroups": [
+		{
+		  "operations": [
+			"CryptoTransfer",
+			"CryptoCreate",
+			"CryptoApproveAllowance",
+			"CryptoDeleteAllowance"
+		  ],
+		  "opsPerSec": 10000
+		},
+		{
+		  "operations": [
+			"ContractCall"
+		  ],
+		  "opsPerSec": 12
+		},
+		{
+		  "operations": [
+			"CryptoTransfer",
+			"TokenMint"
+		  ],
+		  "opsPerSec": 3000
+		}
+	  ]
+	}
+  ]
+}
