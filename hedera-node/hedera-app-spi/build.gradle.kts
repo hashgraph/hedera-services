@@ -19,6 +19,13 @@ plugins {
 
 description = "Hedera Application - SPI"
 
+configurations.all {
+    exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
+}
+
 dependencies {
     api(libs.hapi)
     compileOnly(libs.spotbugs.annotations)
@@ -26,9 +33,7 @@ dependencies {
     implementation(libs.swirlds.merkle)
     implementation(libs.swirlds.virtualmap)
     implementation(libs.swirlds.jasperdb)
-    testImplementation(testLibs.bundles.mockito)
-}
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
+    testImplementation(testLibs.bundles.mockito)
+    testCompileOnly(libs.spotbugs.annotations)
 }

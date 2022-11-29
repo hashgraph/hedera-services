@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
-import com.hedera.services.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import org.hyperledger.besu.datatypes.Address;
 
 public class AccountAccessorImpl implements AccountAccessor {

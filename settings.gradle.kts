@@ -17,8 +17,6 @@ plugins {
     id("com.gradle.enterprise").version("3.10.3")
 }
 
-include(":hapi-utils")
-include(":hapi-fees")
 include(":hedera-node")
 include(":hedera-node:hedera-admin-service")
 include(":hedera-node:hedera-admin-service-impl")
@@ -36,10 +34,12 @@ include(":hedera-node:hedera-token-service")
 include(":hedera-node:hedera-token-service-impl")
 include(":hedera-node:hedera-util-service")
 include(":hedera-node:hedera-util-service-impl")
+include(":hedera-node:hapi-utils")
+include(":hedera-node:hapi-fees")
 include(":hedera-node:hedera-app")
 include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
-include(":hedera-node:hedera-evm-api")
+include(":hedera-node:hedera-evm-impl")
 include(":hedera-node:hedera-mono-service")
 include(":test-clients")
 

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**

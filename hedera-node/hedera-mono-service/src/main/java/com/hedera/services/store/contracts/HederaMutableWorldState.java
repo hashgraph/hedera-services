@@ -37,7 +37,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.ledger.accounts.ContractCustomizer;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.List;

@@ -29,7 +29,7 @@ import java.util.Objects;
 final class KnownLengthStream extends InputStream implements KnownLength {
     private final ByteBuffer buf;
 
-    public KnownLengthStream(ByteBuffer buf) {
+    public KnownLengthStream(final ByteBuffer buf) {
         this.buf = Objects.requireNonNull(buf);
     }
 
@@ -43,41 +43,41 @@ final class KnownLengthStream extends InputStream implements KnownLength {
     }
 
     @Override
-    public int read(@NonNull byte[] b) {
-        int remaining = buf.remaining();
+    public int read(@NonNull final byte[] b) {
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;
         }
 
-        int numBytesToRead = Math.min(remaining, b.length);
+        final int numBytesToRead = Math.min(remaining, b.length);
         buf.get(b, 0, numBytesToRead);
         return numBytesToRead;
     }
 
     @Override
-    public int read(@NonNull byte[] b, int off, int len) {
-        int remaining = buf.remaining();
+    public int read(@NonNull final byte[] b, final int off, final int len) {
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return -1;
         }
 
-        int numBytesToRead = Math.min(remaining, len);
+        final int numBytesToRead = Math.min(remaining, len);
         buf.get(b, off, numBytesToRead);
         return numBytesToRead;
     }
 
     @Override
-    public long skip(long n) {
+    public long skip(final long n) {
         if (n <= 0) {
             return 0;
         }
 
-        int remaining = buf.remaining();
+        final int remaining = buf.remaining();
         if (remaining == 0) {
             return 0;
         }
 
-        int numBytesToSkip = Math.min(remaining, (int) n);
+        final int numBytesToSkip = Math.min(remaining, (int) n);
         buf.position(buf.position() + numBytesToSkip);
         return numBytesToSkip;
     }

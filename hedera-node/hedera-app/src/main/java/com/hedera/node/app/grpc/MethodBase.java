@@ -105,8 +105,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
 
     @Override
     public void invoke(
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull StreamObserver<ByteBuffer> responseObserver) {
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final StreamObserver<ByteBuffer> responseObserver) {
         try {
             // Track the number of times this method has been called
             callsReceivedCounter.increment();
@@ -128,7 +128,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
             // Track the number of times we successfully handled a call
             callsHandledCounter.increment();
             callsHandledSpeedometer.cycle();
-        } catch (Throwable th) {
+        } catch (final Throwable th) {
             // Track the number of times we failed to handle a call
             callsFailedCounter.increment();
             responseObserver.onError(th);
@@ -162,8 +162,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
         final var baseName = serviceName + "/" + methodName;
-        var name = String.format(nameTemplate, baseName);
-        var desc = String.format(descriptionTemplate, baseName);
+        final var name = String.format(nameTemplate, baseName);
+        final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new Counter.Config("app", name).withDescription(desc));
     }
 
@@ -180,8 +180,8 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
             @NonNull final String nameTemplate,
             @NonNull final String descriptionTemplate) {
         final var baseName = serviceName + "/" + methodName;
-        var name = String.format(nameTemplate, baseName);
-        var desc = String.format(descriptionTemplate, baseName);
+        final var name = String.format(nameTemplate, baseName);
+        final var desc = String.format(descriptionTemplate, baseName);
         return metrics.getOrCreate(new SpeedometerMetric.Config("app", name).withDescription(desc));
     }
 }

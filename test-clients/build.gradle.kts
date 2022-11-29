@@ -39,8 +39,8 @@ sourceSets {
 }
 
 dependencies {
-    implementation(project(":hapi-utils"))
-    implementation(project(":hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
     implementation(libs.bundles.besu) {
         exclude("javax.annotation", "javax.annotation-api")
     }
@@ -66,7 +66,7 @@ dependencies {
     itestImplementation(project(":hedera-node:hedera-app"))
     itestImplementation(project(":hedera-node:hedera-app-spi"))
     itestImplementation(project(":hedera-node:hedera-evm"))
-    itestImplementation(project(":hedera-node:hedera-evm-api"))
+    itestImplementation(project(":hedera-node:hedera-evm-impl"))
     itestImplementation(project(":hedera-node:hedera-mono-service"))
     itestImplementation(project(":hedera-node:hedera-admin-service"))
     itestImplementation(project(":hedera-node:hedera-admin-service-impl"))
@@ -88,7 +88,7 @@ dependencies {
     eetImplementation(project(":hedera-node:hedera-app"))
     eetImplementation(project(":hedera-node:hedera-app-spi"))
     eetImplementation(project(":hedera-node:hedera-evm"))
-    eetImplementation(project(":hedera-node:hedera-evm-api"))
+    eetImplementation(project(":hedera-node:hedera-evm-impl"))
     eetImplementation(project(":hedera-node:hedera-mono-service"))
     eetImplementation(project(":hedera-node:hedera-admin-service"))
     eetImplementation(project(":hedera-node:hedera-admin-service-impl"))

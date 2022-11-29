@@ -39,8 +39,8 @@ package com.hedera.services.contracts.operation;
 
 import static com.hedera.services.utils.EntityIdUtils.numOfMirror;
 
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.context.TransactionContext;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;

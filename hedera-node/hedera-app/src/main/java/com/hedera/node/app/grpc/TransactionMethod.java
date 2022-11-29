@@ -25,6 +25,9 @@ import java.util.Objects;
 /**
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Transaction} gRPC
  * calls. A single instance of this class is used by all transaction ingest threads in the node.
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
 /*@ThreadSafe*/
 final class TransactionMethod extends MethodBase {
@@ -47,9 +50,9 @@ final class TransactionMethod extends MethodBase {
 
     @Override
     protected void handle(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer) {
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
         workflow.handleTransaction(session, requestBuffer, responseBuffer);
     }
 }

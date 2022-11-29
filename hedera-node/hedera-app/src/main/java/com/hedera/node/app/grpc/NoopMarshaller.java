@@ -26,6 +26,9 @@ import java.util.Objects;
  * An implementation of a gRPC marshaller which does nothing but pass through byte arrays. A single
  * implementation of this class is designed to be used by multiple threads, including by multiple
  * app instances within a single JVM!
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
 /*@ThreadSafe*/
 final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
@@ -71,7 +74,7 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
             }
             buffer.flip(); // Prepare for reading
             return buffer;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             // This appears correct after looking at Google's implementation of this method
             // in protobuf-lite
             throw new RuntimeException(e);

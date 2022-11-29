@@ -37,7 +37,7 @@ package com.hedera.services.store.contracts;
  *
  */
 
-import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 

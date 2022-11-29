@@ -27,6 +27,9 @@ import java.util.Objects;
 /**
  * Handles gRPC duties for processing {@link com.hederahashgraph.api.proto.java.Query} gRPC calls. A
  * single instance of this class is used by all query threads in the node.
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
 /*@ThreadSafe*/
 final class QueryMethod extends MethodBase {
@@ -67,9 +70,9 @@ final class QueryMethod extends MethodBase {
 
     @Override
     protected void handle(
-            @NonNull SessionContext session,
-            @NonNull ByteBuffer requestBuffer,
-            @NonNull ByteBuffer responseBuffer) {
+            @NonNull final SessionContext session,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
         workflow.handleQuery(session, requestBuffer, responseBuffer);
         queriesAnsweredCounter.increment();
         queriesAnsweredSpeedometer.cycle();
