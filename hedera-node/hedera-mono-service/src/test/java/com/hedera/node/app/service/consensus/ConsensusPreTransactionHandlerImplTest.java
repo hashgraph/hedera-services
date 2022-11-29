@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.Utils;
 import com.hedera.node.app.service.consensus.impl.ConsensusPreTransactionHandlerImpl;
 import com.hedera.node.app.service.token.impl.AccountStore;
@@ -47,6 +47,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ConsensusPreTransactionHandlerImplTest {
     private static final AccountID ACCOUNT_ID_3 = IdUtils.asAccount("0.0.3");
+    private static final Key SIMPLE_KEY_A =
+            Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".getBytes()))
+                    .build();
+    private static final Key SIMPLE_KEY_B =
+            Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".getBytes()))
+                    .build();
 
     @Mock private AccountStore accountStore;
 
@@ -60,8 +68,8 @@ class ConsensusPreTransactionHandlerImplTest {
     @Test
     void createAddsAllNonNullKeyInputs() {
         final var payerKey = mockPayerLookup();
-        final var adminKey = KeyUtils.B_COMPLEX_KEY;
-        final var submitKey = KeyUtils.C_COMPLEX_KEY;
+        final var adminKey = SIMPLE_KEY_A;
+        final var submitKey = SIMPLE_KEY_B;
 
         final var result = subject.preHandleCreateTopic(newCreateTxn(adminKey, submitKey));
 
@@ -87,7 +95,7 @@ class ConsensusPreTransactionHandlerImplTest {
     @Test
     void createAddsDifferentAdminKey() {
         final var payerKey = mockPayerLookup();
-        final var adminKey = KeyUtils.B_COMPLEX_KEY;
+        final var adminKey = SIMPLE_KEY_A;
 
         final var result = subject.preHandleCreateTopic(newCreateTxn(adminKey, null));
 
@@ -101,7 +109,7 @@ class ConsensusPreTransactionHandlerImplTest {
     @Test
     void createAddsDifferentSubmitKey() {
         final var payerKey = mockPayerLookup();
-        final var submitKey = KeyUtils.B_COMPLEX_KEY;
+        final var submitKey = SIMPLE_KEY_B;
 
         final var result = subject.preHandleCreateTopic(newCreateTxn(null, submitKey));
 
@@ -113,9 +121,9 @@ class ConsensusPreTransactionHandlerImplTest {
     }
 
     @Test
-    void createAddsPayerAsAdmin() throws InvalidProtocolBufferException {
-        final var payerKey = mockPayerLookup();
-        final var protoPayerKey = Key.parseFrom(KeyUtils.A_COMPLEX_KEY.toByteArray());
+    void createAddsPayerAsAdmin() {
+        final var protoPayerKey = SIMPLE_KEY_A;
+        final var payerKey = mockPayerLookup(protoPayerKey);
 
         final var result = subject.preHandleCreateTopic(newCreateTxn(protoPayerKey, null));
 
@@ -124,9 +132,9 @@ class ConsensusPreTransactionHandlerImplTest {
     }
 
     @Test
-    void createAddsPayerAsSubmitter() throws InvalidProtocolBufferException {
-        final var payerKey = mockPayerLookup();
-        final var protoPayerKey = Key.parseFrom(KeyUtils.A_COMPLEX_KEY.toByteArray());
+    void createAddsPayerAsSubmitter() {
+        final var protoPayerKey = SIMPLE_KEY_B;
+        final var payerKey = mockPayerLookup(protoPayerKey);
 
         final var result = subject.preHandleCreateTopic(newCreateTxn(null, protoPayerKey));
 
@@ -164,7 +172,11 @@ class ConsensusPreTransactionHandlerImplTest {
     }
 
     private HederaKey mockPayerLookup() {
-        final var returnKey = Utils.asHederaKey(KeyUtils.A_COMPLEX_KEY).orElseThrow();
+        return mockPayerLookup(KeyUtils.A_COMPLEX_KEY);
+    }
+
+    private HederaKey mockPayerLookup(Key key) {
+        final var returnKey = Utils.asHederaKey(key).orElseThrow();
         given(accountStore.getKey(ACCOUNT_ID_3))
                 .willReturn(KeyOrLookupFailureReason.withKey(returnKey));
         return returnKey;

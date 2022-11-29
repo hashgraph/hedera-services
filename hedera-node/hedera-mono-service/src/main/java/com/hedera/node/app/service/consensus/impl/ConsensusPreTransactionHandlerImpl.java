@@ -22,8 +22,8 @@ import com.hedera.node.app.service.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
 
 @SuppressWarnings("DanglingJavadoc")
@@ -32,7 +32,7 @@ public class ConsensusPreTransactionHandlerImpl
 
     private final AccountStore accountStore;
 
-    public ConsensusPreTransactionHandlerImpl(@Nonnull final AccountStore accountStore) {
+    public ConsensusPreTransactionHandlerImpl(@NonNull final AccountStore accountStore) {
         this.accountStore = accountStore;
     }
 
