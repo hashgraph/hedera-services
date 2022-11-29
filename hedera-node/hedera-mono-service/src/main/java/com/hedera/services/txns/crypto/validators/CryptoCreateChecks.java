@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.isSerializedProtoKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -256,6 +257,10 @@ public class CryptoCreateChecks {
             return keyValidity;
         }
 
+        if (!isSerializedProtoKey(op.getAlias())) {
+            return INVALID_ALIAS_KEY;
+        }
+
         var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
         var key = op.getKey();
         if ((!key.getEd25519().isEmpty() || !key.getECDSASecp256K1().isEmpty())
@@ -331,13 +336,8 @@ public class CryptoCreateChecks {
         if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
             return NOT_SUPPORTED;
         }
-        var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
-        if (!validator.hasGoodEncoding(keyFromAlias)) {
-            return BAD_ENCODING;
-        }
-        var fcKey = asFcKeyUnchecked(keyFromAlias);
-        if (fcKey.isEmpty()) {
-            return KEY_REQUIRED;
+        if (!isSerializedProtoKey(op.getAlias())) {
+            return INVALID_ALIAS_KEY;
         }
 
         var isAliasUsedCheck = isUsedAsAliasCheck(op.getAlias());
@@ -346,8 +346,8 @@ public class CryptoCreateChecks {
             return isAliasUsedCheck;
         }
 
+        final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
         if (!keyFromAlias.getECDSASecp256K1().isEmpty()) {
-
             return tryToRecoverEVMAddressAndCheckValidity(
                     keyFromAlias.getECDSASecp256K1().toByteArray());
         }
