@@ -240,14 +240,7 @@ public final class MiscUtils {
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
-            trans -> {
-                try {
-                    return functionOf(trans);
-                } catch (UnknownHederaFunctionality ignore) {
-                    return NONE;
-                }
-            };
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = MiscUtils::saveFunctionOf;
 
     static final String TOKEN_MINT_METRIC = "mintToken";
     static final String TOKEN_BURN_METRIC = "burnToken";
@@ -579,6 +572,14 @@ public final class MiscUtils {
             return Instant.ofEpochSecond(oldSecs + 1, newNanos - ONE_SEC_IN_NANOS);
         } else {
             return Instant.ofEpochSecond(oldSecs, newNanos);
+        }
+    }
+
+    public static HederaFunctionality saveFunctionOf(final TransactionBody txn) {
+        try {
+            return functionOf(txn);
+        } catch (UnknownHederaFunctionality ex) {
+            return NONE;
         }
     }
 

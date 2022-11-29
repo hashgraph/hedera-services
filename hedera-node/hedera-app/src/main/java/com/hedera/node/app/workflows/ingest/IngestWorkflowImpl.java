@@ -16,19 +16,117 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.throttle.ThrottleAccumulator;
+import com.hedera.node.app.workflows.common.InsufficientBalanceException;
+import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.workflows.common.SubmissionManager;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionResponse;
+
 import java.nio.ByteBuffer;
 import javax.annotation.Nonnull;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
+
 /**
- * Dummy implementation. To be implemented by <a
- * href="https://github.com/hashgraph/hedera-services/issues/4209">#4209</a>.
+ * Default implementation of {@link IngestWorkflow}
  */
 public final class IngestWorkflowImpl implements IngestWorkflow {
+
+    private final WorkflowOnset onset;
+    private final IngestChecker checker;
+    private final ThrottleAccumulator throttleAccumulator;
+    private final SubmissionManager submissionManager;
+    private final HapiOpCounters opCounters;
+
+    /**
+     * Constructor of {@code IngestWorkflowImpl}
+     *
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a transaction
+     * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
+     * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
+     * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
+     * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
+     */
+    public IngestWorkflowImpl(
+            @Nonnull final WorkflowOnset onset,
+            @Nonnull final IngestChecker checker,
+            @Nonnull final ThrottleAccumulator throttleAccumulator,
+            @Nonnull final SubmissionManager submissionManager,
+            @Nonnull final HapiOpCounters opCounters) {
+        this.onset = requireNonNull(onset);
+        this.checker = requireNonNull(checker);
+        this.throttleAccumulator = requireNonNull(throttleAccumulator);
+        this.submissionManager = requireNonNull(submissionManager);
+        this.opCounters = requireNonNull(opCounters);
+    }
+
     @Override
     public void handleTransaction(
-            @Nonnull final SessionContext session,
+            @Nonnull final SessionContext ctx,
             @Nonnull final ByteBuffer requestBuffer,
             @Nonnull final ByteBuffer responseBuffer) {
-        // Implementation to be completed by Issue #4209
+
+        ResponseCodeEnum result = OK;
+        long estimatedFee = 0L;
+        try {
+            // 1. Parse the TransactionBody and check the syntax
+            final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
+            final var txBody = onsetResult.txBody();
+            final var signatureMap = onsetResult.signatureMap();
+            final var functionality = onsetResult.functionality();
+
+            opCounters.countReceived(functionality);
+
+            // 2. Check semantics
+            checker.checkTransactionSemantic(txBody, functionality);
+
+            // 3. Get payer account
+            final AccountID payerID = txBody.getTransactionID().getAccountID();
+            // TODO: Get payer account
+//            final var payerOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
+//            if (payerOpt.isEmpty()) {
+//                // This is an error condition. No account!
+//                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+//            }
+//            final var payer = payerOpt.get();
+            final HederaAccount payer = null;
+
+            // 4. Check payer's signature
+            checker.checkPayerSignature(txBody, signatureMap, payer);
+
+            // 5. Check account balance
+            checker.checkSolvency(txBody, functionality, payer);
+
+            // 6. Check throttles
+            if (throttleAccumulator.shouldThrottle(functionality)) {
+                throw new PreCheckException(BUSY);
+            }
+
+            // 8. Submit to platform
+            submissionManager.submit(ctx, txBody, requestBuffer);
+
+            opCounters.countSubmitted(functionality);
+        } catch (InsufficientBalanceException e) {
+            estimatedFee = e.getEstimatedFee();
+            result = e.responseCode();
+        } catch (PreCheckException e) {
+            result = e.responseCode();
+        }
+
+        responseBuffer.put(
+                TransactionResponse.newBuilder()
+                        .setNodeTransactionPrecheckCode(result)
+                        .setCost(estimatedFee)
+                        .build()
+                        .toByteArray()
+        );
     }
+
 }

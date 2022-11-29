@@ -29,7 +29,7 @@ public final class ServicesStatsConfig {
 
     static final String COUNTER_HANDLED_NAME_TPL = "%sHdl";
     static final String COUNTER_RECEIVED_NAME_TPL = "%sRcv";
-    static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
+    public static final String COUNTER_DEPRECATED_TXNS_NAME = "DeprTxnsRcv";
     static final String COUNTER_ANSWERED_NAME_TPL = "%sSub";
     static final String COUNTER_SUBMITTED_NAME_TPL = "%sSub";
     static final String SPEEDOMETER_HANDLED_NAME_TPL = "%sHdl/sec";
@@ -40,7 +40,7 @@ public final class ServicesStatsConfig {
 
     static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
     static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
-    static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
+    public static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
     static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
     static final String COUNTER_SUBMITTED_DESC_TPL = "number of %s submitted";
     static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";

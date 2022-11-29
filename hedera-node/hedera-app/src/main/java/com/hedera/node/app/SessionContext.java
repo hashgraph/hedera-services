@@ -15,5 +15,45 @@
  */
 package com.hedera.node.app;
 
-// FUTURE: Put the per-thread stuff here like parsers
-public record SessionContext() {}
+import static java.util.Objects.requireNonNull;
+
+import com.google.protobuf.Parser;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import javax.annotation.Nonnull;
+
+/**
+ * This record keeps a list of everything that is used per-thread
+ *
+ * @param queryParser a parser for {@link Query}
+ * @param txParser a parser for {@link Transaction}
+ * @param signedParser a parser for {@link SignedTransaction}
+ * @param txBodyParser a parser for {@link TransactionBody}
+ */
+public record SessionContext(
+		@Nonnull Parser<Query> queryParser,
+		@Nonnull Parser<Transaction> txParser,
+		@Nonnull Parser<SignedTransaction> signedParser,
+		@Nonnull Parser<TransactionBody> txBodyParser) {
+
+	/**
+	 * Constructor of {@code SessionContext}
+	 *
+	 * @param queryParser the {@link Query}-parser
+	 * @param txParser the {@link Transaction}-parser
+	 * @param signedParser the {@link SignedTransaction}-parser
+	 * @param txBodyParser the {@link TransactionBody}-parser
+	 */
+	public SessionContext(
+			@Nonnull final Parser<Query> queryParser,
+			@Nonnull final Parser<Transaction> txParser,
+			@Nonnull final Parser<SignedTransaction> signedParser,
+			@Nonnull final Parser<TransactionBody> txBodyParser) {
+		this.queryParser = requireNonNull(queryParser);
+		this.txParser = requireNonNull(txParser);
+		this.signedParser = requireNonNull(signedParser);
+		this.txBodyParser = requireNonNull(txBodyParser);
+	}
+}

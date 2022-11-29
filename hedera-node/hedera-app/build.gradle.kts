@@ -20,6 +20,8 @@ plugins {
 description = "Hedera Application - Implementation"
 
 dependencies {
+    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":modules:hedera-admin-service-impl"))
     implementation(project(":modules:hedera-consensus-service-impl"))
     implementation(project(":modules:hedera-file-service-impl"))
@@ -33,6 +35,7 @@ dependencies {
     implementation(libs.hapi)
     implementation(libs.bundles.helidon)
     implementation(libs.bundles.swirlds)
+    implementation(libs.commons.codec)
 
     itestImplementation(libs.hapi)
     itestImplementation(libs.bundles.helidon)
