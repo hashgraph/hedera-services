@@ -25,4 +25,5 @@ public class EvmParsingConstants {
     public static final String BYTES32 = "(bytes32)";
     public static final String UINT256 = "(uint256)";
     public static final String ADDRESS_UINT256_RAW_TYPE = "(bytes32,uint256)";
+    public static final String INT_BOOL_PAIR = "(int,bool)";
 }

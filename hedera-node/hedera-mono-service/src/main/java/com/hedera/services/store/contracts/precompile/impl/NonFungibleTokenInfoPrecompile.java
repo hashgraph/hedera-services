@@ -23,12 +23,13 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,13 +38,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
-    private static final Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
-            new Function("getNonFungibleTokenInfo(address,int64)");
-    private static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER =
-            TypeFactory.create("(bytes32,int64)");
+public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile implements
+    EvmNonFungibleTokenInfoPrecompile {
+
     private long serialNumber;
 
     public NonFungibleTokenInfoPrecompile(
@@ -81,14 +78,6 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
     }
 
     public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var serialNum = (long) decodedArguments.get(1);
-        return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNum);
+        return EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
     }
 }

@@ -15,21 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,13 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
-    private static final Function GET_FUNGIBLE_TOKEN_INFO_FUNCTION =
-            new Function("getFungibleTokenInfo(address)");
-    private static final Bytes GET_FUNGIBLE_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_FUNGIBLE_TOKEN_INFO_DECODER =
-            TypeFactory.create(BYTES32);
+public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile implements
+    EvmFungibleTokenInfoPrecompile {
 
     public FungibleTokenInfoPrecompile(
             TokenID tokenId,
@@ -72,11 +61,6 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
     }
 
     public static TokenInfoWrapper decodeGetFungibleTokenInfo(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forFungibleToken(tokenID);
+        return EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
     }
 }
