@@ -24,7 +24,9 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-/** An implementation of {@link Account}. */
+/** An implementation of {@link Account}.
+ * FUTURE: Should be moved to token-service-impl module
+ */
 public record AccountImpl(
         long accountNumber,
         Optional<byte[]> alias,
