@@ -29,12 +29,13 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.services.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -44,19 +45,9 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function ERC_GET_APPROVED_FUNCTION =
-            new Function("getApproved(uint256)", INT);
-    private static final Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
-            Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
-    private static final ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
-            TypeFactory.create(UINT256);
-    private static final Function HAPI_GET_APPROVED_FUNCTION =
-            new Function("getApproved(address,uint256)", "(int,int)");
-    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
-            Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
-    private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
-            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile implements
+    EvmGetApprovedPrecompile {
+
     GetApprovedWrapper getApprovedWrapper;
 
     public GetApprovedPrecompile(
@@ -102,24 +93,6 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
 
     public static GetApprovedWrapper decodeGetApproved(
             final Bytes input, final TokenID impliedTokenId) {
-        final var offset = impliedTokenId == null ? 1 : 0;
-
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        offset == 0
-                                ? ERC_GET_APPROVED_FUNCTION_SELECTOR
-                                : HAPI_GET_APPROVED_FUNCTION_SELECTOR,
-                        offset == 0
-                                ? ERC_GET_APPROVED_FUNCTION_DECODER
-                                : HAPI_GET_APPROVED_FUNCTION_DECODER);
-
-        final var tId =
-                offset == 0
-                        ? impliedTokenId
-                        : convertAddressBytesToTokenID(decodedArguments.get(0));
-
-        final var serialNo = (BigInteger) decodedArguments.get(offset);
-        return new GetApprovedWrapper(tId, serialNo.longValueExact());
+        return EvmGetApprovedPrecompile.decodeGetApproved(input, impliedTokenId);
     }
 }

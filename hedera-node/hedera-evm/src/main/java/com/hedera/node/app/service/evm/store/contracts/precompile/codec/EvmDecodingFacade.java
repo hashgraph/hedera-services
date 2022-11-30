@@ -20,10 +20,12 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public class EvmDecodingFacade {
 
@@ -45,11 +47,29 @@ public class EvmDecodingFacade {
         return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
     }
 
+
+
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
                 Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+    }
+
+    public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
+        final var address =
+            Address.wrap(
+                Bytes.wrap(addressBytes)
+                    .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+        return tokenIdFromEvmAddress(address.toArray());
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
+        return TokenID.newBuilder()
+            .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+            .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+            .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+            .build();
     }
 
     public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
