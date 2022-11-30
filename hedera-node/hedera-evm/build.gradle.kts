@@ -36,6 +36,7 @@ dependencies {
         exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
+    implementation(libs.headlong)
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.mockito.jupiter)

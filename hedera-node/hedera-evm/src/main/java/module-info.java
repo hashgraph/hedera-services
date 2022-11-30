@@ -11,6 +11,7 @@ module com.hedera.node.app.service.evm {
     requires com.github.benmanes.caffeine;
     requires com.google.protobuf;
     requires static com.github.spotbugs.annotations;
+    requires headlong;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

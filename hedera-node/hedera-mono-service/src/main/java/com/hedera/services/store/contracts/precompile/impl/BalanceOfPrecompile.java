@@ -15,19 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -36,12 +28,8 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function BALANCE_OF_TOKEN_FUNCTION =
-            new Function("balanceOf(address)", INT);
-    private static final Bytes BALANCE_OF_TOKEN_SELECTOR =
-            Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
-    private static final ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
+public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements
+    EvmBalanceOfPrecompile {
 
     private BalanceOfWrapper balanceWrapper;
 
@@ -73,12 +61,6 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile {
 
     public static BalanceOfWrapper decodeBalanceOf(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
-
-        final var account =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
-
-        return new BalanceOfWrapper(account);
+        return EvmBalanceOfPrecompile.decodeBalanceOf(input, aliasResolver);
     }
 }
