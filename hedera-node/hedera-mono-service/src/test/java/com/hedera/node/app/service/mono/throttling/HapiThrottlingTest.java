@@ -26,8 +26,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
-import com.hedera.node.app.service.mono.throttling.HapiThrottling;
-import com.hedera.node.app.service.mono.throttling.TimedFunctionalityThrottling;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Transaction;

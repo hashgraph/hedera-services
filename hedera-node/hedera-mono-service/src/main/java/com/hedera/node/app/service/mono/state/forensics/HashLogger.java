@@ -16,26 +16,25 @@
 package com.hedera.node.app.service.mono.state.forensics;
 
 import com.hedera.node.app.service.mono.ServicesState;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 @Singleton
 public class HashLogger {
-	private static final Logger log = LogManager.getLogger(HashLogger.class);
+    private static final Logger log = LogManager.getLogger(HashLogger.class);
 
-	private static final String UNAVAILABLE_VIRTUAL_MAP_HASH = "<N/A>";
+    private static final String UNAVAILABLE_VIRTUAL_MAP_HASH = "<N/A>";
 
-	@Inject
-	public HashLogger() {
-		// Default Constructor
-	}
+    @Inject
+    public HashLogger() {
+        // Default Constructor
+    }
 
-	public void logHashesFor(final ServicesState state) {
-		final var summaryTpl =
-				"""
+    public void logHashesFor(final ServicesState state) {
+        final var summaryTpl =
+                """
 						[SwirldState Hashes]
 						Overall                :: {}
 						Accounts               :: {}
@@ -51,21 +50,21 @@ public class HashLogger {
 						  ↪ Running hash       :: {}
 						UniqueTokens           :: {}
 						ContractStorage        :: {}""";
-		log.info(
-				summaryTpl,
-				state.getHash(),
-				state.accounts().getHash(),
-				UNAVAILABLE_VIRTUAL_MAP_HASH,
-				state.topics().getHash(),
-				state.tokens().getHash(),
-				state.tokenAssociations().getHash(),
-				state.specialFiles().getHash(),
-				state.scheduleTxs().getHash(),
-				state.networkCtx().getHash(),
-				state.addressBook().getHash(),
-				state.runningHashLeaf().getHash(),
-				state.runningHashLeaf().getRunningHash().getHash(),
-				state.uniqueTokens().getHash(),
-				UNAVAILABLE_VIRTUAL_MAP_HASH);
-	}
+        log.info(
+                summaryTpl,
+                state.getHash(),
+                state.accounts().getHash(),
+                UNAVAILABLE_VIRTUAL_MAP_HASH,
+                state.topics().getHash(),
+                state.tokens().getHash(),
+                state.tokenAssociations().getHash(),
+                state.specialFiles().getHash(),
+                state.scheduleTxs().getHash(),
+                state.networkCtx().getHash(),
+                state.addressBook().getHash(),
+                state.runningHashLeaf().getHash(),
+                state.runningHashLeaf().getRunningHash().getHash(),
+                state.uniqueTokens().getHash(),
+                UNAVAILABLE_VIRTUAL_MAP_HASH);
+    }
 }

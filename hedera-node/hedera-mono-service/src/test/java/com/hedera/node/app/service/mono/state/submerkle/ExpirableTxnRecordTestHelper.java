@@ -20,15 +20,6 @@ import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecor
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
-import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
-import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;

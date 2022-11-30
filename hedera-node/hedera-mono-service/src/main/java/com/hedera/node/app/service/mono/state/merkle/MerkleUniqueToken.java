@@ -88,7 +88,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     public MerkleUniqueToken(EntityId owner, byte[] metadata, RichInstant creationTime) {
         this.ownerCode = owner.identityCode();
         this.metadata = metadata;
-        this.packedCreationTime = BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
+        this.packedCreationTime =
+                BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
     }
 
     /**

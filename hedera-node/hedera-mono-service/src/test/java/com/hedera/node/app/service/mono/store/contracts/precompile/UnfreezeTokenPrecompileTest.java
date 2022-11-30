@@ -127,7 +127,10 @@ class UnfreezeTokenPrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     public static final Bytes UNFREEZE_INPUT =
             Bytes.fromHexString(
                     "0x52f9138700000000000000000000000000000000000000000000000000000000000005180000000000000000000000000000000000000000000000000000000000000516");
@@ -211,7 +214,8 @@ class UnfreezeTokenPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final var result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -267,7 +271,10 @@ class UnfreezeTokenPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveFreezeKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
     }
 

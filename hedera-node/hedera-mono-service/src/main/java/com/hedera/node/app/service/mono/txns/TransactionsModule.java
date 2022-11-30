@@ -21,25 +21,25 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndel
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.node.app.service.mono.legacy.handler.SmartContractRequestHandler;
 import com.hedera.node.app.service.mono.txns.consensus.ConsensusLogicModule;
-import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
-import com.hedera.node.app.service.mono.txns.customfees.FcmCustomFeeSchedules;
-import com.hedera.node.app.service.mono.txns.schedule.ScheduleLogicModule;
-import com.hedera.node.app.service.mono.txns.submission.BasicSubmissionFlow;
-import com.hedera.node.app.service.mono.txns.validation.ContextOptionValidator;
-import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.txns.contract.ContractLogicModule;
 import com.hedera.node.app.service.mono.txns.contract.ContractSysDelTransitionLogic;
 import com.hedera.node.app.service.mono.txns.contract.ContractSysUndelTransitionLogic;
 import com.hedera.node.app.service.mono.txns.crypto.CryptoLogicModule;
+import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
+import com.hedera.node.app.service.mono.txns.customfees.FcmCustomFeeSchedules;
 import com.hedera.node.app.service.mono.txns.ethereum.EthereumLogicModule;
 import com.hedera.node.app.service.mono.txns.file.FileLogicModule;
 import com.hedera.node.app.service.mono.txns.file.FileSysDelTransitionLogic;
 import com.hedera.node.app.service.mono.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.node.app.service.mono.txns.network.NetworkLogicModule;
+import com.hedera.node.app.service.mono.txns.schedule.ScheduleLogicModule;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
+import com.hedera.node.app.service.mono.txns.submission.BasicSubmissionFlow;
 import com.hedera.node.app.service.mono.txns.token.TokenLogicModule;
 import com.hedera.node.app.service.mono.txns.util.UtilLogicModule;
+import com.hedera.node.app.service.mono.txns.validation.ContextOptionValidator;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import dagger.Binds;
 import dagger.Module;
@@ -67,11 +67,11 @@ public interface TransactionsModule {
 
     @Binds
     @Singleton
-	OptionValidator bindOptionValidator(ContextOptionValidator contextOptionValidator);
+    OptionValidator bindOptionValidator(ContextOptionValidator contextOptionValidator);
 
     @Binds
     @Singleton
-	CustomFeeSchedules bindCustomFeeSchedules(FcmCustomFeeSchedules fcmCustomFeeSchedules);
+    CustomFeeSchedules bindCustomFeeSchedules(FcmCustomFeeSchedules fcmCustomFeeSchedules);
 
     @Provides
     @Singleton

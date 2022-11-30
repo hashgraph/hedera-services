@@ -26,7 +26,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.logic.NonPayerKeysScreen;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;
 import org.junit.jupiter.api.BeforeEach;

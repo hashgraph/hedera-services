@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.state.expiry.MonotonicFullQueueExpiries;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

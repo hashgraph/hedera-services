@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state.virtual;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

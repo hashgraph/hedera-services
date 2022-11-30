@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.keys;
 import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

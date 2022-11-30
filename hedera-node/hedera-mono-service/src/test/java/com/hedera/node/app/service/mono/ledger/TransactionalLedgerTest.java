@@ -47,11 +47,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.accounts.TestAccount;
-import com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.interceptors.AccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -170,7 +170,9 @@ class TransactionalLedgerTest {
         assertEquals(1, changes.size());
         assertEquals(1L, changes.id(0));
         assertNull(changes.entity(0));
-        assertEquals(Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true), changes.changes(0));
+        assertEquals(
+                Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true),
+                changes.changes(0));
         verify(backingTestAccounts).put(1L, expectedCommit);
         assertTrue(testLedger.getCreatedKeys().isEmpty());
     }
@@ -247,7 +249,9 @@ class TransactionalLedgerTest {
         assertEquals(1, changes.size());
         assertEquals(1L, changes.id(0));
         assertSame(anAccount, changes.entity(0));
-        assertEquals(Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true), changes.changes(0));
+        assertEquals(
+                Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true),
+                changes.changes(0));
         verify(backingTestAccounts).put(1L, expectedCommit);
         assertTrue(testLedger.getChangedKeys().isEmpty());
     }
@@ -477,7 +481,9 @@ class TransactionalLedgerTest {
     void throwsIfNotInTransaction() {
         setupTestLedger();
 
-        assertThrows(IllegalStateException.class, () -> testLedger.set(1L, TestAccountProperty.OBJ, things[0]));
+        assertThrows(
+                IllegalStateException.class,
+                () -> testLedger.set(1L, TestAccountProperty.OBJ, things[0]));
         assertThrows(IllegalStateException.class, () -> testLedger.create(2L));
         assertThrows(IllegalStateException.class, () -> testLedger.destroy(1L));
     }
@@ -488,7 +494,9 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
 
-        assertThrows(MissingEntityException.class, () -> testLedger.set(0L, TestAccountProperty.OBJ, things[0]));
+        assertThrows(
+                MissingEntityException.class,
+                () -> testLedger.set(0L, TestAccountProperty.OBJ, things[0]));
     }
 
     @Test
@@ -505,7 +513,8 @@ class TransactionalLedgerTest {
     void throwsOnGettingPropOfMissingAccount() {
         setupTestLedger();
 
-        assertThrows(IllegalArgumentException.class, () -> testLedger.get(2L, TestAccountProperty.OBJ));
+        assertThrows(
+                IllegalArgumentException.class, () -> testLedger.get(2L, TestAccountProperty.OBJ));
     }
 
     @Test

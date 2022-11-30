@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSA_384Key;
 import org.junit.jupiter.api.Test;
 
 class JECDSA_384KeyTest {

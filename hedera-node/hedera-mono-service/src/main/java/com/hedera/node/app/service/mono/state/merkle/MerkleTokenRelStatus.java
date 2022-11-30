@@ -57,7 +57,8 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
 
     public MerkleTokenRelStatus(final Pair<AccountID, TokenID> grpcRel) {
         this.numbers =
-                BitPackUtils.packedNums(grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
+                BitPackUtils.packedNums(
+                        grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
     }
 
     public MerkleTokenRelStatus(

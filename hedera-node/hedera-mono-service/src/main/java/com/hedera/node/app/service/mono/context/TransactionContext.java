@@ -23,10 +23,10 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -302,9 +302,8 @@ public interface TransactionContext {
 
     /**
      * Given the number of an account (or contract) deleted in the current transaction, returns the
-     * number of its designated beneficiary. Used by the {@link
-     * StakingAccountsCommitInterceptor} to redirect reward
-     * payments that would have otherwise been received by deleted accounts.
+     * number of its designated beneficiary. Used by the {@link StakingAccountsCommitInterceptor} to
+     * redirect reward payments that would have otherwise been received by deleted accounts.
      *
      * @param accountNum the number of a deleted account
      * @return the number of its beneficiary

@@ -176,10 +176,11 @@ class TokenPrecompileReadOperationsTest {
         // given
         final var tokenInfoWrapper =
                 HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-						HTSTestsUtil.tokenMerkleId, HTSTestsUtil.serialNumber);
+                        HTSTestsUtil.tokenMerkleId, HTSTestsUtil.serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), HTSTestsUtil.nonFungibleTokenAddr);
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)),
+                        HTSTestsUtil.nonFungibleTokenAddr);
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.tokens()).willReturn(tokensLedger);

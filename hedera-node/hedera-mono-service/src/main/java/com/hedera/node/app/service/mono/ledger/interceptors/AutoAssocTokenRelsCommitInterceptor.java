@@ -20,9 +20,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

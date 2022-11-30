@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.txns.token.TokenUpdateTransitionLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

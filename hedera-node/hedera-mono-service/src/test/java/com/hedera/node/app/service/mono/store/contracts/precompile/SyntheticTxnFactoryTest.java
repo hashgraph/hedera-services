@@ -466,7 +466,12 @@ class SyntheticTxnFactoryTest {
                         .setIsApproval(true)
                         .build();
 
-        final var nftChange = changingNftOwnership(Id.fromGrpcToken(HTSTestsUtil.token), HTSTestsUtil.token, xfer, HTSTestsUtil.payer);
+        final var nftChange =
+                changingNftOwnership(
+                        Id.fromGrpcToken(HTSTestsUtil.token),
+                        HTSTestsUtil.token,
+                        xfer,
+                        HTSTestsUtil.payer);
 
         final var result = subject.createAccount(alias, balance, 1);
 
@@ -590,7 +595,9 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedFungibleApproveAllowance() {
         final var amount = BigInteger.ONE;
-        var allowances = new ApproveWrapper(HTSTestsUtil.token, HTSTestsUtil.receiver, amount, BigInteger.ZERO, true);
+        var allowances =
+                new ApproveWrapper(
+                        HTSTestsUtil.token, HTSTestsUtil.receiver, amount, BigInteger.ZERO, true);
 
         final var result = subject.createFungibleApproval(allowances);
         final var txnBody = result.build();
@@ -598,15 +605,23 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 amount.longValue(),
                 txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
         Assertions.assertEquals(
-                HTSTestsUtil.receiver, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
+                HTSTestsUtil.token,
+                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+        Assertions.assertEquals(
+                HTSTestsUtil.receiver,
+                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
     }
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
         var allowances =
-                new ApproveWrapper(HTSTestsUtil.token, HTSTestsUtil.receiver, BigInteger.ZERO, BigInteger.ONE, false);
+                new ApproveWrapper(
+                        HTSTestsUtil.token,
+                        HTSTestsUtil.receiver,
+                        BigInteger.ZERO,
+                        BigInteger.ONE,
+                        false);
         final var ownerId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
@@ -623,7 +638,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
         var allowances =
-                new ApproveWrapper(HTSTestsUtil.token, HTSTestsUtil.receiver, BigInteger.ZERO, BigInteger.ONE, false);
+                new ApproveWrapper(
+                        HTSTestsUtil.token,
+                        HTSTestsUtil.receiver,
+                        BigInteger.ZERO,
+                        BigInteger.ONE,
+                        false);
         final var ownerId = new EntityId(0, 0, 666);
         final var operatorId = new EntityId(0, 0, 777);
 
@@ -641,7 +661,12 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
         var allowances =
-                new ApproveWrapper(HTSTestsUtil.token, HTSTestsUtil.receiver, BigInteger.ZERO, BigInteger.ONE, false);
+                new ApproveWrapper(
+                        HTSTestsUtil.token,
+                        HTSTestsUtil.receiver,
+                        BigInteger.ZERO,
+                        BigInteger.ONE,
+                        false);
         final var operatorId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
@@ -662,7 +687,8 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         Assertions.assertEquals(
-                HTSTestsUtil.receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+                HTSTestsUtil.receiver,
+                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
         assertEquals(
                 nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
@@ -673,15 +699,24 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsDeleteAllowance() {
         var allowances =
-                new ApproveWrapper(HTSTestsUtil.token, HTSTestsUtil.receiver, BigInteger.ZERO, BigInteger.ONE, false);
+                new ApproveWrapper(
+                        HTSTestsUtil.token,
+                        HTSTestsUtil.receiver,
+                        BigInteger.ZERO,
+                        BigInteger.ONE,
+                        false);
 
         final var result = subject.createDeleteAllowance(allowances, HTSTestsUtil.senderId);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+        Assertions.assertEquals(
+                HTSTestsUtil.token,
+                txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
-        Assertions.assertEquals(HTSTestsUtil.sender, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
+        Assertions.assertEquals(
+                HTSTestsUtil.sender,
+                txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
     }
 
     @Test
@@ -1373,7 +1408,7 @@ class SyntheticTxnFactoryTest {
     void createsExpectedUpdateTokenExpiryInfo() {
         final var updateExpiryInfo =
                 new TokenUpdateExpiryInfoWrapper(
-						HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 555L));
+                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1387,7 +1422,8 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(HTSTestsUtil.token, new TokenExpiryWrapper(0L, HTSTestsUtil.payer, 555L));
+                new TokenUpdateExpiryInfoWrapper(
+                        HTSTestsUtil.token, new TokenExpiryWrapper(0L, HTSTestsUtil.payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1401,7 +1437,8 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 0L));
+                new TokenUpdateExpiryInfoWrapper(
+                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 0L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
@@ -1415,7 +1452,8 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(HTSTestsUtil.token, new TokenExpiryWrapper(442L, null, 555L));
+                new TokenUpdateExpiryInfoWrapper(
+                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, null, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();

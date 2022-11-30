@@ -25,11 +25,10 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOpe
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
-import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.ContractsModule.V_0_30;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
+import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreate2Operation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
@@ -37,6 +36,7 @@ import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation
 import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSelfDestructOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaStaticCallOperation;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

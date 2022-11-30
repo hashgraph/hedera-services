@@ -215,14 +215,18 @@ class MutableEntityAccessTest {
     @Test
     void checksIfTokenAccount() {
         // given:
-        given(tokensLedger.exists(EntityIdUtils.tokenIdFromEvmAddress(HTSTestsUtil.fungibleTokenAddr)))
+        given(
+                        tokensLedger.exists(
+                                EntityIdUtils.tokenIdFromEvmAddress(
+                                        HTSTestsUtil.fungibleTokenAddr)))
                 .willReturn(true);
 
         // when:
         assertTrue(subject.isTokenAccount(HTSTestsUtil.fungibleTokenAddr));
 
         // and:
-        verify(tokensLedger).exists(EntityIdUtils.tokenIdFromEvmAddress(HTSTestsUtil.fungibleTokenAddr));
+        verify(tokensLedger)
+                .exists(EntityIdUtils.tokenIdFromEvmAddress(HTSTestsUtil.fungibleTokenAddr));
     }
 
     @Test

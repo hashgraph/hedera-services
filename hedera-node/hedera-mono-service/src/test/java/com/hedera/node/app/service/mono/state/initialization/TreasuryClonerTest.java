@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.mono.state.initialization.TreasuryCloner;
 import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;

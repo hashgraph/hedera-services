@@ -47,8 +47,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.contract.ContractCallTransitionLogic;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
-import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;

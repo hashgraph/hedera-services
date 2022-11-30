@@ -44,7 +44,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Singleton
-@Component(modules = { ContractsModule.class})
+@Component(modules = {ContractsModule.class})
 public interface ContractsTestComponent {
 
     @Singleton

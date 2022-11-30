@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.state.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.StateBase;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.time.Instant;
 import java.util.HashMap;

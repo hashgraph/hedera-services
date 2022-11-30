@@ -37,7 +37,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.sigs.Rationalization;
 import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;

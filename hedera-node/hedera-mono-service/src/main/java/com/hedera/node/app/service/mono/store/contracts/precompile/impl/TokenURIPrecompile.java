@@ -23,13 +23,13 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;
@@ -78,7 +78,8 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
     public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 
         final var tokenId = (BigInteger) decodedArguments.get(0);
 

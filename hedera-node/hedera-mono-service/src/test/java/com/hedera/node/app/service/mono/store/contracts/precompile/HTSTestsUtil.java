@@ -22,7 +22,6 @@ import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Association;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.CryptoTransferWrapper;

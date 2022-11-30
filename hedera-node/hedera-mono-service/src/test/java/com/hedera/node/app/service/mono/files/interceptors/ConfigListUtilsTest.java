@@ -15,55 +15,55 @@
  */
 package com.hedera.node.app.service.mono.files.interceptors;
 
-import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import com.hederahashgraph.api.proto.java.Setting;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.isConfigList;
 import static com.hedera.node.app.service.mono.files.interceptors.ConfigListUtils.uncheckedParse;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
+import com.hederahashgraph.api.proto.java.Setting;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 class ConfigListUtilsTest {
-	private final ServicesConfigurationList example =
-			ServicesConfigurationList.newBuilder()
-					.addNameValue(Setting.newBuilder().setName("key").setValue("value"))
-					.build();
+    private final ServicesConfigurationList example =
+            ServicesConfigurationList.newBuilder()
+                    .addNameValue(Setting.newBuilder().setName("key").setValue("value"))
+                    .build();
 
-	@Test
-	void recognizesParseable() {
-		// given:
-		final var nonsense = "NONSENSE".getBytes();
-		final var truth = example.toByteArray();
+    @Test
+    void recognizesParseable() {
+        // given:
+        final var nonsense = "NONSENSE".getBytes();
+        final var truth = example.toByteArray();
 
-		// when:
-		final var nonsenseFlag = isConfigList(nonsense);
-		final var truthFlag = isConfigList(truth);
+        // when:
+        final var nonsenseFlag = isConfigList(nonsense);
+        final var truthFlag = isConfigList(truth);
 
-		// then:
-		assertFalse(nonsenseFlag);
-		assertTrue(truthFlag);
-	}
+        // then:
+        assertFalse(nonsenseFlag);
+        assertTrue(truthFlag);
+    }
 
-	@Test
-	void parsesToDefaultIfInvalid() {
-		// expect:
-		Assertions.assertEquals(
-				ServicesConfigurationList.getDefaultInstance(),
-				uncheckedParse("NONSENSE".getBytes()));
-	}
+    @Test
+    void parsesToDefaultIfInvalid() {
+        // expect:
+        Assertions.assertEquals(
+                ServicesConfigurationList.getDefaultInstance(),
+                uncheckedParse("NONSENSE".getBytes()));
+    }
 
-	@Test
-	void parses() {
-		// expect:
-		Assertions.assertEquals(example, uncheckedParse(example.toByteArray()));
-	}
+    @Test
+    void parses() {
+        // expect:
+        Assertions.assertEquals(example, uncheckedParse(example.toByteArray()));
+    }
 
-	@Test
-	void cannotBeConstructed() {
-		// expect:
-		assertThrows(IllegalStateException.class, ConfigListUtils::new);
-	}
+    @Test
+    void cannotBeConstructed() {
+        // expect:
+        assertThrows(IllegalStateException.class, ConfigListUtils::new);
+    }
 }

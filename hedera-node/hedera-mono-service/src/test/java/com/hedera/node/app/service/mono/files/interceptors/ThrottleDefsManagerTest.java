@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,6 @@
  * limitations under the License.
  */
 package com.hedera.node.app.service.mono.files.interceptors;
-
-import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
-import com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils;
-import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.test.utils.SerdeUtils;
-import com.hederahashgraph.api.proto.java.FileID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
-import com.swirlds.common.system.address.AddressBook;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.util.EnumSet;
-import java.util.OptionalInt;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -55,184 +35,200 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
+import com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.test.utils.SerdeUtils;
+import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
+import com.swirlds.common.system.address.AddressBook;
+import java.io.IOException;
+import java.util.EnumSet;
+import java.util.OptionalInt;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class ThrottleDefsManagerTest {
-	FileNumbers fileNums = new MockFileNumbers();
-	FileID throttleDefs = fileNums.toFid(123L);
+    FileNumbers fileNums = new MockFileNumbers();
+    FileID throttleDefs = fileNums.toFid(123L);
 
-	EnumSet<HederaFunctionality> pretendExpectedOps =
-			EnumSet.of(
-					CryptoCreate,
-					CryptoTransfer,
-					ContractCall,
-					TokenCreate,
-					TokenAssociateToAccount,
-					TokenMint,
-					CryptoGetAccountBalance,
-					TransactionGetReceipt,
-					GetVersionInfo);
+    EnumSet<HederaFunctionality> pretendExpectedOps =
+            EnumSet.of(
+                    CryptoCreate,
+                    CryptoTransfer,
+                    ContractCall,
+                    TokenCreate,
+                    TokenAssociateToAccount,
+                    TokenMint,
+                    CryptoGetAccountBalance,
+                    TransactionGetReceipt,
+                    GetVersionInfo);
 
-	@Mock
-	AddressBook book;
-	@Mock
-	ThrottleBucket bucket;
+    @Mock AddressBook book;
+    @Mock ThrottleBucket bucket;
 
-	@Mock
-	Function<
-			ThrottleDefinitions,
-			com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
-			mockToPojo;
+    @Mock
+    Function<
+                    ThrottleDefinitions,
+                    com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions>
+            mockToPojo;
 
-	@Mock
-	Consumer<ThrottleDefinitions> postUpdateCb;
+    @Mock Consumer<ThrottleDefinitions> postUpdateCb;
 
-	ThrottleDefsManager subject;
+    ThrottleDefsManager subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new ThrottleDefsManager(fileNums, () -> book, postUpdateCb);
-		subject.expectedOps = pretendExpectedOps;
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new ThrottleDefsManager(fileNums, () -> book, postUpdateCb);
+        subject.expectedOps = pretendExpectedOps;
+    }
 
-	@Test
-	void rubberstampsAllUpdates() {
-		// expect:
-		assertEquals(ThrottleDefsManager.YES_VERDICT, subject.preAttrChange(throttleDefs, null));
-	}
+    @Test
+    void rubberstampsAllUpdates() {
+        // expect:
+        assertEquals(ThrottleDefsManager.YES_VERDICT, subject.preAttrChange(throttleDefs, null));
+    }
 
-	@Test
-	void throwsUnsupportedOnDelete() {
-		// expect:
-		assertThrows(UnsupportedOperationException.class, () -> subject.preDelete(throttleDefs));
-	}
+    @Test
+    void throwsUnsupportedOnDelete() {
+        // expect:
+        assertThrows(UnsupportedOperationException.class, () -> subject.preDelete(throttleDefs));
+    }
 
-	@Test
-	void saysYesWhenAcceptable() throws IOException {
-		final var ok = SerdeUtils.protoDefs("bootstrap/throttles.json");
+    @Test
+    void saysYesWhenAcceptable() throws IOException {
+        final var ok = SerdeUtils.protoDefs("bootstrap/throttles.json");
 
-		given(book.getSize()).willReturn(2);
+        given(book.getSize()).willReturn(2);
 
-		// when:
-		final var verdict = subject.preUpdate(throttleDefs, ok.toByteArray());
+        // when:
+        final var verdict = subject.preUpdate(throttleDefs, ok.toByteArray());
 
-		// then:
-		assertEquals(ThrottleDefsManager.YES_VERDICT, verdict);
-	}
+        // then:
+        assertEquals(ThrottleDefsManager.YES_VERDICT, verdict);
+    }
 
-	@Test
-	void detectsMissingExpectedOp() throws IOException {
-		final var missingMint = SerdeUtils.protoDefs("bootstrap/throttles-sans-mint.json");
+    @Test
+    void detectsMissingExpectedOp() throws IOException {
+        final var missingMint = SerdeUtils.protoDefs("bootstrap/throttles-sans-mint.json");
 
-		given(book.getSize()).willReturn(2);
+        given(book.getSize()).willReturn(2);
 
-		// when:
-		final var verdict = subject.preUpdate(throttleDefs, missingMint.toByteArray());
+        // when:
+        final var verdict = subject.preUpdate(throttleDefs, missingMint.toByteArray());
 
-		// then:
-		assertEquals(ThrottleDefsManager.YES_BUT_MISSING_OP_VERDICT, verdict);
-	}
+        // then:
+        assertEquals(ThrottleDefsManager.YES_BUT_MISSING_OP_VERDICT, verdict);
+    }
 
-	@Test
-	void invokesPostUpdateCbAsExpected() {
-		// given:
-		final var newDef = ThrottleDefinitions.getDefaultInstance();
+    @Test
+    void invokesPostUpdateCbAsExpected() {
+        // given:
+        final var newDef = ThrottleDefinitions.getDefaultInstance();
 
-		// when:
-		subject.postUpdate(throttleDefs, newDef.toByteArray());
+        // when:
+        subject.postUpdate(throttleDefs, newDef.toByteArray());
 
-		// then:
-		verify(postUpdateCb).accept(newDef);
-	}
+        // then:
+        verify(postUpdateCb).accept(newDef);
+    }
 
-	@Test
-	void doesntInvokePostUpdateWhenEmptyDefsFromParser() {
-		// given:
-		final String invalidThrottleDefs = "thisIsTheWay";
-		// when:
-		subject.postUpdate(throttleDefs, invalidThrottleDefs.getBytes());
+    @Test
+    void doesntInvokePostUpdateWhenEmptyDefsFromParser() {
+        // given:
+        final String invalidThrottleDefs = "thisIsTheWay";
+        // when:
+        subject.postUpdate(throttleDefs, invalidThrottleDefs.getBytes());
 
-		// then:
-		verify(postUpdateCb, never()).accept(any());
-	}
+        // then:
+        verify(postUpdateCb, never()).accept(any());
+    }
 
-	@Test
-	void reusesResponseCodeFromMapperFailure() {
-		// setup:
-		final int nodes = 7;
-		final var pojoDefs =
-				new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-		pojoDefs.getBuckets().add(bucket);
+    @Test
+    void reusesResponseCodeFromMapperFailure() {
+        // setup:
+        final int nodes = 7;
+        final var pojoDefs =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        pojoDefs.getBuckets().add(bucket);
 
-		given(book.getSize()).willReturn(nodes);
-		given(bucket.asThrottleMapping(nodes))
-				.willThrow(
-						new IllegalStateException(
-								ErrorCodeUtils.exceptionMsgFor(
-										NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, "YIKES!")));
-		given(mockToPojo.apply(any())).willReturn(pojoDefs);
-		// and:
-		subject.toPojo = mockToPojo;
+        given(book.getSize()).willReturn(nodes);
+        given(bucket.asThrottleMapping(nodes))
+                .willThrow(
+                        new IllegalStateException(
+                                ErrorCodeUtils.exceptionMsgFor(
+                                        NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, "YIKES!")));
+        given(mockToPojo.apply(any())).willReturn(pojoDefs);
+        // and:
+        subject.toPojo = mockToPojo;
 
-		// when:
-		final var verdict =
-				subject.preUpdate(
-						throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
+        // when:
+        final var verdict =
+                subject.preUpdate(
+                        throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
 
-		// then:
-		assertEquals(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, verdict.getKey());
-		assertFalse(verdict.getValue());
-	}
+        // then:
+        assertEquals(NODE_CAPACITY_NOT_SUFFICIENT_FOR_OPERATION, verdict.getKey());
+        assertFalse(verdict.getValue());
+    }
 
-	@Test
-	void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
-		// setup:
-		final int nodes = 7;
-		final var pojoDefs =
-				new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
-		pojoDefs.getBuckets().add(bucket);
+    @Test
+    void fallsBackToDefaultInvalidIfNoDetailsFromMapperFailure() {
+        // setup:
+        final int nodes = 7;
+        final var pojoDefs =
+                new com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinitions();
+        pojoDefs.getBuckets().add(bucket);
 
-		given(book.getSize()).willReturn(nodes);
-		given(bucket.asThrottleMapping(nodes)).willThrow(new IllegalStateException("YIKES!"));
-		given(mockToPojo.apply(any())).willReturn(pojoDefs);
-		// and:
-		subject.toPojo = mockToPojo;
+        given(book.getSize()).willReturn(nodes);
+        given(bucket.asThrottleMapping(nodes)).willThrow(new IllegalStateException("YIKES!"));
+        given(mockToPojo.apply(any())).willReturn(pojoDefs);
+        // and:
+        subject.toPojo = mockToPojo;
 
-		// when:
-		final var verdict =
-				subject.preUpdate(
-						throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
+        // when:
+        final var verdict =
+                subject.preUpdate(
+                        throttleDefs, ThrottleDefinitions.getDefaultInstance().toByteArray());
 
-		// then:
-		assertEquals(INVALID_THROTTLE_DEFINITIONS, verdict.getKey());
-		assertFalse(verdict.getValue());
-	}
+        // then:
+        assertEquals(INVALID_THROTTLE_DEFINITIONS, verdict.getKey());
+        assertFalse(verdict.getValue());
+    }
 
-	@Test
-	void rejectsInvalidBytes() {
-		final byte[] invalidBytes = "NONSENSE".getBytes();
+    @Test
+    void rejectsInvalidBytes() {
+        final byte[] invalidBytes = "NONSENSE".getBytes();
 
-		// when:
-		final var verdict = subject.preUpdate(throttleDefs, invalidBytes);
+        // when:
+        final var verdict = subject.preUpdate(throttleDefs, invalidBytes);
 
-		// then:
-		assertEquals(ThrottleDefsManager.UNPARSEABLE_VERDICT, verdict);
-	}
+        // then:
+        assertEquals(ThrottleDefsManager.UNPARSEABLE_VERDICT, verdict);
+    }
 
-	@Test
-	void returnsMaximumPriorityForThrottleDefsUpdate() {
-		// given:
-		final var priority = subject.priorityForCandidate(fileNums.toFid(123L));
+    @Test
+    void returnsMaximumPriorityForThrottleDefsUpdate() {
+        // given:
+        final var priority = subject.priorityForCandidate(fileNums.toFid(123L));
 
-		// expect:
-		assertEquals(OptionalInt.of(ThrottleDefsManager.APPLICABLE_PRIORITY), priority);
-	}
+        // expect:
+        assertEquals(OptionalInt.of(ThrottleDefsManager.APPLICABLE_PRIORITY), priority);
+    }
 
-	@Test
-	void returnsNoPriorityIfNoThrottleDefs() {
-		// given:
-		final var priority = subject.priorityForCandidate(fileNums.toFid(124L));
+    @Test
+    void returnsNoPriorityIfNoThrottleDefs() {
+        // given:
+        final var priority = subject.priorityForCandidate(fileNums.toFid(124L));
 
-		// expect:
-		assertTrue(priority.isEmpty());
-	}
+        // expect:
+        assertTrue(priority.isEmpty());
+    }
 }

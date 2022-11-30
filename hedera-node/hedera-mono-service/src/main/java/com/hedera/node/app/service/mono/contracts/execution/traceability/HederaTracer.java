@@ -218,7 +218,9 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     private CallOperationType toCallOperationType(final Type type) {
-        return type == Type.CONTRACT_CREATION ? CallOperationType.OP_CREATE : CallOperationType.OP_CALL;
+        return type == Type.CONTRACT_CREATION
+                ? CallOperationType.OP_CREATE
+                : CallOperationType.OP_CALL;
     }
 
     private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {

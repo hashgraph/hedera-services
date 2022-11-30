@@ -22,13 +22,13 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
-import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.models.OwnershipTracker;
 import com.hedera.node.app.service.mono.store.models.Token;
@@ -82,9 +82,8 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     /**
      * Persists the given token relationships to the Swirlds state, inviting the injected {@link
-     * TransactionRecordService} to update the {@link
-     * ExpirableTxnRecord} of the active transaction with these
-     * changes.
+     * TransactionRecordService} to update the {@link ExpirableTxnRecord} of the active transaction
+     * with these changes.
      *
      * @param tokenRelationships the token relationships to save
      */
@@ -127,9 +126,8 @@ public class TypedTokenStore extends ReadOnlyTokenStore {
 
     /**
      * Persists the given token to the Swirlds state, inviting the injected {@link
-     * TransactionRecordService} to update the {@link
-     * ExpirableTxnRecord} of the active transaction with these
-     * changes.
+     * TransactionRecordService} to update the {@link ExpirableTxnRecord} of the active transaction
+     * with these changes.
      *
      * @param token the token to save
      */

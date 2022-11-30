@@ -18,18 +18,18 @@ package com.hedera.node.app.service.mono.mocks;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
 
 public class MockStorageLimits implements ContractStorageLimits {
-	@Override
-	public void refreshStorageSlots() {
-		// No-op
-	}
+    @Override
+    public void refreshStorageSlots() {
+        // No-op
+    }
 
-	@Override
-	public void assertUsableTotalSlots(final long n) {
-		// No-op
-	}
+    @Override
+    public void assertUsableTotalSlots(final long n) {
+        // No-op
+    }
 
-	@Override
-	public void assertUsableContractSlots(final long n) {
-		// No-op
-	}
+    @Override
+    public void assertUsableContractSlots(final long n) {
+        // No-op
+    }
 }

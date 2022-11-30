@@ -15,42 +15,42 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
-import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
-import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
-import com.hederahashgraph.api.proto.java.Query;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
+import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
+import com.hederahashgraph.api.proto.java.Query;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class GetVersionInfoResourceUsageTest {
-	private static final Query versionInfoQuery =
-			Query.newBuilder()
-					.setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
-					.build();
-	private GetVersionInfoResourceUsage subject;
+    private static final Query versionInfoQuery =
+            Query.newBuilder()
+                    .setNetworkGetVersionInfo(NetworkGetVersionInfoQuery.getDefaultInstance())
+                    .build();
+    private GetVersionInfoResourceUsage subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new GetVersionInfoResourceUsage();
-	}
+    @BeforeEach
+    void setup() {
+        subject = new GetVersionInfoResourceUsage();
+    }
 
-	@Test
-	void recognizesApplicability() {
-		assertTrue(subject.applicableTo(versionInfoQuery));
-		assertFalse(subject.applicableTo(Query.getDefaultInstance()));
-	}
+    @Test
+    void recognizesApplicability() {
+        assertTrue(subject.applicableTo(versionInfoQuery));
+        assertFalse(subject.applicableTo(Query.getDefaultInstance()));
+    }
 
-	@Test
-	void getsExpectedUsage() {
-		final var expected = FixedUsageEstimates.getVersionInfoUsage();
+    @Test
+    void getsExpectedUsage() {
+        final var expected = FixedUsageEstimates.getVersionInfoUsage();
 
-		assertEquals(expected, subject.usageGiven(versionInfoQuery, null));
-		assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, COST_ANSWER));
-		assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, ANSWER_ONLY));
-	}
+        assertEquals(expected, subject.usageGiven(versionInfoQuery, null));
+        assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, COST_ANSWER));
+        assertEquals(expected, subject.usageGivenType(versionInfoQuery, null, ANSWER_ONLY));
+    }
 }

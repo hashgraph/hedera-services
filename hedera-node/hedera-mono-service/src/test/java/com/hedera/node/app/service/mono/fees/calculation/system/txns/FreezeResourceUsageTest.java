@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.system.txns;
 
-import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -29,26 +23,32 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class FreezeResourceUsageTest {
-	private FreezeResourceUsage subject;
+    private FreezeResourceUsage subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new FreezeResourceUsage();
-	}
+    @BeforeEach
+    void setup() {
+        subject = new FreezeResourceUsage();
+    }
 
-	@Test
-	void recognizesApplicability() {
-		final var txn = mock(TransactionBody.class);
-		given(txn.hasFreeze()).willReturn(true, false);
+    @Test
+    void recognizesApplicability() {
+        final var txn = mock(TransactionBody.class);
+        given(txn.hasFreeze()).willReturn(true, false);
 
-		assertTrue(subject.applicableTo(txn));
-		assertFalse(subject.applicableTo(txn));
-		verify(txn, times(2)).hasFreeze();
-	}
+        assertTrue(subject.applicableTo(txn));
+        assertFalse(subject.applicableTo(txn));
+        verify(txn, times(2)).hasFreeze();
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws InvalidTxBodyException {
-		assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(null, null, null));
-	}
+    @Test
+    void delegatesToCorrectEstimate() throws InvalidTxBodyException {
+        assertEquals(FeeData.getDefaultInstance(), subject.usageGiven(null, null, null));
+    }
 }

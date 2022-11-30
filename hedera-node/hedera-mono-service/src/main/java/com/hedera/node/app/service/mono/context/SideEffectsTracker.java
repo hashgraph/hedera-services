@@ -47,10 +47,9 @@ import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Extracts the side-effect tracking logic previously squashed into {@link
- * HederaLedger} and the {@link
- * TypedTokenStore}. Despite all the well-known opportunities for
- * performance improvements here, this implementation changes nothing...yet. 😉
+ * Extracts the side-effect tracking logic previously squashed into {@link HederaLedger} and the
+ * {@link TypedTokenStore}. Despite all the well-known opportunities for performance improvements
+ * here, this implementation changes nothing...yet. 😉
  */
 @Singleton
 public class SideEffectsTracker {
@@ -395,10 +394,10 @@ public class SideEffectsTracker {
      * Returns the list-of-lists of net token changes (in unit balances for fungible token types,
      * NFT ownership changes for non-fungible), including all incremental side effects since the
      * last call to {@link SideEffectsTracker#reset()}. The outer list is sorted in ascending order
-     * by the {@link HederaLedger#TOKEN_ID_COMPARATOR}. Inner lists that
-     * represent changes in fungible unit balances are sorted in ascending order by the {@link
-     * HederaLedger#ACCOUNT_ID_COMPARATOR}; while inner lists that
-     * represent NFT ownership changes are in the order the NFTs were exchanged in the transaction.
+     * by the {@link HederaLedger#TOKEN_ID_COMPARATOR}. Inner lists that represent changes in
+     * fungible unit balances are sorted in ascending order by the {@link
+     * HederaLedger#ACCOUNT_ID_COMPARATOR}; while inner lists that represent NFT ownership changes
+     * are in the order the NFTs were exchanged in the transaction.
      *
      * @return the ordered list of ordered balance and NFT ownership changes
      */

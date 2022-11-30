@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.sigs.metadata;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
-
 import java.util.EnumMap;
 import java.util.Optional;
 
@@ -33,21 +32,33 @@ public class SafeLookupResult<T> {
             new EnumMap<>(KeyOrderingFailure.class);
 
     static {
-        KNOWN_FAILURES.put(KeyOrderingFailure.MISSING_FILE, new SafeLookupResult<>(KeyOrderingFailure.MISSING_FILE));
-        KNOWN_FAILURES.put(KeyOrderingFailure.MISSING_TOKEN, new SafeLookupResult<>(KeyOrderingFailure.MISSING_TOKEN));
-        KNOWN_FAILURES.put(KeyOrderingFailure.MISSING_ACCOUNT, new SafeLookupResult<>(KeyOrderingFailure.MISSING_ACCOUNT));
         KNOWN_FAILURES.put(
-				KeyOrderingFailure.INVALID_CONTRACT, new SafeLookupResult<>(KeyOrderingFailure.INVALID_CONTRACT));
+                KeyOrderingFailure.MISSING_FILE,
+                new SafeLookupResult<>(KeyOrderingFailure.MISSING_FILE));
         KNOWN_FAILURES.put(
-				KeyOrderingFailure.IMMUTABLE_CONTRACT, new SafeLookupResult<>(KeyOrderingFailure.IMMUTABLE_CONTRACT));
-        KNOWN_FAILURES.put(KeyOrderingFailure.INVALID_TOPIC, new SafeLookupResult<>(KeyOrderingFailure.INVALID_TOPIC));
+                KeyOrderingFailure.MISSING_TOKEN,
+                new SafeLookupResult<>(KeyOrderingFailure.MISSING_TOKEN));
         KNOWN_FAILURES.put(
-                KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT, new SafeLookupResult<>(
-						KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT));
+                KeyOrderingFailure.MISSING_ACCOUNT,
+                new SafeLookupResult<>(KeyOrderingFailure.MISSING_ACCOUNT));
         KNOWN_FAILURES.put(
-				KeyOrderingFailure.MISSING_SCHEDULE, new SafeLookupResult<>(KeyOrderingFailure.MISSING_SCHEDULE));
+                KeyOrderingFailure.INVALID_CONTRACT,
+                new SafeLookupResult<>(KeyOrderingFailure.INVALID_CONTRACT));
         KNOWN_FAILURES.put(
-				KeyOrderingFailure.IMMUTABLE_ACCOUNT, new SafeLookupResult<>(KeyOrderingFailure.IMMUTABLE_ACCOUNT));
+                KeyOrderingFailure.IMMUTABLE_CONTRACT,
+                new SafeLookupResult<>(KeyOrderingFailure.IMMUTABLE_CONTRACT));
+        KNOWN_FAILURES.put(
+                KeyOrderingFailure.INVALID_TOPIC,
+                new SafeLookupResult<>(KeyOrderingFailure.INVALID_TOPIC));
+        KNOWN_FAILURES.put(
+                KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT,
+                new SafeLookupResult<>(KeyOrderingFailure.INVALID_AUTORENEW_ACCOUNT));
+        KNOWN_FAILURES.put(
+                KeyOrderingFailure.MISSING_SCHEDULE,
+                new SafeLookupResult<>(KeyOrderingFailure.MISSING_SCHEDULE));
+        KNOWN_FAILURES.put(
+                KeyOrderingFailure.IMMUTABLE_ACCOUNT,
+                new SafeLookupResult<>(KeyOrderingFailure.IMMUTABLE_ACCOUNT));
     }
 
     private SafeLookupResult(KeyOrderingFailure failure) {

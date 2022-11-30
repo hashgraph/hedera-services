@@ -60,8 +60,6 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.StackedContractAliases;
-import com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingNfts;
 import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingTokenRels;

@@ -15,53 +15,53 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.crypto.txns;
 
-import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class CryptoDeleteResourceUsageTest {
-	private SigValueObj sigUsage;
-	private CryptoFeeBuilder usageEstimator;
-	private CryptoDeleteResourceUsage subject;
+    private SigValueObj sigUsage;
+    private CryptoFeeBuilder usageEstimator;
+    private CryptoDeleteResourceUsage subject;
 
-	private TransactionBody nonCryptoDeleteTxn;
-	private TransactionBody cryptoDeleteTxn;
+    private TransactionBody nonCryptoDeleteTxn;
+    private TransactionBody cryptoDeleteTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		cryptoDeleteTxn = mock(TransactionBody.class);
-		given(cryptoDeleteTxn.hasCryptoDelete()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        cryptoDeleteTxn = mock(TransactionBody.class);
+        given(cryptoDeleteTxn.hasCryptoDelete()).willReturn(true);
 
-		nonCryptoDeleteTxn = mock(TransactionBody.class);
-		given(nonCryptoDeleteTxn.hasCryptoDelete()).willReturn(false);
+        nonCryptoDeleteTxn = mock(TransactionBody.class);
+        given(nonCryptoDeleteTxn.hasCryptoDelete()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(CryptoFeeBuilder.class);
+        sigUsage = mock(SigValueObj.class);
+        usageEstimator = mock(CryptoFeeBuilder.class);
 
-		subject = new CryptoDeleteResourceUsage(usageEstimator);
-	}
+        subject = new CryptoDeleteResourceUsage(usageEstimator);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(cryptoDeleteTxn));
-		assertFalse(subject.applicableTo(nonCryptoDeleteTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(cryptoDeleteTxn));
+        assertFalse(subject.applicableTo(nonCryptoDeleteTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(cryptoDeleteTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // when:
+        subject.usageGiven(cryptoDeleteTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getCryptoDeleteTxFeeMatrices(cryptoDeleteTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getCryptoDeleteTxFeeMatrices(cryptoDeleteTxn, sigUsage);
+    }
 }

@@ -24,13 +24,13 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -90,7 +90,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         Objects.requireNonNull(
                 wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE, consensusTime);
     }
 
     public static WipeWrapper decodeWipe(
@@ -114,11 +115,13 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             Bytes wipeTokenAccountSelector,
             ABIType<Tuple> wipeTokenAccountDecoder) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
+                DecodingFacade.decodeFunctionCall(
+                        input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
         final var fungibleAmount = (long) decodedArguments.get(2);
 
         return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);

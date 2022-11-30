@@ -27,8 +27,6 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleDefinit
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.throttling.TimedFunctionalityThrottling;
-import com.hedera.node.app.service.mono.throttling.TxnAwareHandleThrottling;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;

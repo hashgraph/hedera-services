@@ -29,7 +29,6 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.txns.PreFetchableTransition;
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
-import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import java.util.ArrayList;
 import java.util.List;

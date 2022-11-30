@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,31 +15,30 @@
  */
 package com.hedera.node.app.service.mono.fees.congestion;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.BDDMockito.given;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class DelegatingMultiplierSourceTest {
-	@Mock
-	private ThrottleMultiplierSource delegate;
+    @Mock private ThrottleMultiplierSource delegate;
 
-	private DelegatingMultiplierSource subject;
+    private DelegatingMultiplierSource subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = new DelegatingMultiplierSource(delegate);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = new DelegatingMultiplierSource(delegate);
+    }
 
-	@Test
-	void delegatesToString() {
-		final var useful = "Lorem ipsum dolor sit amet";
-		given(delegate.toString()).willReturn(useful);
-		assertEquals(useful, subject.toString());
-	}
+    @Test
+    void delegatesToString() {
+        final var useful = "Lorem ipsum dolor sit amet";
+        given(delegate.toString()).willReturn(useful);
+        assertEquals(useful, subject.toString());
+    }
 }

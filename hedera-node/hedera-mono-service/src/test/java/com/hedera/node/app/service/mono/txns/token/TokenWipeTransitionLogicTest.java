@@ -48,8 +48,6 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.OwnershipTracker;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
-import com.hedera.node.app.service.mono.txns.token.TokenWipeTransitionLogic;
-import com.hedera.node.app.service.mono.txns.token.WipeLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
 import com.hedera.test.utils.IdUtils;

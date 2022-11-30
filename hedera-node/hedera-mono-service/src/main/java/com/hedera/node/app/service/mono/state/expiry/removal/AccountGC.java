@@ -78,7 +78,8 @@ public class AccountGC {
                 return new CryptoGcOutcome(unitReturns, nftReturns, false);
             }
         } else {
-            return new CryptoGcOutcome(FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
+            return new CryptoGcOutcome(
+                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
         }
     }
 

@@ -17,8 +17,8 @@ package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.EntityNum;

@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.ledger.properties;
 
 import com.hedera.node.app.service.mono.ledger.accounts.TestAccount;
-
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 

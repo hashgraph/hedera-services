@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

@@ -147,7 +147,10 @@ class AssociatePrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     private static final Bytes ASSOCIATE_INPUT =
             Bytes.fromHexString(
                     "0x49146bde00000000000000000000000000000000000000000000000000000000000004820000000000000000000000000000000000000000000000000000000000000480");
@@ -210,7 +213,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 false,
@@ -256,7 +260,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 false,
@@ -309,7 +314,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 true,
@@ -380,7 +386,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 true,
@@ -432,7 +439,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 true,
@@ -491,7 +499,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 false,
@@ -550,7 +559,8 @@ class AssociatePrecompileTest {
         associatePrecompile
                 .when(() -> decodeAssociation(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.associateOp);
-        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createAssociate(HTSTestsUtil.associateOp))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveKey(
                                 false,
@@ -649,7 +659,9 @@ class AssociatePrecompileTest {
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
         verify(associateLogic)
-                .associate(Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId), HTSTestsUtil.multiAssociateOp.tokenIds());
+                .associate(
+                        Id.fromGrpcAccount(HTSTestsUtil.accountMerkleId),
+                        HTSTestsUtil.multiAssociateOp.tokenIds());
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -681,7 +693,8 @@ class AssociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -710,7 +723,8 @@ class AssociatePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

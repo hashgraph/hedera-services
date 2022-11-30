@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 import java.util.Optional;

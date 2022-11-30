@@ -15,6 +15,14 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.token.txns;
 
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.Mockito.mockStatic;
+
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
@@ -26,67 +34,59 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.Mockito.mockStatic;
-
 class TokenDeleteResourceUsageTest {
-	private TransactionBody nonTokenDeleteTxn;
-	private TransactionBody tokenDeleteTxn;
+    private TransactionBody nonTokenDeleteTxn;
+    private TransactionBody tokenDeleteTxn;
 
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
-	StateView view;
-	TokenDeleteUsage usage;
+    StateView view;
+    TokenDeleteUsage usage;
 
-	TokenDeleteResourceUsage subject;
-	TxnUsageEstimator txnUsageEstimator;
+    TokenDeleteResourceUsage subject;
+    TxnUsageEstimator txnUsageEstimator;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
+    @BeforeEach
+    void setup() throws Throwable {
+        expected = mock(FeeData.class);
+        view = mock(StateView.class);
 
-		tokenDeleteTxn = mock(TransactionBody.class);
-		given(tokenDeleteTxn.hasTokenDeletion()).willReturn(true);
+        tokenDeleteTxn = mock(TransactionBody.class);
+        given(tokenDeleteTxn.hasTokenDeletion()).willReturn(true);
 
-		nonTokenDeleteTxn = mock(TransactionBody.class);
-		given(nonTokenDeleteTxn.hasTokenDeletion()).willReturn(false);
+        nonTokenDeleteTxn = mock(TransactionBody.class);
+        given(nonTokenDeleteTxn.hasTokenDeletion()).willReturn(false);
 
-		usage = mock(TokenDeleteUsage.class);
-		given(usage.get()).willReturn(expected);
+        usage = mock(TokenDeleteUsage.class);
+        given(usage.get()).willReturn(expected);
 
-		txnUsageEstimator = mock(TxnUsageEstimator.class);
-		final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
-		given(estimatorFactory.get(sigUsage, tokenDeleteTxn, ESTIMATOR_UTILS))
-				.willReturn(txnUsageEstimator);
-		subject = new TokenDeleteResourceUsage(estimatorFactory);
-	}
+        txnUsageEstimator = mock(TxnUsageEstimator.class);
+        final EstimatorFactory estimatorFactory = mock(EstimatorFactory.class);
+        given(estimatorFactory.get(sigUsage, tokenDeleteTxn, ESTIMATOR_UTILS))
+                .willReturn(txnUsageEstimator);
+        subject = new TokenDeleteResourceUsage(estimatorFactory);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(tokenDeleteTxn));
-		assertFalse(subject.applicableTo(nonTokenDeleteTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(tokenDeleteTxn));
+        assertFalse(subject.applicableTo(nonTokenDeleteTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		final var mockStatic = mockStatic(TokenDeleteUsage.class);
-		mockStatic
-				.when(() -> TokenDeleteUsage.newEstimate(tokenDeleteTxn, txnUsageEstimator))
-				.thenReturn(usage);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        final var mockStatic = mockStatic(TokenDeleteUsage.class);
+        mockStatic
+                .when(() -> TokenDeleteUsage.newEstimate(tokenDeleteTxn, txnUsageEstimator))
+                .thenReturn(usage);
 
-		// expect:
-		assertEquals(expected, subject.usageGiven(tokenDeleteTxn, obj, view));
+        // expect:
+        assertEquals(expected, subject.usageGiven(tokenDeleteTxn, obj, view));
 
-		mockStatic.close();
-	}
+        mockStatic.close();
+    }
 }

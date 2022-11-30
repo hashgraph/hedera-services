@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.mono.state.migration;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-
 import java.util.Collections;
 import java.util.Iterator;
 

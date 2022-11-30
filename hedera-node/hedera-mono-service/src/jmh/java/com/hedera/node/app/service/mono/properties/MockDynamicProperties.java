@@ -18,32 +18,32 @@ package com.hedera.node.app.service.mono.properties;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 
 public class MockDynamicProperties extends GlobalDynamicProperties {
-	private final int maxContractKvPairs;
-	private final long maxAggregateKvPairs;
+    private final int maxContractKvPairs;
+    private final long maxAggregateKvPairs;
 
-	public static GlobalDynamicProperties mockPropertiesWith(
-			final int maxContractKvPairs, final int maxAggregateKvPairs) {
-		return new MockDynamicProperties(maxContractKvPairs, maxAggregateKvPairs);
-	}
+    public static GlobalDynamicProperties mockPropertiesWith(
+            final int maxContractKvPairs, final int maxAggregateKvPairs) {
+        return new MockDynamicProperties(maxContractKvPairs, maxAggregateKvPairs);
+    }
 
-	private MockDynamicProperties(final int maxContractKvPairs, final int maxAggregateKvPairs) {
-		super(null, null);
-		this.maxContractKvPairs = maxContractKvPairs;
-		this.maxAggregateKvPairs = maxAggregateKvPairs;
-	}
+    private MockDynamicProperties(final int maxContractKvPairs, final int maxAggregateKvPairs) {
+        super(null, null);
+        this.maxContractKvPairs = maxContractKvPairs;
+        this.maxAggregateKvPairs = maxAggregateKvPairs;
+    }
 
-	@Override
-	public void reload() {
-		/* No-op */
-	}
+    @Override
+    public void reload() {
+        /* No-op */
+    }
 
-	@Override
-	public long maxAggregateContractKvPairs() {
-		return maxAggregateKvPairs;
-	}
+    @Override
+    public long maxAggregateContractKvPairs() {
+        return maxAggregateKvPairs;
+    }
 
-	@Override
-	public int maxIndividualContractKvPairs() {
-		return maxContractKvPairs;
-	}
+    @Override
+    public int maxIndividualContractKvPairs() {
+        return maxContractKvPairs;
+    }
 }

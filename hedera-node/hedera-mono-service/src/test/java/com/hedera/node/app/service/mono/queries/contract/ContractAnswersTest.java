@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,36 +15,36 @@
  */
 package com.hedera.node.app.service.mono.queries.contract;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.mock;
 
+import org.junit.jupiter.api.Test;
+
 class ContractAnswersTest {
-	GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
-	GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);
-	GetContractRecordsAnswer getContractRecordsAnswer = mock(GetContractRecordsAnswer.class);
-	ContractCallLocalAnswer contractCallLocalAnswer = mock(ContractCallLocalAnswer.class);
-	GetBySolidityIdAnswer getBySolidityIdAnswer = mock(GetBySolidityIdAnswer.class);
+    GetBytecodeAnswer getBytecodeAnswer = mock(GetBytecodeAnswer.class);
+    GetContractInfoAnswer getContractInfoAnswer = mock(GetContractInfoAnswer.class);
+    GetContractRecordsAnswer getContractRecordsAnswer = mock(GetContractRecordsAnswer.class);
+    ContractCallLocalAnswer contractCallLocalAnswer = mock(ContractCallLocalAnswer.class);
+    GetBySolidityIdAnswer getBySolidityIdAnswer = mock(GetBySolidityIdAnswer.class);
 
-	ContractAnswers subject;
+    ContractAnswers subject;
 
-	@Test
-	void hasExpectedAnswers() {
-		// given:
-		subject =
-				new ContractAnswers(
-						getBytecodeAnswer,
-						getContractInfoAnswer,
-						getBySolidityIdAnswer,
-						getContractRecordsAnswer,
-						contractCallLocalAnswer);
+    @Test
+    void hasExpectedAnswers() {
+        // given:
+        subject =
+                new ContractAnswers(
+                        getBytecodeAnswer,
+                        getContractInfoAnswer,
+                        getBySolidityIdAnswer,
+                        getContractRecordsAnswer,
+                        contractCallLocalAnswer);
 
-		// then:
-		assertSame(getBytecodeAnswer, subject.getBytecode());
-		assertSame(getContractInfoAnswer, subject.getContractInfo());
-		assertSame(getContractRecordsAnswer, subject.getContractRecords());
-		assertSame(contractCallLocalAnswer, subject.contractCallLocal());
-		assertSame(getBySolidityIdAnswer, subject.getBySolidityId());
-	}
+        // then:
+        assertSame(getBytecodeAnswer, subject.getBytecode());
+        assertSame(getContractInfoAnswer, subject.getContractInfo());
+        assertSame(getContractRecordsAnswer, subject.getContractRecords());
+        assertSame(contractCallLocalAnswer, subject.contractCallLocal());
+        assertSame(getBySolidityIdAnswer, subject.getBySolidityId());
+    }
 }

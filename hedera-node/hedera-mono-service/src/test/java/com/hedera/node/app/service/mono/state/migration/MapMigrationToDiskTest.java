@@ -15,6 +15,16 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
@@ -32,146 +42,129 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.function.Function;
-
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
-import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class MapMigrationToDiskTest {
-	private final SeededPropertySource source = SeededPropertySource.forSerdeTest(14, 1);
+    private final SeededPropertySource source = SeededPropertySource.forSerdeTest(14, 1);
 
-	private final EntityNum aNum = EntityNum.fromInt(666);
-	private final EntityNum bNum = EntityNum.fromInt(777);
-	private final EntityNumPair aNumPair = new EntityNumPair(666L);
-	private final EntityNumPair bNumPair = new EntityNumPair(777L);
+    private final EntityNum aNum = EntityNum.fromInt(666);
+    private final EntityNum bNum = EntityNum.fromInt(777);
+    private final EntityNumPair aNumPair = new EntityNumPair(666L);
+    private final EntityNumPair bNumPair = new EntityNumPair(777L);
 
-	@Mock
-	private ServicesState mutableState;
-	@Mock
-	private VirtualMapFactory virtualMapFactory;
-	@Mock
-	private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
-	@Mock
-	private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelStore;
-	@Mock
-	private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
-	@Mock
-	private Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator;
+    @Mock private ServicesState mutableState;
+    @Mock private VirtualMapFactory virtualMapFactory;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskAccount> accountStore;
+    @Mock private VirtualMap<EntityNumVirtualKey, OnDiskTokenRel> tokenRelStore;
+    @Mock private Function<MerkleAccountState, OnDiskAccount> accountMigrator;
+    @Mock private Function<MerkleTokenRelStatus, OnDiskTokenRel> tokenRelMigrator;
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void migratesAccountsAsExpected() throws ConstructableRegistryException {
-		ReleaseThirtyMigrationTest.registerForAccountsMerkleMap();
+    @Test
+    @SuppressWarnings("unchecked")
+    void migratesAccountsAsExpected() throws ConstructableRegistryException {
+        ReleaseThirtyMigrationTest.registerForAccountsMerkleMap();
 
-		final var accountsOnly = new ToDiskMigrations(true, false);
-		final var aAccount = nextAccount(false);
-		final var bAccount = nextAccount(true);
-		final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
-		liveAccounts.put(aNum, aAccount);
-		liveAccounts.put(bNum, bAccount);
+        final var accountsOnly = new ToDiskMigrations(true, false);
+        final var aAccount = nextAccount(false);
+        final var bAccount = nextAccount(true);
+        final MerkleMap<EntityNum, MerkleAccount> liveAccounts = new MerkleMap<>();
+        liveAccounts.put(aNum, aAccount);
+        liveAccounts.put(bNum, bAccount);
 
-		final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
-				forClass(MerkleMap.class);
-		final var aPretendOnDiskAccount = new OnDiskAccount();
-		final var bPretendOnDiskAccount = new OnDiskAccount();
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
+                forClass(MerkleMap.class);
+        final var aPretendOnDiskAccount = new OnDiskAccount();
+        final var bPretendOnDiskAccount = new OnDiskAccount();
 
-		given(virtualMapFactory.newOnDiskAccountStorage()).willReturn(accountStore);
-		given(accountStore.copy()).willReturn(accountStore);
-		given(mutableState.getChild(ACCOUNTS)).willReturn(liveAccounts);
-		given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
-		given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
+        given(virtualMapFactory.newOnDiskAccountStorage()).willReturn(accountStore);
+        given(accountStore.copy()).willReturn(accountStore);
+        given(mutableState.getChild(ACCOUNTS)).willReturn(liveAccounts);
+        given(accountMigrator.apply(aAccount.state())).willReturn(aPretendOnDiskAccount);
+        given(accountMigrator.apply(bAccount.state())).willReturn(bPretendOnDiskAccount);
 
-		MapMigrationToDisk.migrateToDiskAsApropos(
-				1,
-				mutableState,
-				accountsOnly,
-				virtualMapFactory,
-				accountMigrator,
-				tokenRelMigrator);
+        MapMigrationToDisk.migrateToDiskAsApropos(
+                1,
+                mutableState,
+                accountsOnly,
+                virtualMapFactory,
+                accountMigrator,
+                tokenRelMigrator);
 
-		verify(mutableState).setChild(ACCOUNTS, accountStore);
-		verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
-		final var payerRecords = captor.getValue();
-		final var aRecords = payerRecords.get(aNum);
-		final var bRecords = payerRecords.get(bNum);
-		assertNotNull(aRecords);
-		assertNotNull(bRecords);
-		assertEquals(aAccount.records(), aRecords.readOnlyQueue());
-		assertEquals(bAccount.records(), bRecords.readOnlyQueue());
-		// and:
-		verify(accountStore).put(new EntityNumVirtualKey(aNum.longValue()), aPretendOnDiskAccount);
-		verify(accountStore).put(new EntityNumVirtualKey(bNum.longValue()), bPretendOnDiskAccount);
-		// and:
-		verify(accountStore, times(2)).copy();
-	}
+        verify(mutableState).setChild(ACCOUNTS, accountStore);
+        verify(mutableState).setChild(eq(StateChildIndices.PAYER_RECORDS), captor.capture());
+        final var payerRecords = captor.getValue();
+        final var aRecords = payerRecords.get(aNum);
+        final var bRecords = payerRecords.get(bNum);
+        assertNotNull(aRecords);
+        assertNotNull(bRecords);
+        assertEquals(aAccount.records(), aRecords.readOnlyQueue());
+        assertEquals(bAccount.records(), bRecords.readOnlyQueue());
+        // and:
+        verify(accountStore).put(new EntityNumVirtualKey(aNum.longValue()), aPretendOnDiskAccount);
+        verify(accountStore).put(new EntityNumVirtualKey(bNum.longValue()), bPretendOnDiskAccount);
+        // and:
+        verify(accountStore, times(2)).copy();
+    }
 
-	@Test
-	@SuppressWarnings("unchecked")
-	void migratesTokenRelsAsExpected() throws ConstructableRegistryException {
-		ReleaseThirtyMigrationTest.registerForTokenRelsMerkleMap();
+    @Test
+    @SuppressWarnings("unchecked")
+    void migratesTokenRelsAsExpected() throws ConstructableRegistryException {
+        ReleaseThirtyMigrationTest.registerForTokenRelsMerkleMap();
 
-		final var relsOnly = new ToDiskMigrations(false, true);
-		final var aRel = nextRelStats(false);
-		final var bRel = nextRelStats(true);
-		final MerkleMap<EntityNumPair, MerkleTokenRelStatus> liveRels = new MerkleMap<>();
-		liveRels.put(aNumPair, aRel);
-		liveRels.put(bNumPair, bRel);
+        final var relsOnly = new ToDiskMigrations(false, true);
+        final var aRel = nextRelStats(false);
+        final var bRel = nextRelStats(true);
+        final MerkleMap<EntityNumPair, MerkleTokenRelStatus> liveRels = new MerkleMap<>();
+        liveRels.put(aNumPair, aRel);
+        liveRels.put(bNumPair, bRel);
 
-		final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
-				forClass(MerkleMap.class);
-		final var aPretendOnDiskRel = new OnDiskTokenRel();
-		final var bPretendOnDiskRel = new OnDiskTokenRel();
+        final ArgumentCaptor<MerkleMap<EntityNum, MerklePayerRecords>> captor =
+                forClass(MerkleMap.class);
+        final var aPretendOnDiskRel = new OnDiskTokenRel();
+        final var bPretendOnDiskRel = new OnDiskTokenRel();
 
-		given(virtualMapFactory.newOnDiskTokenRels()).willReturn(tokenRelStore);
-		given(tokenRelStore.copy()).willReturn(tokenRelStore);
-		given(mutableState.getChild(TOKEN_ASSOCIATIONS)).willReturn(liveRels);
-		given(tokenRelMigrator.apply(aRel)).willReturn(aPretendOnDiskRel);
-		given(tokenRelMigrator.apply(bRel)).willReturn(bPretendOnDiskRel);
+        given(virtualMapFactory.newOnDiskTokenRels()).willReturn(tokenRelStore);
+        given(tokenRelStore.copy()).willReturn(tokenRelStore);
+        given(mutableState.getChild(TOKEN_ASSOCIATIONS)).willReturn(liveRels);
+        given(tokenRelMigrator.apply(aRel)).willReturn(aPretendOnDiskRel);
+        given(tokenRelMigrator.apply(bRel)).willReturn(bPretendOnDiskRel);
 
-		MapMigrationToDisk.migrateToDiskAsApropos(
-				1, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
+        MapMigrationToDisk.migrateToDiskAsApropos(
+                1, mutableState, relsOnly, virtualMapFactory, accountMigrator, tokenRelMigrator);
 
-		verify(mutableState).setChild(TOKEN_ASSOCIATIONS, tokenRelStore);
-		// and:
-		verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(aNumPair), aPretendOnDiskRel);
-		verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(bNumPair), bPretendOnDiskRel);
-		// and:
-		verify(tokenRelStore, times(2)).copy();
-	}
+        verify(mutableState).setChild(TOKEN_ASSOCIATIONS, tokenRelStore);
+        // and:
+        verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(aNumPair), aPretendOnDiskRel);
+        verify(tokenRelStore).put(EntityNumVirtualKey.fromPair(bNumPair), bPretendOnDiskRel);
+        // and:
+        verify(tokenRelStore, times(2)).copy();
+    }
 
-	private MerkleAccount nextAccount(final boolean withRecords) {
-		return withRecords
-				? new MerkleAccount(List.of(source.nextAccountState(), twoRecords()))
-				: new MerkleAccount(List.of(source.nextAccountState(), new FCQueue<>()));
-	}
+    private MerkleAccount nextAccount(final boolean withRecords) {
+        return withRecords
+                ? new MerkleAccount(List.of(source.nextAccountState(), twoRecords()))
+                : new MerkleAccount(List.of(source.nextAccountState(), new FCQueue<>()));
+    }
 
-	private MerkleTokenRelStatus nextRelStats(final boolean withBalance) {
-		final var someRel = new MerkleTokenRelStatus();
-		if (withBalance) {
-			someRel.setBalance(123_456L);
-		}
-		return someRel;
-	}
+    private MerkleTokenRelStatus nextRelStats(final boolean withBalance) {
+        final var someRel = new MerkleTokenRelStatus();
+        if (withBalance) {
+            someRel.setBalance(123_456L);
+        }
+        return someRel;
+    }
 
-	private FCQueue<ExpirableTxnRecord> twoRecords() {
-		final FCQueue<ExpirableTxnRecord> queue = new FCQueue<>();
-		queue.offer(source.nextRecord());
-		queue.offer(source.nextRecord());
-		return queue;
-	}
+    private FCQueue<ExpirableTxnRecord> twoRecords() {
+        final FCQueue<ExpirableTxnRecord> queue = new FCQueue<>();
+        queue.offer(source.nextRecord());
+        queue.offer(source.nextRecord());
+        return queue;
+    }
 }

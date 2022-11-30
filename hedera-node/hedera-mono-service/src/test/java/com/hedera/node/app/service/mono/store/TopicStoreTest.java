@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.store.TopicStore;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Topic;
 import com.hedera.node.app.service.mono.utils.EntityNum;

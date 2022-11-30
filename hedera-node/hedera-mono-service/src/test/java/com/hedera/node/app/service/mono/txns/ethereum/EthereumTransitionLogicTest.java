@@ -50,7 +50,6 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.txns.contract.ContractCallTransitionLogic;
 import com.hedera.node.app.service.mono.txns.contract.ContractCreateTransitionLogic;
-import com.hedera.node.app.service.mono.txns.ethereum.EthereumTransitionLogic;
 import com.hedera.node.app.service.mono.txns.span.EthTxExpansion;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.txns.span.SpanMapManager;

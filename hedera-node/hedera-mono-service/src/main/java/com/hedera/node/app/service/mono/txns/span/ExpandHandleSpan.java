@@ -29,8 +29,7 @@ import com.swirlds.common.system.transaction.Transaction;
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
  * EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
- * ServicesState#handleConsensusRound(Round, SwirldDualState)} platform
- * callbacks.
+ * ServicesState#handleConsensusRound(Round, SwirldDualState)} platform callbacks.
  *
  * <p>At first this span only tracks the {@link PlatformTxnAccessor} parsed from the transaction
  * contents in an expiring cache. Since the parsing is a pure function of the contents, this is a
@@ -49,36 +48,37 @@ import com.swirlds.common.system.transaction.Transaction;
  * </ol>
  */
 public class ExpandHandleSpan {
-	private final SpanMapManager spanMapManager;
-	private final AccessorFactory factory;
+    private final SpanMapManager spanMapManager;
+    private final AccessorFactory factory;
 
-	public ExpandHandleSpan(final SpanMapManager spanMapManager, final AccessorFactory factory) {
-		this.spanMapManager = spanMapManager;
-		this.factory = factory;
-	}
+    public ExpandHandleSpan(final SpanMapManager spanMapManager, final AccessorFactory factory) {
+        this.spanMapManager = spanMapManager;
+        this.factory = factory;
+    }
 
-	public SwirldsTxnAccessor track(final Transaction transaction) throws InvalidProtocolBufferException {
-		final var accessor = spanAccessorFor(transaction);
-		transaction.setMetadata(accessor);
-		return accessor;
-	}
+    public SwirldsTxnAccessor track(final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        final var accessor = spanAccessorFor(transaction);
+        transaction.setMetadata(accessor);
+        return accessor;
+    }
 
-	public SwirldsTxnAccessor accessorFor(final Transaction transaction)
-			throws InvalidProtocolBufferException {
-		final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
-		if (cachedAccessor != null) {
-			spanMapManager.rationalizeSpan(cachedAccessor);
-			transaction.setMetadata(null);
-			return cachedAccessor;
-		} else {
-			return spanAccessorFor(transaction);
-		}
-	}
+    public SwirldsTxnAccessor accessorFor(final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        final SwirldsTxnAccessor cachedAccessor = transaction.getMetadata();
+        if (cachedAccessor != null) {
+            spanMapManager.rationalizeSpan(cachedAccessor);
+            transaction.setMetadata(null);
+            return cachedAccessor;
+        } else {
+            return spanAccessorFor(transaction);
+        }
+    }
 
-	private SwirldsTxnAccessor spanAccessorFor(final Transaction transaction)
-			throws InvalidProtocolBufferException {
-		final var accessor = factory.nonTriggeredTxn(transaction.getContents());
-		spanMapManager.expandSpan(accessor);
-		return PlatformTxnAccessor.from(accessor, transaction);
-	}
+    private SwirldsTxnAccessor spanAccessorFor(final Transaction transaction)
+            throws InvalidProtocolBufferException {
+        final var accessor = factory.nonTriggeredTxn(transaction.getContents());
+        spanMapManager.expandSpan(accessor);
+        return PlatformTxnAccessor.from(accessor, transaction);
+    }
 }

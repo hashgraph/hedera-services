@@ -25,8 +25,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
-import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactionsState;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualValue;

@@ -30,8 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Token;

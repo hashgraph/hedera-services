@@ -20,7 +20,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
-import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;

@@ -15,22 +15,22 @@
  */
 package com.hedera.node.app.service.mono.queries.consensus;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.mock;
 
+import org.junit.jupiter.api.Test;
+
 class HcsAnswersTest {
-	GetTopicInfoAnswer getTopicInfo = mock(GetTopicInfoAnswer.class);
+    GetTopicInfoAnswer getTopicInfo = mock(GetTopicInfoAnswer.class);
 
-	HcsAnswers subject;
+    HcsAnswers subject;
 
-	@Test
-	void hasExpectedAnswers() {
-		// given:
-		subject = new HcsAnswers(getTopicInfo);
+    @Test
+    void hasExpectedAnswers() {
+        // given:
+        subject = new HcsAnswers(getTopicInfo);
 
-		// then:
-		assertEquals(getTopicInfo, subject.topicInfo());
-	}
+        // then:
+        assertEquals(getTopicInfo, subject.topicInfo());
+    }
 }

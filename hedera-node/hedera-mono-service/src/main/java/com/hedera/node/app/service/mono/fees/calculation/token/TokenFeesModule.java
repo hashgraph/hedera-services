@@ -15,6 +15,14 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.token;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
+
 import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
@@ -33,90 +41,81 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
-
 import java.util.List;
 import java.util.Set;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDelete;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenDissociateFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGrantKycToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevokeKycFromAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
-
 @Module
 public final class TokenFeesModule {
-	@Provides
-	@ElementsIntoSet
-	public static Set<QueryResourceUsageEstimator> provideTokenQueryEstimators(
-			final GetTokenInfoResourceUsage getTokenInfoResourceUsage,
-			final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage) {
-		return Set.of(getTokenInfoResourceUsage, getTokenNftInfoResourceUsage);
-	}
+    @Provides
+    @ElementsIntoSet
+    public static Set<QueryResourceUsageEstimator> provideTokenQueryEstimators(
+            final GetTokenInfoResourceUsage getTokenInfoResourceUsage,
+            final GetTokenNftInfoResourceUsage getTokenNftInfoResourceUsage) {
+        return Set.of(getTokenInfoResourceUsage, getTokenNftInfoResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenCreate)
-	public static List<TxnResourceUsageEstimator> provideTokenCreateEstimator(
-			final TokenCreateResourceUsage tokenCreateResourceUsage) {
-		return List.of(tokenCreateResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenCreate)
+    public static List<TxnResourceUsageEstimator> provideTokenCreateEstimator(
+            final TokenCreateResourceUsage tokenCreateResourceUsage) {
+        return List.of(tokenCreateResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenUpdate)
-	public static List<TxnResourceUsageEstimator> provideTokenUpdateEstimator(
-			final TokenUpdateResourceUsage tokenUpdateResourceUsage) {
-		return List.of(tokenUpdateResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenUpdate)
+    public static List<TxnResourceUsageEstimator> provideTokenUpdateEstimator(
+            final TokenUpdateResourceUsage tokenUpdateResourceUsage) {
+        return List.of(tokenUpdateResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenGrantKycToAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenGrantKycEstimator(
-			final TokenGrantKycResourceUsage tokenGrantKycResourceUsage) {
-		return List.of(tokenGrantKycResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenGrantKycToAccount)
+    public static List<TxnResourceUsageEstimator> provideTokenGrantKycEstimator(
+            final TokenGrantKycResourceUsage tokenGrantKycResourceUsage) {
+        return List.of(tokenGrantKycResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenRevokeKycFromAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenRevokeKycEstimator(
-			final TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage) {
-		return List.of(tokenRevokeKycResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenRevokeKycFromAccount)
+    public static List<TxnResourceUsageEstimator> provideTokenRevokeKycEstimator(
+            final TokenRevokeKycResourceUsage tokenRevokeKycResourceUsage) {
+        return List.of(tokenRevokeKycResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenDelete)
-	public static List<TxnResourceUsageEstimator> provideTokenDelete(
-			final TokenDeleteResourceUsage tokenDeleteResourceUsage) {
-		return List.of(tokenDeleteResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenDelete)
+    public static List<TxnResourceUsageEstimator> provideTokenDelete(
+            final TokenDeleteResourceUsage tokenDeleteResourceUsage) {
+        return List.of(tokenDeleteResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenAssociateToAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenAssociate(
-			final TokenAssociateResourceUsage tokenAssociateResourceUsage) {
-		return List.of(tokenAssociateResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenAssociateToAccount)
+    public static List<TxnResourceUsageEstimator> provideTokenAssociate(
+            final TokenAssociateResourceUsage tokenAssociateResourceUsage) {
+        return List.of(tokenAssociateResourceUsage);
+    }
 
-	@Provides
-	@IntoMap
-	@FunctionKey(TokenDissociateFromAccount)
-	public static List<TxnResourceUsageEstimator> provideTokenDissociate(
-			final TokenDissociateResourceUsage tokenDissociateResourceUsage) {
-		return List.of(tokenDissociateResourceUsage);
-	}
+    @Provides
+    @IntoMap
+    @FunctionKey(TokenDissociateFromAccount)
+    public static List<TxnResourceUsageEstimator> provideTokenDissociate(
+            final TokenDissociateResourceUsage tokenDissociateResourceUsage) {
+        return List.of(tokenDissociateResourceUsage);
+    }
 
-	@Provides
-	public static EstimatorFactory provideEstimatorFactory() {
-		return TxnUsageEstimator::new;
-	}
+    @Provides
+    public static EstimatorFactory provideEstimatorFactory() {
+        return TxnUsageEstimator::new;
+    }
 
-	private TokenFeesModule() {
-		throw new UnsupportedOperationException("Dagger2 module");
-	}
+    private TokenFeesModule() {
+        throw new UnsupportedOperationException("Dagger2 module");
+    }
 }

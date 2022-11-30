@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.node.app.service.mono.utils.NonAtomicReference;
 import org.junit.jupiter.api.Test;
 
 class NonAtomicReferenceTest {

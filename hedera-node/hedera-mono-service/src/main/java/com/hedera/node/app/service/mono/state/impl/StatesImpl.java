@@ -21,50 +21,49 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
 
-import java.util.Objects;
-
 public class StatesImpl implements States {
-	private final MutableStateChildren children = new MutableStateChildren();
+    private final MutableStateChildren children = new MutableStateChildren();
 
-	public StatesImpl() {
-		/* Default constructor */
-	}
+    public StatesImpl() {
+        /* Default constructor */
+    }
 
-	/**
-	 * Updates children (e.g., MerkleMaps and VirtualMaps) from given immutable state. This should
-	 * be called before making an attempt to expand the platform signatures linked to the given
-	 * transaction.
-	 */
-	public void updateChildren(final ServicesState sourceState) {
-		children.updateFromImmutable(sourceState, sourceState.getTimeOfLastHandledTxn());
-	}
+    /**
+     * Updates children (e.g., MerkleMaps and VirtualMaps) from given immutable state. This should
+     * be called before making an attempt to expand the platform signatures linked to the given
+     * transaction.
+     */
+    public void updateChildren(final ServicesState sourceState) {
+        children.updateFromImmutable(sourceState, sourceState.getTimeOfLastHandledTxn());
+    }
 
-	@Override
-	public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
-		Objects.requireNonNull(stateKey);
+    @Override
+    public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
+        Objects.requireNonNull(stateKey);
 
-		if (stateKey.equals("ACCOUNTS")) {
-			final var accounts = children.accounts();
-			return (State<K, V>)
-					(accounts.areOnDisk()
-							? new OnDiskStateImpl<>(
-							stateKey, accounts.getOnDiskAccounts(), children.signedAt())
-							: new InMemoryStateImpl<>(
-							stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
-		} else if (stateKey.equals("ALIASES")) {
-			final var state =
-					new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
-			return (StateBase) state;
-		} else {
-			throw new NotImplementedException(
-					String.format("State key %s not supported", stateKey));
-		}
-	}
+        if (stateKey.equals("ACCOUNTS")) {
+            final var accounts = children.accounts();
+            return (State<K, V>)
+                    (accounts.areOnDisk()
+                            ? new OnDiskStateImpl<>(
+                                    stateKey, accounts.getOnDiskAccounts(), children.signedAt())
+                            : new InMemoryStateImpl<>(
+                                    stateKey, accounts.getInMemoryAccounts(), children.signedAt()));
+        } else if (stateKey.equals("ALIASES")) {
+            final var state =
+                    new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
+            return (StateBase) state;
+        } else {
+            throw new NotImplementedException(
+                    String.format("State key %s not supported", stateKey));
+        }
+    }
 
-	@VisibleForTesting
-	public MutableStateChildren getChildren() {
-		return children;
-	}
+    @VisibleForTesting
+    public MutableStateChildren getChildren() {
+        return children;
+    }
 }

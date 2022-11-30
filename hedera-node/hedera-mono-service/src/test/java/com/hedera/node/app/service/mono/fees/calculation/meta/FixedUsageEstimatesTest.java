@@ -15,19 +15,19 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.meta;
 
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates.GET_VERSION_INFO_NODE_USAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class FixedUsageEstimatesTest {
-	@Test
-	void getVersionInfoUsageWorks() {
-		final var feeData = FixedUsageEstimates.getVersionInfoUsage();
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import org.junit.jupiter.api.Test;
 
-		assertEquals(FeeComponents.getDefaultInstance(), feeData.getNetworkdata());
-		assertEquals(FeeComponents.getDefaultInstance(), feeData.getServicedata());
-		assertEquals(GET_VERSION_INFO_NODE_USAGE, feeData.getNodedata());
-	}
+class FixedUsageEstimatesTest {
+    @Test
+    void getVersionInfoUsageWorks() {
+        final var feeData = FixedUsageEstimates.getVersionInfoUsage();
+
+        assertEquals(FeeComponents.getDefaultInstance(), feeData.getNetworkdata());
+        assertEquals(FeeComponents.getDefaultInstance(), feeData.getServicedata());
+        assertEquals(GET_VERSION_INFO_NODE_USAGE, feeData.getNodedata());
+    }
 }

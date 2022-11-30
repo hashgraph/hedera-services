@@ -851,7 +851,8 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             // child records for the first transaction submitted.
             // This condition avoids aggregating balances for the parent and child
             // records only in this case for clarity.
-            if (adjustsThere == 1 && that.hbarAdjustments.hbars[0] == MerkleNetworkContext.MAX_PENDING_REWARDS) {
+            if (adjustsThere == 1
+                    && that.hbarAdjustments.hbars[0] == MerkleNetworkContext.MAX_PENDING_REWARDS) {
                 return;
             }
 

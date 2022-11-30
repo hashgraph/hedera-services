@@ -28,9 +28,8 @@ import org.hyperledger.besu.evm.frame.BlockValues;
  * MerkleNetworkContext}, which ideally will be an immutable instance from the latest signed state.
  *
  * <p>The important thing is that, unlike {@link InHandleBlockMetaSource}, here the {@code
- * computeBlockValues()} implementation has no side effects on the state of the {@link
- * BlockManager} singleton that manages block metadata in the
- * working network context.
+ * computeBlockValues()} implementation has no side effects on the state of the {@link BlockManager}
+ * singleton that manages block metadata in the working network context.
  */
 public class StaticBlockMetaSource implements BlockMetaSource {
     private final MerkleNetworkContext networkCtx;

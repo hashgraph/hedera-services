@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.config.MockHederaNumbers;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;

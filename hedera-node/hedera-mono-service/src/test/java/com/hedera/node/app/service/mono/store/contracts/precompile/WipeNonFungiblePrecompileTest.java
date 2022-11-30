@@ -140,7 +140,10 @@ class WipeNonFungiblePrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     private static final Bytes NON_FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
@@ -230,7 +233,10 @@ class WipeNonFungiblePrecompileTest {
 
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.nonFungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -259,7 +265,12 @@ class WipeNonFungiblePrecompileTest {
         final var result = subject.computeInternal(frame);
 
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
-        verify(wipeLogic).wipe(HTSTestsUtil.nonFungibleId, HTSTestsUtil.accountId, 0, HTSTestsUtil.targetSerialNos);
+        verify(wipeLogic)
+                .wipe(
+                        HTSTestsUtil.nonFungibleId,
+                        HTSTestsUtil.accountId,
+                        0,
+                        HTSTestsUtil.targetSerialNos);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -276,7 +287,10 @@ class WipeNonFungiblePrecompileTest {
 
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.nonFungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -330,7 +344,8 @@ class WipeNonFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -356,7 +371,8 @@ class WipeNonFungiblePrecompileTest {
         wipeNonFungiblePrecompile
                 .when(() -> decodeWipeNFT(eq(pretendArguments), any()))
                 .thenReturn(HTSTestsUtil.nonFungibleWipe);
-        given(syntheticTxnFactory.createWipe(HTSTestsUtil.nonFungibleWipe)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createWipe(HTSTestsUtil.nonFungibleWipe))
+                .willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFrameContext() {

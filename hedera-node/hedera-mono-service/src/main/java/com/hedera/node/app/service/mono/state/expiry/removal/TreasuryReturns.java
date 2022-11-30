@@ -29,8 +29,8 @@ import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_P
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.expiry.classification.EntityLookup;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;

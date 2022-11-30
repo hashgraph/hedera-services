@@ -22,7 +22,6 @@ import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceExcepti
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
-import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.utils.SeededPropertySource;

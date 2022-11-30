@@ -73,7 +73,9 @@ public final class CreateChecks {
                 return validity;
             }
 
-            validity = TokenListChecks.typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+            validity =
+                    TokenListChecks.typeCheck(
+                            op.getTokenType(), op.getInitialSupply(), op.getDecimals());
             if (validity != OK) {
                 return validity;
             }

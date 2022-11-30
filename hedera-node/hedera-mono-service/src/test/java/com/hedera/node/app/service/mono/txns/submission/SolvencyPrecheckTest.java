@@ -40,7 +40,6 @@ import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchExcept
 import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;

@@ -50,7 +50,6 @@ import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.txns.crypto.CryptoTransferTransitionLogic;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;

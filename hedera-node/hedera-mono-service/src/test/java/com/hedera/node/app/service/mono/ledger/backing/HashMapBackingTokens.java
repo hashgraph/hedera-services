@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.ledger.backing;
 
-import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.HashMap;

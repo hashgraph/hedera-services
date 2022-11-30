@@ -33,8 +33,6 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
-import com.hedera.node.app.service.mono.txns.util.PrngLogic;
-import com.hedera.node.app.service.mono.txns.util.UtilPrngTransitionLogic;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;

@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -156,7 +155,8 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
+        final var getTokenExpiryInfoWrapper =
+                new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
         final var tokenInfo =
                 TokenInfo.newBuilder()
                         .setExpiry(Timestamp.newBuilder().setSeconds(442L).build())
@@ -200,7 +200,8 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
+        final var getTokenExpiryInfoWrapper =
+                new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),

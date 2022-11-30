@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;

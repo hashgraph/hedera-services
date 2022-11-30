@@ -28,6 +28,7 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
@@ -35,7 +36,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWr
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -75,7 +75,8 @@ public class PausePrecompile extends AbstractWritePrecompile {
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         Objects.requireNonNull(
                 pauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.PAUSE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.PAUSE, consensusTime);
     }
 
     @Override

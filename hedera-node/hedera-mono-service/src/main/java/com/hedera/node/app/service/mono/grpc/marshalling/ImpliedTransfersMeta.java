@@ -26,11 +26,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.events.Event;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Encapsulates the validity of a CryptoTransfer transaction, given a choice of two parameters: the
@@ -46,126 +45,125 @@ import java.util.Map;
  * work captured by this validation result.
  */
 public class ImpliedTransfersMeta {
-	private static final int NO_AUTO_CREATIONS = 0;
+    private static final int NO_AUTO_CREATIONS = 0;
 
-	private final int numAutoCreations;
-	private final ResponseCodeEnum code;
-	private final ValidationProps validationProps;
-	private final List<CustomFeeMeta> customFeeMeta;
-	private final Map<ByteString, EntityNum> resolutions;
+    private final int numAutoCreations;
+    private final ResponseCodeEnum code;
+    private final ValidationProps validationProps;
+    private final List<CustomFeeMeta> customFeeMeta;
+    private final Map<ByteString, EntityNum> resolutions;
 
-	public ImpliedTransfersMeta(
-			final ValidationProps validationProps,
-			final ResponseCodeEnum code,
-			final List<CustomFeeMeta> customFeeMeta,
-			final Map<ByteString, EntityNum> resolutions) {
-		this(validationProps, code, customFeeMeta, resolutions, NO_AUTO_CREATIONS);
-	}
+    public ImpliedTransfersMeta(
+            final ValidationProps validationProps,
+            final ResponseCodeEnum code,
+            final List<CustomFeeMeta> customFeeMeta,
+            final Map<ByteString, EntityNum> resolutions) {
+        this(validationProps, code, customFeeMeta, resolutions, NO_AUTO_CREATIONS);
+    }
 
-	public ImpliedTransfersMeta(
-			final ValidationProps validationProps,
-			final ResponseCodeEnum code,
-			final List<CustomFeeMeta> customFeeMeta,
-			final Map<ByteString, EntityNum> resolutions,
-			final int numAutoCreations) {
-		this.code = code;
-		this.resolutions = resolutions;
-		this.customFeeMeta = customFeeMeta;
-		this.validationProps = validationProps;
-		this.numAutoCreations = numAutoCreations;
-	}
+    public ImpliedTransfersMeta(
+            final ValidationProps validationProps,
+            final ResponseCodeEnum code,
+            final List<CustomFeeMeta> customFeeMeta,
+            final Map<ByteString, EntityNum> resolutions,
+            final int numAutoCreations) {
+        this.code = code;
+        this.resolutions = resolutions;
+        this.customFeeMeta = customFeeMeta;
+        this.validationProps = validationProps;
+        this.numAutoCreations = numAutoCreations;
+    }
 
-	public Map<ByteString, EntityNum> getResolutions() {
-		return resolutions;
-	}
+    public Map<ByteString, EntityNum> getResolutions() {
+        return resolutions;
+    }
 
-	public int getNumAutoCreations() {
-		return numAutoCreations;
-	}
+    public int getNumAutoCreations() {
+        return numAutoCreations;
+    }
 
-	public List<CustomFeeMeta> getCustomFeeMeta() {
-		return customFeeMeta;
-	}
+    public List<CustomFeeMeta> getCustomFeeMeta() {
+        return customFeeMeta;
+    }
 
-	public boolean wasDerivedFrom(
-			final GlobalDynamicProperties dynamicProperties,
-			final CustomFeeSchedules customFeeSchedules,
-			final AliasManager aliasManager) {
-		if (!resolutions.isEmpty()) {
-			for (final var entry : resolutions.entrySet()) {
-				final var past = entry.getValue();
-				final var present = aliasManager.lookupIdBy(entry.getKey());
-				if (!past.equals(present)) {
-					return false;
-				}
-			}
-		}
-		final var validationParamsMatch =
-				(validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize())
-						&& (validationProps.maxTokenAdjusts
-						== dynamicProperties.maxTokenTransferListSize())
-						&& (validationProps.maxOwnershipChanges
-						== dynamicProperties.maxNftTransfersLen())
-						&& (validationProps.maxXferBalanceChanges
-						== dynamicProperties.maxXferBalanceChanges())
-						&& (validationProps.maxNestedCustomFees
-						== dynamicProperties.maxCustomFeeDepth())
-						&& (validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled())
-						&& (validationProps.isAutoCreationEnabled
-						== dynamicProperties.isAutoCreationEnabled())
-						&& (validationProps.areAllowancesEnabled
-						== dynamicProperties.areAllowancesEnabled());
-		if (!validationParamsMatch) {
-			return false;
-		}
-		for (final var meta : customFeeMeta) {
-			final var tokenId = meta.tokenId();
-			final var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
-			if (!meta.equals(newCustomMeta)) {
-				return false;
-			}
-		}
-		return true;
-	}
+    public boolean wasDerivedFrom(
+            final GlobalDynamicProperties dynamicProperties,
+            final CustomFeeSchedules customFeeSchedules,
+            final AliasManager aliasManager) {
+        if (!resolutions.isEmpty()) {
+            for (final var entry : resolutions.entrySet()) {
+                final var past = entry.getValue();
+                final var present = aliasManager.lookupIdBy(entry.getKey());
+                if (!past.equals(present)) {
+                    return false;
+                }
+            }
+        }
+        final var validationParamsMatch =
+                (validationProps.maxHbarAdjusts == dynamicProperties.maxTransferListSize())
+                        && (validationProps.maxTokenAdjusts
+                                == dynamicProperties.maxTokenTransferListSize())
+                        && (validationProps.maxOwnershipChanges
+                                == dynamicProperties.maxNftTransfersLen())
+                        && (validationProps.maxXferBalanceChanges
+                                == dynamicProperties.maxXferBalanceChanges())
+                        && (validationProps.maxNestedCustomFees
+                                == dynamicProperties.maxCustomFeeDepth())
+                        && (validationProps.areNftsEnabled == dynamicProperties.areNftsEnabled())
+                        && (validationProps.isAutoCreationEnabled
+                                == dynamicProperties.isAutoCreationEnabled())
+                        && (validationProps.areAllowancesEnabled
+                                == dynamicProperties.areAllowancesEnabled());
+        if (!validationParamsMatch) {
+            return false;
+        }
+        for (final var meta : customFeeMeta) {
+            final var tokenId = meta.tokenId();
+            final var newCustomMeta = customFeeSchedules.lookupMetaFor(tokenId);
+            if (!meta.equals(newCustomMeta)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	public ResponseCodeEnum code() {
-		return code;
-	}
+    public ResponseCodeEnum code() {
+        return code;
+    }
 
-	@Override
-	public boolean equals(final Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+    @Override
+    public boolean equals(final Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
 
-	@Override
-	public String toString() {
-		return MoreObjects.toStringHelper(ImpliedTransfersMeta.class)
-				.add("code", code)
-				.add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
-				.add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
-				.add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
-				.add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
-				.add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
-				.add("areNftsEnabled", validationProps.areNftsEnabled)
-				.add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
-				.add("tokenFeeSchedules", customFeeMeta)
-				.add("areAllowancesEnabled", validationProps.areAllowancesEnabled)
-				.toString();
-	}
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(ImpliedTransfersMeta.class)
+                .add("code", code)
+                .add("maxExplicitHbarAdjusts", validationProps.maxHbarAdjusts)
+                .add("maxExplicitTokenAdjusts", validationProps.maxTokenAdjusts)
+                .add("maxExplicitOwnershipChanges", validationProps.maxOwnershipChanges)
+                .add("maxNestedCustomFees", validationProps.maxNestedCustomFees)
+                .add("maxXferBalanceChanges", validationProps.maxXferBalanceChanges)
+                .add("areNftsEnabled", validationProps.areNftsEnabled)
+                .add("isAutoCreationEnabled", validationProps.isAutoCreationEnabled)
+                .add("tokenFeeSchedules", customFeeMeta)
+                .add("areAllowancesEnabled", validationProps.areAllowancesEnabled)
+                .toString();
+    }
 
-	public record ValidationProps(
-			int maxHbarAdjusts,
-			int maxTokenAdjusts,
-			int maxOwnershipChanges,
-			int maxNestedCustomFees,
-			int maxXferBalanceChanges,
-			boolean areNftsEnabled,
-			boolean isAutoCreationEnabled,
-			boolean areAllowancesEnabled) {
-	}
+    public record ValidationProps(
+            int maxHbarAdjusts,
+            int maxTokenAdjusts,
+            int maxOwnershipChanges,
+            int maxNestedCustomFees,
+            int maxXferBalanceChanges,
+            boolean areNftsEnabled,
+            boolean isAutoCreationEnabled,
+            boolean areAllowancesEnabled) {}
 }

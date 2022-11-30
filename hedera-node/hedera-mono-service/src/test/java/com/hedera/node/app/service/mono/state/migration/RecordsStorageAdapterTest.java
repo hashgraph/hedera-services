@@ -25,8 +25,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
-import com.hedera.node.app.service.mono.state.migration.QueryableRecords;
-import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.SeededPropertySource;

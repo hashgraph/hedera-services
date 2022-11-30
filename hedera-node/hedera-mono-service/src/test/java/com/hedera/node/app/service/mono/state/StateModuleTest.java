@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;

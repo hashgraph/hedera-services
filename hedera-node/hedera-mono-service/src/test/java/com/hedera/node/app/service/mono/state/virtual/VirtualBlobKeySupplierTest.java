@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySuppl
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKeySupplier;
 import org.junit.jupiter.api.Test;
 
 class VirtualBlobKeySupplierTest {

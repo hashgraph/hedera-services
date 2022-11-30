@@ -59,7 +59,8 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
 
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.UPDATE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.UPDATE, consensusTime);
     }
 
     @Override

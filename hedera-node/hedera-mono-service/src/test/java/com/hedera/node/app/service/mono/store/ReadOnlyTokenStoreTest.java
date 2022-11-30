@@ -39,8 +39,6 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.node.app.service.mono.store.AccountStore;
-import com.hedera.node.app.service.mono.store.ReadOnlyTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;

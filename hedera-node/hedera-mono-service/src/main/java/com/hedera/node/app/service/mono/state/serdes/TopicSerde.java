@@ -35,7 +35,10 @@ public class TopicSerde {
         to.setExpirationTimestamp(IoUtils.readNullable(in, RichInstant::from));
         to.setDeleted(in.readBoolean());
         to.setSequenceNumber(in.readLong());
-        to.setRunningHash(in.readBoolean() ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE) : null);
+        to.setRunningHash(
+                in.readBoolean()
+                        ? in.readByteArray(MerkleTopic.RUNNING_HASH_BYTE_ARRAY_SIZE)
+                        : null);
     }
 
     public void serialize(final MerkleTopic topic, final SerializableDataOutputStream out)

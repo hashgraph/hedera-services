@@ -23,13 +23,13 @@ import com.hedera.node.app.service.mono.exceptions.DeletedAccountException;
 import com.hedera.node.app.service.mono.exceptions.DetachedAccountException;
 import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
-import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
@@ -248,7 +248,8 @@ public class HederaLedger {
         if (tokenRelsLedger == null) {
             throw new IllegalStateException("Ledger has no manageable token relationships!");
         }
-        final var positiveBalances = (int) accountsLedger.get(aId, AccountProperty.NUM_POSITIVE_BALANCES);
+        final var positiveBalances =
+                (int) accountsLedger.get(aId, AccountProperty.NUM_POSITIVE_BALANCES);
         return positiveBalances == 0;
     }
 
@@ -261,7 +262,8 @@ public class HederaLedger {
     }
 
     private void changeNumTreasuryTitles(final AccountID aId, final int delta) {
-        final var numTreasuryTitles = (int) accountsLedger.get(aId, AccountProperty.NUM_TREASURY_TITLES);
+        final var numTreasuryTitles =
+                (int) accountsLedger.get(aId, AccountProperty.NUM_TREASURY_TITLES);
         accountsLedger.set(aId, AccountProperty.NUM_TREASURY_TITLES, numTreasuryTitles + delta);
     }
 
@@ -294,7 +296,8 @@ public class HederaLedger {
     }
 
     public void dropPendingTokenChanges() {
-        TransferLogic.dropTokenChanges(sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
+        TransferLogic.dropTokenChanges(
+                sideEffectsTracker, nftsLedger, accountsLedger, tokenRelsLedger);
     }
 
     public ResponseCodeEnum doTokenTransfer(
@@ -403,7 +406,8 @@ public class HederaLedger {
         try {
             final var isDeleted = (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED);
             if (isDeleted) {
-                final var isContract = (boolean) accountsLedger.get(id, AccountProperty.IS_SMART_CONTRACT);
+                final var isContract =
+                        (boolean) accountsLedger.get(id, AccountProperty.IS_SMART_CONTRACT);
                 return isContract ? CONTRACT_DELETED : ACCOUNT_DELETED;
             }
             return validator.expiryStatusGiven(accountsLedger, id);

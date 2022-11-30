@@ -19,7 +19,6 @@ import static com.swirlds.common.system.PlatformStatus.MAINTENANCE;
 import static com.swirlds.common.system.PlatformStatus.STARTING_UP;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.context.ContextPlatformStatus;
 import org.junit.jupiter.api.Test;
 
 class ContextPlatformStatusTest {

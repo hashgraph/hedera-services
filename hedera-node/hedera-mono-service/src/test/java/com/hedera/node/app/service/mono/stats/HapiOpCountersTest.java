@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,6 @@
  * limitations under the License.
  */
 package com.hedera.node.app.service.mono.stats;
-
-import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.metrics.Counter;
-import com.swirlds.common.metrics.Metrics;
-import com.swirlds.common.system.Platform;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.function.Function;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -44,131 +30,144 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.common.metrics.Counter;
+import com.swirlds.common.metrics.Metrics;
+import com.swirlds.common.system.Platform;
+import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HapiOpCountersTest {
-	private Platform platform;
-	private Counter counter;
-	private MiscRunningAvgs runningAvgs;
-	private TransactionContext txnCtx;
-	private Function<HederaFunctionality, String> statNameFn;
-	private Metrics metrics;
+    private Platform platform;
+    private Counter counter;
+    private MiscRunningAvgs runningAvgs;
+    private TransactionContext txnCtx;
+    private Function<HederaFunctionality, String> statNameFn;
+    private Metrics metrics;
 
-	private HapiOpCounters subject;
+    private HapiOpCounters subject;
 
-	@BeforeEach
-	void setup() {
-		HapiOpCounters.setAllFunctions(
-				() ->
-						new HederaFunctionality[] {
-								CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE
-						});
+    @BeforeEach
+    void setup() {
+        HapiOpCounters.setAllFunctions(
+                () ->
+                        new HederaFunctionality[] {
+                            CryptoTransfer, TokenGetInfo, ConsensusSubmitMessage, NONE
+                        });
 
-		txnCtx = mock(TransactionContext.class);
-		counter = mock(Counter.class);
-		platform = mock(Platform.class);
-		statNameFn = HederaFunctionality::toString;
-		runningAvgs = mock(MiscRunningAvgs.class);
-		metrics = mock(Metrics.class);
+        txnCtx = mock(TransactionContext.class);
+        counter = mock(Counter.class);
+        platform = mock(Platform.class);
+        statNameFn = HederaFunctionality::toString;
+        runningAvgs = mock(MiscRunningAvgs.class);
+        metrics = mock(Metrics.class);
 
-		subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
+        subject = new HapiOpCounters(runningAvgs, txnCtx, statNameFn);
 
-		given(platform.getMetrics()).willReturn(metrics);
-		given(metrics.getOrCreate(any())).willReturn(counter);
+        given(platform.getMetrics()).willReturn(metrics);
+        given(metrics.getOrCreate(any())).willReturn(counter);
 
-		subject.registerWith(platform);
-	}
+        subject.registerWith(platform);
+    }
 
-	@AfterEach
-	void cleanup() {
-		HapiOpCounters.allFunctions = HederaFunctionality.class::getEnumConstants;
-	}
+    @AfterEach
+    void cleanup() {
+        HapiOpCounters.allFunctions = HederaFunctionality.class::getEnumConstants;
+    }
 
-	@Test
-	void beginsRationally() {
-		assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
-		assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
-		assertTrue(subject.getHandledTxns().containsKey(CryptoTransfer));
-		assertEquals(0, subject.getDeprecatedTxns().get());
-		assertFalse(subject.getAnsweredQueries().containsKey(CryptoTransfer));
+    @Test
+    void beginsRationally() {
+        assertTrue(subject.getReceivedOps().containsKey(CryptoTransfer));
+        assertTrue(subject.getSubmittedTxns().containsKey(CryptoTransfer));
+        assertTrue(subject.getHandledTxns().containsKey(CryptoTransfer));
+        assertEquals(0, subject.getDeprecatedTxns().get());
+        assertFalse(subject.getAnsweredQueries().containsKey(CryptoTransfer));
 
-		assertTrue(subject.getReceivedOps().containsKey(TokenGetInfo));
-		assertTrue(subject.getAnsweredQueries().containsKey(TokenGetInfo));
-		assertFalse(subject.getSubmittedTxns().containsKey(TokenGetInfo));
-		assertFalse(subject.getHandledTxns().containsKey(TokenGetInfo));
+        assertTrue(subject.getReceivedOps().containsKey(TokenGetInfo));
+        assertTrue(subject.getAnsweredQueries().containsKey(TokenGetInfo));
+        assertFalse(subject.getSubmittedTxns().containsKey(TokenGetInfo));
+        assertFalse(subject.getHandledTxns().containsKey(TokenGetInfo));
 
-		assertFalse(subject.getReceivedOps().containsKey(NONE));
-		assertFalse(subject.getSubmittedTxns().containsKey(NONE));
-		assertFalse(subject.getAnsweredQueries().containsKey(NONE));
-		assertFalse(subject.getHandledTxns().containsKey(NONE));
-	}
+        assertFalse(subject.getReceivedOps().containsKey(NONE));
+        assertFalse(subject.getSubmittedTxns().containsKey(NONE));
+        assertFalse(subject.getAnsweredQueries().containsKey(NONE));
+        assertFalse(subject.getHandledTxns().containsKey(NONE));
+    }
 
-	@Test
-	void registersExpectedStatEntries() {
-		verify(metrics, times(9)).getOrCreate(any());
-	}
+    @Test
+    void registersExpectedStatEntries() {
+        verify(metrics, times(9)).getOrCreate(any());
+    }
 
-	@Test
-	void updatesAvgSubmitMessageHdlSizeForHandled() {
-		final var expectedSize = 12345;
-		final var txn = mock(TransactionBody.class);
-		final var accessor = mock(SignedTxnAccessor.class);
-		given(txn.getSerializedSize()).willReturn(expectedSize);
-		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.accessor()).willReturn(accessor);
+    @Test
+    void updatesAvgSubmitMessageHdlSizeForHandled() {
+        final var expectedSize = 12345;
+        final var txn = mock(TransactionBody.class);
+        final var accessor = mock(SignedTxnAccessor.class);
+        given(txn.getSerializedSize()).willReturn(expectedSize);
+        given(accessor.getTxn()).willReturn(txn);
+        given(txnCtx.accessor()).willReturn(accessor);
 
-		subject.countHandled(ConsensusSubmitMessage);
+        subject.countHandled(ConsensusSubmitMessage);
 
-		verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
-	}
+        verify(runningAvgs).recordHandledSubmitMessageSize(expectedSize);
+    }
 
-	@Test
-	void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
-		final var expectedSize = 12345;
-		final var txn = mock(TransactionBody.class);
-		final var accessor = mock(PlatformTxnAccessor.class);
-		given(txn.getSerializedSize()).willReturn(expectedSize);
-		given(accessor.getTxn()).willReturn(txn);
-		given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+    @Test
+    void doesntUpdateAvgSubmitMessageHdlSizeForCountReceivedOrSubmitted() {
+        final var expectedSize = 12345;
+        final var txn = mock(TransactionBody.class);
+        final var accessor = mock(PlatformTxnAccessor.class);
+        given(txn.getSerializedSize()).willReturn(expectedSize);
+        given(accessor.getTxn()).willReturn(txn);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
 
-		subject.countReceived(ConsensusSubmitMessage);
-		subject.countSubmitted(ConsensusSubmitMessage);
+        subject.countReceived(ConsensusSubmitMessage);
+        subject.countSubmitted(ConsensusSubmitMessage);
 
-		verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
-	}
+        verify(runningAvgs, never()).recordHandledSubmitMessageSize(expectedSize);
+    }
 
-	@Test
-	void updatesExpectedEntries() {
-		subject.countReceived(CryptoTransfer);
-		subject.countReceived(CryptoTransfer);
-		subject.countReceived(CryptoTransfer);
-		subject.countSubmitted(CryptoTransfer);
-		subject.countSubmitted(CryptoTransfer);
-		subject.countHandled(CryptoTransfer);
-		subject.countDeprecatedTxnReceived();
-		subject.countReceived(TokenGetInfo);
-		subject.countReceived(TokenGetInfo);
-		subject.countReceived(TokenGetInfo);
-		subject.countAnswered(TokenGetInfo);
-		subject.countAnswered(TokenGetInfo);
+    @Test
+    void updatesExpectedEntries() {
+        subject.countReceived(CryptoTransfer);
+        subject.countReceived(CryptoTransfer);
+        subject.countReceived(CryptoTransfer);
+        subject.countSubmitted(CryptoTransfer);
+        subject.countSubmitted(CryptoTransfer);
+        subject.countHandled(CryptoTransfer);
+        subject.countDeprecatedTxnReceived();
+        subject.countReceived(TokenGetInfo);
+        subject.countReceived(TokenGetInfo);
+        subject.countReceived(TokenGetInfo);
+        subject.countAnswered(TokenGetInfo);
+        subject.countAnswered(TokenGetInfo);
 
-		verify(counter, times(12)).increment();
-	}
+        verify(counter, times(12)).increment();
+    }
 
-	@Test
-	void ignoredOpsAreNoops() {
-		assertDoesNotThrow(() -> subject.countReceived(NONE));
-		assertDoesNotThrow(() -> subject.countSubmitted(NONE));
-		assertDoesNotThrow(() -> subject.countHandled(NONE));
-		assertDoesNotThrow(() -> subject.countAnswered(NONE));
+    @Test
+    void ignoredOpsAreNoops() {
+        assertDoesNotThrow(() -> subject.countReceived(NONE));
+        assertDoesNotThrow(() -> subject.countSubmitted(NONE));
+        assertDoesNotThrow(() -> subject.countHandled(NONE));
+        assertDoesNotThrow(() -> subject.countAnswered(NONE));
 
-		assertEquals(0L, subject.receivedSoFar(NONE));
-		assertEquals(0L, subject.submittedSoFar(NONE));
-		assertEquals(0L, subject.handledSoFar(NONE));
-		assertEquals(0L, subject.answeredSoFar(NONE));
-	}
+        assertEquals(0L, subject.receivedSoFar(NONE));
+        assertEquals(0L, subject.submittedSoFar(NONE));
+        assertEquals(0L, subject.handledSoFar(NONE));
+        assertEquals(0L, subject.answeredSoFar(NONE));
+    }
 
-	@Test
-	void deprecatedTxnsCountIncrementsByOne() {
-		subject.countDeprecatedTxnReceived();
-		verify(counter).increment();
-	}
+    @Test
+    void deprecatedTxnsCountIncrementsByOne() {
+        subject.countDeprecatedTxnReceived();
+        verify(counter).increment();
+    }
 }

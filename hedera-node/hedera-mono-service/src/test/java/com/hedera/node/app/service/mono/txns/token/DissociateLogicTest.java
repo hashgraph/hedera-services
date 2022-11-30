@@ -26,7 +26,6 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
-import com.hedera.node.app.service.mono.txns.token.DissociateLogic;
 import com.hedera.node.app.service.mono.txns.token.process.Dissociation;
 import com.hedera.node.app.service.mono.txns.token.process.DissociationFactory;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;

@@ -48,7 +48,12 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_KEYS_FUNCTION.selector());
     private static final ABIType<Tuple> TOKEN_UPDATE_KEYS_DECODER =
             TypeFactory.create(
-                    "(" + DecodingFacade.removeBrackets(BYTES32) + "," + DecodingFacade.TOKEN_KEY_DECODER + ARRAY_BRACKETS + ")");
+                    "("
+                            + DecodingFacade.removeBrackets(BYTES32)
+                            + ","
+                            + DecodingFacade.TOKEN_KEY_DECODER
+                            + ARRAY_BRACKETS
+                            + ")");
     TokenUpdateKeysWrapper updateOp;
 
     public TokenUpdateKeysPrecompile(
@@ -88,9 +93,11 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     public static TokenUpdateKeysWrapper decodeUpdateTokenKeys(
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var tokenKeys = DecodingFacade.decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+        final var tokenKeys =
+                DecodingFacade.decodeTokenKeys(decodedArguments.get(1), aliasResolver);
         return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
     }
 }

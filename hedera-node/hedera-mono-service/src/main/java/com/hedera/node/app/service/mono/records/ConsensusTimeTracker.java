@@ -20,8 +20,8 @@ import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_I
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
-import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -61,8 +61,7 @@ public class ConsensusTimeTracker {
     private long maxPrecedingRecords;
     /**
      * There is a special case. When the system first starts up, there are migrations that can
-     * process that need unlimited preceding records. See {@link
-     * MigrationRecordsManager}.
+     * process that need unlimited preceding records. See {@link MigrationRecordsManager}.
      *
      * <p>unlimitedPreceding should only ever true on the first transaction in an {@link
      * StandardProcessLogic#incorporateConsensusTxn} call.
@@ -160,8 +159,7 @@ public class ConsensusTimeTracker {
     }
 
     /**
-     * The first transaction in a {@link
-     * StandardProcessLogic#incorporateConsensusTxn} call can have
+     * The first transaction in a {@link StandardProcessLogic#incorporateConsensusTxn} call can have
      * more "preceding" transactions than normal, this method returns the first consensus time. If
      * it has already been used, and exception is thrown. See {@link #isFirstUsed()}.
      *
@@ -188,8 +186,7 @@ public class ConsensusTimeTracker {
      *
      * <p>This _should not_ be called anywhere that could possibly be called during the handling of
      * a normal transaction. It resets the tracker to the "next" state. It should really only be
-     * called by {@link
-     * StandardProcessLogic#incorporateConsensusTxn}.
+     * called by {@link StandardProcessLogic#incorporateConsensusTxn}.
      *
      * <p>Use {@link TxnAwareRecordsHistorian} for getting record consensus times that are
      * associated with a transaction.

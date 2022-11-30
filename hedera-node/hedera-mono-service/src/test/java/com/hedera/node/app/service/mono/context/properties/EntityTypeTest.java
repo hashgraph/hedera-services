@@ -18,8 +18,6 @@ package com.hedera.node.app.service.mono.context.properties;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.EnumSet;
-
-import com.hedera.node.app.service.mono.context.properties.EntityType;
 import org.junit.jupiter.api.Test;
 
 class EntityTypeTest {

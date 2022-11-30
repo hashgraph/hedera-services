@@ -67,8 +67,7 @@ class ContractsModuleTest {
     @Mock FeeCalculator feeCalculatorProvider;
     @Mock StateView stateView;
     @Mock TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
-    @Mock
-	com.hedera.node.app.service.mono.state.expiry.ExpiringCreations ExpiringCreations;
+    @Mock com.hedera.node.app.service.mono.state.expiry.ExpiringCreations ExpiringCreations;
     @Mock InfrastructureFactory InfrastructureFactory;
     @Mock Supplier<Instant> now;
     @Mock PrngLogic prngLogic;

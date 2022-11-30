@@ -27,8 +27,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.service.mono.utils.forensics.OrderedComparison;
-import com.hedera.node.app.service.mono.utils.forensics.RecordStreamEntry;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.File;
 import java.io.IOException;

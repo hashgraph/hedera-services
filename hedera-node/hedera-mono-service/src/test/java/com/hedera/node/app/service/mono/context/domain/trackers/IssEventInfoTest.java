@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

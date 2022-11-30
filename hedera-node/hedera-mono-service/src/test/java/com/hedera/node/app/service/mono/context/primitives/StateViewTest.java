@@ -61,7 +61,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;

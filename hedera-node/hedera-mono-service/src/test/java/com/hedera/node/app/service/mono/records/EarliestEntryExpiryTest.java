@@ -15,46 +15,46 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import org.junit.jupiter.api.Test;
-
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import org.junit.jupiter.api.Test;
+
 class EarliestEntryExpiryTest {
-	@Test
-	void equalityWorks() {
-		final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+    @Test
+    void equalityWorks() {
+        final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 
-		assertEquals(ere, ere);
-		assertNotEquals(ere, new Object());
-		assertEquals(ere, new EarliestRecordExpiry(5L, asAccount("0.0.5")));
-		assertNotEquals(ere, new EarliestRecordExpiry(6L, asAccount("0.0.5")));
-		assertNotEquals(ere, new EarliestRecordExpiry(5L, asAccount("0.0.6")));
-		final var equalsForcedCallResult = ere.equals(null);
-		assertFalse(equalsForcedCallResult);
-	}
+        assertEquals(ere, ere);
+        assertNotEquals(ere, new Object());
+        assertEquals(ere, new EarliestRecordExpiry(5L, asAccount("0.0.5")));
+        assertNotEquals(ere, new EarliestRecordExpiry(6L, asAccount("0.0.5")));
+        assertNotEquals(ere, new EarliestRecordExpiry(5L, asAccount("0.0.6")));
+        final var equalsForcedCallResult = ere.equals(null);
+        assertFalse(equalsForcedCallResult);
+    }
 
-	@Test
-	void toStringWorks() {
-		final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+    @Test
+    void toStringWorks() {
+        final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
 
-		assertEquals("EarliestRecordExpiry{id=0.0.5, earliestExpiry=5}", ere.toString());
-	}
+        assertEquals("EarliestRecordExpiry{id=0.0.5, earliestExpiry=5}", ere.toString());
+    }
 
-	@Test
-	void hashCodeWorks() {
-		final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
-		final var expectedHashCode = 1072481;
+    @Test
+    void hashCodeWorks() {
+        final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+        final var expectedHashCode = 1072481;
 
-		assertEquals(expectedHashCode, ere.hashCode());
-	}
+        assertEquals(expectedHashCode, ere.hashCode());
+    }
 
-	@Test
-	void comparisonWorks() {
-		final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
-		final var ere2 = new EarliestRecordExpiry(4L, asAccount("0.0.1"));
-		assertEquals(1, ere.compareTo(ere2));
-	}
+    @Test
+    void comparisonWorks() {
+        final var ere = new EarliestRecordExpiry(5L, asAccount("0.0.5"));
+        final var ere2 = new EarliestRecordExpiry(4L, asAccount("0.0.1"));
+        assertEquals(1, ere.compareTo(ere2));
+    }
 }

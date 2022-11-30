@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -28,125 +34,119 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-
 class ScheduleCreateResourceUsageTest {
 
-	ScheduleCreateResourceUsage subject;
+    ScheduleCreateResourceUsage subject;
 
-	StateView view;
-	ScheduleOpsUsage scheduleOpsUsage;
-	TransactionBody nonScheduleCreateTxn;
-	TransactionBody scheduleCreateTxn;
+    StateView view;
+    ScheduleOpsUsage scheduleOpsUsage;
+    TransactionBody nonScheduleCreateTxn;
+    TransactionBody scheduleCreateTxn;
 
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	MockGlobalDynamicProps props = new MockGlobalDynamicProps();
-	FeeData expected;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    MockGlobalDynamicProps props = new MockGlobalDynamicProps();
+    FeeData expected;
 
-	@BeforeEach
-	void setup() {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-		scheduleCreateTxn = mock(TransactionBody.class);
-		scheduleOpsUsage = mock(ScheduleOpsUsage.class);
-		given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
-		given(scheduleCreateTxn.getScheduleCreate())
-				.willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
+    @BeforeEach
+    void setup() {
+        expected = mock(FeeData.class);
+        view = mock(StateView.class);
+        scheduleCreateTxn = mock(TransactionBody.class);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
+        given(scheduleCreateTxn.hasScheduleCreate()).willReturn(true);
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(ScheduleCreateTransactionBody.getDefaultInstance());
 
-		nonScheduleCreateTxn = mock(TransactionBody.class);
+        nonScheduleCreateTxn = mock(TransactionBody.class);
 
-		given(
-				scheduleOpsUsage.scheduleCreateUsage(
-						scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
-				.willReturn(expected);
+        given(
+                        scheduleOpsUsage.scheduleCreateUsage(
+                                scheduleCreateTxn, sigUsage, props.scheduledTxExpiryTimeSecs()))
+                .willReturn(expected);
 
-		subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
-	}
+        subject = new ScheduleCreateResourceUsage(scheduleOpsUsage, props);
+    }
 
-	@Test
-	void recognizesApplicableQuery() {
-		// expect:
-		assertTrue(subject.applicableTo(scheduleCreateTxn));
-		assertFalse(subject.applicableTo(nonScheduleCreateTxn));
-	}
+    @Test
+    void recognizesApplicableQuery() {
+        // expect:
+        assertTrue(subject.applicableTo(scheduleCreateTxn));
+        assertFalse(subject.applicableTo(nonScheduleCreateTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
-	}
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // expect:
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
 
-	@Test
-	void handlesExpirationTime() throws Exception {
-		props.enableSchedulingLongTerm();
+    @Test
+    void handlesExpirationTime() throws Exception {
+        props.enableSchedulingLongTerm();
 
-		given(scheduleCreateTxn.getScheduleCreate())
-				.willReturn(
-						ScheduleCreateTransactionBody.newBuilder()
-								.setExpirationTime(
-										Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(
+                        ScheduleCreateTransactionBody.newBuilder()
+                                .setExpirationTime(
+                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                                .build());
 
-		given(scheduleCreateTxn.getTransactionID())
-				.willReturn(
-						TransactionID.newBuilder()
-								.setTransactionValidStart(
-										Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
+                                .build());
 
-		given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L))
-				.willReturn(expected);
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 1L))
+                .willReturn(expected);
 
-		assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
-	}
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
 
-	@Test
-	void ignoresExpirationTimeLongTermDisabled() throws Exception {
+    @Test
+    void ignoresExpirationTimeLongTermDisabled() throws Exception {
 
-		given(scheduleCreateTxn.getScheduleCreate())
-				.willReturn(
-						ScheduleCreateTransactionBody.newBuilder()
-								.setExpirationTime(
-										Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(
+                        ScheduleCreateTransactionBody.newBuilder()
+                                .setExpirationTime(
+                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                                .build());
 
-		given(scheduleCreateTxn.getTransactionID())
-				.willReturn(
-						TransactionID.newBuilder()
-								.setTransactionValidStart(
-										Timestamp.newBuilder().setSeconds(1L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(1L).setNanos(0))
+                                .build());
 
-		assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
-	}
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
 
-	@Test
-	void handlesPastExpirationTime() throws Exception {
-		props.enableSchedulingLongTerm();
+    @Test
+    void handlesPastExpirationTime() throws Exception {
+        props.enableSchedulingLongTerm();
 
-		given(scheduleCreateTxn.getScheduleCreate())
-				.willReturn(
-						ScheduleCreateTransactionBody.newBuilder()
-								.setExpirationTime(
-										Timestamp.newBuilder().setSeconds(2L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getScheduleCreate())
+                .willReturn(
+                        ScheduleCreateTransactionBody.newBuilder()
+                                .setExpirationTime(
+                                        Timestamp.newBuilder().setSeconds(2L).setNanos(0))
+                                .build());
 
-		given(scheduleCreateTxn.getTransactionID())
-				.willReturn(
-						TransactionID.newBuilder()
-								.setTransactionValidStart(
-										Timestamp.newBuilder().setSeconds(5L).setNanos(0))
-								.build());
+        given(scheduleCreateTxn.getTransactionID())
+                .willReturn(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(
+                                        Timestamp.newBuilder().setSeconds(5L).setNanos(0))
+                                .build());
 
-		given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L))
-				.willReturn(expected);
+        given(scheduleOpsUsage.scheduleCreateUsage(scheduleCreateTxn, sigUsage, 0L))
+                .willReturn(expected);
 
-		assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
-	}
+        assertEquals(expected, subject.usageGiven(scheduleCreateTxn, obj, view));
+    }
 }

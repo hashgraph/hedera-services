@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,6 @@
  */
 package com.hedera.node.app.service.mono.files.interceptors;
 
-import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hederahashgraph.api.proto.java.FileID;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Arrays;
-
 import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.OK_FOR_NOW_VERDICT;
 import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.YES_VERDICT;
 import static com.hedera.test.utils.IdUtils.asFile;
@@ -38,104 +24,117 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hederahashgraph.api.proto.java.FileID;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Arrays;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class FeeSchedulesManagerTest {
-	private HFileMeta attr;
+    private HFileMeta attr;
 
-	public static final String R4_FEE_SCHEDULE_REPR_PATH =
-			"src/test/resources/testfiles/r4FeeSchedule.bin";
-	private static byte[] validBytes;
-	private static byte[] invalidBytes;
+    public static final String R4_FEE_SCHEDULE_REPR_PATH =
+            "src/test/resources/testfiles/r4FeeSchedule.bin";
+    private static byte[] validBytes;
+    private static byte[] invalidBytes;
 
-	FileID feeSchedule = asFile("0.0.111");
-	FileID otherFile = asFile("0.0.911");
+    FileID feeSchedule = asFile("0.0.111");
+    FileID otherFile = asFile("0.0.911");
 
-	FeeCalculator fees;
+    FeeCalculator fees;
 
-	FeeSchedulesManager subject;
+    FeeSchedulesManager subject;
 
-	@BeforeAll
-	public static void setupAll() throws IOException {
-		validBytes = Files.readAllBytes(Path.of(R4_FEE_SCHEDULE_REPR_PATH));
-		invalidBytes = Arrays.copyOfRange(validBytes, 0, validBytes.length / 2 + 1);
-	}
+    @BeforeAll
+    public static void setupAll() throws IOException {
+        validBytes = Files.readAllBytes(Path.of(R4_FEE_SCHEDULE_REPR_PATH));
+        invalidBytes = Arrays.copyOfRange(validBytes, 0, validBytes.length / 2 + 1);
+    }
 
-	@BeforeEach
-	void setup() {
-		attr = new HFileMeta(false, new JContractIDKey(1, 2, 3), Instant.now().getEpochSecond());
+    @BeforeEach
+    void setup() {
+        attr = new HFileMeta(false, new JContractIDKey(1, 2, 3), Instant.now().getEpochSecond());
 
-		fees = mock(FeeCalculator.class);
+        fees = mock(FeeCalculator.class);
 
-		subject = new FeeSchedulesManager(new MockFileNumbers(), fees);
-	}
+        subject = new FeeSchedulesManager(new MockFileNumbers(), fees);
+    }
 
-	@Test
-	void rubberstampsIrrelevantInvocation() {
-		// expect:
-		assertEquals(YES_VERDICT, subject.preUpdate(otherFile, invalidBytes));
-	}
+    @Test
+    void rubberstampsIrrelevantInvocation() {
+        // expect:
+        assertEquals(YES_VERDICT, subject.preUpdate(otherFile, invalidBytes));
+    }
 
-	@Test
-	void approvesValidSchedules() {
-		// given:
-		final var verdict = subject.preUpdate(feeSchedule, validBytes);
+    @Test
+    void approvesValidSchedules() {
+        // given:
+        final var verdict = subject.preUpdate(feeSchedule, validBytes);
 
-		// expect:
-		assertEquals(YES_VERDICT, verdict);
-	}
+        // expect:
+        assertEquals(YES_VERDICT, verdict);
+    }
 
-	@Test
-	void oksInvalidScheduleForNow() {
-		// when:
-		final var verdict = subject.preUpdate(feeSchedule, invalidBytes);
+    @Test
+    void oksInvalidScheduleForNow() {
+        // when:
+        final var verdict = subject.preUpdate(feeSchedule, invalidBytes);
 
-		// then:
-		assertEquals(OK_FOR_NOW_VERDICT, verdict);
-	}
+        // then:
+        assertEquals(OK_FOR_NOW_VERDICT, verdict);
+    }
 
-	@Test
-	void reloadsOnValidUpdate() {
-		// when:
-		subject.postUpdate(feeSchedule, validBytes);
+    @Test
+    void reloadsOnValidUpdate() {
+        // when:
+        subject.postUpdate(feeSchedule, validBytes);
 
-		// then:
-		verify(fees).init();
-	}
+        // then:
+        verify(fees).init();
+    }
 
-	@Test
-	void doesntReloadOnInvalidUpdate() {
-		// when:
-		subject.postUpdate(feeSchedule, invalidBytes);
+    @Test
+    void doesntReloadOnInvalidUpdate() {
+        // when:
+        subject.postUpdate(feeSchedule, invalidBytes);
 
-		// then:
-		verify(fees, never()).init();
-	}
+        // then:
+        verify(fees, never()).init();
+    }
 
-	@Test
-	void doesntReloadOnIrrelevantUpdate() {
-		// when:
-		subject.postUpdate(otherFile, validBytes);
+    @Test
+    void doesntReloadOnIrrelevantUpdate() {
+        // when:
+        subject.postUpdate(otherFile, validBytes);
 
-		// then:
-		verify(fees, never()).init();
-	}
+        // then:
+        verify(fees, never()).init();
+    }
 
-	@Test
-	void hasExpectedRelevanceAndPriority() {
-		// expect:
-		assertTrue(subject.priorityForCandidate(otherFile).isEmpty());
-		// and:
-		assertEquals(0, subject.priorityForCandidate(feeSchedule).getAsInt());
-	}
+    @Test
+    void hasExpectedRelevanceAndPriority() {
+        // expect:
+        assertTrue(subject.priorityForCandidate(otherFile).isEmpty());
+        // and:
+        assertEquals(0, subject.priorityForCandidate(feeSchedule).getAsInt());
+    }
 
-	@Test
-	void rubberstampsPreDelete() {
-		// expect:
-		assertEquals(YES_VERDICT, subject.preDelete(feeSchedule));
-	}
+    @Test
+    void rubberstampsPreDelete() {
+        // expect:
+        assertEquals(YES_VERDICT, subject.preDelete(feeSchedule));
+    }
 
-	@Test
-	void rubberstampsPreChange() {
-		// expect:
-		assertEquals(YES_VERDICT, subject.preAttrChange(feeSchedule, attr));
-	}
+    @Test
+    void rubberstampsPreChange() {
+        // expect:
+        assertEquals(YES_VERDICT, subject.preAttrChange(feeSchedule, attr));
+    }
 }

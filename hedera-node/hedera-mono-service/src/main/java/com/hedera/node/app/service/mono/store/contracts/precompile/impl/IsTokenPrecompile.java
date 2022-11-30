@@ -24,12 +24,12 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
@@ -67,7 +67,8 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile {
 
     public static TokenInfoWrapper decodeIsToken(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         return TokenInfoWrapper.forToken(tokenID);
     }

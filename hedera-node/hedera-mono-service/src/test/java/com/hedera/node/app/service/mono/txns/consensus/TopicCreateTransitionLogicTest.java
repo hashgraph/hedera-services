@@ -44,7 +44,6 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TopicStore;
 import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.service.mono.txns.consensus.TopicCreateTransitionLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;

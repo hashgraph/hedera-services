@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,21 @@
  * limitations under the License.
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
@@ -46,6 +61,10 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,214 +72,182 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
-
-@ExtendWith({ LogCaptureExtension.class, MockitoExtension.class })
+@ExtendWith({LogCaptureExtension.class, MockitoExtension.class})
 class ContractCallLocalResourceUsageTest {
-	private static final int gas = 1_234;
-	private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
+    private static final int gas = 1_234;
+    private static final ByteString params = ByteString.copyFrom("Hungry, and...".getBytes());
 
-	private static final Id callerID = new Id(0, 0, 123);
-	private static final Id contractID = new Id(0, 0, 456);
-	private static final ContractID target = contractID.asGrpcContract();
+    private static final Id callerID = new Id(0, 0, 123);
+    private static final Id contractID = new Id(0, 0, 456);
+    private static final ContractID target = contractID.asGrpcContract();
 
-	private static final Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
-	private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
-	private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
+    private static final Query satisfiableCostAnswer = localCallQuery(target, COST_ANSWER);
+    private static final Query satisfiableAnswerOnly = localCallQuery(target, ANSWER_ONLY);
+    private static final GlobalDynamicProperties properties = new MockGlobalDynamicProps();
 
-	@Mock
-	private AccountStore accountStore;
-	@Mock
-	private StateView view;
-	@Mock
-	private SmartContractFeeBuilder usageEstimator;
-	@Mock
-	private CallLocalEvmTxProcessor evmTxProcessor;
-	@Mock
-	private EntityIdSource ids;
-	@Mock
-	private OptionValidator validator;
-	@Mock
-	private NodeLocalProperties nodeLocalProperties;
-	@Mock
-	private AliasManager aliasManager;
-	@Mock
-	private BlockMetaSource blockMetaSource;
-	@Mock
-	private StaticBlockMetaProvider blockMetaProvider;
+    @Mock private AccountStore accountStore;
+    @Mock private StateView view;
+    @Mock private SmartContractFeeBuilder usageEstimator;
+    @Mock private CallLocalEvmTxProcessor evmTxProcessor;
+    @Mock private EntityIdSource ids;
+    @Mock private OptionValidator validator;
+    @Mock private NodeLocalProperties nodeLocalProperties;
+    @Mock private AliasManager aliasManager;
+    @Mock private BlockMetaSource blockMetaSource;
+    @Mock private StaticBlockMetaProvider blockMetaProvider;
 
-	@LoggingTarget
-	private LogCaptor logCaptor;
+    @LoggingTarget private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private ContractCallLocalResourceUsage subject;
+    @LoggingSubject private ContractCallLocalResourceUsage subject;
 
-	@BeforeEach
-	void setup() {
-		subject =
-				new ContractCallLocalResourceUsage(
-						usageEstimator,
-						properties,
-						nodeLocalProperties,
-						accountStore,
-						evmTxProcessor,
-						ids,
-						validator,
-						aliasManager,
-						blockMetaProvider);
-	}
+    @BeforeEach
+    void setup() {
+        subject =
+                new ContractCallLocalResourceUsage(
+                        usageEstimator,
+                        properties,
+                        nodeLocalProperties,
+                        accountStore,
+                        evmTxProcessor,
+                        ids,
+                        validator,
+                        aliasManager,
+                        blockMetaProvider);
+    }
 
-	@Test
-	void recognizesApplicableQuery() {
-		final var applicable = localCallQuery(target, COST_ANSWER);
-		final var inapplicable = Query.getDefaultInstance();
+    @Test
+    void recognizesApplicableQuery() {
+        final var applicable = localCallQuery(target, COST_ANSWER);
+        final var inapplicable = Query.getDefaultInstance();
 
-		assertTrue(subject.applicableTo(applicable));
-		assertFalse(subject.applicableTo(inapplicable));
-	}
+        assertTrue(subject.applicableTo(applicable));
+        assertFalse(subject.applicableTo(inapplicable));
+    }
 
-	@Test
-	void setsResultInQueryCxtIfPresent() {
-		final var queryCtx = new HashMap<String, Object>();
-		final var transactionProcessingResult =
-				TransactionProcessingResult.successful(
-						new ArrayList<>(),
-						0,
-						0,
-						1,
-						Bytes.EMPTY,
-						callerID.asEvmAddress(),
-						Collections.emptyMap(),
-						Collections.emptyList());
-		final var response = okResponse(transactionProcessingResult);
-		final var estimateResponse = subject.dummyResponse(target);
-		final var expected = expectedUsage();
+    @Test
+    void setsResultInQueryCxtIfPresent() {
+        final var queryCtx = new HashMap<String, Object>();
+        final var transactionProcessingResult =
+                TransactionProcessingResult.successful(
+                        new ArrayList<>(),
+                        0,
+                        0,
+                        1,
+                        Bytes.EMPTY,
+                        callerID.asEvmAddress(),
+                        Collections.emptyMap(),
+                        Collections.emptyList());
+        final var response = okResponse(transactionProcessingResult);
+        final var estimateResponse = subject.dummyResponse(target);
+        final var expected = expectedUsage();
 
-		given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
-		given(accountStore.loadContract(any()))
-				.willReturn(new Account(Id.fromGrpcContract(target)));
-		given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
-				.willReturn(transactionProcessingResult);
-		given(
-				usageEstimator.getContractCallLocalFeeMatrices(
-						params.size(), response.getFunctionResult(), ANSWER_ONLY))
-				.willReturn(nonGasUsage);
-		given(
-				usageEstimator.getContractCallLocalFeeMatrices(
-						params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
-				.willReturn(nonGasUsage);
-		given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
+        given(accountStore.loadAccount(any())).willReturn(new Account(Id.fromGrpcContract(target)));
+        given(accountStore.loadContract(any()))
+                .willReturn(new Account(Id.fromGrpcContract(target)));
+        given(evmTxProcessor.execute(any(), any(), anyLong(), anyLong(), any()))
+                .willReturn(transactionProcessingResult);
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
+                .willReturn(nonGasUsage);
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), estimateResponse.getFunctionResult(), ANSWER_ONLY))
+                .willReturn(nonGasUsage);
+        given(blockMetaProvider.getSource()).willReturn(Optional.of(blockMetaSource));
 
-		final var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
-		final var actualUsage2 = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
-		final var actualUsage3 = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
+        final var actualUsage1 = subject.usageGiven(satisfiableAnswerOnly, view);
+        final var actualUsage2 = subject.usageGivenType(satisfiableAnswerOnly, view, ANSWER_ONLY);
+        final var actualUsage3 = subject.usageGiven(satisfiableAnswerOnly, view, queryCtx);
 
-		assertEquals(response, queryCtx.get(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-		assertEquals(expected, actualUsage1);
-		assertEquals(expected, actualUsage2);
-		assertEquals(expected, actualUsage3);
-	}
+        assertEquals(response, queryCtx.get(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
+        assertEquals(expected, actualUsage1);
+        assertEquals(expected, actualUsage2);
+        assertEquals(expected, actualUsage3);
+    }
 
-	@Test
-	void treatsAnswerOnlyEstimateAsExpected() {
-		final var response = subject.dummyResponse(target);
-		final var expected = expectedUsage();
-		given(
-				usageEstimator.getContractCallLocalFeeMatrices(
-						params.size(), response.getFunctionResult(), ANSWER_ONLY))
-				.willReturn(nonGasUsage);
+    @Test
+    void treatsAnswerOnlyEstimateAsExpected() {
+        final var response = subject.dummyResponse(target);
+        final var expected = expectedUsage();
+        given(
+                        usageEstimator.getContractCallLocalFeeMatrices(
+                                params.size(), response.getFunctionResult(), ANSWER_ONLY))
+                .willReturn(nonGasUsage);
 
-		final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
+        final var actualUsage = subject.usageGivenType(satisfiableCostAnswer, view, ANSWER_ONLY);
 
-		assertEquals(expected, actualUsage);
-		verifyNoInteractions(evmTxProcessor);
-	}
+        assertEquals(expected, actualUsage);
+        verifyNoInteractions(evmTxProcessor);
+    }
 
-	@Test
-	void translatesExecutionException() {
-		final var queryCtx = new HashMap<String, Object>();
+    @Test
+    void translatesExecutionException() {
+        final var queryCtx = new HashMap<String, Object>();
 
-		assertThrows(
-				IllegalStateException.class,
-				() -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
-		assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
-		assertThat(
-				logCaptor.warnLogs(),
-				contains(startsWith("Usage estimation unexpectedly failed for")));
-	}
+        assertThrows(
+                IllegalStateException.class,
+                () -> subject.usageGiven(satisfiableAnswerOnly, view, queryCtx));
+        assertFalse(queryCtx.containsKey(ContractCallLocalAnswer.CONTRACT_CALL_LOCAL_CTX_KEY));
+        assertThat(
+                logCaptor.warnLogs(),
+                contains(startsWith("Usage estimation unexpectedly failed for")));
+    }
 
-	@Test
-	void dummyResponseAsExpected() {
-		final var dummy = subject.dummyResponse(target);
+    @Test
+    void dummyResponseAsExpected() {
+        final var dummy = subject.dummyResponse(target);
 
-		assertEquals(OK, dummy.getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(target, dummy.getFunctionResult().getContractID());
-		assertEquals(
-				properties.localCallEstRetBytes(),
-				dummy.getFunctionResult().getContractCallResult().size());
-	}
+        assertEquals(OK, dummy.getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(target, dummy.getFunctionResult().getContractID());
+        assertEquals(
+                properties.localCallEstRetBytes(),
+                dummy.getFunctionResult().getContractCallResult().size());
+    }
 
-	private static Query localCallQuery(final ContractID id, final ResponseType type) {
-		final var op =
-				ContractCallLocalQuery.newBuilder()
-						.setContractID(id)
-						.setGas(gas)
-						.setFunctionParameters(params)
-						.setHeader(QueryHeader.newBuilder().setResponseType(type).build());
-		return Query.newBuilder().setContractCallLocal(op).build();
-	}
+    private static Query localCallQuery(final ContractID id, final ResponseType type) {
+        final var op =
+                ContractCallLocalQuery.newBuilder()
+                        .setContractID(id)
+                        .setGas(gas)
+                        .setFunctionParameters(params)
+                        .setHeader(QueryHeader.newBuilder().setResponseType(type).build());
+        return Query.newBuilder().setContractCallLocal(op).build();
+    }
 
-	private ContractCallLocalResponse okResponse(final TransactionProcessingResult result) {
-		return response(result);
-	}
+    private ContractCallLocalResponse okResponse(final TransactionProcessingResult result) {
+        return response(result);
+    }
 
-	private ContractCallLocalResponse response(final TransactionProcessingResult result) {
-		return ContractCallLocalResponse.newBuilder()
-				.setHeader(
-						ResponseHeader.newBuilder()
-								.setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
-				.setFunctionResult(result.toGrpc())
-				.build();
-	}
+    private ContractCallLocalResponse response(final TransactionProcessingResult result) {
+        return ContractCallLocalResponse.newBuilder()
+                .setHeader(
+                        ResponseHeader.newBuilder()
+                                .setNodeTransactionPrecheckCode(ResponseCodeEnum.OK))
+                .setFunctionResult(result.toGrpc())
+                .build();
+    }
 
-	private static final FeeData nonGasUsage =
-			FeeData.newBuilder()
-					.setNodedata(
-							FeeComponents.newBuilder()
-									.setMin(1)
-									.setMax(1_000_000)
-									.setConstant(1)
-									.setBpt(1)
-									.setVpt(1)
-									.setRbh(1)
-									.setSbh(1)
-									.setGas(0)
-									.setTv(1)
-									.setBpr(1)
-									.setSbpr(1))
-					.build();
+    private static final FeeData nonGasUsage =
+            FeeData.newBuilder()
+                    .setNodedata(
+                            FeeComponents.newBuilder()
+                                    .setMin(1)
+                                    .setMax(1_000_000)
+                                    .setConstant(1)
+                                    .setBpt(1)
+                                    .setVpt(1)
+                                    .setRbh(1)
+                                    .setSbh(1)
+                                    .setGas(0)
+                                    .setTv(1)
+                                    .setBpr(1)
+                                    .setSbpr(1))
+                    .build();
 
-	private static final FeeData expectedUsage() {
-		return nonGasUsage.toBuilder()
-				.setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
-				.build();
-	}
+    private static final FeeData expectedUsage() {
+        return nonGasUsage.toBuilder()
+                .setNodedata(nonGasUsage.toBuilder().getNodedataBuilder().setGas(gas).build())
+                .build();
+    }
 }

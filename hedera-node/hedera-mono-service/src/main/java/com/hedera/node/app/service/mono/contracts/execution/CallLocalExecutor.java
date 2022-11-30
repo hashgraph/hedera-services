@@ -37,8 +37,7 @@ import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
- * Utility class for executing static EVM calls for {@link
- * ContractCallLocalAnswer} and {@link
+ * Utility class for executing static EVM calls for {@link ContractCallLocalAnswer} and {@link
  * ContractCallLocalResourceUsage}
  */
 @Singleton

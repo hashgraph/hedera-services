@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.state;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.node.app.service.mono.state.DualStateAccessor;
 import com.swirlds.common.system.SwirldDualState;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

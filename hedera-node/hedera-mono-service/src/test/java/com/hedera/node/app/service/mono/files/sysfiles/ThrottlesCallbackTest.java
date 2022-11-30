@@ -15,51 +15,46 @@
  */
 package com.hedera.node.app.service.mono.files.sysfiles;
 
+import static org.mockito.BDDMockito.argThat;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hedera.test.utils.SerdeUtils;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-
-import static org.mockito.BDDMockito.argThat;
-import static org.mockito.BDDMockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 class ThrottlesCallbackTest {
-	@Mock
-	MultiplierSources multiplierSources;
-	@Mock
-	FunctionalityThrottling hapiThrottling;
-	@Mock
-	FunctionalityThrottling handleThrottling;
-	@Mock
-	FunctionalityThrottling scheduleThrottling;
+    @Mock MultiplierSources multiplierSources;
+    @Mock FunctionalityThrottling hapiThrottling;
+    @Mock FunctionalityThrottling handleThrottling;
+    @Mock FunctionalityThrottling scheduleThrottling;
 
-	ThrottlesCallback subject;
+    ThrottlesCallback subject;
 
-	@BeforeEach
-	void setUp() {
-		subject =
-				new ThrottlesCallback(
-						multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
-	}
+    @BeforeEach
+    void setUp() {
+        subject =
+                new ThrottlesCallback(
+                        multiplierSources, hapiThrottling, handleThrottling, scheduleThrottling);
+    }
 
-	@Test
-	void throttlesCbAsExpected() throws IOException {
-		final var throttles = SerdeUtils.protoDefs("bootstrap/throttles.json");
+    @Test
+    void throttlesCbAsExpected() throws IOException {
+        final var throttles = SerdeUtils.protoDefs("bootstrap/throttles.json");
 
-		// when:
-		subject.throttlesCb().accept(throttles);
+        // when:
+        subject.throttlesCb().accept(throttles);
 
-		// then:
-		verify(hapiThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
-		verify(handleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
-		verify(scheduleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
-		verify(multiplierSources).resetExpectations();
-	}
+        // then:
+        verify(hapiThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
+        verify(handleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
+        verify(scheduleThrottling).rebuildFor(argThat(pojo -> pojo.toProto().equals(throttles)));
+        verify(multiplierSources).resetExpectations();
+    }
 }

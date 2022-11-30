@@ -56,8 +56,7 @@ public class FeeDistribution {
     /**
      * Distributes a given amount to the collection accounts in the appropriate percentages.
      * <b>IMPORTANT:</b> the caller is responsible for deducting this amount from a payer account in
-     * the given ledger; it will otherwise throw {@link
-     * InconsistentAdjustmentsException} in {@link
+     * the given ledger; it will otherwise throw {@link InconsistentAdjustmentsException} in {@link
      * TransactionalLedger#commit()}.
      *
      * <p>Callers can also use this method with a negative {@code amount} to handle refunds.

@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.queries.contract;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hederahashgraph.api.proto.java.GetBySolidityIDQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
@@ -22,37 +24,36 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class GetBySolidityIdAnswerTest {
-	private final GetBySolidityIdAnswer solidityIdAnswer = new GetBySolidityIdAnswer();
-	private final GetBySolidityIDQuery.Builder getBySolidityIDQueryBuilder =
-			GetBySolidityIDQuery.newBuilder().setSolidityID("1234");
+    private final GetBySolidityIdAnswer solidityIdAnswer = new GetBySolidityIdAnswer();
+    private final GetBySolidityIDQuery.Builder getBySolidityIDQueryBuilder =
+            GetBySolidityIDQuery.newBuilder().setSolidityID("1234");
 
-	@Test
-	void assertSolidityIDHeadersWhenResponseTypeIsCostAnswer() {
-		final var header = QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER).build();
-		final var getSolidityIdQuery = getBySolidityIDQueryBuilder.setHeader(header).build();
-		final Query query = Query.newBuilder().setGetBySolidityID(getSolidityIdQuery).build();
-		final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
+    @Test
+    void assertSolidityIDHeadersWhenResponseTypeIsCostAnswer() {
+        final var header =
+                QueryHeader.newBuilder().setResponseType(ResponseType.COST_ANSWER).build();
+        final var getSolidityIdQuery = getBySolidityIDQueryBuilder.setHeader(header).build();
+        final Query query = Query.newBuilder().setGetBySolidityID(getSolidityIdQuery).build();
+        final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
 
-		assertEquals(
-				ResponseCodeEnum.NOT_SUPPORTED,
-				result.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(
-				ResponseType.COST_ANSWER,
-				result.getGetBySolidityID().getHeader().getResponseType());
-		assertEquals(0L, result.getGetBySolidityID().getHeader().getCost());
-	}
+        assertEquals(
+                ResponseCodeEnum.NOT_SUPPORTED,
+                result.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(
+                ResponseType.COST_ANSWER,
+                result.getGetBySolidityID().getHeader().getResponseType());
+        assertEquals(0L, result.getGetBySolidityID().getHeader().getCost());
+    }
 
-	@Test
-	void assertSolidityIDHeadersWhenResponseTypeIsMissing() {
-		final Query query =
-				Query.newBuilder().setGetBySolidityID(getBySolidityIDQueryBuilder.build()).build();
-		final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
+    @Test
+    void assertSolidityIDHeadersWhenResponseTypeIsMissing() {
+        final Query query =
+                Query.newBuilder().setGetBySolidityID(getBySolidityIDQueryBuilder.build()).build();
+        final var result = solidityIdAnswer.responseGiven(query, null, null, 0);
 
-		assertEquals(
-				ResponseCodeEnum.NOT_SUPPORTED,
-				result.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
-	}
+        assertEquals(
+                ResponseCodeEnum.NOT_SUPPORTED,
+                result.getGetBySolidityID().getHeader().getNodeTransactionPrecheckCode());
+    }
 }

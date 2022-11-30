@@ -25,7 +25,7 @@ configurations.all {
 
 dependencies {
     annotationProcessor(libs.dagger.compiler)
-    
+
     implementation(libs.bundles.di)
     implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.logging)

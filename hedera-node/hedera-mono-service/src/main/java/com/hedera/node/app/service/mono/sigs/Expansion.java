@@ -21,12 +21,12 @@ import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAva
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResultFactory;
-import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;

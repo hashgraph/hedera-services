@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;

@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app.service.mono.fees;
 
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
@@ -23,62 +30,55 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class StandardExemptionsTest {
-	SystemOpPolicies policies;
-	SignedTxnAccessor accessor;
+    SystemOpPolicies policies;
+    SignedTxnAccessor accessor;
 
-	StandardExemptions subject;
+    StandardExemptions subject;
 
-	@BeforeEach
-	void setup() {
-		policies = mock(SystemOpPolicies.class);
-		accessor = mock(SignedTxnAccessor.class);
+    @BeforeEach
+    void setup() {
+        policies = mock(SystemOpPolicies.class);
+        accessor = mock(SignedTxnAccessor.class);
 
-		subject = new StandardExemptions(new MockAccountNumbers(), policies);
-	}
+        subject = new StandardExemptions(new MockAccountNumbers(), policies);
+    }
 
-	@Test
-	void sysAdminPaysNoFees() {
-		given(accessor.getPayer()).willReturn(account(50));
+    @Test
+    void sysAdminPaysNoFees() {
+        given(accessor.getPayer()).willReturn(account(50));
 
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
+        // expect:
+        assertTrue(subject.hasExemptPayer(accessor));
+    }
 
-	@Test
-	void authorizedOpsAreExempt() {
-		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.checkAccessor(accessor)).willReturn(AUTHORIZED);
+    @Test
+    void authorizedOpsAreExempt() {
+        given(accessor.getPayer()).willReturn(account(60));
+        given(policies.checkAccessor(accessor)).willReturn(AUTHORIZED);
 
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
+        // expect:
+        assertTrue(subject.hasExemptPayer(accessor));
+    }
 
-	@Test
-	void unnecessaryOpsAreNotExempt() {
-		given(accessor.getPayer()).willReturn(account(60));
-		given(policies.checkAccessor(accessor)).willReturn(UNNECESSARY);
+    @Test
+    void unnecessaryOpsAreNotExempt() {
+        given(accessor.getPayer()).willReturn(account(60));
+        given(policies.checkAccessor(accessor)).willReturn(UNNECESSARY);
 
-		// expect:
-		assertFalse(subject.hasExemptPayer(accessor));
-	}
+        // expect:
+        assertFalse(subject.hasExemptPayer(accessor));
+    }
 
-	@Test
-	void treasuryPaysNoFees() {
-		given(accessor.getPayer()).willReturn(account(2));
+    @Test
+    void treasuryPaysNoFees() {
+        given(accessor.getPayer()).willReturn(account(2));
 
-		// expect:
-		assertTrue(subject.hasExemptPayer(accessor));
-	}
+        // expect:
+        assertTrue(subject.hasExemptPayer(accessor));
+    }
 
-	private AccountID account(final long num) {
-		return IdUtils.asAccount(String.format("0.0.%d", num));
-	}
+    private AccountID account(final long num) {
+        return IdUtils.asAccount(String.format("0.0.%d", num));
+    }
 }

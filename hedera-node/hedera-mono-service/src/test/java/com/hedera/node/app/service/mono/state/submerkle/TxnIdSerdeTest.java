@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.state.submerkle;
 
-import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

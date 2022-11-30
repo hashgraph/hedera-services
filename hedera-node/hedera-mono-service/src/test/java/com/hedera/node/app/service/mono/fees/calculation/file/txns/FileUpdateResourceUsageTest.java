@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
+
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
@@ -30,157 +39,147 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-
 class FileUpdateResourceUsageTest {
-	long now = 1_000_000L;
+    long now = 1_000_000L;
 
-	KeyList wacl = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey().getKeyList();
-	String memo = "Certainly not!";
-	long expiry = 1_234_567L;
-	long size = 1L;
+    KeyList wacl = TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey().getKeyList();
+    String memo = "Certainly not!";
+    long expiry = 1_234_567L;
+    long size = 1L;
 
-	long newExpiry = 2_345_678L;
+    long newExpiry = 2_345_678L;
 
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	private FileOpsUsage fileOpsUsage;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    private FileOpsUsage fileOpsUsage;
 
-	private FileUpdateResourceUsage subject;
+    private FileUpdateResourceUsage subject;
 
-	StateView view;
-	FileID fid = IdUtils.asFile("1.2.3");
-	FeeData expected;
+    StateView view;
+    FileID fid = IdUtils.asFile("1.2.3");
+    FeeData expected;
 
-	private TransactionBody nonFileUpdateTxn;
-	private TransactionBody fileUpdateTxn;
+    private TransactionBody nonFileUpdateTxn;
+    private TransactionBody fileUpdateTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		fileOpsUsage = mock(FileOpsUsage.class);
+    @BeforeEach
+    void setup() throws Throwable {
+        fileOpsUsage = mock(FileOpsUsage.class);
 
-		view = mock(StateView.class);
+        view = mock(StateView.class);
 
-		subject = new FileUpdateResourceUsage(fileOpsUsage);
-	}
+        subject = new FileUpdateResourceUsage(fileOpsUsage);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		fileUpdateTxn = mock(TransactionBody.class);
-		given(fileUpdateTxn.hasFileUpdate()).willReturn(true);
+    @Test
+    void recognizesApplicability() {
+        fileUpdateTxn = mock(TransactionBody.class);
+        given(fileUpdateTxn.hasFileUpdate()).willReturn(true);
 
-		nonFileUpdateTxn = mock(TransactionBody.class);
-		given(nonFileUpdateTxn.hasFileUpdate()).willReturn(false);
+        nonFileUpdateTxn = mock(TransactionBody.class);
+        given(nonFileUpdateTxn.hasFileUpdate()).willReturn(false);
 
-		// expect:
-		assertTrue(subject.applicableTo(fileUpdateTxn));
-		assertFalse(subject.applicableTo(nonFileUpdateTxn));
-	}
+        // expect:
+        assertTrue(subject.applicableTo(fileUpdateTxn));
+        assertFalse(subject.applicableTo(nonFileUpdateTxn));
+    }
 
-	@Test
-	void missingCtxScans() {
-		// setup:
-		final long now = 1_234_567L;
+    @Test
+    void missingCtxScans() {
+        // setup:
+        final long now = 1_234_567L;
 
-		// given:
-		final var ctx = FileUpdateResourceUsage.missingCtx(now);
+        // given:
+        final var ctx = FileUpdateResourceUsage.missingCtx(now);
 
-		// expect:
-		assertEquals(0, ctx.currentSize());
-		assertEquals(now, ctx.currentExpiry());
-		Assertions.assertSame(KeyList.getDefaultInstance(), ctx.currentWacl());
-		Assertions.assertSame(DEFAULT_MEMO, ctx.currentMemo());
-	}
+        // expect:
+        assertEquals(0, ctx.currentSize());
+        assertEquals(now, ctx.currentExpiry());
+        Assertions.assertSame(KeyList.getDefaultInstance(), ctx.currentWacl());
+        Assertions.assertSame(DEFAULT_MEMO, ctx.currentMemo());
+    }
 
-	@Test
-	void delegatesToCorrectEstimateWhenUnknown() throws Exception {
-		// setup:
-		expected = mock(FeeData.class);
-		// and:
-		final ArgumentCaptor<ExtantFileContext> captor =
-				ArgumentCaptor.forClass(ExtantFileContext.class);
+    @Test
+    void delegatesToCorrectEstimateWhenUnknown() throws Exception {
+        // setup:
+        expected = mock(FeeData.class);
+        // and:
+        final ArgumentCaptor<ExtantFileContext> captor =
+                ArgumentCaptor.forClass(ExtantFileContext.class);
 
-		given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
-		given(view.infoForFile(fid)).willReturn(Optional.empty());
+        given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
+        given(view.infoForFile(fid)).willReturn(Optional.empty());
 
-		// when:
-		fileUpdateTxn = txnAt(now);
-		final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
+        // when:
+        fileUpdateTxn = txnAt(now);
+        final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
 
-		// then:
-		assertSame(expected, actual);
-		// and:
-		final var ctxUsed = captor.getValue();
-		assertEquals(now, ctxUsed.currentExpiry());
-	}
+        // then:
+        assertSame(expected, actual);
+        // and:
+        final var ctxUsed = captor.getValue();
+        assertEquals(now, ctxUsed.currentExpiry());
+    }
 
-	@Test
-	void delegatesToCorrectEstimateWhenKnown() throws Exception {
-		// setup:
-		expected = mock(FeeData.class);
-		// and:
-		final var info =
-				FileGetInfoResponse.FileInfo.newBuilder()
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-						.setMemo(memo)
-						.setKeys(wacl)
-						.setSize(size)
-						.build();
-		// and:
-		final ArgumentCaptor<ExtantFileContext> captor =
-				ArgumentCaptor.forClass(ExtantFileContext.class);
+    @Test
+    void delegatesToCorrectEstimateWhenKnown() throws Exception {
+        // setup:
+        expected = mock(FeeData.class);
+        // and:
+        final var info =
+                FileGetInfoResponse.FileInfo.newBuilder()
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                        .setMemo(memo)
+                        .setKeys(wacl)
+                        .setSize(size)
+                        .build();
+        // and:
+        final ArgumentCaptor<ExtantFileContext> captor =
+                ArgumentCaptor.forClass(ExtantFileContext.class);
 
-		given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
-		given(view.infoForFile(fid)).willReturn(Optional.of(info));
+        given(fileOpsUsage.fileUpdateUsage(any(), any(), captor.capture())).willReturn(expected);
+        given(view.infoForFile(fid)).willReturn(Optional.of(info));
 
-		// when:
-		fileUpdateTxn = txnAt(now);
-		final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
+        // when:
+        fileUpdateTxn = txnAt(now);
+        final var actual = subject.usageGiven(fileUpdateTxn, svo, view);
 
-		// then:
-		assertSame(expected, actual);
-		// and:
-		final var ctxUsed = captor.getValue();
-		assertEquals(expiry, ctxUsed.currentExpiry());
-		assertEquals(memo, ctxUsed.currentMemo());
-		assertEquals(wacl, ctxUsed.currentWacl());
-		assertEquals(size, ctxUsed.currentSize());
-	}
+        // then:
+        assertSame(expected, actual);
+        // and:
+        final var ctxUsed = captor.getValue();
+        assertEquals(expiry, ctxUsed.currentExpiry());
+        assertEquals(memo, ctxUsed.currentMemo());
+        assertEquals(wacl, ctxUsed.currentWacl());
+        assertEquals(size, ctxUsed.currentSize());
+    }
 
-	private TransactionBody txnAt(final long now) {
-		final var op =
-				FileUpdateTransactionBody.newBuilder()
-						.setFileID(fid)
-						.setContents(
-								ByteString.copyFrom(
-										"Though like waves breaking it may be".getBytes()))
-						.setKeys(
-								KeyList.newBuilder()
-										.addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
-										.addKeys(TxnHandlingScenario.MISC_ACCOUNT_KT.asKey())
-										.build())
-						.setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry))
-						.build();
-		// and:
-		return TransactionBody.newBuilder()
-				.setTransactionID(
-						TransactionID.newBuilder()
-								.setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
-				.setFileUpdate(op)
-				.build();
-	}
+    private TransactionBody txnAt(final long now) {
+        final var op =
+                FileUpdateTransactionBody.newBuilder()
+                        .setFileID(fid)
+                        .setContents(
+                                ByteString.copyFrom(
+                                        "Though like waves breaking it may be".getBytes()))
+                        .setKeys(
+                                KeyList.newBuilder()
+                                        .addKeys(TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT.asKey())
+                                        .addKeys(TxnHandlingScenario.MISC_ACCOUNT_KT.asKey())
+                                        .build())
+                        .setExpirationTime(Timestamp.newBuilder().setSeconds(newExpiry))
+                        .build();
+        // and:
+        return TransactionBody.newBuilder()
+                .setTransactionID(
+                        TransactionID.newBuilder()
+                                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now)))
+                .setFileUpdate(op)
+                .build();
+    }
 }

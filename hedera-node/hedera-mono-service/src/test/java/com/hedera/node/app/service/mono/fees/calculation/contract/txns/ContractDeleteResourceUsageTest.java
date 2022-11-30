@@ -15,53 +15,53 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class ContractDeleteResourceUsageTest {
-	private SigValueObj sigUsage;
-	private SmartContractFeeBuilder usageEstimator;
-	private ContractDeleteResourceUsage subject;
+    private SigValueObj sigUsage;
+    private SmartContractFeeBuilder usageEstimator;
+    private ContractDeleteResourceUsage subject;
 
-	private TransactionBody nonContractDeleteTxn;
-	private TransactionBody contractDeleteTxn;
+    private TransactionBody nonContractDeleteTxn;
+    private TransactionBody contractDeleteTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		contractDeleteTxn = mock(TransactionBody.class);
-		given(contractDeleteTxn.hasContractDeleteInstance()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        contractDeleteTxn = mock(TransactionBody.class);
+        given(contractDeleteTxn.hasContractDeleteInstance()).willReturn(true);
 
-		nonContractDeleteTxn = mock(TransactionBody.class);
-		given(nonContractDeleteTxn.hasContractDeleteInstance()).willReturn(false);
+        nonContractDeleteTxn = mock(TransactionBody.class);
+        given(nonContractDeleteTxn.hasContractDeleteInstance()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(SmartContractFeeBuilder.class);
+        sigUsage = mock(SigValueObj.class);
+        usageEstimator = mock(SmartContractFeeBuilder.class);
 
-		subject = new ContractDeleteResourceUsage(usageEstimator);
-	}
+        subject = new ContractDeleteResourceUsage(usageEstimator);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(contractDeleteTxn));
-		assertFalse(subject.applicableTo(nonContractDeleteTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(contractDeleteTxn));
+        assertFalse(subject.applicableTo(nonContractDeleteTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(contractDeleteTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // when:
+        subject.usageGiven(contractDeleteTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getContractDeleteTxFeeMatrices(contractDeleteTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getContractDeleteTxFeeMatrices(contractDeleteTxn, sigUsage);
+    }
 }

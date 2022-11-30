@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static com.hedera.node.app.service.mono.store.contracts.WorldLedgers.staticLedgersWith;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -558,7 +557,8 @@ class AbstractLedgerWorldUpdaterTest {
                 new MockLedgerWorldUpdater(
                         worldState, staticLedgersWith(aliases, null), customizer);
 
-        Assertions.assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
+        Assertions.assertDoesNotThrow(
+                () -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
     }
 
     private void setupLedgers() {

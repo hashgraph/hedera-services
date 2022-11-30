@@ -68,10 +68,9 @@ public final class HederaOperationUtil {
      * HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} if the account does not exist, or it is
      * deleted.
      *
-     * <p>If the target {@link Address} has {@link
-     * MerkleAccount#isReceiverSigRequired()} set to true,
-     * verification of the provided signature is performed. If the signature is not active, the
-     * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
+     * <p>If the target {@link Address} has {@link MerkleAccount#isReceiverSigRequired()} set to
+     * true, verification of the provided signature is performed. If the signature is not active,
+     * the execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *
      * @param sigsVerifier The signature
      * @param frame The current message frame

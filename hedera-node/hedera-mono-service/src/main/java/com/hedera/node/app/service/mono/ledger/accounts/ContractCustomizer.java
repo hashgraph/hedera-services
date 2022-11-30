@@ -32,8 +32,8 @@ import java.time.Instant;
 
 /**
  * Encapsulates a set of customizations to a smart contract. Primarily delegates to an {@link
- * HederaAccountCustomizer}, but with a bit of extra logic to deal with {@link
- * JContractIDKey} management.
+ * HederaAccountCustomizer}, but with a bit of extra logic to deal with {@link JContractIDKey}
+ * management.
  */
 public class ContractCustomizer {
     // Null if the contract is immutable; then its key derives from its entity id
@@ -123,7 +123,8 @@ public class ContractCustomizer {
                 .memo((String) ledger.get(sponsor, AccountProperty.MEMO))
                 .expiry((long) ledger.get(sponsor, AccountProperty.EXPIRY))
                 .autoRenewPeriod((long) ledger.get(sponsor, AccountProperty.AUTO_RENEW_PERIOD))
-                .autoRenewAccount((EntityId) ledger.get(sponsor, AccountProperty.AUTO_RENEW_ACCOUNT_ID))
+                .autoRenewAccount(
+                        (EntityId) ledger.get(sponsor, AccountProperty.AUTO_RENEW_ACCOUNT_ID))
                 .maxAutomaticAssociations(
                         (int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
                 .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))

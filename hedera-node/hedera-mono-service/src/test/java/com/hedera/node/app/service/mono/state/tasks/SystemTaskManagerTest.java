@@ -24,9 +24,6 @@ import static org.mockito.Mockito.*;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import java.util.Map;
-
-import com.hedera.node.app.service.mono.state.tasks.SystemTask;
-import com.hedera.node.app.service.mono.state.tasks.SystemTaskManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

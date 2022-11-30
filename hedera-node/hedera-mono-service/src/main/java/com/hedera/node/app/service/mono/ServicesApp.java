@@ -80,141 +80,140 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import dagger.BindsInstance;
 import dagger.Component;
-
-import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.function.Supplier;
+import javax.inject.Singleton;
 
 /** The infrastructure used to implement the platform contract for a Hedera Services node. */
 @Singleton
 @Component(
-		modules = {
-				TaskModule.class,
-				FeesModule.class,
-				KeysModule.class,
-				SigsModule.class,
-				GrpcModule.class,
-				StatsModule.class,
-				StateModule.class,
-				FilesModule.class,
-				LedgerModule.class,
-				StoresModule.class,
-				ContextModule.class,
-				RecordsModule.class,
-				QueriesModule.class,
-				ContractsModule.class,
-				PropertiesModule.class,
-				ThrottlingModule.class,
-				SubmissionModule.class,
-				TransactionsModule.class,
-				ExpiryModule.class
-		})
+        modules = {
+            TaskModule.class,
+            FeesModule.class,
+            KeysModule.class,
+            SigsModule.class,
+            GrpcModule.class,
+            StatsModule.class,
+            StateModule.class,
+            FilesModule.class,
+            LedgerModule.class,
+            StoresModule.class,
+            ContextModule.class,
+            RecordsModule.class,
+            QueriesModule.class,
+            ContractsModule.class,
+            PropertiesModule.class,
+            ThrottlingModule.class,
+            SubmissionModule.class,
+            TransactionsModule.class,
+            ExpiryModule.class
+        })
 public interface ServicesApp {
-	/* Needed by ServicesState */
-	HashLogger hashLogger();
+    /* Needed by ServicesState */
+    HashLogger hashLogger();
 
-	ProcessLogic logic();
+    ProcessLogic logic();
 
-	EventExpansion eventExpansion();
+    EventExpansion eventExpansion();
 
-	ServicesInitFlow initializationFlow();
+    ServicesInitFlow initializationFlow();
 
-	DualStateAccessor dualStateAccessor();
+    DualStateAccessor dualStateAccessor();
 
-	VirtualMapFactory virtualMapFactory();
+    VirtualMapFactory virtualMapFactory();
 
-	RecordStreamManager recordStreamManager();
+    RecordStreamManager recordStreamManager();
 
-	NodeLocalProperties nodeLocalProperties();
+    NodeLocalProperties nodeLocalProperties();
 
-	GlobalDynamicProperties globalDynamicProperties();
+    GlobalDynamicProperties globalDynamicProperties();
 
-	MutableStateChildren workingState();
+    MutableStateChildren workingState();
 
-	PrefetchProcessor prefetchProcessor();
+    PrefetchProcessor prefetchProcessor();
 
-	MigrationRecordsManager migrationRecordsManager();
+    MigrationRecordsManager migrationRecordsManager();
 
-	/* Needed by ServicesMain */
-	Pause pause();
+    /* Needed by ServicesMain */
+    Pause pause();
 
-	NodeId nodeId();
+    NodeId nodeId();
 
-	Platform platform();
+    Platform platform();
 
-	NodeInfo nodeInfo();
+    NodeInfo nodeInfo();
 
-	SystemExits systemExits();
+    SystemExits systemExits();
 
-	GrpcStarter grpcStarter();
+    GrpcStarter grpcStarter();
 
-	UpgradeActions upgradeActions();
+    UpgradeActions upgradeActions();
 
-	TreasuryCloner treasuryCloner();
+    TreasuryCloner treasuryCloner();
 
-	LedgerValidator ledgerValidator();
+    LedgerValidator ledgerValidator();
 
-	AccountsExporter accountsExporter();
+    AccountsExporter accountsExporter();
 
-	BalancesExporter balancesExporter();
+    BalancesExporter balancesExporter();
 
-	Supplier<Charset> nativeCharset();
+    Supplier<Charset> nativeCharset();
 
-	NetworkCtxManager networkCtxManager();
+    NetworkCtxManager networkCtxManager();
 
-	GrpcServerManager grpc();
+    GrpcServerManager grpc();
 
-	NamedDigestFactory digestFactory();
+    NamedDigestFactory digestFactory();
 
-	SystemFilesManager sysFilesManager();
+    SystemFilesManager sysFilesManager();
 
-	ServicesStatsManager statsManager();
+    ServicesStatsManager statsManager();
 
-	CurrentPlatformStatus platformStatus();
+    CurrentPlatformStatus platformStatus();
 
-	SystemAccountsCreator sysAccountsCreator();
+    SystemAccountsCreator sysAccountsCreator();
 
-	Optional<PrintStream> consoleOut();
+    Optional<PrintStream> consoleOut();
 
-	ReconnectCompleteListener reconnectListener();
+    ReconnectCompleteListener reconnectListener();
 
-	StateWriteToDiskCompleteListener stateWriteToDiskListener();
+    StateWriteToDiskCompleteListener stateWriteToDiskListener();
 
-	PlatformStatusChangeListener statusChangeListener();
+    PlatformStatusChangeListener statusChangeListener();
 
-	IssListener issListener();
+    IssListener issListener();
 
-	NewSignedStateListener newSignedStateListener();
+    NewSignedStateListener newSignedStateListener();
 
-	Supplier<NotificationEngine> notificationEngine();
+    Supplier<NotificationEngine> notificationEngine();
 
-	BackingStore<AccountID, HederaAccount> backingAccounts();
+    BackingStore<AccountID, HederaAccount> backingAccounts();
 
-	@Component.Builder
-	interface Builder {
-		@BindsInstance
-		Builder crypto(Cryptography engine);
+    @Component.Builder
+    interface Builder {
+        @BindsInstance
+        Builder crypto(Cryptography engine);
 
-		@BindsInstance
-		Builder initialHash(Hash initialHash);
+        @BindsInstance
+        Builder initialHash(Hash initialHash);
 
-		@BindsInstance
-		Builder platform(Platform platform);
+        @BindsInstance
+        Builder platform(Platform platform);
 
-		@BindsInstance
-		Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
+        @BindsInstance
+        Builder consoleCreator(StateModule.ConsoleCreator consoleCreator);
 
-		@BindsInstance
-		Builder selfId(long selfId);
+        @BindsInstance
+        Builder selfId(long selfId);
 
-		@BindsInstance
-		Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
+        @BindsInstance
+        Builder staticAccountMemo(@StaticAccountMemo String accountMemo);
 
-		@BindsInstance
-		Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
+        @BindsInstance
+        Builder bootstrapProps(@BootstrapProps PropertySource bootstrapProps);
 
-		ServicesApp build();
-	}
+        ServicesApp build();
+    }
 }

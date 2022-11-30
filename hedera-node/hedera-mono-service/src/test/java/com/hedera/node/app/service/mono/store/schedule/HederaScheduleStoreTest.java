@@ -59,7 +59,6 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityV
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

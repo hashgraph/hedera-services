@@ -40,7 +40,6 @@ import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,27 @@
  * limitations under the License.
  */
 package com.hedera.node.app.service.mono.queries.contract;
+
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
+import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.never;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -37,301 +58,274 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.StakingInfo;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
-import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
-import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.verify;
-import static org.mockito.Mockito.never;
-
 @ExtendWith(MockitoExtension.class)
 class GetContractInfoAnswerTest {
-	private Transaction paymentTxn;
-	private final int maxTokenPerContractInfo = 10;
-	private final String node = "0.0.3";
-	private final String payer = "0.0.12345";
-	private final String target = "0.0.123";
-	private final long fee = 1_234L;
-	private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
+    private Transaction paymentTxn;
+    private final int maxTokenPerContractInfo = 10;
+    private final String node = "0.0.3";
+    private final String payer = "0.0.12345";
+    private final String target = "0.0.123";
+    private final long fee = 1_234L;
+    private final ByteString ledgerId = ByteString.copyFromUtf8("0xff");
 
-	@Mock
-	private OptionValidator optionValidator;
-	@Mock
-	private AliasManager aliasManager;
-	@Mock
-	private StateView view;
-	@Mock
-	private MerkleMap<EntityNum, MerkleAccount> contracts;
-	@Mock
-	private GlobalDynamicProperties dynamicProperties;
-	@Mock
-	private RewardCalculator rewardCalculator;
+    @Mock private OptionValidator optionValidator;
+    @Mock private AliasManager aliasManager;
+    @Mock private StateView view;
+    @Mock private MerkleMap<EntityNum, MerkleAccount> contracts;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private RewardCalculator rewardCalculator;
 
-	ContractGetInfoResponse.ContractInfo info;
+    ContractGetInfoResponse.ContractInfo info;
 
-	GetContractInfoAnswer subject;
+    GetContractInfoAnswer subject;
 
-	@BeforeEach
-	void setup() {
-		info =
-				ContractGetInfoResponse.ContractInfo.newBuilder()
-						.setLedgerId(ledgerId)
-						.setContractID(asContract(target))
-						.setContractAccountID(
-								EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
-						.setMemo("Stay cold...")
-						.setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
-						.setStakingInfo(
-								StakingInfo.newBuilder()
-										.setStakedAccountId(asAccount("0.0.2"))
-										.setStakePeriodStart(
-												com.hederahashgraph.api.proto.java.Timestamp
-														.newBuilder()
-														.setSeconds(12345678L)
-														.build())
-										.setDeclineReward(true)
-										.build())
-						.build();
+    @BeforeEach
+    void setup() {
+        info =
+                ContractGetInfoResponse.ContractInfo.newBuilder()
+                        .setLedgerId(ledgerId)
+                        .setContractID(asContract(target))
+                        .setContractAccountID(
+                                EntityIdUtils.asHexedEvmAddress(IdUtils.asAccount(target)))
+                        .setMemo("Stay cold...")
+                        .setAdminKey(COMPLEX_KEY_ACCOUNT_KT.asKey())
+                        .setStakingInfo(
+                                StakingInfo.newBuilder()
+                                        .setStakedAccountId(asAccount("0.0.2"))
+                                        .setStakePeriodStart(
+                                                com.hederahashgraph.api.proto.java.Timestamp
+                                                        .newBuilder()
+                                                        .setSeconds(12345678L)
+                                                        .build())
+                                        .setDeclineReward(true)
+                                        .build())
+                        .build();
 
-		subject =
-				new GetContractInfoAnswer(
-						aliasManager, optionValidator, dynamicProperties, rewardCalculator);
-	}
+        subject =
+                new GetContractInfoAnswer(
+                        aliasManager, optionValidator, dynamicProperties, rewardCalculator);
+    }
 
-	@Test
-	void getsTheInfo() throws Throwable {
-		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
-		final Query query = validQuery(ANSWER_ONLY, fee, target);
+    @Test
+    void getsTheInfo() throws Throwable {
+        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+        final Query query = validQuery(ANSWER_ONLY, fee, target);
 
-		given(
-				view.infoForContract(
-						asContract(target),
-						aliasManager,
-						maxTokenPerContractInfo,
-						rewardCalculator))
-				.willReturn(Optional.of(info));
+        given(
+                        view.infoForContract(
+                                asContract(target),
+                                aliasManager,
+                                maxTokenPerContractInfo,
+                                rewardCalculator))
+                .willReturn(Optional.of(info));
 
-		// when:
-		final Response response = subject.responseGiven(query, view, OK, fee);
+        // when:
+        final Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasContractGetInfo());
-		assertTrue(response.getContractGetInfo().hasHeader(), "Missing response header!");
-		assertEquals(
-				OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(ANSWER_ONLY, response.getContractGetInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
+        // then:
+        assertTrue(response.hasContractGetInfo());
+        assertTrue(response.getContractGetInfo().hasHeader(), "Missing response header!");
+        assertEquals(
+                OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(ANSWER_ONLY, response.getContractGetInfo().getHeader().getResponseType());
+        assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
 
-		assertEquals(0L, info.getStakingInfo().getStakedNodeId());
-		assertTrue(info.getStakingInfo().hasStakedAccountId());
-		assertTrue(info.getStakingInfo().getDeclineReward());
-		assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
-		assertEquals(0L, info.getStakingInfo().getStakedToMe());
+        assertEquals(0L, info.getStakingInfo().getStakedNodeId());
+        assertTrue(info.getStakingInfo().hasStakedAccountId());
+        assertTrue(info.getStakingInfo().getDeclineReward());
+        assertEquals(12345678L, info.getStakingInfo().getStakePeriodStart().getSeconds());
+        assertEquals(0L, info.getStakingInfo().getStakedToMe());
 
-		// and:
-		final var actual = response.getContractGetInfo().getContractInfo();
-		assertEquals(info, actual);
-	}
+        // and:
+        final var actual = response.getContractGetInfo().getContractInfo();
+        assertEquals(info, actual);
+    }
 
-	@Test
-	void getsInfoFromCtxWhenAvailable() throws Throwable {
-		// setup:
-		final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
-		final Map<String, Object> ctx = new HashMap<>();
+    @Test
+    void getsInfoFromCtxWhenAvailable() throws Throwable {
+        // setup:
+        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+        final Map<String, Object> ctx = new HashMap<>();
 
-		// given:
-		ctx.put(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY, info);
+        // given:
+        ctx.put(GetContractInfoAnswer.CONTRACT_INFO_CTX_KEY, info);
 
-		// when:
-		final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
+        // when:
+        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L, ctx);
 
-		// then:
-		final var opResponse = response.getContractGetInfo();
-		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		assertSame(info, opResponse.getContractInfo());
-		// and:
-		verify(view, never()).infoForContract(any(), any(), anyInt(), any());
-	}
+        // then:
+        final var opResponse = response.getContractGetInfo();
+        assertTrue(opResponse.hasHeader(), "Missing response header!");
+        assertEquals(OK, opResponse.getHeader().getNodeTransactionPrecheckCode());
+        assertSame(info, opResponse.getContractInfo());
+        // and:
+        verify(view, never()).infoForContract(any(), any(), anyInt(), any());
+    }
 
-	@Test
-	void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
-		given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
-		final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+    @Test
+    void recognizesMissingInfoWhenNoCtxGiven() throws Throwable {
+        given(dynamicProperties.maxTokensRelsPerInfoQuery()).willReturn(maxTokenPerContractInfo);
+        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		given(
-				view.infoForContract(
-						asContract(target),
-						aliasManager,
-						maxTokenPerContractInfo,
-						rewardCalculator))
-				.willReturn(Optional.empty());
+        given(
+                        view.infoForContract(
+                                asContract(target),
+                                aliasManager,
+                                maxTokenPerContractInfo,
+                                rewardCalculator))
+                .willReturn(Optional.empty());
 
-		// when:
-		final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
+        // when:
+        final Response response = subject.responseGiven(sensibleQuery, view, OK, 0L);
 
-		// then:
-		final ContractGetInfoResponse opResponse = response.getContractGetInfo();
-		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-	}
+        // then:
+        final ContractGetInfoResponse opResponse = response.getContractGetInfo();
+        assertTrue(opResponse.hasHeader(), "Missing response header!");
+        assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
+    }
 
-	@Test
-	void recognizesMissingInfoWhenCtxGiven() throws Throwable {
-		// setup:
-		final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
+    @Test
+    void recognizesMissingInfoWhenCtxGiven() throws Throwable {
+        // setup:
+        final Query sensibleQuery = validQuery(ANSWER_ONLY, 5L, target);
 
-		// when:
-		final Response response =
-				subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
+        // when:
+        final Response response =
+                subject.responseGiven(sensibleQuery, view, OK, 0L, Collections.emptyMap());
 
-		// then:
-		final ContractGetInfoResponse opResponse = response.getContractGetInfo();
-		assertTrue(opResponse.hasHeader(), "Missing response header!");
-		assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
-		verify(view, never()).infoForContract(any(), any(), anyInt(), any());
-	}
+        // then:
+        final ContractGetInfoResponse opResponse = response.getContractGetInfo();
+        assertTrue(opResponse.hasHeader(), "Missing response header!");
+        assertEquals(INVALID_CONTRACT_ID, opResponse.getHeader().getNodeTransactionPrecheckCode());
+        verify(view, never()).infoForContract(any(), any(), anyInt(), any());
+    }
 
-	@Test
-	void getsCostAnswerResponse() throws Throwable {
-		// setup:
-		final Query query = validQuery(COST_ANSWER, fee, target);
+    @Test
+    void getsCostAnswerResponse() throws Throwable {
+        // setup:
+        final Query query = validQuery(COST_ANSWER, fee, target);
 
-		// when:
-		final Response response = subject.responseGiven(query, view, OK, fee);
+        // when:
+        final Response response = subject.responseGiven(query, view, OK, fee);
 
-		// then:
-		assertTrue(response.hasContractGetInfo());
-		assertEquals(
-				OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
-	}
+        // then:
+        assertTrue(response.hasContractGetInfo());
+        assertEquals(
+                OK, response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
+        assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
+    }
 
-	@Test
-	void getsInvalidResponse() throws Throwable {
-		// setup:
-		final Query query = validQuery(COST_ANSWER, fee, target);
+    @Test
+    void getsInvalidResponse() throws Throwable {
+        // setup:
+        final Query query = validQuery(COST_ANSWER, fee, target);
 
-		// when:
-		final Response response = subject.responseGiven(query, view, CONTRACT_DELETED, fee);
+        // when:
+        final Response response = subject.responseGiven(query, view, CONTRACT_DELETED, fee);
 
-		// then:
-		assertTrue(response.hasContractGetInfo());
-		assertEquals(
-				CONTRACT_DELETED,
-				response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
-		assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
-		assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
-	}
+        // then:
+        assertTrue(response.hasContractGetInfo());
+        assertEquals(
+                CONTRACT_DELETED,
+                response.getContractGetInfo().getHeader().getNodeTransactionPrecheckCode());
+        assertEquals(COST_ANSWER, response.getContractGetInfo().getHeader().getResponseType());
+        assertEquals(fee, response.getContractGetInfo().getHeader().getCost());
+    }
 
-	@Test
-	void recognizesFunction() {
-		// expect:
-		assertEquals(HederaFunctionality.ContractGetInfo, subject.canonicalFunction());
-	}
+    @Test
+    void recognizesFunction() {
+        // expect:
+        assertEquals(HederaFunctionality.ContractGetInfo, subject.canonicalFunction());
+    }
 
-	@Test
-	void requiresAnswerOnlyPayment() throws Throwable {
-		// expect:
-		assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
-		assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
-	}
+    @Test
+    void requiresAnswerOnlyPayment() throws Throwable {
+        // expect:
+        assertFalse(subject.requiresNodePayment(validQuery(COST_ANSWER, 0, target)));
+        assertTrue(subject.requiresNodePayment(validQuery(ANSWER_ONLY, 0, target)));
+    }
 
-	@Test
-	void requiresAnswerOnlyCostAsExpected() throws Throwable {
-		// expect:
-		assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
-		assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
-	}
+    @Test
+    void requiresAnswerOnlyCostAsExpected() throws Throwable {
+        // expect:
+        assertTrue(subject.needsAnswerOnlyCost(validQuery(COST_ANSWER, 0, target)));
+        assertFalse(subject.needsAnswerOnlyCost(validQuery(ANSWER_ONLY, 0, target)));
+    }
 
-	@Test
-	void getsValidity() {
-		// given:
-		final Response response =
-				Response.newBuilder()
-						.setContractGetInfo(
-								ContractGetInfoResponse.newBuilder()
-										.setHeader(
-												subject.answerOnlyHeader(
-														RESULT_SIZE_LIMIT_EXCEEDED)))
-						.build();
+    @Test
+    void getsValidity() {
+        // given:
+        final Response response =
+                Response.newBuilder()
+                        .setContractGetInfo(
+                                ContractGetInfoResponse.newBuilder()
+                                        .setHeader(
+                                                subject.answerOnlyHeader(
+                                                        RESULT_SIZE_LIMIT_EXCEEDED)))
+                        .build();
 
-		// expect:
-		assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
-	}
+        // expect:
+        assertEquals(RESULT_SIZE_LIMIT_EXCEEDED, subject.extractValidityFrom(response));
+    }
 
-	@Test
-	void returnsInvalidContractIdFromValidator() throws Throwable {
-		// setup:
-		final Query query = validQuery(COST_ANSWER, fee, target);
+    @Test
+    void returnsInvalidContractIdFromValidator() throws Throwable {
+        // setup:
+        final Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
-				.willReturn(INVALID_CONTRACT_ID);
-		given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
+                .willReturn(INVALID_CONTRACT_ID);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
-		// when:
-		final ResponseCodeEnum validity = subject.checkValidity(query, view);
+        // when:
+        final ResponseCodeEnum validity = subject.checkValidity(query, view);
 
-		// then:
-		assertEquals(INVALID_CONTRACT_ID, validity);
-	}
+        // then:
+        assertEquals(INVALID_CONTRACT_ID, validity);
+    }
 
-	@Test
-	void allowsQueryingDeletedContracts() throws Throwable {
-		final Query query = validQuery(COST_ANSWER, fee, target);
+    @Test
+    void allowsQueryingDeletedContracts() throws Throwable {
+        final Query query = validQuery(COST_ANSWER, fee, target);
 
-		given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
-				.willReturn(CONTRACT_DELETED);
-		given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
+        given(optionValidator.queryableContractStatus(eq(asContract(target)), any()))
+                .willReturn(CONTRACT_DELETED);
+        given(view.contracts()).willReturn(AccountStorageAdapter.fromInMemory(contracts));
 
-		final ResponseCodeEnum validity = subject.checkValidity(query, view);
+        final ResponseCodeEnum validity = subject.checkValidity(query, view);
 
-		assertEquals(OK, validity);
-	}
+        assertEquals(OK, validity);
+    }
 
-	@Test
-	void getsExpectedPayment() throws Throwable {
-		// given:
-		final Query query = validQuery(COST_ANSWER, fee, target);
+    @Test
+    void getsExpectedPayment() throws Throwable {
+        // given:
+        final Query query = validQuery(COST_ANSWER, fee, target);
 
-		// expect:
-		assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
-	}
+        // expect:
+        assertEquals(paymentTxn, subject.extractPaymentFrom(query).get().getSignedTxnWrapper());
+    }
 
-	private Query validQuery(final ResponseType type, final long payment, final String idLit) throws Throwable {
-		this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
-		final QueryHeader.Builder header =
-				QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
-		final ContractGetInfoQuery.Builder op =
-				ContractGetInfoQuery.newBuilder()
-						.setHeader(header)
-						.setContractID(asContract(idLit));
-		return Query.newBuilder().setContractGetInfo(op).build();
-	}
+    private Query validQuery(final ResponseType type, final long payment, final String idLit)
+            throws Throwable {
+        this.paymentTxn = payerSponsoredTransfer(payer, COMPLEX_KEY_ACCOUNT_KT, node, payment);
+        final QueryHeader.Builder header =
+                QueryHeader.newBuilder().setPayment(this.paymentTxn).setResponseType(type);
+        final ContractGetInfoQuery.Builder op =
+                ContractGetInfoQuery.newBuilder()
+                        .setHeader(header)
+                        .setContractID(asContract(idLit));
+        return Query.newBuilder().setContractGetInfo(op).build();
+    }
 }

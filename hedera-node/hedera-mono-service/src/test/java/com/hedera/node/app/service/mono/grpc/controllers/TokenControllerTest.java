@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.grpc.controllers.TokenController;
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.token.TokenAnswers;
 import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;

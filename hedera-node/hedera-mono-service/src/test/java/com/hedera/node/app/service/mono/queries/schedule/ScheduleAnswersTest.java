@@ -15,26 +15,26 @@
  */
 package com.hedera.node.app.service.mono.queries.schedule;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class ScheduleAnswersTest {
-	GetScheduleInfoAnswer scheduleInfo;
+    GetScheduleInfoAnswer scheduleInfo;
 
-	@BeforeEach
-	void setup() {
-		scheduleInfo = mock(GetScheduleInfoAnswer.class);
-	}
+    @BeforeEach
+    void setup() {
+        scheduleInfo = mock(GetScheduleInfoAnswer.class);
+    }
 
-	@Test
-	void getsQueryBalance() {
-		// given:
-		final ScheduleAnswers subject = new ScheduleAnswers(scheduleInfo);
+    @Test
+    void getsQueryBalance() {
+        // given:
+        final ScheduleAnswers subject = new ScheduleAnswers(scheduleInfo);
 
-		// expect:
-		assertSame(scheduleInfo, subject.getScheduleInfo());
-	}
+        // expect:
+        assertSame(scheduleInfo, subject.getScheduleInfo());
+    }
 }

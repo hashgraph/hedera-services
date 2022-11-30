@@ -22,7 +22,6 @@ import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;

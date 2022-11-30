@@ -70,7 +70,8 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     public static TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         return TokenInfoWrapper.forToken(tokenID);

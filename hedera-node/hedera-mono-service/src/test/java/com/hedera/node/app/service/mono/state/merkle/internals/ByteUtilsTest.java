@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.node.app.service.mono.state.merkle.internals.ByteUtils;
 import com.swirlds.common.crypto.DigestType;
 import org.junit.jupiter.api.Test;
 

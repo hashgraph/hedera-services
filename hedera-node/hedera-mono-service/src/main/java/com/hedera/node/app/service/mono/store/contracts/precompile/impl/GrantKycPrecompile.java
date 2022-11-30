@@ -87,7 +87,8 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     @Override
     public long getMinimumFeeInTinybars(Timestamp consensusTime) {
         Objects.requireNonNull(grantRevokeOp);
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.GRANT_KYC, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.GRANT_KYC, consensusTime);
     }
 
     public static GrantRevokeKycWrapper decodeGrantTokenKyc(
@@ -98,7 +99,8 @@ public class GrantKycPrecompile extends AbstractGrantRevokeKycPrecompile {
 
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(1), aliasResolver);
 
         return new GrantRevokeKycWrapper(tokenID, accountID);
     }

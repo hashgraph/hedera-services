@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,77 +15,77 @@
  */
 package com.hedera.node.app.service.mono.queries.answering;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_QUERY_HEADER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import org.junit.jupiter.api.Test;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_QUERY_HEADER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 class QueryHeaderValidityTest {
-	final QueryHeaderValidity subject = new QueryHeaderValidity();
+    final QueryHeaderValidity subject = new QueryHeaderValidity();
 
-	@Test
-	void recognizesMissingHeader() {
-		// given:
-		final var missingHeader = Query.getDefaultInstance();
+    @Test
+    void recognizesMissingHeader() {
+        // given:
+        final var missingHeader = Query.getDefaultInstance();
 
-		// expect:
-		assertEquals(MISSING_QUERY_HEADER, subject.checkHeader(missingHeader));
-	}
+        // expect:
+        assertEquals(MISSING_QUERY_HEADER, subject.checkHeader(missingHeader));
+    }
 
-	@Test
-	void rejectsCostAnswerStateProof() {
-		// given:
-		final var costAnswerStateProof =
-				Query.newBuilder()
-						.setConsensusGetTopicInfo(
-								ConsensusGetTopicInfoQuery.newBuilder()
-										.setHeader(
-												QueryHeader.newBuilder()
-														.setResponseType(
-																ResponseType
-																		.COST_ANSWER_STATE_PROOF)))
-						.build();
+    @Test
+    void rejectsCostAnswerStateProof() {
+        // given:
+        final var costAnswerStateProof =
+                Query.newBuilder()
+                        .setConsensusGetTopicInfo(
+                                ConsensusGetTopicInfoQuery.newBuilder()
+                                        .setHeader(
+                                                QueryHeader.newBuilder()
+                                                        .setResponseType(
+                                                                ResponseType
+                                                                        .COST_ANSWER_STATE_PROOF)))
+                        .build();
 
-		// expect:
-		assertEquals(NOT_SUPPORTED, subject.checkHeader(costAnswerStateProof));
-	}
+        // expect:
+        assertEquals(NOT_SUPPORTED, subject.checkHeader(costAnswerStateProof));
+    }
 
-	@Test
-	void rejectsAnswerOnlyStateProof() {
-		// given:
-		final var answerStateProof =
-				Query.newBuilder()
-						.setConsensusGetTopicInfo(
-								ConsensusGetTopicInfoQuery.newBuilder()
-										.setHeader(
-												QueryHeader.newBuilder()
-														.setResponseType(
-																ResponseType.ANSWER_STATE_PROOF)))
-						.build();
+    @Test
+    void rejectsAnswerOnlyStateProof() {
+        // given:
+        final var answerStateProof =
+                Query.newBuilder()
+                        .setConsensusGetTopicInfo(
+                                ConsensusGetTopicInfoQuery.newBuilder()
+                                        .setHeader(
+                                                QueryHeader.newBuilder()
+                                                        .setResponseType(
+                                                                ResponseType.ANSWER_STATE_PROOF)))
+                        .build();
 
-		// expect:
-		assertEquals(NOT_SUPPORTED, subject.checkHeader(answerStateProof));
-	}
+        // expect:
+        assertEquals(NOT_SUPPORTED, subject.checkHeader(answerStateProof));
+    }
 
-	@Test
-	void acceptsSupportedResponseType() {
-		// given:
-		final var answerStateProof =
-				Query.newBuilder()
-						.setConsensusGetTopicInfo(
-								ConsensusGetTopicInfoQuery.newBuilder()
-										.setHeader(
-												QueryHeader.newBuilder()
-														.setResponseType(ResponseType.ANSWER_ONLY)))
-						.build();
+    @Test
+    void acceptsSupportedResponseType() {
+        // given:
+        final var answerStateProof =
+                Query.newBuilder()
+                        .setConsensusGetTopicInfo(
+                                ConsensusGetTopicInfoQuery.newBuilder()
+                                        .setHeader(
+                                                QueryHeader.newBuilder()
+                                                        .setResponseType(ResponseType.ANSWER_ONLY)))
+                        .build();
 
-		// expect:
-		assertEquals(OK, subject.checkHeader(answerStateProof));
-	}
+        // expect:
+        assertEquals(OK, subject.checkHeader(answerStateProof));
+    }
 }

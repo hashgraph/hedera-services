@@ -83,10 +83,12 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     public static Dissociation decodeMultipleDissociations(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(0), aliasResolver);
         final var tokenIDs = DecodingFacade.decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
         return Dissociation.multiDissociation(accountID, tokenIDs);

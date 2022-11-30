@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
+
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
@@ -24,53 +26,49 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
-
 public class UniqueTokensMigrator {
-	private static final Logger LOG = LogManager.getLogger(UniqueTokensMigrator.class);
+    private static final Logger LOG = LogManager.getLogger(UniqueTokensMigrator.class);
 
-	/**
-	 * Migrate tokens from MerkleMap data structure to VirtualMap data structure.
-	 *
-	 * @param initializingState
-	 * 		the ServicesState containing the MerkleMap to migrate.
-	 */
-	public static void migrateFromUniqueTokenMerkleMap(final ServicesState initializingState) {
-		final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
-		final var currentData = initializingState.uniqueTokens();
-		if (currentData.isVirtual()) {
-			// Already done here
-			LOG.info("UniqueTokens is already virtualized. Skipping migration.");
-			return;
-		}
+    /**
+     * Migrate tokens from MerkleMap data structure to VirtualMap data structure.
+     *
+     * @param initializingState the ServicesState containing the MerkleMap to migrate.
+     */
+    public static void migrateFromUniqueTokenMerkleMap(final ServicesState initializingState) {
+        final var virtualMapFactory = new VirtualMapFactory(JasperDbBuilder::new);
+        final var currentData = initializingState.uniqueTokens();
+        if (currentData.isVirtual()) {
+            // Already done here
+            LOG.info("UniqueTokens is already virtualized. Skipping migration.");
+            return;
+        }
 
-		final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens =
-				currentData.merkleMap();
-		final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
-				virtualMapFactory.newVirtualizedUniqueTokenStorage();
-		final AtomicInteger count = new AtomicInteger();
+        final MerkleMap<EntityNumPair, MerkleUniqueToken> legacyUniqueTokens =
+                currentData.merkleMap();
+        final VirtualMap<UniqueTokenKey, UniqueTokenValue> vmUniqueTokens =
+                virtualMapFactory.newVirtualizedUniqueTokenStorage();
+        final AtomicInteger count = new AtomicInteger();
 
-		forEach(
-				legacyUniqueTokens,
-				(entityNumPair, legacyToken) -> {
-					final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
-					final var newTokenKey =
-							new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
-					final var newTokenValue = UniqueTokenValue.from(legacyToken);
-					vmUniqueTokens.put(newTokenKey, newTokenValue);
-					count.incrementAndGet();
-				});
+        forEach(
+                legacyUniqueTokens,
+                (entityNumPair, legacyToken) -> {
+                    final var numSerialPair = entityNumPair.asTokenNumAndSerialPair();
+                    final var newTokenKey =
+                            new UniqueTokenKey(numSerialPair.getLeft(), numSerialPair.getRight());
+                    final var newTokenValue = UniqueTokenValue.from(legacyToken);
+                    vmUniqueTokens.put(newTokenKey, newTokenValue);
+                    count.incrementAndGet();
+                });
 
-		initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, vmUniqueTokens);
-		LOG.info("Migrated {} unique tokens", count.get());
-	}
+        initializingState.setChild(StateChildIndices.UNIQUE_TOKENS, vmUniqueTokens);
+        LOG.info("Migrated {} unique tokens", count.get());
+    }
 
-	private UniqueTokensMigrator() {
-		/* disallow construction */
-	}
+    private UniqueTokensMigrator() {
+        /* disallow construction */
+    }
 }

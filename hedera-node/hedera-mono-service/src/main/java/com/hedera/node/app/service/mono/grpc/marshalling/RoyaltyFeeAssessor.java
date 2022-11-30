@@ -120,7 +120,9 @@ public class RoyaltyFeeAssessor {
             final List<FcAssessedCustomFee> accumulator) {
         for (var exchange : exchangedValue) {
             long value = exchange.originalUnits();
-            long royaltyFee = AdjustmentUtils.safeFractionMultiply(spec.numerator(), spec.denominator(), value);
+            long royaltyFee =
+                    AdjustmentUtils.safeFractionMultiply(
+                            spec.numerator(), spec.denominator(), value);
             if (exchange.getAggregatedUnits() < royaltyFee) {
                 return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
             }

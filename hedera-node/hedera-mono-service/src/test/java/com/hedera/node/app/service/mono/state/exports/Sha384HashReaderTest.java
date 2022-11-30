@@ -24,8 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import com.hedera.node.app.service.mono.state.exports.Sha384HashReader;
 import org.junit.jupiter.api.Test;
 
 class Sha384HashReaderTest {

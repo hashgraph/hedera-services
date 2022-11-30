@@ -15,16 +15,6 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_HEADER;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_QUERY_RES_HEADER;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_TX_ID_SIZE;
@@ -35,42 +25,51 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class GetExecTimeResourceUsageTest {
-	private static final Query execTimeQuery =
-			Query.newBuilder()
-					.setNetworkGetExecutionTime(
-							NetworkGetExecutionTimeQuery.newBuilder()
-									.addAllTransactionIds(
-											List.of(
-													TransactionID.getDefaultInstance(),
-													TransactionID.getDefaultInstance())))
-					.build();
-	private static final Query nonExecTimeQuery = Query.getDefaultInstance();
+    private static final Query execTimeQuery =
+            Query.newBuilder()
+                    .setNetworkGetExecutionTime(
+                            NetworkGetExecutionTimeQuery.newBuilder()
+                                    .addAllTransactionIds(
+                                            List.of(
+                                                    TransactionID.getDefaultInstance(),
+                                                    TransactionID.getDefaultInstance())))
+                    .build();
+    private static final Query nonExecTimeQuery = Query.getDefaultInstance();
 
-	private GetExecTimeResourceUsage subject;
+    private GetExecTimeResourceUsage subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new GetExecTimeResourceUsage();
-	}
+    @BeforeEach
+    void setup() {
+        subject = new GetExecTimeResourceUsage();
+    }
 
-	@Test
-	void recognizesApplicability() {
-		assertTrue(subject.applicableTo(execTimeQuery));
-		assertFalse(subject.applicableTo(nonExecTimeQuery));
-	}
+    @Test
+    void recognizesApplicability() {
+        assertTrue(subject.applicableTo(execTimeQuery));
+        assertFalse(subject.applicableTo(nonExecTimeQuery));
+    }
 
-	@Test
-	void getsExpectedUsage() {
-		final var expectedNodeUsage =
-				FeeComponents.newBuilder()
-						.setConstant(FEE_MATRICES_CONST)
-						.setBpt(BASIC_QUERY_HEADER + 2 * BASIC_TX_ID_SIZE)
-						.setBpr(BASIC_QUERY_RES_HEADER + 2 * LONG_SIZE)
-						.build();
-		final var expected = FeeData.newBuilder().setNodedata(expectedNodeUsage).build();
+    @Test
+    void getsExpectedUsage() {
+        final var expectedNodeUsage =
+                FeeComponents.newBuilder()
+                        .setConstant(FEE_MATRICES_CONST)
+                        .setBpt(BASIC_QUERY_HEADER + 2 * BASIC_TX_ID_SIZE)
+                        .setBpr(BASIC_QUERY_RES_HEADER + 2 * LONG_SIZE)
+                        .build();
+        final var expected = FeeData.newBuilder().setNodedata(expectedNodeUsage).build();
 
-		assertEquals(expected, subject.usageGiven(execTimeQuery, null));
-		assertEquals(expected, subject.usageGivenType(execTimeQuery, null, ANSWER_ONLY));
-	}
+        assertEquals(expected, subject.usageGiven(execTimeQuery, null));
+        assertEquals(expected, subject.usageGivenType(execTimeQuery, null, ANSWER_ONLY));
+    }
 }

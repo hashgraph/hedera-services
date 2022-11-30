@@ -147,7 +147,10 @@ class BurnPrecompilesTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     private static final Bytes FUNGIBLE_BURN_INPUT =
             Bytes.fromHexString(
                     "0xacb9cff90000000000000000000000000000000000000000000000000000000000000498000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
@@ -213,7 +216,10 @@ class BurnPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -226,7 +232,8 @@ class BurnPrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
-        given(encoder.encodeBurnFailure(INVALID_SIGNATURE)).willReturn(HTSTestsUtil.invalidSigResult);
+        given(encoder.encodeBurnFailure(INVALID_SIGNATURE))
+                .willReturn(HTSTestsUtil.invalidSigResult);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -249,7 +256,12 @@ class BurnPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveSupplyKey(true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, null))
+        given(
+                        sigsVerifier.hasActiveSupplyKey(
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                null))
                 .willThrow(new NullPointerException());
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
@@ -288,7 +300,10 @@ class BurnPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -337,7 +352,10 @@ class BurnPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, HTSTestsUtil.nonFungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.nonFungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -377,7 +395,10 @@ class BurnPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -411,7 +432,9 @@ class BurnPrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(
-                        recordsHistorian, HTSTestsUtil.expirableTxnRecordBuilder, mockSynthBodyBuilder);
+                        recordsHistorian,
+                        HTSTestsUtil.expirableTxnRecordBuilder,
+                        mockSynthBodyBuilder);
     }
 
     @Test
@@ -445,12 +468,17 @@ class BurnPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
+        burnPrecompile
+                .when(() -> decodeBurn(pretendArguments))
+                .thenReturn(HTSTestsUtil.fungibleBurnMaxAmount);
         given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurnMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.recipientAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.recipientAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -485,7 +513,9 @@ class BurnPrecompilesTest {
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(
-                        recordsHistorian, HTSTestsUtil.expirableTxnRecordBuilder, mockSynthBodyBuilder);
+                        recordsHistorian,
+                        HTSTestsUtil.expirableTxnRecordBuilder,
+                        mockSynthBodyBuilder);
     }
 
     @Test
@@ -497,7 +527,9 @@ class BurnPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurn);
+        burnPrecompile
+                .when(() -> decodeBurn(pretendArguments))
+                .thenReturn(HTSTestsUtil.fungibleBurn);
         given(syntheticTxnFactory.createBurn(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -511,7 +543,8 @@ class BurnPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -567,14 +600,20 @@ class BurnPrecompilesTest {
 
     private void givenNonfungibleFrameContext() {
         givenFrameContext();
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.nonFungibleBurn);
-        given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn)).willReturn(mockSynthBodyBuilder);
+        burnPrecompile
+                .when(() -> decodeBurn(pretendArguments))
+                .thenReturn(HTSTestsUtil.nonFungibleBurn);
+        given(syntheticTxnFactory.createBurn(HTSTestsUtil.nonFungibleBurn))
+                .willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFungibleFrameContext() {
         givenFrameContext();
-        burnPrecompile.when(() -> decodeBurn(pretendArguments)).thenReturn(HTSTestsUtil.fungibleBurn);
-        given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurn)).willReturn(mockSynthBodyBuilder);
+        burnPrecompile
+                .when(() -> decodeBurn(pretendArguments))
+                .thenReturn(HTSTestsUtil.fungibleBurn);
+        given(syntheticTxnFactory.createBurn(HTSTestsUtil.fungibleBurn))
+                .willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFrameContext() {

@@ -23,13 +23,13 @@ import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeChangeManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
@@ -240,7 +240,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 stakeAtStartOfLastRewardedPeriodUpdates[i] =
                         StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
             } else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
-                stakeAtStartOfLastRewardedPeriodUpdates[i] = StakingUtils.roundedToHbar(account.totalStake());
+                stakeAtStartOfLastRewardedPeriodUpdates[i] =
+                        StakingUtils.roundedToHbar(account.totalStake());
             }
             final var wasRewarded =
                     rewardsEarned[i] > 0
@@ -300,8 +301,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             if (scenario.awardsToAccount()) {
                 // Always trigger a reward situation for the new stakee when they are
                 // losing an indirect staker, even if it doesn't change their total stake
-                final var roundedFinalBalance = StakingUtils.roundedToHbar(
-						StakingUtils.finalBalanceGiven(account, changes));
+                final var roundedFinalBalance =
+                        StakingUtils.roundedToHbar(
+                                StakingUtils.finalBalanceGiven(account, changes));
                 alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }

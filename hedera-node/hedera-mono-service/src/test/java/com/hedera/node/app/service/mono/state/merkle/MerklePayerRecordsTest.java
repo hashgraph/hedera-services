@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
-import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.migration.QueryableRecords;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.SeededPropertySource;

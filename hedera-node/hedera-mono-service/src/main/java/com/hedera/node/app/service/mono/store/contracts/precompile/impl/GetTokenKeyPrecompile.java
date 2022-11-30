@@ -25,13 +25,13 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,7 +76,8 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
 
     public static GetTokenKeyWrapper decodeGetTokenKey(Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
         final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
         return new GetTokenKeyWrapper(tokenID, tokenType);

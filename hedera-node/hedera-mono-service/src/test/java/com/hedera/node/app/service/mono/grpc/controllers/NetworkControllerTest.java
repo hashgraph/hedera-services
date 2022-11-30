@@ -19,7 +19,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetE
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.node.app.service.mono.grpc.controllers.NetworkController;
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
 import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;

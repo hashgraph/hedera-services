@@ -15,6 +15,14 @@
  */
 package com.hedera.node.app.service.mono.queries.answering;
 
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.inOrder;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+
 import com.hedera.node.app.service.mono.queries.AnswerFlow;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -25,74 +33,66 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetInfo;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_START;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.inOrder;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.never;
-
 class QueryResponseHelperTest {
-	Query query = Query.getDefaultInstance();
-	String metric = "imaginary";
-	Response okResponse;
-	Response notOkResponse;
+    Query query = Query.getDefaultInstance();
+    String metric = "imaginary";
+    Response okResponse;
+    Response notOkResponse;
 
-	AnswerFlow answerFlow;
-	AnswerService answer;
-	HapiOpCounters opCounters;
-	StreamObserver<Response> observer;
+    AnswerFlow answerFlow;
+    AnswerService answer;
+    HapiOpCounters opCounters;
+    StreamObserver<Response> observer;
 
-	QueryResponseHelper subject;
+    QueryResponseHelper subject;
 
-	@BeforeEach
-	void setup() {
-		answerFlow = mock(AnswerFlow.class);
-		opCounters = mock(HapiOpCounters.class);
-		answer = mock(AnswerService.class);
-		observer = mock(StreamObserver.class);
-		okResponse = mock(Response.class);
-		notOkResponse = mock(Response.class);
+    @BeforeEach
+    void setup() {
+        answerFlow = mock(AnswerFlow.class);
+        opCounters = mock(HapiOpCounters.class);
+        answer = mock(AnswerService.class);
+        observer = mock(StreamObserver.class);
+        okResponse = mock(Response.class);
+        notOkResponse = mock(Response.class);
 
-		subject = new QueryResponseHelper(answerFlow, opCounters);
-	}
+        subject = new QueryResponseHelper(answerFlow, opCounters);
+    }
 
-	@Test
-	void helpsWithAnswerHappyPath() {
-		// setup:
-		final InOrder inOrder = inOrder(answerFlow, opCounters, observer);
+    @Test
+    void helpsWithAnswerHappyPath() {
+        // setup:
+        final InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(OK);
+        given(answerFlow.satisfyUsing(answer, query)).willReturn(okResponse);
+        given(answer.extractValidityFrom(okResponse)).willReturn(OK);
 
-		// when:
-		subject.answer(query, observer, answer, TokenGetInfo);
+        // when:
+        subject.answer(query, observer, answer, TokenGetInfo);
 
-		// then:
-		inOrder.verify(opCounters).countReceived(TokenGetInfo);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(okResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(opCounters).countAnswered(TokenGetInfo);
-	}
+        // then:
+        inOrder.verify(opCounters).countReceived(TokenGetInfo);
+        inOrder.verify(answerFlow).satisfyUsing(answer, query);
+        inOrder.verify(observer).onNext(okResponse);
+        inOrder.verify(observer).onCompleted();
+        inOrder.verify(opCounters).countAnswered(TokenGetInfo);
+    }
 
-	@Test
-	void helpsWithAnswerUnhappyPath() {
-		// setup:
-		final InOrder inOrder = inOrder(answerFlow, opCounters, observer);
+    @Test
+    void helpsWithAnswerUnhappyPath() {
+        // setup:
+        final InOrder inOrder = inOrder(answerFlow, opCounters, observer);
 
-		given(answerFlow.satisfyUsing(answer, query)).willReturn(notOkResponse);
-		given(answer.extractValidityFrom(okResponse)).willReturn(INVALID_TRANSACTION_START);
+        given(answerFlow.satisfyUsing(answer, query)).willReturn(notOkResponse);
+        given(answer.extractValidityFrom(okResponse)).willReturn(INVALID_TRANSACTION_START);
 
-		// when:
-		subject.answer(query, observer, answer, TokenGetInfo);
+        // when:
+        subject.answer(query, observer, answer, TokenGetInfo);
 
-		// then:
-		inOrder.verify(opCounters).countReceived(TokenGetInfo);
-		inOrder.verify(answerFlow).satisfyUsing(answer, query);
-		inOrder.verify(observer).onNext(notOkResponse);
-		inOrder.verify(observer).onCompleted();
-		inOrder.verify(opCounters, never()).countAnswered(TokenGetInfo);
-	}
+        // then:
+        inOrder.verify(opCounters).countReceived(TokenGetInfo);
+        inOrder.verify(answerFlow).satisfyUsing(answer, query);
+        inOrder.verify(observer).onNext(notOkResponse);
+        inOrder.verify(observer).onCompleted();
+        inOrder.verify(opCounters, never()).countAnswered(TokenGetInfo);
+    }
 }

@@ -60,7 +60,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.keys.ActivationTest;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;

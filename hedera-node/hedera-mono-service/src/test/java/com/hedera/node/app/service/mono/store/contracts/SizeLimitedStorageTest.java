@@ -46,7 +46,6 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
-import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

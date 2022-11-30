@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinc
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKeySupplier;
 import org.junit.jupiter.api.Test;
 
 class SecondSinceEpocVirtualKeySupplierTest {

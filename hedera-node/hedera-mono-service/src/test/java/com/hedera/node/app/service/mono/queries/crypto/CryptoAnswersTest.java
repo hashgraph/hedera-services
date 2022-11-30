@@ -15,26 +15,26 @@
  */
 package com.hedera.node.app.service.mono.queries.crypto;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-class CryptoAnswersTest {
-	@Test
-	void getsQueryBalance() {
-		final var liveHash = mock(GetLiveHashAnswer.class);
-		final var stakers = mock(GetStakersAnswer.class);
-		final var accountInfo = mock(GetAccountInfoAnswer.class);
-		final var accountBalance = mock(GetAccountBalanceAnswer.class);
-		final var accountRecords = mock(GetAccountRecordsAnswer.class);
-		final var subject =
-				new CryptoAnswers(liveHash, stakers, accountInfo, accountBalance, accountRecords);
+import org.junit.jupiter.api.Test;
 
-		assertSame(liveHash, subject.getLiveHash());
-		assertSame(stakers, subject.getStakers());
-		assertSame(accountInfo, subject.getAccountInfo());
-		assertSame(accountBalance, subject.getAccountBalance());
-		assertSame(accountRecords, subject.getAccountRecords());
-	}
+class CryptoAnswersTest {
+    @Test
+    void getsQueryBalance() {
+        final var liveHash = mock(GetLiveHashAnswer.class);
+        final var stakers = mock(GetStakersAnswer.class);
+        final var accountInfo = mock(GetAccountInfoAnswer.class);
+        final var accountBalance = mock(GetAccountBalanceAnswer.class);
+        final var accountRecords = mock(GetAccountRecordsAnswer.class);
+        final var subject =
+                new CryptoAnswers(liveHash, stakers, accountInfo, accountBalance, accountRecords);
+
+        assertSame(liveHash, subject.getLiveHash());
+        assertSame(stakers, subject.getStakers());
+        assertSame(accountInfo, subject.getAccountInfo());
+        assertSame(accountBalance, subject.getAccountBalance());
+        assertSame(accountRecords, subject.getAccountRecords());
+    }
 }

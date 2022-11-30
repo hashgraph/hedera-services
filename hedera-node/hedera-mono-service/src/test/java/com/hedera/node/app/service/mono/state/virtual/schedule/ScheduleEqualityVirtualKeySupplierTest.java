@@ -20,8 +20,6 @@ import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEq
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
-import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKeySupplier;
 import org.junit.jupiter.api.Test;
 
 class ScheduleEqualityVirtualKeySupplierTest {

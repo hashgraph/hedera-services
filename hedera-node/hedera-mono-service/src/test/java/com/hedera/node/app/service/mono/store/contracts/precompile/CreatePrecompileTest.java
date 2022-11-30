@@ -494,7 +494,8 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(
                         new JContractIDKey(
-                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
+                                EntityIdUtils.contractIdFromEvmAddress(
+                                        HTSTestsUtil.contractAddress)));
 
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
@@ -717,7 +718,8 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(
                         new JContractIDKey(
-                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
+                                EntityIdUtils.contractIdFromEvmAddress(
+                                        HTSTestsUtil.contractAddress)));
 
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
@@ -748,7 +750,8 @@ class CreatePrecompileTest {
         given(accounts.get(any(), eq(KEY)))
                 .willReturn(
                         new JContractIDKey(
-                                EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress)));
+                                EntityIdUtils.contractIdFromEvmAddress(
+                                        HTSTestsUtil.contractAddress)));
 
         prepareAndAssertCreateHappyPathSucceeds(tokenCreateWrapper, pretendArguments);
     }
@@ -795,12 +798,14 @@ class CreatePrecompileTest {
         final var validator = Mockito.mock(Function.class);
         given(createChecks.validatorForConsTime(any())).willReturn(validator);
         given(validator.apply(any())).willReturn(ResponseCodeEnum.OK);
-        given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(HTSTestsUtil.pendingChildConsTime);
+        given(recordsHistorian.nextFollowingChildConsensusTime())
+                .willReturn(HTSTestsUtil.pendingChildConsTime);
         given(sigsVerifier.cryptoKeyIsActive(any(JKey.class)))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
-        given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(HTSTestsUtil.invalidSigResult);
+        given(encoder.encodeCreateFailure(INVALID_SIGNATURE))
+                .willReturn(HTSTestsUtil.invalidSigResult);
         given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
         // when:
@@ -863,7 +868,8 @@ class CreatePrecompileTest {
         given(tokenCreateValidator.apply(any())).willReturn(INVALID_SIGNATURE);
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
-        given(encoder.encodeCreateFailure(INVALID_SIGNATURE)).willReturn(HTSTestsUtil.invalidSigResult);
+        given(encoder.encodeCreateFailure(INVALID_SIGNATURE))
+                .willReturn(HTSTestsUtil.invalidSigResult);
         given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
 
         // when:
@@ -904,7 +910,8 @@ class CreatePrecompileTest {
                 .thenReturn(KeyValueWrapper.KeyValueType.CONTRACT_ID)
                 .thenReturn(KeyValueWrapper.KeyValueType.INVALID_KEY);
         final var tokenCreateWrapper =
-                HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(1, keyValueMock)));
+                HTSTestsUtil.createTokenCreateWrapperWithKeys(
+                        List.of(new TokenKeyWrapper(1, keyValueMock)));
         tokenCreatePrecompile
                 .when(() -> decodeFungibleCreate(eq(pretendArguments), any()))
                 .thenReturn(tokenCreateWrapper);
@@ -1126,7 +1133,8 @@ class CreatePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var invalidTokenCreate = HTSTestsUtil.createTokenCreateWrapperWithKeys(Collections.emptyList());
+        final var invalidTokenCreate =
+                HTSTestsUtil.createTokenCreateWrapperWithKeys(Collections.emptyList());
         final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
         given(fixedFeeMock.getFixedFeePayment())
                 .willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
@@ -1141,13 +1149,15 @@ class CreatePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        final var invalidTokenCreate = HTSTestsUtil.createTokenCreateWrapperWithKeys(Collections.emptyList());
+        final var invalidTokenCreate =
+                HTSTestsUtil.createTokenCreateWrapperWithKeys(Collections.emptyList());
         final var fixedFeeMock = mock(TokenCreateWrapper.FixedFeeWrapper.class);
         given(fixedFeeMock.getFixedFeePayment())
                 .willReturn(TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT);
         invalidTokenCreate.setRoyaltyFees(
                 List.of(
-                        new TokenCreateWrapper.RoyaltyFeeWrapper(1, 2, null, HTSTestsUtil.feeCollector),
+                        new TokenCreateWrapper.RoyaltyFeeWrapper(
+                                1, 2, null, HTSTestsUtil.feeCollector),
                         new TokenCreateWrapper.RoyaltyFeeWrapper(
                                 1, 2, fixedFeeMock, HTSTestsUtil.feeCollector)));
 
@@ -1644,7 +1654,8 @@ class CreatePrecompileTest {
         given(infrastructureFactory.newTokenCreateLogic(accountStore, typedTokenStore))
                 .willReturn(createLogic);
         given(infrastructureFactory.newCreateChecks()).willReturn(createChecks);
-        given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(HTSTestsUtil.pendingChildConsTime);
+        given(recordsHistorian.nextFollowingChildConsensusTime())
+                .willReturn(HTSTestsUtil.pendingChildConsTime);
         given(
                         creator.createSuccessfulSyntheticRecord(
                                 Collections.emptyList(), sideEffects, EMPTY_MEMO))
@@ -1739,7 +1750,8 @@ class CreatePrecompileTest {
                                         .asEvmAddress()))
                 .willReturn(mockFundingEvmAccount);
         fundingMutableAccount =
-                new UpdateTrackingLedgerAccount(EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
+                new UpdateTrackingLedgerAccount(
+                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.account), null);
         given(mockFundingEvmAccount.getMutable()).willReturn(fundingMutableAccount);
         fundingMutableAccount.setBalance(Wei.of(FUNDING_ACCOUNT_INITIAL_BALANCE));
     }

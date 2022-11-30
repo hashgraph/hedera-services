@@ -35,7 +35,6 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.mono.txns.schedule.ScheduleSigsVerifier;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

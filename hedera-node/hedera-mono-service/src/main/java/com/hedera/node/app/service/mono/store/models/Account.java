@@ -58,9 +58,8 @@ import org.hyperledger.besu.datatypes.Address;
 /**
  * Encapsulates the state and operations of a Hedera account.
  *
- * <p>Operations are validated, and throw a {@link
- * InvalidTransactionException} with response code capturing the
- * failure when one occurs.
+ * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
+ * capturing the failure when one occurs.
  *
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support
  * the Hedera Token Service. The memo field, for example, is not yet present.

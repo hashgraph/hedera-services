@@ -39,16 +39,6 @@ import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommi
 import com.hedera.node.app.service.mono.ledger.interceptors.TokenRelsLinkManager;
 import com.hedera.node.app.service.mono.ledger.interceptors.TokensCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.interceptors.UniqueTokensLinkManager;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
-import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
-import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
-import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
-import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
@@ -58,10 +48,20 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
+import com.hedera.node.app.service.mono.store.tokens.annotations.AreTreasuryWildcardsEnabled;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -77,7 +77,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public interface StoresModule {
     @Binds
     @Singleton
-	TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
+    TokenStore bindTokenStore(HederaTokenStore hederaTokenStore);
 
     @Binds
     @Singleton
@@ -86,7 +86,7 @@ public interface StoresModule {
 
     @Binds
     @Singleton
-	ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
+    ScheduleStore bindScheduleStore(HederaScheduleStore scheduleStore);
 
     @Provides
     @Singleton

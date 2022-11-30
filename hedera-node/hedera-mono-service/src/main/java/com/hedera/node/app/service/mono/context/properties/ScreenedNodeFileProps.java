@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 public class ScreenedNodeFileProps implements PropertySource {
     static Logger log = LogManager.getLogger(ScreenedNodeFileProps.class);
 
-    private static final Profile[] LEGACY_ENV_ORDER = { Profile.DEV, Profile.PROD, Profile.TEST};
+    private static final Profile[] LEGACY_ENV_ORDER = {Profile.DEV, Profile.PROD, Profile.TEST};
 
     private static final Map<String, String> STANDARDIZED_NAMES =
             Map.ofEntries(

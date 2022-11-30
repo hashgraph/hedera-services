@@ -68,8 +68,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsTokenP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewExecutor;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.test.factories.fees.CustomFeeBuilder;

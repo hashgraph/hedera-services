@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
-import com.hedera.node.app.service.mono.store.StoresModule;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.swirlds.jasperdb.JasperDbBuilder;
 import org.junit.jupiter.api.Test;

@@ -40,8 +40,8 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.txns.contract.ContractCallTransitionLogic;
+import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,8 +70,7 @@ import org.bouncycastle.util.encoders.Hex;
  *       sure that any pre-computed work can still be reused safely.
  * </ol>
  *
- * The only entry currently in the span map is the {@link
- * ImpliedTransfers} produced by the {@link
+ * The only entry currently in the span map is the {@link ImpliedTransfers} produced by the {@link
  * ImpliedTransfersMarshal}; this improves performance for CrypoTransfers specifically.
  *
  * <p>Other operations will certainly be able to benefit from the same infrastructure over time.
@@ -139,11 +138,11 @@ public class SpanMapManager {
      * {@code handleTransaction}.
      *
      * <p>As an additional side effect, this method adds an instance of {@link EthTxExpansion} to
-     * the accessor's span map. The {@link LinkedRefs} instance in
-     * the expansion can be used in {@code handleTransaction} to validate that no input to the
-     * pre-computed results has changed. Furthermore, if any of the pre-computation steps failed
-     * (e.g., the call data file did not exist), the expansion will include that failure status, and
-     * {@code handleTransaction} can fail immediately if nothing has changed.
+     * the accessor's span map. The {@link LinkedRefs} instance in the expansion can be used in
+     * {@code handleTransaction} to validate that no input to the pre-computed results has changed.
+     * Furthermore, if any of the pre-computation steps failed (e.g., the call data file did not
+     * exist), the expansion will include that failure status, and {@code handleTransaction} can
+     * fail immediately if nothing has changed.
      *
      * @param accessor an EthereumTransaction accessor
      */

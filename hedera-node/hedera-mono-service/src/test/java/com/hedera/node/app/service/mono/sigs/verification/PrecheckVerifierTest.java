@@ -33,10 +33,6 @@ import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchExcept
 import com.hedera.node.app.service.mono.sigs.PlatformSigOps;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.node.app.service.mono.sigs.verification.InvalidPayerAccountException;
-import com.hedera.node.app.service.mono.sigs.verification.PrecheckKeyReqs;
-import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
-import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;

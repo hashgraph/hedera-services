@@ -18,5 +18,4 @@ package com.hedera.node.app.service.mono.setup;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.apache.tuweni.units.bigints.UInt256;
 
-public record KvMutationBatch(AccountID[] contracts, UInt256[] keys, UInt256[] values) {
-}
+public record KvMutationBatch(AccountID[] contracts, UInt256[] keys, UInt256[] values) {}

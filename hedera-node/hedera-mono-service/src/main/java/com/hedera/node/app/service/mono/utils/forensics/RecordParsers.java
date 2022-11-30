@@ -15,12 +15,11 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
 import static java.util.Comparator.comparing;
 
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,7 +65,8 @@ public class RecordParsers {
                                 final var itemRecord = item.getRecord();
                                 entries.add(
                                         new RecordStreamEntry(
-                                                SignedTxnAccessor.uncheckedFrom(item.getTransaction()),
+                                                SignedTxnAccessor.uncheckedFrom(
+                                                        item.getTransaction()),
                                                 itemRecord,
                                                 MiscUtils.timestampToInstant(
                                                         itemRecord.getConsensusTimestamp())));

@@ -128,7 +128,10 @@ class RevokeKycPrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     public static final Bytes REVOKE_TOKEN_KYC_INPUT =
             Bytes.fromHexString(
                     "0xaf99c63300000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
@@ -211,7 +214,8 @@ class RevokeKycPrecompileTest {
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final var result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -267,7 +271,10 @@ class RevokeKycPrecompileTest {
 
         given(
                         sigsVerifier.hasActiveKycKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
     }
 

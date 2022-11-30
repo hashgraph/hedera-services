@@ -42,7 +42,6 @@ import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.txns.contract.ContractCallTransitionLogic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;

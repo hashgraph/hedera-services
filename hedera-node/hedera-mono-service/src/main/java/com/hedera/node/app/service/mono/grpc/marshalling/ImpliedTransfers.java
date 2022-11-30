@@ -33,8 +33,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * Encapsulates the result of translating a gRPC CryptoTransfer into a list of balance changes (ℏ or
  * token unit), as well as the validity of these changes.
  *
- * <p>Note that if the {@link ImpliedTransfersMeta} is not
- * {@code OK}, the list of changes will always be empty.
+ * <p>Note that if the {@link ImpliedTransfersMeta} is not {@code OK}, the list of changes will
+ * always be empty.
  */
 public class ImpliedTransfers {
     public static final Map<ByteString, EntityNum> NO_ALIASES = Collections.emptyMap();

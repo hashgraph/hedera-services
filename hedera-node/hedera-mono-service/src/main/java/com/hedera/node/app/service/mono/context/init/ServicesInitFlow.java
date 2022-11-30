@@ -17,29 +17,28 @@ package com.hedera.node.app.service.mono.context.init;
 
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
 public class ServicesInitFlow {
-	private final StateInitializationFlow stateFlow;
-	private final StoreInitializationFlow storeFlow;
-	private final EntitiesInitializationFlow entitiesFlow;
+    private final StateInitializationFlow stateFlow;
+    private final StoreInitializationFlow storeFlow;
+    private final EntitiesInitializationFlow entitiesFlow;
 
-	@Inject
-	public ServicesInitFlow(
-			final StateInitializationFlow stateFlow,
-			final StoreInitializationFlow storeFlow,
-			final EntitiesInitializationFlow entitiesFlow) {
-		this.stateFlow = stateFlow;
-		this.storeFlow = storeFlow;
-		this.entitiesFlow = entitiesFlow;
-	}
+    @Inject
+    public ServicesInitFlow(
+            final StateInitializationFlow stateFlow,
+            final StoreInitializationFlow storeFlow,
+            final EntitiesInitializationFlow entitiesFlow) {
+        this.stateFlow = stateFlow;
+        this.storeFlow = storeFlow;
+        this.entitiesFlow = entitiesFlow;
+    }
 
-	public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProps) {
-		stateFlow.runWith(activeState, bootstrapProps);
-		storeFlow.run();
-		entitiesFlow.run();
-	}
+    public void runWith(final ServicesState activeState, final BootstrapProperties bootstrapProps) {
+        stateFlow.runWith(activeState, bootstrapProps);
+        storeFlow.run();
+        entitiesFlow.run();
+    }
 }

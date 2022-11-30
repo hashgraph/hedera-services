@@ -25,10 +25,10 @@ import org.apache.tuweni.bytes.Bytes;
 
 public interface EntityAccess extends HederaEvmEntityAccess {
     /**
-     * Provides a {@link WorldLedgers} whose {@link TransactionalLedger}
-     * instances commit directly to the Hedera world state. Only makes sense to return
-     * non-degenerate ledgers for a mutable {@link EntityAccess} implementation (though both mutable
-     * and static entity access do require the alias "ledger").
+     * Provides a {@link WorldLedgers} whose {@link TransactionalLedger} instances commit directly
+     * to the Hedera world state. Only makes sense to return non-degenerate ledgers for a mutable
+     * {@link EntityAccess} implementation (though both mutable and static entity access do require
+     * the alias "ledger").
      *
      * @return the world state ledgers if applicable
      */

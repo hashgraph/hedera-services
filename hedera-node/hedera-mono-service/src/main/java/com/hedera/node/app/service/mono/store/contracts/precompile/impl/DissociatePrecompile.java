@@ -27,12 +27,12 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
@@ -84,10 +84,12 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     public static Dissociation decodeDissociate(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
+                DecodingFacade.decodeFunctionCall(
+                        input, DISSOCIATE_TOKEN_SELECTOR, DISSOCIATE_TOKEN_DECODER);
 
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+                DecodingFacade.convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(0), aliasResolver);
         final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(1));
 
         return Dissociation.singleDissociation(accountID, tokenID);

@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV18;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;

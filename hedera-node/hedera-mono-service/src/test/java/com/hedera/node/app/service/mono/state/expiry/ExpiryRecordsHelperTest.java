@@ -296,7 +296,9 @@ class ExpiryRecordsHelperTest {
                         .setTransactionHash(ByteStringUtils.wrapUnsafely(synthHash))
                         .build();
         return new RecordStreamObject(
-                ExpirableTxnRecordTestHelper.fromGprc(record), synthTxn, instantNow.plusNanos(nanosOffset));
+                ExpirableTxnRecordTestHelper.fromGprc(record),
+                synthTxn,
+                instantNow.plusNanos(nanosOffset));
     }
 
     private TransactionRecord cryptoRemovalRecord(

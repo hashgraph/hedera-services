@@ -30,10 +30,10 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -175,7 +175,8 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
     @VisibleForTesting
     long calculateGas(final Instant now) {
-        final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PrecompilePricingUtils.GasCostType.PRNG);
+        final var feesInTinyCents =
+                pricingUtils.getCanonicalPriceInTinyCents(PrecompilePricingUtils.GasCostType.PRNG);
         final var currentGasPriceInTinyCents =
                 livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;

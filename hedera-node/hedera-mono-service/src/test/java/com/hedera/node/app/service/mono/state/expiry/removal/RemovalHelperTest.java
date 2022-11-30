@@ -21,12 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.state.expiry.removal.AccountGC;
-import com.hedera.node.app.service.mono.state.expiry.removal.ContractGC;
-import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
-import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
-import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
-import com.hedera.node.app.service.mono.state.expiry.removal.RemovalHelper;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;

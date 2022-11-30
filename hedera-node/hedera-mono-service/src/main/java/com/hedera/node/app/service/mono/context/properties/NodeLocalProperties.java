@@ -55,7 +55,6 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STATS_THROTTLE_UTILS_GAUGE_UPDATE_INTERVAL_MS;
 
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
-
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;

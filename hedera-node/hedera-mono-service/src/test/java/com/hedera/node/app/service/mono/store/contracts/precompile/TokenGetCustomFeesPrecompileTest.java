@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -159,7 +158,8 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
+        final var tokenCustomFeesWrapper =
+                new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
         final var fractionalFee = getFractionalFee();
         final Bytes pretendArguments =
                 Bytes.concatenate(
@@ -171,7 +171,8 @@ class TokenGetCustomFeesPrecompileTest {
 
         given(wrappedLedgers.infoForTokenCustomFees(HTSTestsUtil.tokenMerkleId))
                 .willReturn(Optional.of(List.of(fractionalFee)));
-        given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee)))
+                .willReturn(HTSTestsUtil.successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -196,7 +197,8 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
+        final var tokenCustomFeesWrapper =
+                new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),

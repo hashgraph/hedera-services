@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.utils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.node.app.service.mono.utils.SerializationUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.IOException;
 import java.util.Collections;

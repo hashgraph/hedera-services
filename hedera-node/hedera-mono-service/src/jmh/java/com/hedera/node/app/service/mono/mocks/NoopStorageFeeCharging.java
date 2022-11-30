@@ -21,16 +21,15 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
-
 import java.util.Map;
 
 public class NoopStorageFeeCharging implements StorageFeeCharging {
 
-	@Override
-	public void chargeStorageRent(
-			final long numTotalKvPairs,
-			final Map<Long, KvUsageInfo> newUsageInfos,
-			final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
-		// Intentional no-op
-	}
+    @Override
+    public void chargeStorageRent(
+            final long numTotalKvPairs,
+            final Map<Long, KvUsageInfo> newUsageInfos,
+            final TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts) {
+        // Intentional no-op
+    }
 }

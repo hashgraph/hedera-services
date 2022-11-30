@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.fees.calculation;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.service.mono.fees.calculation.utils.TriggeredValuesParser;
-
 import java.util.Arrays;
 
 public record UtilizationScaleFactors(int[] usagePercentTriggers, ScaleFactor[] scaleFactors) {

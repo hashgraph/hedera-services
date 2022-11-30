@@ -180,7 +180,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             byteBuffer.put((byte) (contractId >> (b * 8)));
         }
-        KeyPackingUtils.serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, byteBuffer);
+        KeyPackingUtils.serializePackedBytesToBuffer(
+                uint256Key, uint256KeyNonZeroBytes, byteBuffer);
     }
 
     @Override
@@ -202,7 +203,8 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
         this.contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
-        this.uint256Key = KeyPackingUtils.deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+        this.uint256Key =
+                KeyPackingUtils.deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
     }
 
     @Override

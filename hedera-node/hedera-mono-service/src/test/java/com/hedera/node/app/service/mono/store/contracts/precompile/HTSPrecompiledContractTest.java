@@ -899,7 +899,9 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_BURN_TOKEN_V2));
-        burnPrecompile.when(() -> BurnPrecompile.decodeBurnV2(any())).thenReturn(HTSTestsUtil.nonFungibleBurn);
+        burnPrecompile
+                .when(() -> BurnPrecompile.decodeBurnV2(any()))
+                .thenReturn(HTSTestsUtil.nonFungibleBurn);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -950,9 +952,12 @@ class HTSPrecompiledContractTest {
         givenFrameContext();
         givenPricingUtilsContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_MINT_TOKEN));
-        mintPrecompile.when(() -> MintPrecompile.decodeMint(any())).thenReturn(HTSTestsUtil.fungibleMint);
+        mintPrecompile
+                .when(() -> MintPrecompile.decodeMint(any()))
+                .thenReturn(HTSTestsUtil.fungibleMint);
         given(messageFrame.getRemainingGas()).willReturn(0L);
-        given(syntheticTxnFactory.createMint(HTSTestsUtil.fungibleMint)).willReturn(mockSynthBodyBuilder);
+        given(syntheticTxnFactory.createMint(HTSTestsUtil.fungibleMint))
+                .willReturn(mockSynthBodyBuilder);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
                                 HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
@@ -980,7 +985,9 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
-        pausePrecompile.when(() -> PausePrecompile.decodePause(any())).thenReturn(HTSTestsUtil.fungiblePause);
+        pausePrecompile
+                .when(() -> PausePrecompile.decodePause(any()))
+                .thenReturn(HTSTestsUtil.fungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -997,7 +1004,9 @@ class HTSPrecompiledContractTest {
         // given
         givenFrameContext();
         final Bytes input = Bytes.of(Integers.toBytes(ABI_ID_PAUSE_TOKEN));
-        pausePrecompile.when(() -> PausePrecompile.decodePause(any())).thenReturn(HTSTestsUtil.nonFungiblePause);
+        pausePrecompile
+                .when(() -> PausePrecompile.decodePause(any()))
+                .thenReturn(HTSTestsUtil.nonFungiblePause);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 

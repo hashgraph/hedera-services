@@ -151,7 +151,9 @@ class GetTokenInfoPrecompilesTest {
 
     // Key properties
     private final Key tokenKey =
-            Key.newBuilder().setContractID(HTSTestsUtil.parentContractAddressConvertedToContractId).build();
+            Key.newBuilder()
+                    .setContractID(HTSTestsUtil.parentContractAddressConvertedToContractId)
+                    .build();
     private final List<Key> tokenKeys = new ArrayList<>();
 
     // Expiry properties
@@ -178,7 +180,10 @@ class GetTokenInfoPrecompilesTest {
 
     // Info objects
     private final NftID nftID =
-            NftID.newBuilder().setTokenID(HTSTestsUtil.tokenMerkleId).setSerialNumber(serialNumber).build();
+            NftID.newBuilder()
+                    .setTokenID(HTSTestsUtil.tokenMerkleId)
+                    .setSerialNumber(serialNumber)
+                    .build();
     private TokenInfo.Builder tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
 
@@ -264,7 +269,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -302,7 +308,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -314,7 +321,8 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(0, false);
         final var supplyKey =
                 Key.newBuilder()
-                        .setDelegatableContractId(HTSTestsUtil.parentContractAddressConvertedToContractId)
+                        .setDelegatableContractId(
+                                HTSTestsUtil.parentContractAddressConvertedToContractId)
                         .build();
         tokenInfo.setSupplyKey(supplyKey);
 
@@ -355,7 +363,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -395,7 +404,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
@@ -408,7 +418,8 @@ class GetTokenInfoPrecompilesTest {
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
         given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build()))
+                .willReturn(HTSTestsUtil.successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -434,7 +445,8 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(HTSTestsUtil.tokenMerkleId, serialNumber);
+                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
+                        HTSTestsUtil.tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
@@ -482,7 +494,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -523,7 +536,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -564,7 +578,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -606,7 +621,8 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(HTSTestsUtil.tokenMerkleId, serialNumber);
+                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
+                        HTSTestsUtil.tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
@@ -658,7 +674,8 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(HTSTestsUtil.tokenMerkleId, serialNumber);
+                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
+                        HTSTestsUtil.tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
@@ -709,7 +726,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -745,7 +763,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
@@ -782,7 +801,8 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(HTSTestsUtil.tokenMerkleId, serialNumber);
+                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
+                        HTSTestsUtil.tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
@@ -822,7 +842,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
@@ -862,7 +883,8 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper = HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper =
+                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
@@ -877,7 +899,8 @@ class GetTokenInfoPrecompilesTest {
         given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build()))
+                .willReturn(HTSTestsUtil.successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -903,7 +926,8 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(HTSTestsUtil.tokenMerkleId, serialNumber);
+                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
+                        HTSTestsUtil.tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
@@ -1035,12 +1059,18 @@ class GetTokenInfoPrecompilesTest {
                         .setAmount(amount)
                         .setDenominatingTokenId(feeTokenEntityId)
                         .build();
-        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(HTSTestsUtil.payer).build();
+        return CustomFee.newBuilder()
+                .setFixedFee(fixedFee)
+                .setFeeCollectorAccountId(HTSTestsUtil.payer)
+                .build();
     }
 
     private CustomFee getFixedFeeWithoutDenomination() {
         final var fixedFee = FixedFee.newBuilder().setAmount(amount).build();
-        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(HTSTestsUtil.payer).build();
+        return CustomFee.newBuilder()
+                .setFixedFee(fixedFee)
+                .setFeeCollectorAccountId(HTSTestsUtil.payer)
+                .build();
     }
 
     private CustomFee getFractionalFee() {

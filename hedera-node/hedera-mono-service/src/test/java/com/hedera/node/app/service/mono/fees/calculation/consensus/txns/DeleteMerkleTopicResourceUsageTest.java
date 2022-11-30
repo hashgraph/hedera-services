@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -22,54 +26,50 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class DeleteMerkleTopicResourceUsageTest extends TopicResourceUsageTestBase {
-	private DeleteTopicResourceUsage subject;
+    private DeleteTopicResourceUsage subject;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		super.setup();
-		subject = new DeleteTopicResourceUsage();
-	}
+    @BeforeEach
+    void setup() throws Throwable {
+        super.setup();
+        subject = new DeleteTopicResourceUsage();
+    }
 
-	@Test
-	void recognizesApplicableQuery() {
-		final var deleteTopicTx = makeTransactionBody(topicId);
-		final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
+    @Test
+    void recognizesApplicableQuery() {
+        final var deleteTopicTx = makeTransactionBody(topicId);
+        final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
 
-		assertTrue(subject.applicableTo(deleteTopicTx));
-		assertFalse(subject.applicableTo(nonDeleteTopicTx));
-	}
+        assertTrue(subject.applicableTo(deleteTopicTx));
+        assertFalse(subject.applicableTo(nonDeleteTopicTx));
+    }
 
-	@Test
-	void getFeeThrowsExceptionForBadTxBody() {
-		final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
+    @Test
+    void getFeeThrowsExceptionForBadTxBody() {
+        final var nonDeleteTopicTx = TransactionBody.getDefaultInstance();
 
-		assertThrows(
-				InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
-		assertThrows(
-				InvalidTxBodyException.class,
-				() -> subject.usageGiven(nonDeleteTopicTx, sigValueObj, view));
-	}
+        assertThrows(
+                InvalidTxBodyException.class, () -> subject.usageGiven(null, sigValueObj, view));
+        assertThrows(
+                InvalidTxBodyException.class,
+                () -> subject.usageGiven(nonDeleteTopicTx, sigValueObj, view));
+    }
 
-	@Test
-	void feeDataAsExpected() throws InvalidTxBodyException {
-		final var txBody = makeTransactionBody(topicId);
+    @Test
+    void feeDataAsExpected() throws InvalidTxBodyException {
+        final var txBody = makeTransactionBody(topicId);
 
-		final var feeData = subject.usageGiven(txBody, sigValueObj, view);
+        final var feeData = subject.usageGiven(txBody, sigValueObj, view);
 
-		final int expectedExtraBpt = 24; // + 24 for topicId
-		checkServicesFee(feeData, 0);
-		checkNetworkFee(feeData, expectedExtraBpt, 0);
-		checkNodeFee(feeData, expectedExtraBpt);
-	}
+        final int expectedExtraBpt = 24; // + 24 for topicId
+        checkServicesFee(feeData, 0);
+        checkNetworkFee(feeData, expectedExtraBpt, 0);
+        checkNodeFee(feeData, expectedExtraBpt);
+    }
 
-	private TransactionBody makeTransactionBody(final TopicID topicId) {
-		final var deleteTopicTxBody =
-				ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
-		return TransactionBody.newBuilder().setConsensusDeleteTopic(deleteTopicTxBody).build();
-	}
+    private TransactionBody makeTransactionBody(final TopicID topicId) {
+        final var deleteTopicTxBody =
+                ConsensusDeleteTopicTransactionBody.newBuilder().setTopicID(topicId);
+        return TransactionBody.newBuilder().setConsensusDeleteTopic(deleteTopicTxBody).build();
+    }
 }

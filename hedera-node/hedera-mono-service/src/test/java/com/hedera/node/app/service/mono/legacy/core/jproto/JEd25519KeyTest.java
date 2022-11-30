@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import org.junit.jupiter.api.Test;
 
 class JEd25519KeyTest {

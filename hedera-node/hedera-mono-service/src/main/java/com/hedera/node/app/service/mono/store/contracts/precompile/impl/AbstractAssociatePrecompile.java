@@ -24,6 +24,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.Precompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Associa
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -111,6 +111,7 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.ASSOCIATE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.ASSOCIATE, consensusTime);
     }
 }

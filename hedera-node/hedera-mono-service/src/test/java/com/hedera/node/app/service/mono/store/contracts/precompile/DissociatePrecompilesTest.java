@@ -148,7 +148,10 @@ class DissociatePrecompilesTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / HTSTestsUtil.DEFAULT_GAS_PRICE * 6 / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
+                    / HTSTestsUtil.DEFAULT_GAS_PRICE
+                    * 6
+                    / 5;
     private static final Bytes DISSOCIATE_INPUT =
             Bytes.fromHexString(
                     "0x099794e8000000000000000000000000000000000000000000000000000000000000048e000000000000000000000000000000000000000000000000000000000000048c");
@@ -209,7 +212,12 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                HTSTestsUtil.accountAddr,
+                                HTSTestsUtil.senderAddr,
+                                wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
@@ -251,7 +259,12 @@ class DissociatePrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                HTSTestsUtil.accountAddr,
+                                HTSTestsUtil.senderAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -303,7 +316,12 @@ class DissociatePrecompilesTest {
                 .thenReturn(HTSTestsUtil.multiDissociateOp);
         given(syntheticTxnFactory.createDissociate(HTSTestsUtil.multiDissociateOp))
                 .willReturn(mockSynthBodyBuilder);
-        given(sigsVerifier.hasActiveKey(false, HTSTestsUtil.accountAddr, HTSTestsUtil.senderAddr, wrappedLedgers))
+        given(
+                        sigsVerifier.hasActiveKey(
+                                false,
+                                HTSTestsUtil.accountAddr,
+                                HTSTestsUtil.senderAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -335,7 +353,8 @@ class DissociatePrecompilesTest {
 
         // then:
         Assertions.assertEquals(HTSTestsUtil.successResult, result);
-        verify(dissociateLogic).dissociate(HTSTestsUtil.accountId, HTSTestsUtil.multiDissociateOp.tokenIds());
+        verify(dissociateLogic)
+                .dissociate(HTSTestsUtil.accountId, HTSTestsUtil.multiDissociateOp.tokenIds());
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -368,7 +387,8 @@ class DissociatePrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -383,7 +403,9 @@ class DissociatePrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        dissociatePrecompile.when(() -> decodeDissociate(any(), any())).thenReturn(HTSTestsUtil.dissociateToken);
+        dissociatePrecompile
+                .when(() -> decodeDissociate(any(), any()))
+                .thenReturn(HTSTestsUtil.dissociateToken);
         given(syntheticTxnFactory.createDissociate(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -398,7 +420,8 @@ class DissociatePrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result = subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result =
+                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);

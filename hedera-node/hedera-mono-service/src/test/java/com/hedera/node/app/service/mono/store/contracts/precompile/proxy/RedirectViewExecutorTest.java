@@ -52,8 +52,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetAppro
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor;
-import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGasCalculator;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.test.utils.IdUtils;

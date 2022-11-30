@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.verify;
+
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -22,51 +28,45 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
-import static org.mockito.BDDMockito.verify;
-
 class FileCreateResourceUsageTest {
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	private FileOpsUsage fileOpsUsage;
-	private FileCreateResourceUsage subject;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    SigValueObj svo = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    private FileOpsUsage fileOpsUsage;
+    private FileCreateResourceUsage subject;
 
-	private TransactionBody nonFileCreateTxn;
-	private TransactionBody fileCreateTxn;
+    private TransactionBody nonFileCreateTxn;
+    private TransactionBody fileCreateTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		fileCreateTxn = mock(TransactionBody.class);
-		given(fileCreateTxn.hasFileCreate()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        fileCreateTxn = mock(TransactionBody.class);
+        given(fileCreateTxn.hasFileCreate()).willReturn(true);
 
-		nonFileCreateTxn = mock(TransactionBody.class);
-		given(nonFileCreateTxn.hasFileCreate()).willReturn(false);
+        nonFileCreateTxn = mock(TransactionBody.class);
+        given(nonFileCreateTxn.hasFileCreate()).willReturn(false);
 
-		fileOpsUsage = mock(FileOpsUsage.class);
+        fileOpsUsage = mock(FileOpsUsage.class);
 
-		subject = new FileCreateResourceUsage(fileOpsUsage);
-	}
+        subject = new FileCreateResourceUsage(fileOpsUsage);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(fileCreateTxn));
-		assertFalse(subject.applicableTo(nonFileCreateTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(fileCreateTxn));
+        assertFalse(subject.applicableTo(nonFileCreateTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		final var sigUsage =
-				new SigUsage(
-						svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        final var sigUsage =
+                new SigUsage(
+                        svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
 
-		// when:
-		subject.usageGiven(fileCreateTxn, svo, null);
+        // when:
+        subject.usageGiven(fileCreateTxn, svo, null);
 
-		// then:
-		verify(fileOpsUsage).fileCreateUsage(fileCreateTxn, sigUsage);
-	}
+        // then:
+        verify(fileOpsUsage).fileCreateUsage(fileCreateTxn, sigUsage);
+    }
 }

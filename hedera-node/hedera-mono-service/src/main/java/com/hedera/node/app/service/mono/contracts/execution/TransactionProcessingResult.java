@@ -113,8 +113,7 @@ public class TransactionProcessingResult extends HederaEvmTransactionProcessingR
     }
 
     /**
-     * Adds a list of created contracts to be externalised as part of the {@link
-     * ExpirableTxnRecord}
+     * Adds a list of created contracts to be externalised as part of the {@link ExpirableTxnRecord}
      *
      * @param createdContracts the list of contractIDs created
      */

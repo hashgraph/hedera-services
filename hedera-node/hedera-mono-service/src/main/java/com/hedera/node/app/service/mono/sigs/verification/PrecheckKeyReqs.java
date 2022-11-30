@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
+import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
-import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
@@ -74,7 +74,8 @@ public class PrecheckKeyReqs {
     }
 
     private void addPayerKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-        final var payerResult = sigReqs.keysForPayer(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
+        final var payerResult =
+                sigReqs.keysForPayer(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
         if (payerResult.hasErrorReport()) {
             throw new InvalidPayerAccountException();
         }
@@ -82,7 +83,8 @@ public class PrecheckKeyReqs {
     }
 
     private void addQueryPaymentKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-        final var otherResult = sigReqs.keysForOtherParties(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
+        final var otherResult =
+                sigReqs.keysForOtherParties(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
         if (otherResult.hasErrorReport()) {
             final var errorStatus = otherResult.getErrorReport();
             if (INVALID_ACCOUNT_STATUSES.contains(errorStatus)) {

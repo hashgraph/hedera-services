@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.utils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.node.app.service.mono.utils.NftNumPair;
 import org.junit.jupiter.api.Test;
 
 class NftNumPairTest {

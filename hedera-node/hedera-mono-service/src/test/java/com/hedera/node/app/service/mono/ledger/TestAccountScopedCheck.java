@@ -56,10 +56,12 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
         if (!extantProps.apply(TestAccountProperty.OBJ).equals("DEFAULT")) {
             return ACCOUNT_STILL_OWNS_NFTS;
         }
-        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES) == TestAccount.Allowance.MISSING) {
+        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES)
+                == TestAccount.Allowance.MISSING) {
             return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
         }
-        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES) == TestAccount.Allowance.INSUFFICIENT) {
+        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES)
+                == TestAccount.Allowance.INSUFFICIENT) {
             return AMOUNT_EXCEEDS_ALLOWANCE;
         }
         return OK;

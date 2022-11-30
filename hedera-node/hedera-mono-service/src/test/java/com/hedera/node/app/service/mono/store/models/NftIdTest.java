@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.TokenID;

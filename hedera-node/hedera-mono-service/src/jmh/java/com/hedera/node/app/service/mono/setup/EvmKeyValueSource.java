@@ -17,60 +17,59 @@ package com.hedera.node.app.service.mono.setup;
 
 import com.google.common.primitives.Ints;
 import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.SplittableRandom;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
-import java.util.SplittableRandom;
-
 public class EvmKeyValueSource {
-	private EvmKeyValueSource() {
-		throw new UnsupportedOperationException();
-	}
+    private EvmKeyValueSource() {
+        throw new UnsupportedOperationException();
+    }
 
-	private static final int NUM_KEYS = 163_840;
-	private static final long ENTROPY_SEED = 42_424_242L;
-	private static final UInt256[] keys = new UInt256[NUM_KEYS];
-	private static final SplittableRandom r = new SplittableRandom(ENTROPY_SEED);
+    private static final int NUM_KEYS = 163_840;
+    private static final long ENTROPY_SEED = 42_424_242L;
+    private static final UInt256[] keys = new UInt256[NUM_KEYS];
+    private static final SplittableRandom r = new SplittableRandom(ENTROPY_SEED);
 
-	static {
-		final var keyBytes = new byte[32];
-		for (int i = 0; i < NUM_KEYS; i++) {
-			r.nextBytes(keyBytes);
-			keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));
-		}
-	}
+    static {
+        final var keyBytes = new byte[32];
+        for (int i = 0; i < NUM_KEYS; i++) {
+            r.nextBytes(keyBytes);
+            keys[i] = UInt256.fromBytes(Bytes.wrap(keyBytes));
+        }
+    }
 
-	public static KvMutationBatch randomMutationBatch(
-			final int size,
-			final int maxContractNum,
-			final int maxKvPerContract,
-			final double removalProb) {
-		final var contracts = new AccountID[size];
-		final var keys = new UInt256[size];
-		final var values = new UInt256[size];
+    public static KvMutationBatch randomMutationBatch(
+            final int size,
+            final int maxContractNum,
+            final int maxKvPerContract,
+            final double removalProb) {
+        final var contracts = new AccountID[size];
+        final var keys = new UInt256[size];
+        final var values = new UInt256[size];
 
-		for (int i = 0; i < size; i++) {
-			contracts[i] =
-					AccountID.newBuilder().setAccountNum(r.nextInt(maxContractNum) + 1L).build();
-			keys[i] = uniqueKey(r.nextInt(maxKvPerContract));
-			values[i] = (r.nextDouble() < removalProb) ? UInt256.ZERO : keys[i];
-		}
+        for (int i = 0; i < size; i++) {
+            contracts[i] =
+                    AccountID.newBuilder().setAccountNum(r.nextInt(maxContractNum) + 1L).build();
+            keys[i] = uniqueKey(r.nextInt(maxKvPerContract));
+            values[i] = (r.nextDouble() < removalProb) ? UInt256.ZERO : keys[i];
+        }
 
-		return new KvMutationBatch(contracts, keys, values);
-	}
+        return new KvMutationBatch(contracts, keys, values);
+    }
 
-	public static UInt256 uniqueKey(final int n) {
-		if (n < NUM_KEYS) {
-			return keys[n];
-		} else {
-			final var baseKey = keys[n % NUM_KEYS];
-			final var keyBytes = new byte[32];
-			System.arraycopy(baseKey.toArrayUnsafe(), 0, keyBytes, 0, keyBytes.length);
-			final var noise = Ints.toByteArray(n);
-			for (int i = 0; i < keyBytes.length; i++) {
-				keyBytes[i] ^= noise[i % noise.length];
-			}
-			return UInt256.fromBytes(Bytes.wrap(keyBytes));
-		}
-	}
+    public static UInt256 uniqueKey(final int n) {
+        if (n < NUM_KEYS) {
+            return keys[n];
+        } else {
+            final var baseKey = keys[n % NUM_KEYS];
+            final var keyBytes = new byte[32];
+            System.arraycopy(baseKey.toArrayUnsafe(), 0, keyBytes, 0, keyBytes.length);
+            final var noise = Ints.toByteArray(n);
+            for (int i = 0; i < keyBytes.length; i++) {
+                keyBytes[i] ^= noise[i % noise.length];
+            }
+            return UInt256.fromBytes(Bytes.wrap(keyBytes));
+        }
+    }
 }

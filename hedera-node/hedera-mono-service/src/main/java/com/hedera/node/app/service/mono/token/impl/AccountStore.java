@@ -24,10 +24,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.spi.state.State;
-import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;

@@ -21,11 +21,11 @@ import static java.lang.Math.min;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer2;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -84,7 +84,8 @@ public class UniqueTokenValue implements VirtualValue {
             final RichInstant creationTime) {
         this.ownerAccountNum = ownerAccountNum;
         this.spenderAccountNum = spenderAccountNum;
-        this.packedCreationTime = BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
+        this.packedCreationTime =
+                BitPackUtils.packedTime(creationTime.getSeconds(), creationTime.getNanos());
         this.metadata = metadata;
     }
 

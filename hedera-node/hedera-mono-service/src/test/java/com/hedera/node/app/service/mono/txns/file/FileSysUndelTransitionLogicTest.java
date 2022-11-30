@@ -39,7 +39,6 @@ import com.hedera.node.app.service.mono.files.SimpleUpdateResult;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.txns.file.FileSysUndelTransitionLogic;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

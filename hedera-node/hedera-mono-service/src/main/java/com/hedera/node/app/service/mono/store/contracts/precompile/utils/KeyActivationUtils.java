@@ -19,9 +19,8 @@ import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStat
 
 import com.hedera.node.app.service.mono.ledger.TransferLogic;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;

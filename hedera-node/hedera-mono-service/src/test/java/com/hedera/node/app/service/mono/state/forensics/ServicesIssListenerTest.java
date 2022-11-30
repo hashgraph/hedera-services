@@ -15,9 +15,14 @@
  */
 package com.hedera.node.app.service.mono.state.forensics;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
-import com.hedera.node.app.service.mono.state.forensics.ServicesIssListener;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -25,6 +30,7 @@ import com.hedera.test.extensions.LoggingTarget;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import com.swirlds.common.utility.AutoCloseableWrapper;
+import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,90 +38,76 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
-@ExtendWith({ MockitoExtension.class, LogCaptureExtension.class })
+@ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 class ServicesIssListenerTest {
-	private final long otherId = 2;
-	private final long round = 1_234_567;
-	private final Instant consensusTime = Instant.now();
+    private final long otherId = 2;
+    private final long round = 1_234_567;
+    private final Instant consensusTime = Instant.now();
 
-	@Mock
-	private ServicesState state;
-	@Mock
-	private IssEventInfo issEventInfo;
-	@Mock
-	private IssNotification issNotification;
-	@Mock
-	private Platform platform;
+    @Mock private ServicesState state;
+    @Mock private IssEventInfo issEventInfo;
+    @Mock private IssNotification issNotification;
+    @Mock private Platform platform;
 
-	@LoggingTarget
-	private LogCaptor logCaptor;
+    @LoggingTarget private LogCaptor logCaptor;
 
-	@LoggingSubject
-	private ServicesIssListener subject;
+    @LoggingSubject private ServicesIssListener subject;
 
-	@BeforeEach
-	void setup() {
-		subject = new ServicesIssListener(issEventInfo, platform);
-		givenNoticeMeta();
-	}
+    @BeforeEach
+    void setup() {
+        subject = new ServicesIssListener(issEventInfo, platform);
+        givenNoticeMeta();
+    }
 
-	@Test
-	void logsFallbackInfo() {
-		// when:
-		subject.notify(issNotification);
+    @Test
+    void logsFallbackInfo() {
+        // when:
+        subject.notify(issNotification);
 
-		// then:
-		final var desired =
-				String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
-		assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
-	}
+        // then:
+        final var desired =
+                String.format(ServicesIssListener.ISS_FALLBACK_ERROR_MSG_PATTERN, round, otherId);
+        assertThat(logCaptor.warnLogs(), contains(Matchers.startsWith(desired)));
+    }
 
-	@Test
-	void onlyLogsIfConfiguredInfo() {
-		given(issEventInfo.shouldLogThisRound()).willReturn(true);
-		given(platform.getLatestImmutableState())
-				.willReturn(new AutoCloseableWrapper<>(state, () -> {
-				}));
-		given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+    @Test
+    void onlyLogsIfConfiguredInfo() {
+        given(issEventInfo.shouldLogThisRound()).willReturn(true);
+        given(platform.getLatestImmutableState())
+                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
-		subject.notify(issNotification);
+        subject.notify(issNotification);
 
-		// then:
-		final var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
-		verify(issEventInfo).alert(consensusTime);
-		verify(issEventInfo).decrementRoundsToLog();
-		assertThat(logCaptor.errorLogs(), contains(desired));
-		verify(state).logSummary();
-	}
+        // then:
+        final var desired =
+                String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
+        verify(issEventInfo).alert(consensusTime);
+        verify(issEventInfo).decrementRoundsToLog();
+        assertThat(logCaptor.errorLogs(), contains(desired));
+        verify(state).logSummary();
+    }
 
-	@Test
-	void shouldDumpThisRoundIsFalse() {
-		given(issEventInfo.shouldLogThisRound()).willReturn(false);
-		given(platform.getLatestImmutableState())
-				.willReturn(new AutoCloseableWrapper<>(state, () -> {
-				}));
-		given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
+    @Test
+    void shouldDumpThisRoundIsFalse() {
+        given(issEventInfo.shouldLogThisRound()).willReturn(false);
+        given(platform.getLatestImmutableState())
+                .willReturn(new AutoCloseableWrapper<>(state, () -> {}));
+        given(state.getTimeOfLastHandledTxn()).willReturn(consensusTime);
 
-		// when:
-		subject.notify(issNotification);
+        // when:
+        subject.notify(issNotification);
 
-		// then:
-		final var desired = String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
-		verify(issEventInfo).alert(consensusTime);
-		verify(issEventInfo, never()).decrementRoundsToLog();
-		verify(state, never()).logSummary();
-	}
+        // then:
+        final var desired =
+                String.format(ServicesIssListener.ISS_ERROR_MSG_PATTERN, round, otherId);
+        verify(issEventInfo).alert(consensusTime);
+        verify(issEventInfo, never()).decrementRoundsToLog();
+        verify(state, never()).logSummary();
+    }
 
-	private void givenNoticeMeta() {
-		given(issNotification.getRound()).willReturn(round);
-		given(issNotification.getOtherNodeId()).willReturn(otherId);
-	}
+    private void givenNoticeMeta() {
+        given(issNotification.getRound()).willReturn(round);
+        given(issNotification.getOtherNodeId()).willReturn(otherId);
+    }
 }

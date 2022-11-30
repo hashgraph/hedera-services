@@ -26,8 +26,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.txns.TransitionLogic;
-import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;

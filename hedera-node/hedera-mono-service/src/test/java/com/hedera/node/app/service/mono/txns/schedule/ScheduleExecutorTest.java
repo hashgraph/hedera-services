@@ -27,7 +27,6 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.txns.schedule.ScheduleExecutor;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;

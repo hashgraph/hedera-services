@@ -47,14 +47,9 @@ public enum MapAccessType {
      * preceding head NFT.
      */
     NFTS_GET_FOR_MODIFY,
-    /**
-     * To get the {@link IterableContractValue} for a storage key.
-     */
+    /** To get the {@link IterableContractValue} for a storage key. */
     STORAGE_GET,
-    /**
-     * To replace a {@link IterableContractValue} with modified
-     * links.
-     */
+    /** To replace a {@link IterableContractValue} with modified links. */
     STORAGE_PUT,
     /** To remove a key/value pair from storage. */
     STORAGE_REMOVE,

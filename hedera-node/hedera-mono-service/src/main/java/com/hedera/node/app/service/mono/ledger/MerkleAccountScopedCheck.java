@@ -98,9 +98,13 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
                         ? extantProps.apply(AccountProperty.IS_SMART_CONTRACT)
                         : account.isSmartContract();
             case IS_DELETED:
-                return useExtantProps ? extantProps.apply(AccountProperty.IS_DELETED) : account.isDeleted();
+                return useExtantProps
+                        ? extantProps.apply(AccountProperty.IS_DELETED)
+                        : account.isDeleted();
             case BALANCE:
-                return useExtantProps ? extantProps.apply(AccountProperty.BALANCE) : account.getBalance();
+                return useExtantProps
+                        ? extantProps.apply(AccountProperty.BALANCE)
+                        : account.getBalance();
             case EXPIRED_AND_PENDING_REMOVAL:
                 return useExtantProps
                         ? extantProps.apply(AccountProperty.EXPIRED_AND_PENDING_REMOVAL)
@@ -133,10 +137,17 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
 
         final var isDetached =
                 (boolean)
-                        getEffective(AccountProperty.EXPIRED_AND_PENDING_REMOVAL, account, extantProps, changeSet);
-        final var balance = (long) getEffective(AccountProperty.BALANCE, account, extantProps, changeSet);
+                        getEffective(
+                                AccountProperty.EXPIRED_AND_PENDING_REMOVAL,
+                                account,
+                                extantProps,
+                                changeSet);
+        final var balance =
+                (long) getEffective(AccountProperty.BALANCE, account, extantProps, changeSet);
         final var isContract =
-                (boolean) getEffective(AccountProperty.IS_SMART_CONTRACT, account, extantProps, changeSet);
+                (boolean)
+                        getEffective(
+                                AccountProperty.IS_SMART_CONTRACT, account, extantProps, changeSet);
         final var expiryStatus = validator.expiryStatusGiven(balance, isDetached, isContract);
         if (expiryStatus != OK) {
             return ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -194,7 +205,11 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
         if (balanceChange.isApprovedAllowance()) {
             final var cryptoAllowances =
                     (Map<EntityNum, Long>)
-                            getEffective(AccountProperty.CRYPTO_ALLOWANCES, account, extantProps, changeSet);
+                            getEffective(
+                                    AccountProperty.CRYPTO_ALLOWANCES,
+                                    account,
+                                    extantProps,
+                                    changeSet);
             final var allowance =
                     cryptoAllowances.getOrDefault(
                             EntityNum.fromAccountId(balanceChange.getPayerID()), 0L);
@@ -218,7 +233,10 @@ public class MerkleAccountScopedCheck implements LedgerCheck<HederaAccount, Acco
             final var fungibleAllowances =
                     (Map<FcTokenAllowanceId, Long>)
                             getEffective(
-                                    AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, account, extantProps, changeSet);
+                                    AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES,
+                                    account,
+                                    extantProps,
+                                    changeSet);
             final var allowance =
                     fungibleAllowances.getOrDefault(
                             FcTokenAllowanceId.from(

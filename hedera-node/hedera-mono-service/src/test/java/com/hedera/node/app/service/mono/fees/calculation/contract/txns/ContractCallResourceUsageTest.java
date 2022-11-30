@@ -15,72 +15,72 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class ContractCallResourceUsageTest {
-	private SigValueObj sigUsage;
-	private SmartContractFeeBuilder usageEstimator;
-	private ContractCallResourceUsage subject;
+    private SigValueObj sigUsage;
+    private SmartContractFeeBuilder usageEstimator;
+    private ContractCallResourceUsage subject;
 
-	private TransactionBody nonContractCallTxn;
-	private TransactionBody contractCallTxn;
+    private TransactionBody nonContractCallTxn;
+    private TransactionBody contractCallTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		contractCallTxn = mock(TransactionBody.class);
-		given(contractCallTxn.hasContractCall()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        contractCallTxn = mock(TransactionBody.class);
+        given(contractCallTxn.hasContractCall()).willReturn(true);
 
-		nonContractCallTxn = mock(TransactionBody.class);
-		given(nonContractCallTxn.hasContractCall()).willReturn(false);
+        nonContractCallTxn = mock(TransactionBody.class);
+        given(nonContractCallTxn.hasContractCall()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(SmartContractFeeBuilder.class);
+        sigUsage = mock(SigValueObj.class);
+        usageEstimator = mock(SmartContractFeeBuilder.class);
 
-		subject = new ContractCallResourceUsage(usageEstimator);
-	}
+        subject = new ContractCallResourceUsage(usageEstimator);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(contractCallTxn));
-		assertFalse(subject.applicableTo(nonContractCallTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(contractCallTxn));
+        assertFalse(subject.applicableTo(nonContractCallTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(contractCallTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // when:
+        subject.usageGiven(contractCallTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getContractCallTxFeeMatrices(contractCallTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getContractCallTxFeeMatrices(contractCallTxn, sigUsage);
+    }
 
-	@Test
-	void throwsExceptionWhenTxnBodyIsNull() throws Exception {
-		// when:
-		subject.usageGiven(null, sigUsage, null);
+    @Test
+    void throwsExceptionWhenTxnBodyIsNull() throws Exception {
+        // when:
+        subject.usageGiven(null, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getContractCallTxFeeMatrices(null, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getContractCallTxFeeMatrices(null, sigUsage);
+    }
 
-	@Test
-	void delegatesToCorrectEstimateForInvalidCall() throws Exception {
-		// when:
-		given(nonContractCallTxn.hasContractCall()).willReturn(false);
-		subject.usageGiven(nonContractCallTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimateForInvalidCall() throws Exception {
+        // when:
+        given(nonContractCallTxn.hasContractCall()).willReturn(false);
+        subject.usageGiven(nonContractCallTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getContractCallTxFeeMatrices(nonContractCallTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getContractCallTxFeeMatrices(nonContractCallTxn, sigUsage);
+    }
 }

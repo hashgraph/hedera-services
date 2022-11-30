@@ -15,53 +15,53 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
-import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class FileDeleteResourceUsageTest {
-	private SigValueObj sigUsage;
-	private FileFeeBuilder usageEstimator;
-	private FileDeleteResourceUsage subject;
+    private SigValueObj sigUsage;
+    private FileFeeBuilder usageEstimator;
+    private FileDeleteResourceUsage subject;
 
-	private TransactionBody nonFileDeleteTxn;
-	private TransactionBody fileDeleteTxn;
+    private TransactionBody nonFileDeleteTxn;
+    private TransactionBody fileDeleteTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		fileDeleteTxn = mock(TransactionBody.class);
-		given(fileDeleteTxn.hasFileDelete()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        fileDeleteTxn = mock(TransactionBody.class);
+        given(fileDeleteTxn.hasFileDelete()).willReturn(true);
 
-		nonFileDeleteTxn = mock(TransactionBody.class);
-		given(nonFileDeleteTxn.hasFileDelete()).willReturn(false);
+        nonFileDeleteTxn = mock(TransactionBody.class);
+        given(nonFileDeleteTxn.hasFileDelete()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(FileFeeBuilder.class);
+        sigUsage = mock(SigValueObj.class);
+        usageEstimator = mock(FileFeeBuilder.class);
 
-		subject = new FileDeleteResourceUsage(usageEstimator);
-	}
+        subject = new FileDeleteResourceUsage(usageEstimator);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(fileDeleteTxn));
-		assertFalse(subject.applicableTo(nonFileDeleteTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(fileDeleteTxn));
+        assertFalse(subject.applicableTo(nonFileDeleteTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(fileDeleteTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // when:
+        subject.usageGiven(fileDeleteTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getFileDeleteTxFeeMatrices(fileDeleteTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getFileDeleteTxFeeMatrices(fileDeleteTxn, sigUsage);
+    }
 }

@@ -34,8 +34,6 @@ import static org.mockito.Mockito.mock;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
-import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;

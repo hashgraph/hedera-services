@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.ledger.backing;
 
-import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.test.utils.IdUtils;

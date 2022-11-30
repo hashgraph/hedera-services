@@ -112,6 +112,7 @@ public abstract class AbstractDissociatePrecompile implements Precompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(PrecompilePricingUtils.GasCostType.DISSOCIATE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(
+                PrecompilePricingUtils.GasCostType.DISSOCIATE, consensusTime);
     }
 }

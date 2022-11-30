@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.schedule.txns;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -28,94 +35,86 @@ import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
 class ScheduleSignResourceUsageTest {
-	TransactionID scheduledTxnId =
-			TransactionID.newBuilder()
-					.setScheduled(true)
-					.setAccountID(IdUtils.asAccount("0.0.2"))
-					.build();
+    TransactionID scheduledTxnId =
+            TransactionID.newBuilder()
+                    .setScheduled(true)
+                    .setAccountID(IdUtils.asAccount("0.0.2"))
+                    .build();
 
-	ScheduleSignResourceUsage subject;
-	StateView view;
-	ScheduleOpsUsage scheduleOpsUsage;
-	TransactionBody nonScheduleSignTxn;
-	TransactionBody scheduleSignTxn;
-	long expiry = 2_345_678L;
+    ScheduleSignResourceUsage subject;
+    StateView view;
+    ScheduleOpsUsage scheduleOpsUsage;
+    TransactionBody nonScheduleSignTxn;
+    TransactionBody scheduleSignTxn;
+    long expiry = 2_345_678L;
 
-	int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
-	ScheduleID target = IdUtils.asSchedule("0.0.123");
-	SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
-	SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
-	FeeData expected;
+    int numSigs = 10, sigsSize = 100, numPayerKeys = 3;
+    ScheduleID target = IdUtils.asSchedule("0.0.123");
+    SigValueObj obj = new SigValueObj(numSigs, numPayerKeys, sigsSize);
+    SigUsage sigUsage = new SigUsage(numSigs, sigsSize, numPayerKeys);
+    FeeData expected;
 
-	ScheduleInfo info =
-			ScheduleInfo.newBuilder()
-					.setScheduledTransactionID(scheduledTxnId)
-					.setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
-					.build();
+    ScheduleInfo info =
+            ScheduleInfo.newBuilder()
+                    .setScheduledTransactionID(scheduledTxnId)
+                    .setExpirationTime(Timestamp.newBuilder().setSeconds(expiry))
+                    .build();
 
-	@BeforeEach
-	void setup() {
-		expected = mock(FeeData.class);
-		view = mock(StateView.class);
-		scheduleSignTxn = mock(TransactionBody.class);
-		given(scheduleSignTxn.hasScheduleSign()).willReturn(true);
-		given(scheduleSignTxn.getScheduleSign())
-				.willReturn(ScheduleSignTransactionBody.newBuilder().setScheduleID(target).build());
+    @BeforeEach
+    void setup() {
+        expected = mock(FeeData.class);
+        view = mock(StateView.class);
+        scheduleSignTxn = mock(TransactionBody.class);
+        given(scheduleSignTxn.hasScheduleSign()).willReturn(true);
+        given(scheduleSignTxn.getScheduleSign())
+                .willReturn(ScheduleSignTransactionBody.newBuilder().setScheduleID(target).build());
 
-		nonScheduleSignTxn = mock(TransactionBody.class);
-		given(nonScheduleSignTxn.hasScheduleSign()).willReturn(false);
+        nonScheduleSignTxn = mock(TransactionBody.class);
+        given(nonScheduleSignTxn.hasScheduleSign()).willReturn(false);
 
-		scheduleOpsUsage = mock(ScheduleOpsUsage.class);
-		given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, expiry))
-				.willReturn(expected);
+        scheduleOpsUsage = mock(ScheduleOpsUsage.class);
+        given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, expiry))
+                .willReturn(expected);
 
-		given(view.infoForSchedule(target)).willReturn(Optional.of(info));
+        given(view.infoForSchedule(target)).willReturn(Optional.of(info));
 
-		subject = new ScheduleSignResourceUsage(scheduleOpsUsage, new MockGlobalDynamicProps());
-	}
+        subject = new ScheduleSignResourceUsage(scheduleOpsUsage, new MockGlobalDynamicProps());
+    }
 
-	@Test
-	void recognizesApplicableQuery() {
-		// expect:
-		assertTrue(subject.applicableTo(scheduleSignTxn));
-		assertFalse(subject.applicableTo(nonScheduleSignTxn));
-	}
+    @Test
+    void recognizesApplicableQuery() {
+        // expect:
+        assertTrue(subject.applicableTo(scheduleSignTxn));
+        assertFalse(subject.applicableTo(nonScheduleSignTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// expect:
-		assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
-	}
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // expect:
+        assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
+    }
 
-	@Test
-	void returnsDefaultIfInfoMissing() throws Exception {
-		// setup:
-		final long start = 1_234_567L;
-		final TransactionID txnId =
-				TransactionID.newBuilder()
-						.setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
-						.build();
-		given(scheduleSignTxn.getTransactionID()).willReturn(txnId);
-		given(view.infoForSchedule(target)).willReturn(Optional.empty());
-		given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, start + 1800))
-				.willReturn(expected);
+    @Test
+    void returnsDefaultIfInfoMissing() throws Exception {
+        // setup:
+        final long start = 1_234_567L;
+        final TransactionID txnId =
+                TransactionID.newBuilder()
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(start))
+                        .build();
+        given(scheduleSignTxn.getTransactionID()).willReturn(txnId);
+        given(view.infoForSchedule(target)).willReturn(Optional.empty());
+        given(scheduleOpsUsage.scheduleSignUsage(scheduleSignTxn, sigUsage, start + 1800))
+                .willReturn(expected);
 
-		// expect:
-		assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
-		// and:
-		verify(view).infoForSchedule(target);
-	}
+        // expect:
+        assertEquals(expected, subject.usageGiven(scheduleSignTxn, obj, view));
+        // and:
+        verify(view).infoForSchedule(target);
+    }
 }

@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.MAX_EN
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.ledger.properties.BeanProperty;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -15,24 +15,22 @@
  */
 package com.hedera.node.app.service.mono.queries.file;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @ExtendWith(MockitoExtension.class)
 class FileAnswersTest {
-	@Mock
-	GetFileInfoAnswer getFileInfo;
-	@Mock
-	GetFileContentsAnswer getFileContents;
+    @Mock GetFileInfoAnswer getFileInfo;
+    @Mock GetFileContentsAnswer getFileContents;
 
-	@Test
-	void assertGetters() {
-		final var fileAnswers = new FileAnswers(getFileInfo, getFileContents);
-		assertEquals(getFileInfo, fileAnswers.fileInfo());
-		assertEquals(getFileContents, fileAnswers.fileContents());
-	}
+    @Test
+    void assertGetters() {
+        final var fileAnswers = new FileAnswers(getFileInfo, getFileContents);
+        assertEquals(getFileInfo, fileAnswers.fileInfo());
+        assertEquals(getFileContents, fileAnswers.fileContents());
+    }
 }

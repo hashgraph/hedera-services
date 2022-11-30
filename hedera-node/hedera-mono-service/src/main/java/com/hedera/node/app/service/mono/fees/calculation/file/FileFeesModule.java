@@ -20,13 +20,13 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileContentsResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.file.queries.GetFileInfoResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileDeleteResourceUsage;
 import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileUpdateResourceUsage;
-import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.node.app.service.mono.fees.calculation.TxnResourceUsageEstimator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;

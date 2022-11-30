@@ -28,7 +28,7 @@ import java.time.Instant;
  * @param consensusTime the consensus time
  */
 public record RecordStreamEntry(
-		TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
+        TxnAccessor accessor, TransactionRecord txnRecord, Instant consensusTime) {
 
     public Transaction submittedTransaction() {
         return accessor.getSignedTxnWrapper();

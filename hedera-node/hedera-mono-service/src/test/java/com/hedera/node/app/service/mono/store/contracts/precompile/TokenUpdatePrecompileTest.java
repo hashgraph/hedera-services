@@ -119,7 +119,8 @@ class TokenUpdatePrecompileTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
-    private final TokenUpdateWrapper updateWrapper = HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
+    private final TokenUpdateWrapper updateWrapper =
+            HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -349,7 +350,10 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContext() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -369,7 +373,10 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV2() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -389,7 +396,10 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV3() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true, HTSTestsUtil.fungibleTokenAddr, HTSTestsUtil.fungibleTokenAddr, wrappedLedgers))
+                                true,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                HTSTestsUtil.fungibleTokenAddr,
+                                wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);

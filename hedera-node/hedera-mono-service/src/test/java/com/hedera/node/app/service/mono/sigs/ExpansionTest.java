@@ -27,8 +27,6 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.Expansion;
-import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;

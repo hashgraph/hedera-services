@@ -15,10 +15,6 @@
  */
 package com.hedera.node.app.service.mono.queries;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -26,19 +22,22 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.verify;
 
+import java.util.Collections;
+import org.junit.jupiter.api.Test;
+
 class AnswerServiceTest {
-	@Test
-	void delegatesToNonQueryCtxAsExpected() {
-		// setup:
-		final AnswerService subject = mock(AnswerService.class);
+    @Test
+    void delegatesToNonQueryCtxAsExpected() {
+        // setup:
+        final AnswerService subject = mock(AnswerService.class);
 
-		// given:
-		willCallRealMethod().given(subject).responseGiven(any(), any(), any(), anyLong(), anyMap());
+        // given:
+        willCallRealMethod().given(subject).responseGiven(any(), any(), any(), anyLong(), anyMap());
 
-		// when:
-		subject.responseGiven(null, null, null, 0L, Collections.emptyMap());
+        // when:
+        subject.responseGiven(null, null, null, 0L, Collections.emptyMap());
 
-		// then:
-		verify(subject).responseGiven(any(), any(), any(), anyLong());
-	}
+        // then:
+        verify(subject).responseGiven(any(), any(), any(), anyLong());
+    }
 }

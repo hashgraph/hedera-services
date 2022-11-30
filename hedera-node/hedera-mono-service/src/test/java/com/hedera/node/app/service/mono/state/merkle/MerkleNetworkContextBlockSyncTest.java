@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

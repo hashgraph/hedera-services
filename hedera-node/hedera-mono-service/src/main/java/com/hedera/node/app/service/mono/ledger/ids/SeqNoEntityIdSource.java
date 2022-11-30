@@ -31,9 +31,8 @@ public class SeqNoEntityIdSource implements EntityIdSource {
     private final Supplier<SequenceNumber> seqNo;
 
     /**
-     * Tracks the newly created {@link EntityId} during the
-     * {@link TransitionLogic} of an operation Utilised only in refactored
-     * Transition Logics - currently only {@link
+     * Tracks the newly created {@link EntityId} during the {@link TransitionLogic} of an operation
+     * Utilised only in refactored Transition Logics - currently only {@link
      * TokenCreateTransitionLogic}
      */
     private int provisionalIds = 0;

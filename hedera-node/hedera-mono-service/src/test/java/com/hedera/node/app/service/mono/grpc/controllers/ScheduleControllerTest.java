@@ -22,7 +22,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.mono.grpc.controllers.ScheduleController;
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.schedule.ScheduleAnswers;
 import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;

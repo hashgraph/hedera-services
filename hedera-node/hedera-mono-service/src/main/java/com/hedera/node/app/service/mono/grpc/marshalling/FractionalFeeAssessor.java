@@ -104,7 +104,8 @@ public class FractionalFeeAssessor {
                 if (unitsLeft < 0) {
                     return INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
                 }
-                AdjustmentUtils.adjustedFractionalChange(collector, denom, assessedAmount, changeManager);
+                AdjustmentUtils.adjustedFractionalChange(
+                        collector, denom, assessedAmount, changeManager);
                 final var finalEffPayerNums =
                         (filteredCredits == creditsToReclaimFrom)
                                 ? effPayerAccountNums

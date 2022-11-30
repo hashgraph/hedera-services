@@ -23,10 +23,10 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
@@ -172,8 +172,10 @@ public class TransferLogic {
         feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
 
         // deduct the auto creation fee from payer of the transaction
-        final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), AccountProperty.BALANCE);
-        accountsLedger.set(txnCtx.activePayer(), AccountProperty.BALANCE, payerBalance - autoCreationFee);
+        final var payerBalance =
+                (long) accountsLedger.get(txnCtx.activePayer(), AccountProperty.BALANCE);
+        accountsLedger.set(
+                txnCtx.activePayer(), AccountProperty.BALANCE, payerBalance - autoCreationFee);
         txnCtx.addFeeChargedToPayer(autoCreationFee);
     }
 
@@ -216,7 +218,8 @@ public class TransferLogic {
         final var payerNum = EntityNum.fromAccountId(change.getPayerID());
         final var hbarAllowances =
                 new TreeMap<>(
-                        (Map<EntityNum, Long>) accountsLedger.get(ownerID, AccountProperty.CRYPTO_ALLOWANCES));
+                        (Map<EntityNum, Long>)
+                                accountsLedger.get(ownerID, AccountProperty.CRYPTO_ALLOWANCES));
         final var currentAllowance = hbarAllowances.get(payerNum);
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
         if (newAllowance != 0) {
@@ -236,7 +239,8 @@ public class TransferLogic {
         final var fungibleAllowances =
                 new TreeMap<>(
                         (Map<FcTokenAllowanceId, Long>)
-                                accountsLedger.get(ownerID, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
+                                accountsLedger.get(
+                                        ownerID, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
         final var currentAllowance = fungibleAllowances.get(allowanceId);
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
         if (newAllowance == 0) {

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.ledger.accounts.TestAccount;
 import com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty;
-
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 

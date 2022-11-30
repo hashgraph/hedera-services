@@ -15,53 +15,53 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.ethereum.txns;
 
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class EthereumTransactionResourceUsageTest {
-	private SigValueObj sigUsage;
-	private SmartContractFeeBuilder usageEstimator;
-	private EthereumTransactionResourceUsage subject;
+    private SigValueObj sigUsage;
+    private SmartContractFeeBuilder usageEstimator;
+    private EthereumTransactionResourceUsage subject;
 
-	private TransactionBody nonContractCallTxn;
-	private TransactionBody ethTxn;
+    private TransactionBody nonContractCallTxn;
+    private TransactionBody ethTxn;
 
-	@BeforeEach
-	void setup() throws Throwable {
-		ethTxn = mock(TransactionBody.class);
-		given(ethTxn.hasEthereumTransaction()).willReturn(true);
+    @BeforeEach
+    void setup() throws Throwable {
+        ethTxn = mock(TransactionBody.class);
+        given(ethTxn.hasEthereumTransaction()).willReturn(true);
 
-		nonContractCallTxn = mock(TransactionBody.class);
-		given(nonContractCallTxn.hasContractCall()).willReturn(false);
+        nonContractCallTxn = mock(TransactionBody.class);
+        given(nonContractCallTxn.hasContractCall()).willReturn(false);
 
-		sigUsage = mock(SigValueObj.class);
-		usageEstimator = mock(SmartContractFeeBuilder.class);
+        sigUsage = mock(SigValueObj.class);
+        usageEstimator = mock(SmartContractFeeBuilder.class);
 
-		subject = new EthereumTransactionResourceUsage(usageEstimator);
-	}
+        subject = new EthereumTransactionResourceUsage(usageEstimator);
+    }
 
-	@Test
-	void recognizesApplicability() {
-		// expect:
-		assertTrue(subject.applicableTo(ethTxn));
-		assertFalse(subject.applicableTo(nonContractCallTxn));
-	}
+    @Test
+    void recognizesApplicability() {
+        // expect:
+        assertTrue(subject.applicableTo(ethTxn));
+        assertFalse(subject.applicableTo(nonContractCallTxn));
+    }
 
-	@Test
-	void delegatesToCorrectEstimate() throws Exception {
-		// when:
-		subject.usageGiven(ethTxn, sigUsage, null);
+    @Test
+    void delegatesToCorrectEstimate() throws Exception {
+        // when:
+        subject.usageGiven(ethTxn, sigUsage, null);
 
-		// then:
-		verify(usageEstimator).getEthereumTransactionFeeMatrices(ethTxn, sigUsage);
-	}
+        // then:
+        verify(usageEstimator).getEthereumTransactionFeeMatrices(ethTxn, sigUsage);
+    }
 }

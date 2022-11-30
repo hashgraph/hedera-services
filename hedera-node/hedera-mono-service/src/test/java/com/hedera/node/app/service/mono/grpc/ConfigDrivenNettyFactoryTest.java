@@ -25,8 +25,6 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.Profile;
 import java.io.FileNotFoundException;
 import javax.net.ssl.SSLException;
-
-import com.hedera.node.app.service.mono.grpc.ConfigDrivenNettyFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

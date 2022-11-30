@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.fees.calculation.meta.queries;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
+import com.hedera.node.app.service.mono.fees.calculation.meta.FixedUsageEstimates;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import java.util.Map;

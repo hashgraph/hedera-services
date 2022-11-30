@@ -19,9 +19,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.hedera.node.app.service.mono.utils.Pause;
-import com.hedera.node.app.service.mono.utils.SleepingPause;
 import org.junit.jupiter.api.Test;
 
 class SleepingPauseTest {

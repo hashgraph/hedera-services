@@ -31,7 +31,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;

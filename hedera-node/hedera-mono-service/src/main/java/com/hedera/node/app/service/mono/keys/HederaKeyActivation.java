@@ -93,7 +93,11 @@ public final class HederaKeyActivation {
             final JKey key,
             final Function<byte[], TransactionSignature> sigsFn,
             final BiPredicate<JKey, TransactionSignature> validity) {
-        return isActive(key, sigsFn, validity, DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS);
+        return isActive(
+                key,
+                sigsFn,
+                validity,
+                DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS);
     }
 
     public static boolean isActive(
