@@ -40,8 +40,7 @@ public interface EvmGetApprovedPrecompile {
     ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
             TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
-    static GetApprovedWrapper decodeGetApproved(
-            final Bytes input, final TokenID impliedTokenId) {
+    static GetApprovedWrapper decodeGetApproved(final Bytes input, final TokenID impliedTokenId) {
         final var offset = impliedTokenId == null ? 1 : 0;
 
         final Tuple decodedArguments =
