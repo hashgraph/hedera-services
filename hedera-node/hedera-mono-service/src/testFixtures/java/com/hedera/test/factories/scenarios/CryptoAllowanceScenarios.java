@@ -19,7 +19,7 @@ import static com.hedera.test.factories.txns.CryptoApproveAllowanceFactory.newSi
 import static com.hedera.test.factories.txns.CryptoDeleteAllowanceFactory.newSignedDeleteAllowance;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoAllowanceScenarios implements TxnHandlingScenario {
     CRYPTO_APPROVE_ALLOWANCE_SCENARIO {

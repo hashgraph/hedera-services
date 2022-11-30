@@ -20,7 +20,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND;
 import static com.hedera.test.factories.txns.TokenAssociateFactory.newSignedTokenAssociate;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenAssociateScenarios implements TxnHandlingScenario {
     TOKEN_ASSOCIATE_WITH_KNOWN_TARGET {

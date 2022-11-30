@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.ContractDeleteFactory.newSignedContractDelete;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ContractDeleteScenarios implements TxnHandlingScenario {
     CONTRACT_DELETE_XFER_ACCOUNT_SCENARIO {

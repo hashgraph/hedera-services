@@ -20,7 +20,7 @@ import static com.hedera.test.factories.txns.FileUpdateFactory.TREASURY_PAYER_ID
 import static com.hedera.test.factories.txns.FileUpdateFactory.newSignedFileUpdate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum FileUpdateScenarios implements TxnHandlingScenario {
     VANILLA_FILE_UPDATE_SCENARIO {
