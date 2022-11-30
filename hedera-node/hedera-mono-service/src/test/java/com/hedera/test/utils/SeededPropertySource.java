@@ -15,7 +15,7 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.services.context.properties.EntityType.*;
+import static com.hedera.node.app.service.mono.context.properties.EntityType.*;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
@@ -24,8 +24,8 @@ import static com.hedera.services.state.virtual.KeyPackingUtils.computeNonZeroBy
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.services.context.properties.EntityType;
-import com.hedera.services.context.properties.SerializableSemVers;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.services.legacy.core.jproto.*;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;

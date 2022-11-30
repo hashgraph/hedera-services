@@ -24,8 +24,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.services.txns.TransitionRunner;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.accessors.TxnAccessor;

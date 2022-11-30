@@ -15,13 +15,13 @@
  */
 package com.hedera.services.contracts.sources;
 
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_TEMPLATE;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toAddressMapping;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toKeyMapping;
-import static com.hedera.services.contracts.sources.AddressKeyedMapFactory.toRelevancyPredicate;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_PATTERN;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.LEGACY_BYTECODE_PATH_TEMPLATE;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.bytecodeMapFrom;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.storageMapFrom;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.toAddressMapping;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.toKeyMapping;
+import static com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory.toRelevancyPredicate;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

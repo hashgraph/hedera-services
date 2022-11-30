@@ -15,11 +15,11 @@
  */
 package com.hedera.services.grpc;
 
-import static com.hedera.services.context.properties.Profile.DEV;
-import static com.hedera.services.context.properties.Profile.PROD;
+import static com.hedera.node.app.service.mono.context.properties.Profile.DEV;
+import static com.hedera.node.app.service.mono.context.properties.Profile.PROD;
 import static io.netty.handler.ssl.SupportedCipherSuiteFilter.INSTANCE;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.epoll.EpollEventLoopGroup;

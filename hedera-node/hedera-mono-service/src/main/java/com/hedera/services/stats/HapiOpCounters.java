@@ -31,7 +31,7 @@ import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.Counter;
 import com.swirlds.common.metrics.Counter.Config;

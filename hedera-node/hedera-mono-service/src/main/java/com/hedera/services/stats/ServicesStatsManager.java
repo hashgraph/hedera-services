@@ -17,7 +17,7 @@ package com.hedera.services.stats;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.state.virtual.ContractKey;
 import com.hedera.services.state.virtual.IterableContractValue;
 import com.hedera.services.state.virtual.VirtualBlobKey;

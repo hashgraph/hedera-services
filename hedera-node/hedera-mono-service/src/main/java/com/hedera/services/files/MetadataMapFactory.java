@@ -15,7 +15,7 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 import com.hedera.services.files.store.BytesStoreAdapter;
 import com.hederahashgraph.api.proto.java.FileID;

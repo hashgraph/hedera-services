@@ -16,7 +16,7 @@
 package com.hedera.services.fees;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.RenewAssessment;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.migration.HederaAccount;

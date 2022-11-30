@@ -15,8 +15,8 @@
  */
 package com.hedera.services.stream;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.Arrays;
 import javax.inject.Inject;

@@ -15,6 +15,8 @@
  */
 package com.hedera.services.config;
 
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+
 public class MockAccountNumbers extends AccountNumbers {
     public MockAccountNumbers() {
         super(null);

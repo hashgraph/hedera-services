@@ -21,8 +21,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.context.primitives.SignedStateViewFactory;
+import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
+import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hedera.services.txns.submission.annotations.MaxProtoMsgDepth;
 import com.hedera.services.txns.submission.annotations.MaxSignedTxnSize;

@@ -19,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

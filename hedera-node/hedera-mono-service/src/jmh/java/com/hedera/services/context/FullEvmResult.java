@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public record FullEvmResult(TransactionProcessingResult result, @Nullable byte[] evmAddress) {}

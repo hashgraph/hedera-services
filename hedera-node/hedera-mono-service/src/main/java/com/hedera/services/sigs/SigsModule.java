@@ -15,11 +15,11 @@
  */
 package com.hedera.services.sigs;
 
-import com.hedera.services.config.FileNumbers;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.NodeInfo;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.keys.HederaKeyActivation;
 import com.hedera.services.keys.OnlyIfSigVerifiableValid;
 import com.hedera.services.legacy.core.jproto.JKey;

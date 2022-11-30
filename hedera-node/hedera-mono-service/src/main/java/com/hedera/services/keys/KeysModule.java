@@ -15,7 +15,7 @@
  */
 package com.hedera.services.keys;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import dagger.Module;
 import dagger.Provides;
 import javax.inject.Singleton;

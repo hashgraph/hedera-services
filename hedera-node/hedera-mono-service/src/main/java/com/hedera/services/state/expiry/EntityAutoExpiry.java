@@ -20,8 +20,8 @@ import static com.hedera.services.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_C
 import static com.hedera.services.state.tasks.SystemTaskResult.NOTHING_TO_DO;
 import static com.hedera.services.state.tasks.SystemTaskResult.NO_CAPACITY_LEFT;
 
-import com.hedera.services.config.HederaNumbers;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.records.ConsensusTimeTracker;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.logic.NetworkCtxManager;

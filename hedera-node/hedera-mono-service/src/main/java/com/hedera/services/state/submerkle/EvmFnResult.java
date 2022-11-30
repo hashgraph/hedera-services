@@ -26,7 +26,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.io.SelfSerializable;

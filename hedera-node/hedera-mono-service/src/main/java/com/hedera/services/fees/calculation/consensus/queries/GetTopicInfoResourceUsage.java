@@ -26,7 +26,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hederahashgraph.api.proto.java.FeeComponents;

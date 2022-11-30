@@ -20,12 +20,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
-import com.hedera.services.contracts.execution.CallLocalEvmTxProcessor;
-import com.hedera.services.contracts.execution.CallLocalExecutor;
-import com.hedera.services.contracts.execution.StaticBlockMetaProvider;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.CallLocalExecutor;
+import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvider;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.ids.EntityIdSource;

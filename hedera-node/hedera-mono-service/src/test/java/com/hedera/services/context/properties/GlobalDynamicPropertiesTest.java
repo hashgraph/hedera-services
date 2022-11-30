@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,7 +27,10 @@ import static org.mockito.Mockito.mock;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.services.config.HederaNumbers;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;

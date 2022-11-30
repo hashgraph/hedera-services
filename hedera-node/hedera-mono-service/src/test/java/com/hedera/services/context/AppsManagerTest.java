@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.services.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.services.ServicesApp;

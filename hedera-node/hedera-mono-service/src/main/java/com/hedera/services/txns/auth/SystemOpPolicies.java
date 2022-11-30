@@ -32,7 +32,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
-import com.hedera.services.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

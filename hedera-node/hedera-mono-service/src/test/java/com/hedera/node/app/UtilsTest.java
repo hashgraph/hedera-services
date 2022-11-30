@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app;
 
-import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.legacy.core.jproto.JKey;

@@ -21,7 +21,7 @@ import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECOR
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.queries.answering.AnswerFunctions;

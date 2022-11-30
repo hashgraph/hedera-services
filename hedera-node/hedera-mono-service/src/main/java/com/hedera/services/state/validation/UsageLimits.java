@@ -22,8 +22,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PR
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.MutableStateChildren;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

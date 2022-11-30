@@ -15,7 +15,7 @@
  */
 package com.hedera.services.properties;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 
 public class MockDynamicProperties extends GlobalDynamicProperties {
     private final int maxContractKvPairs;

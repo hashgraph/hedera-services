@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.PropUtils.loadOverride;
+import static com.hedera.node.app.service.mono.context.properties.PropUtils.loadOverride;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,6 +23,8 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+
+import com.hedera.node.app.service.mono.context.properties.ThrowingStreamProvider;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 

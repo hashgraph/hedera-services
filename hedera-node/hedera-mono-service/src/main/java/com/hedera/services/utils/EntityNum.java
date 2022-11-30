@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.isValidNum;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;

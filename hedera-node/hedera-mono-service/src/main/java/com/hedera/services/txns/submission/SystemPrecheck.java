@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NetworkGetE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.services.throttling.TransactionThrottling;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

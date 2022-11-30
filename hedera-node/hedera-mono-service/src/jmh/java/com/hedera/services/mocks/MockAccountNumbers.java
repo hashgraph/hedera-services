@@ -15,7 +15,7 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

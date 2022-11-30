@@ -18,7 +18,7 @@ package com.hedera.services.utils;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;

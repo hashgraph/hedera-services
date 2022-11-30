@@ -20,7 +20,7 @@ import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.consensus.SubmitMessageMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoTransferMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;

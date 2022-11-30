@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.context.properties.EntityType;
-import com.hedera.services.context.properties.Profile;
-import com.hedera.services.context.properties.SupplierMapPropertySource;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.Profile;
+import com.hedera.node.app.service.mono.context.properties.SupplierMapPropertySource;
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumSet;

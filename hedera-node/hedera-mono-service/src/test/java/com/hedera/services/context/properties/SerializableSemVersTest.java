@@ -15,7 +15,7 @@
  */
 package com.hedera.services.context.properties;
 
-import static com.hedera.services.context.properties.SerializableSemVers.SEM_VER_COMPARATOR;
+import static com.hedera.node.app.service.mono.context.properties.SerializableSemVers.SEM_VER_COMPARATOR;
 import static com.hedera.services.context.properties.SerializableSemVersSerdeTest.assertEqualVersions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.Nullable;

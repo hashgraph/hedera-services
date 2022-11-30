@@ -20,7 +20,7 @@ import static com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder.getU
 
 import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.EntityNum;

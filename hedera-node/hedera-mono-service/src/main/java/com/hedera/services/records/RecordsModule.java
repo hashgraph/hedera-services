@@ -16,9 +16,9 @@
 package com.hedera.services.records;
 
 import com.google.common.cache.Cache;
-import com.hedera.services.context.annotations.StaticAccountMemo;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.annotations.StaticAccountMemo;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.stats.MiscRunningAvgs;
 import com.hedera.services.stream.CurrentRecordStreamType;
 import com.hedera.services.stream.RecordStreamManager;

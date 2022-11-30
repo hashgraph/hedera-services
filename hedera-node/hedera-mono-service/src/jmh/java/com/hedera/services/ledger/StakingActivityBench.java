@@ -30,7 +30,7 @@ import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.STAKING_INFOS_MM;
 
-import com.hedera.services.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
 import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;

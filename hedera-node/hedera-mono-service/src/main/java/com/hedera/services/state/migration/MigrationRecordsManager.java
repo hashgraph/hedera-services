@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.migration;
 
-import static com.hedera.services.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.AUTO_RENEW_GRANT_FREE_RENEWALS;
 import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
@@ -25,9 +25,10 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.properties.BootstrapProperties;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.ConsensusTimeTracker;
@@ -112,7 +113,7 @@ public class MigrationRecordsManager {
     /**
      * If appropriate, publish the migration records for this upgrade. Only needs to be called once
      * per restart, but that call must be made from {@code handleTransaction} inside an active
-     * {@link com.hedera.services.context.TransactionContext} (because the record running hash is in
+     * {@link TransactionContext} (because the record running hash is in
      * state).
      */
     public void publishMigrationRecords(final Instant now) {

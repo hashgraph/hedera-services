@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -29,15 +29,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
-import com.hedera.node.app.SigTransactionMetadata;
+import com.hedera.node.app.service.mono.SigTransactionMetadata;
+import com.hedera.node.app.service.mono.token.impl.AccountStore;
+import com.hedera.node.app.service.mono.token.impl.CryptoPreTransactionHandlerImpl;
+import com.hedera.node.app.service.mono.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.state.impl.RebuiltStateImpl;
+import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;

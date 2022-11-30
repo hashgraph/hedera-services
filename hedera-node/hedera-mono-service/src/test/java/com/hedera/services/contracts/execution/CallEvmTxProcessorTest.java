@@ -16,8 +16,8 @@
 package com.hedera.services.contracts.execution;
 
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
-import static com.hedera.services.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.services.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -39,10 +39,13 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.traceability.ContractActionType;
-import com.hedera.services.contracts.execution.traceability.HederaTracer;
-import com.hedera.services.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
+import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.ledger.TransactionalLedger;

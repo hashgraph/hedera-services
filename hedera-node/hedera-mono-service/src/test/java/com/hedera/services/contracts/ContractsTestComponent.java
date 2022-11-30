@@ -15,14 +15,15 @@
  */
 package com.hedera.services.contracts;
 
-import static com.hedera.services.contracts.ContractsModule.*;
+import static com.hedera.node.app.service.mono.contracts.ContractsModule.*;
 
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.execution.LivePricesSource;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.ContractsModule;
+import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -44,7 +45,7 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 @Singleton
-@Component(modules = {ContractsModule.class})
+@Component(modules = { ContractsModule.class})
 public interface ContractsTestComponent {
 
     @Singleton

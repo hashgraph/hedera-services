@@ -15,8 +15,8 @@
  */
 package com.hedera.services;
 
-import static com.hedera.services.context.AppsManager.APPS;
-import static com.hedera.services.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;

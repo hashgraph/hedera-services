@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.models;
 
-import static com.hedera.services.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;

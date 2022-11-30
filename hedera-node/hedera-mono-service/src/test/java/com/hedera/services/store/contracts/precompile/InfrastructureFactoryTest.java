@@ -18,9 +18,9 @@ package com.hedera.services.store.contracts.precompile;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.SideEffectsTracker;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.SideEffectsTracker;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.charging.FeeDistribution;
 import com.hedera.services.grpc.marshalling.FeeAssessor;
 import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;

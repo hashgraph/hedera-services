@@ -71,7 +71,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenUnpauseMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.node.app.hapi.fees.usage.util.UtilOpsUsage;
 import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.services.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.services.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.services.state.submerkle.EntityId;

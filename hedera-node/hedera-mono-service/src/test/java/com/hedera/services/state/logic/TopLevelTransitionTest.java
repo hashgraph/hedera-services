@@ -22,7 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;

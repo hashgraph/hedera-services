@@ -17,7 +17,7 @@ package com.hedera.services.files.interceptors;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;

@@ -18,7 +18,7 @@ package com.hedera.services.state.logic;
 import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static com.swirlds.common.system.PlatformStatus.FREEZE_COMPLETE;
 
-import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.services.stream.RecordStreamManager;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeListener;
 import com.swirlds.common.notification.listeners.PlatformStatusChangeNotification;

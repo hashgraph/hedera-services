@@ -23,7 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNPARSEABLE_TH
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.node.app.hapi.utils.sysfiles.validation.ExpectedCustomThrottles;
-import com.hedera.services.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.services.files.FileUpdateInterceptor;
 import com.hedera.services.files.HFileMeta;
 import com.hederahashgraph.api.proto.java.FileID;

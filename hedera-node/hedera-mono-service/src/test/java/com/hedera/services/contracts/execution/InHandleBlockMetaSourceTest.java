@@ -20,7 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.services.state.logic.BlockManager;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

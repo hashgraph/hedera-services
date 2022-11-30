@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import com.hedera.services.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import java.time.Instant;

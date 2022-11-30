@@ -17,7 +17,7 @@ package com.hedera.services.grpc;
 
 import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.services.utils.Pause;
 import io.grpc.BindableService;
 import io.grpc.Server;

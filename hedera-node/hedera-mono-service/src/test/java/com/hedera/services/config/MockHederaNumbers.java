@@ -15,6 +15,8 @@
  */
 package com.hedera.services.config;
 
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+
 public class MockHederaNumbers extends HederaNumbers {
     public MockHederaNumbers() {
         super(null);

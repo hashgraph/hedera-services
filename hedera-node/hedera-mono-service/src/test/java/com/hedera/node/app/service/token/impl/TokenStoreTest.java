@@ -25,8 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.mono.token.impl.TokenStore;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.impl.InMemoryStateImpl;
+import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;

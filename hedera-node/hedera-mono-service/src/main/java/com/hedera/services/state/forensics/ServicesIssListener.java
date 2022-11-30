@@ -16,7 +16,7 @@
 package com.hedera.services.state.forensics;
 
 import com.hedera.services.ServicesState;
-import com.hedera.services.context.domain.trackers.IssEventInfo;
+import com.hedera.node.app.service.mono.context.domain.trackers.IssEventInfo;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;

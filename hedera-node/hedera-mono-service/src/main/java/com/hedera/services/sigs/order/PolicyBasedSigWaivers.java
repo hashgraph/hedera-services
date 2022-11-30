@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdat
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
-import com.hedera.services.config.AccountNumbers;
-import com.hedera.services.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.services.txns.auth.SystemOpAuthorization;
 import com.hedera.services.txns.auth.SystemOpPolicies;
 import com.hederahashgraph.api.proto.java.AccountID;

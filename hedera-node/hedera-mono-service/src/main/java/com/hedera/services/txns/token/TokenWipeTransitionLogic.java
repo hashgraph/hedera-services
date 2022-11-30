@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.token;
 
-import com.hedera.services.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;

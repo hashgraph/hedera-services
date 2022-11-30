@@ -18,7 +18,7 @@ package com.hedera.services.fees.calculation.contract.queries;
 import static com.hedera.services.utils.EntityIdUtils.unaliased;
 
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hederahashgraph.api.proto.java.FeeData;

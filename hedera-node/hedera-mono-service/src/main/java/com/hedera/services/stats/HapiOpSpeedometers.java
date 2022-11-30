@@ -31,7 +31,7 @@ import static com.hedera.services.stats.ServicesStatsManager.STAT_CATEGORY;
 import static com.hedera.services.utils.MiscUtils.QUERY_FUNCTIONS;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.system.Platform;

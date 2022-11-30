@@ -44,7 +44,8 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import com.hedera.services.store.contracts.WorldLedgers;

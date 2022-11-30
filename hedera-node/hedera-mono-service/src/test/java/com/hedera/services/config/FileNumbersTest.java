@@ -15,21 +15,23 @@
  */
 package com.hedera.services.config;
 
-import static com.hedera.services.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
-import static com.hedera.services.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
-import static com.hedera.services.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
-import static com.hedera.services.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
-import static com.hedera.services.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
-import static com.hedera.services.context.properties.PropertyNames.FILES_NODE_DETAILS;
-import static com.hedera.services.context.properties.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
-import static com.hedera.services.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_ADDRESS_BOOK;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_EXCHANGE_RATES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_FEE_SCHEDULES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_HAPI_PERMISSIONS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NETWORK_PROPERTIES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_NODE_DETAILS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_SOFTWARE_UPDATE_RANGE;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_THROTTLE_DEFINITIONS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.HederaNumbers;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.test.utils.IdUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;

@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.services.stream.RecordStreamManager;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;

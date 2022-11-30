@@ -19,7 +19,7 @@ import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_C
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetNftInfoUsage;
-import com.hedera.services.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;

@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.context.primitives.StateView.tokenFreeStatusFor;
-import static com.hedera.services.context.primitives.StateView.tokenKycStatusFor;
-import static com.hedera.services.context.primitives.StateView.tokenPauseStatusOf;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenFreeStatusFor;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenKycStatusFor;
+import static com.hedera.node.app.service.mono.context.primitives.StateView.tokenPauseStatusOf;
 import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
@@ -31,7 +31,7 @@ import static java.util.Collections.unmodifiableList;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.context.properties.StaticPropertiesHolder;
+import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.enums.TokenSupplyType;

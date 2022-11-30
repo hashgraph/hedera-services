@@ -17,7 +17,7 @@ package com.hedera.services.stream;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
-import com.hedera.services.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;

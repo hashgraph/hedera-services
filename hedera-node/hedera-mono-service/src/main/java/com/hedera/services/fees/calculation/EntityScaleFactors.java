@@ -18,7 +18,7 @@ package com.hedera.services.fees.calculation;
 import static com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor.ONE_TO_ONE;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.services.context.properties.EntityType;
+import com.hedera.node.app.service.mono.context.properties.EntityType;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.regex.Pattern;

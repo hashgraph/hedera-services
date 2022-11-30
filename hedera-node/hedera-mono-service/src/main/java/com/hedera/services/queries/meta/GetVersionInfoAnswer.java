@@ -19,8 +19,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetVersionI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.SemanticVersions;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.SemanticVersions;
 import com.hedera.services.queries.AbstractAnswer;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoResponse;
 import com.hederahashgraph.api.proto.java.Query;

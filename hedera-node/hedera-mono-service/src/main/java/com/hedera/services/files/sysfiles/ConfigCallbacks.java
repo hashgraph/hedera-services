@@ -15,13 +15,13 @@
  */
 package com.hedera.services.files.sysfiles;
 
-import static com.hedera.services.context.properties.PropertyNames.*;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
 
-import com.hedera.services.context.annotations.CompositeProps;
-import com.hedera.services.context.domain.security.HapiOpPermissions;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.context.properties.PropertySource;
-import com.hedera.services.context.properties.PropertySources;
+import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
+import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.context.properties.PropertySources;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.throttling.ExpiryThrottle;
