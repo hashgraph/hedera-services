@@ -120,13 +120,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             result = e.responseCode();
         }
 
-        responseBuffer.put(
-                TransactionResponse.newBuilder()
-                        .setNodeTransactionPrecheckCode(result)
-                        .setCost(estimatedFee)
-                        .build()
-                        .toByteArray()
-        );
+        final var transactionResponse = TransactionResponse.newBuilder()
+                .setNodeTransactionPrecheckCode(result)
+                .setCost(estimatedFee)
+                .build();
+        responseBuffer.put(transactionResponse.toByteArray());
     }
 
 }

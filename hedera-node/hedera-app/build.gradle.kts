@@ -44,8 +44,7 @@ dependencies {
     itestImplementation(testLibs.bundles.mockito)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testLibs.bundles.mockito)
-    testImplementation(testLibs.bundles.junit5)
+    testImplementation(testLibs.bundles.testing)
 }
 
 configurations.all {

@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * The {@code IngestChecker} contains checks that are specific to the ingest workflow
  */
-public final class IngestChecker {
+public class IngestChecker {
 
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 

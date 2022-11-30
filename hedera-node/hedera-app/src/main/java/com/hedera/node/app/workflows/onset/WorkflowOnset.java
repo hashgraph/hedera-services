@@ -60,10 +60,13 @@ public class WorkflowOnset {
      * @param buffer the {@code ByteBuffer} with the serialized transaction
      * @return an {@link OnsetResult} with the parsed and checked entities
      * @throws PreCheckException if the data is not valid
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
     public OnsetResult parseAndCheck(
             @Nonnull final SessionContext ctx,
             @Nonnull final ByteBuffer buffer) throws PreCheckException {
+        requireNonNull(ctx);
+        requireNonNull(buffer);
 
         if (nodeInfo.isSelfZeroStake()) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);

@@ -43,7 +43,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class preprocess transactions by parsing them and checking for syntax errors.
  */
-public final class OnsetChecker {
+public class OnsetChecker {
 
     private final int maxSignedTxnSize;
     private final int maxProtoMessageDepth;
@@ -70,6 +70,12 @@ public final class OnsetChecker {
             @Nonnull final AccountID nodeAccountID,
             @Nonnull final GlobalDynamicProperties dynamicProperties,
             @Nonnull final HapiOpCounters counters) {
+        if (maxSignedTxnSize <= 0) {
+            throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
+        }
+        if (maxProtoMessageDepth <= 0) {
+            throw new IllegalArgumentException("maxProtoMessageDepth must be > 0");
+        }
         this.maxSignedTxnSize = maxSignedTxnSize;
         this.maxProtoMessageDepth = maxProtoMessageDepth;
         this.recordCache = requireNonNull(recordCache);
@@ -188,7 +194,7 @@ public final class OnsetChecker {
 
         checkMemo(txBody.getMemo());
 
-        checkTimebox(txBody.getTransactionValidDuration(), txnId.getTransactionValidStart());
+        checkTimebox(txnId.getTransactionValidStart(), txBody.getTransactionValidDuration());
     }
 
     private static int protoDepthOf(final GeneratedMessageV3 msg) {
@@ -237,7 +243,7 @@ public final class OnsetChecker {
         }
     }
 
-    private void checkTimebox(final Duration duration, final Timestamp start) throws PreCheckException {
+    private void checkTimebox(final Timestamp start, final Duration duration) throws PreCheckException {
         final var validForSecs = duration.getSeconds();
         if (validForSecs < dynamicProperties.minTxnDuration() || validForSecs > dynamicProperties.maxTxnDuration()) {
             throw new PreCheckException(INVALID_TRANSACTION_DURATION);

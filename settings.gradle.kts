@@ -208,6 +208,7 @@ dependencyResolutionManagement {
             version("testcontainers-version", "1.17.2")
             version("truth-java8-extension-version", "1.1.3")
             version("classgraph-version", "4.8.65")
+            version("assertj-version", "3.23.1")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
@@ -222,7 +223,8 @@ dependencyResolutionManagement {
                     "mockito-jupiter",
                     "hamcrest",
                     "awaitility",
-                    "truth-java8-extension"
+                    "truth-java8-extension",
+                    "assertj-core"
                 )
             )
 
@@ -251,6 +253,7 @@ dependencyResolutionManagement {
                 "truth-java8-extension"
             ).versionRef("truth-java8-extension-version")
             library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
+            library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj-version")
         }
     }
 }

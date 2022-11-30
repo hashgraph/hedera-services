@@ -16,8 +16,12 @@
 package com.hedera.node.app.workflows.common;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -47,5 +51,12 @@ public class PreCheckException extends Exception {
 	@Nonnull
 	public ResponseCodeEnum responseCode() {
 		return responseCode;
+	}
+
+	@Override
+	public String toString() {
+		return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+				.append("responseCode", responseCode)
+				.toString();
 	}
 }
