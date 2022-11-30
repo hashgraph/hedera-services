@@ -20,8 +20,8 @@ import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hedera.services.ServicesState;
 import com.hedera.services.context.MutableStateChildren;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
 
 public class StatesImpl implements States {
@@ -41,7 +41,7 @@ public class StatesImpl implements States {
     }
 
     @Override
-    public @Nonnull <K, V> State<K, V> get(@Nonnull final String stateKey) {
+    public @NonNull <K, V> State<K, V> get(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
 
         if (stateKey.equals("ACCOUNTS")) {

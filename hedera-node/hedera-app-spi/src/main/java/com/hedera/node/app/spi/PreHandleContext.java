@@ -17,8 +17,8 @@ package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
@@ -31,7 +31,7 @@ import javax.annotation.Nonnull;
  *     transactions
  */
 public record PreHandleContext(
-        @Nonnull HederaAccountNumbers accountNumbers, @Nonnull HederaFileNumbers fileNumbers) {
+        @NonNull HederaAccountNumbers accountNumbers, @NonNull HederaFileNumbers fileNumbers) {
     public PreHandleContext {
         Objects.requireNonNull(accountNumbers);
         Objects.requireNonNull(fileNumbers);

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
@@ -31,10 +31,10 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.ledger.accounts.ContractAliases;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
@@ -175,7 +175,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         return getMintWrapper(input, MINT_TOKEN_SELECTOR);
     }
 
-    private static MintWrapper getMintWrapper(Bytes input, Bytes mintTokenSelector) {
+    private static MintWrapper getMintWrapper(final Bytes input, final Bytes mintTokenSelector) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, mintTokenSelector, MINT_TOKEN_DECODER);
 

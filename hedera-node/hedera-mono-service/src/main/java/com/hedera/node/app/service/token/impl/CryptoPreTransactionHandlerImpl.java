@@ -16,7 +16,9 @@
 package com.hedera.node.app.service.token.impl;
 
 import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.SigTransactionMetadata;
@@ -30,9 +32,9 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -46,9 +48,9 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     private final TokenStore tokenStore;
 
     public CryptoPreTransactionHandlerImpl(
-            @Nonnull final AccountStore accountStore,
-            @Nonnull final TokenStore tokenStore,
-            @Nonnull final PreHandleContext ctx) {
+            @NonNull final AccountStore accountStore,
+            @NonNull final TokenStore tokenStore,
+            @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.tokenStore = Objects.requireNonNull(tokenStore);
         this.preHandleContext = Objects.requireNonNull(ctx);
@@ -57,7 +59,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoCreate(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoCreate(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
@@ -68,7 +70,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoDelete(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoDelete();
         final var payer = txn.getTransactionID().getAccountID();
@@ -82,7 +84,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleApproveAllowances(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoApproveAllowance();
         final var payer = txn.getTransactionID().getAccountID();
@@ -117,7 +119,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteAllowances(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoDeleteAllowance();
         final var payer = txn.getTransactionID().getAccountID();
@@ -131,7 +133,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleUpdateAccount(@NonNull final TransactionBody txn) {
         final var op = txn.getCryptoUpdateAccount();
         final var payer = txn.getTransactionID().getAccountID();
         final var updateAccountId = op.getAccountIDToUpdate();
@@ -143,7 +145,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             meta.addNonPayerKey(updateAccountId);
         }
         if (newAccountKeyMustSign && op.hasKey()) {
-            var candidate = asHederaKey(op.getKey());
+            final var candidate = asHederaKey(op.getKey());
             candidate.ifPresent(meta::addToReqKeys);
         }
         return meta;
@@ -151,7 +153,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoTransfer(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoTransfer();
         final var payer = txn.getTransactionID().getAccountID();
@@ -231,19 +233,20 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAddLiveHash(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleAddLiveHash(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteLiveHash(@Nonnull final TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteLiveHash(@NonNull final TransactionBody txn) {
         Objects.requireNonNull(txn);
         throw new NotImplementedException();
     }
 
     /* --------------- Helper methods --------------- */
+
     /**
      * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
      * for signing the transaction
@@ -267,10 +270,10 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     /**
+     * @param waivers signature waivers for crypto service
      * @deprecated This method is needed for testing until {@link CryptoSignatureWaiversImpl} is
      *     implemented. FUTURE: This method should be removed once {@link
      *     CryptoSignatureWaiversImpl} is implemented.
-     * @param waivers signature waivers for crypto service
      */
     @Deprecated(forRemoval = true)
     @VisibleForTesting

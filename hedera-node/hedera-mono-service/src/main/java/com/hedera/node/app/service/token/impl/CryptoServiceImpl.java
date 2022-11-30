@@ -19,16 +19,15 @@ import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import org.jetbrains.annotations.NotNull;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
-    @NotNull
+    @NonNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(
-            @Nonnull final States states, @Nonnull PreHandleContext ctx) {
+            @NonNull final States states, @NonNull final PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
         final var accountStore = new AccountStore(states);

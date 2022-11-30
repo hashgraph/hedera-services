@@ -26,6 +26,7 @@ import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.ledger.properties.BeanProperty;
 import com.hedera.services.ledger.properties.ChangeSummaryManager;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -216,10 +216,10 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         }
     }
 
-    public void undoChangesOfType(List<P> properties) {
+    public void undoChangesOfType(final List<P> properties) {
         throwIfNotInTxn();
         if (!changedKeys.isEmpty()) {
-            for (var key : changedKeys) {
+            for (final var key : changedKeys) {
                 final var entityChanges = changes.get(key);
                 if (entityChanges != null) {
                     for (final var property : properties) {
@@ -278,11 +278,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
             if (commitInterceptor != null) {
                 commitInterceptor.postCommit();
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             String changeDesc = "<N/A>";
             try {
                 changeDesc = changeSetSoFar();
-            } catch (Exception f) {
+            } catch (final Exception f) {
                 log.warn("Unable to describe pending change set", f);
             }
             log.error("Catastrophic failure during commit of {}", changeDesc);
@@ -541,20 +541,20 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         return true;
     }
 
-    private A toGetterTarget(K id) {
+    private A toGetterTarget(final K id) {
         return isPendingCreation(id) ? newEntity.get() : entities.getImmutableRef(id);
     }
 
-    private boolean isPendingCreation(K id) {
+    private boolean isPendingCreation(final K id) {
         return !entities.contains(id) && changes.containsKey(id);
     }
 
-    private void assertIsSettable(K id) {
+    private void assertIsSettable(final K id) {
         throwIfNotInTxn();
         throwIfMissing(id);
     }
 
-    private void assertIsCreatable(K id) {
+    private void assertIsCreatable(final K id) {
         if (!isInTransaction) {
             throw new IllegalStateException("No active transaction");
         }
@@ -563,17 +563,17 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         }
     }
 
-    private void throwIfMissing(K id) {
+    private void throwIfMissing(final K id) {
         if (!exists(id)) {
             throw new MissingEntityException(id);
         }
     }
 
-    private boolean existsOrIsPendingCreation(K id) {
+    private boolean existsOrIsPendingCreation(final K id) {
         return entities.contains(id) || changes.containsKey(id);
     }
 
-    private boolean isZombie(K id) {
+    private boolean isZombie(final K id) {
         return deadKeys.contains(id);
     }
 

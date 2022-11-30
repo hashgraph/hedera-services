@@ -29,6 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.calculation.FeeCalcUtils;
@@ -41,7 +42,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.fee.CryptoFeeBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;

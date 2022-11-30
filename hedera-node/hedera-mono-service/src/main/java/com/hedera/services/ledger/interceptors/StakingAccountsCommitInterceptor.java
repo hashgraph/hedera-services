@@ -45,14 +45,14 @@ import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor {
     private static final int INITIAL_CHANGE_CAPACITY = 32;
@@ -196,7 +196,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private StakeChangeScenario scenarioFor(
-            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes) {
         setCurrentAndNewIds(account, changes);
         return StakeChangeScenario.forCase(curStakedId, newStakedId);
     }
@@ -331,7 +332,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
      * @return whether the zero rewards were due to having zero stake
      */
     private boolean earnedZeroRewardsBecauseOfZeroStake(final HederaAccount account) {
-        return Objects.requireNonNull(account.getStakePeriodStart())
+        return Objects.requireNonNull(account).getStakePeriodStart()
                 < stakePeriodManager.firstNonRewardableStakePeriod();
     }
 
@@ -339,7 +340,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final long accountNum,
             final long delta,
             final boolean alwaysUpdate,
-            @NotNull
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (delta != 0 || alwaysUpdate) {
@@ -356,9 +357,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payRewardIfPending(
             final int i,
-            @Nullable HederaAccount account,
-            @NotNull Map<AccountProperty, Object> changes,
-            @NotNull
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         if (!hasBeenRewarded(i) && isRewardSituation(account, stakedToMeUpdates[i], changes)) {
@@ -368,9 +369,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     private void payReward(
             final int i,
-            @NotNull HederaAccount account,
-            @NotNull Map<AccountProperty, Object> changes,
-            @NotNull
+            @NonNull HederaAccount account,
+            @NonNull Map<AccountProperty, Object> changes,
+            @NonNull
                     final EntityChangeSet<AccountID, HederaAccount, AccountProperty>
                             pendingChanges) {
         final var reward = rewardsEarned[i] = rewardCalculator.computePendingReward(account);
@@ -385,7 +386,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         // accounts until we find a non-deleted account to try to reward (it may still decline)
         if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
             var j = 1;
-            var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
+            final var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
             do {
                 if (j++ > maxRedirects) {
                     log.error(
@@ -427,7 +428,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     boolean isRewardSituation(
             @Nullable final HederaAccount account,
             final long stakedToMeUpdate,
-            @NotNull final Map<AccountProperty, Object> changes) {
+            @NonNull final Map<AccountProperty, Object> changes) {
         return rewardsActivated
                 && account != null
                 && account.getStakedId() < 0
@@ -472,7 +473,8 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     private void setCurrentAndNewIds(
-            @Nullable final HederaAccount account, @NotNull Map<AccountProperty, Object> changes) {
+            @Nullable final HederaAccount account,
+            @NonNull final Map<AccountProperty, Object> changes) {
         curStakedId = account == null ? 0L : account.getStakedId();
         newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
@@ -542,12 +544,12 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
     }
 
     @VisibleForTesting
-    void setCurStakedId(long curStakedId) {
+    void setCurStakedId(final long curStakedId) {
         this.curStakedId = curStakedId;
     }
 
     @VisibleForTesting
-    void setNewStakedId(long newStakedId) {
+    void setNewStakedId(final long newStakedId) {
         this.newStakedId = newStakedId;
     }
 

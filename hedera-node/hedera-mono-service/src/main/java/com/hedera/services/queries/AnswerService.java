@@ -27,9 +27,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Optional;
-import javax.annotation.Nullable;
 
 public interface AnswerService {
     Optional<Map<String, Object>> NO_QUERY_CTX = Optional.empty();
@@ -56,11 +56,11 @@ public interface AnswerService {
             Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost);
 
     default Response responseGiven(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Map<String, Object> queryCtx) {
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Map<String, Object> queryCtx) {
         return responseGiven(query, view, validity, cost);
     }
 
@@ -72,23 +72,25 @@ public interface AnswerService {
 
     Optional<SignedTxnAccessor> extractPaymentFrom(Query query);
 
-    default Response responseGiven(Query query, StateView view, ResponseCodeEnum validity) {
+    default Response responseGiven(
+            final Query query, final StateView view, final ResponseCodeEnum validity) {
         return responseGiven(query, view, validity, 0L);
     }
 
-    default ResponseHeader answerOnlyHeader(ResponseCodeEnum status) {
+    default ResponseHeader answerOnlyHeader(final ResponseCodeEnum status) {
         return header(status, ANSWER_ONLY, 0);
     }
 
-    default ResponseHeader answerOnlyHeader(ResponseCodeEnum status, long cost) {
+    default ResponseHeader answerOnlyHeader(final ResponseCodeEnum status, final long cost) {
         return header(status, ANSWER_ONLY, cost);
     }
 
-    default ResponseHeader costAnswerHeader(ResponseCodeEnum status, long cost) {
+    default ResponseHeader costAnswerHeader(final ResponseCodeEnum status, final long cost) {
         return header(status, COST_ANSWER, cost);
     }
 
-    default ResponseHeader header(ResponseCodeEnum status, ResponseType type, long cost) {
+    default ResponseHeader header(
+            final ResponseCodeEnum status, final ResponseType type, final long cost) {
         return ResponseHeader.newBuilder()
                 .setNodeTransactionPrecheckCode(status)
                 .setResponseType(type)
@@ -96,7 +98,7 @@ public interface AnswerService {
                 .build();
     }
 
-    default boolean typicallyRequiresNodePayment(ResponseType type) {
+    default boolean typicallyRequiresNodePayment(final ResponseType type) {
         return type == ANSWER_ONLY || type == ANSWER_STATE_PROOF;
     }
 }

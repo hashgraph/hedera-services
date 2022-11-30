@@ -21,10 +21,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.suites.utils.ZipUtil.createZip;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.proto.utils.CommonUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,16 +39,16 @@ import org.junit.jupiter.api.Assertions;
 
 public class UpdateServerFiles extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(UpdateServerFiles.class);
-    private static String zipFile = "Archive.zip";
+    private static final String zipFile = "Archive.zip";
     private static final String DEFAULT_SCRIPT =
             "src/main/resource/testfiles/updateFeature/updateSettings/exec.sh";
 
     private static String uploadPath = "updateFiles/";
 
-    private static int FREEZE_LAST_MINUTES = 2;
+    private static final int FREEZE_LAST_MINUTES = 2;
     private static String fileIDString = "UPDATE_FEATURE"; // mnemonic for file 0.0.150
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
 
         if (args.length > 0) {
             uploadPath = args[0];
@@ -89,7 +89,7 @@ public class UpdateServerFiles extends HapiApiSuite {
         byte[] data = null;
         try {
             // create a temp sdk directory
-            File directory = new File(temp_dir);
+            final File directory = new File(temp_dir);
             if (directory.exists()) {
                 // delete everything in it recursively
 
@@ -103,11 +103,11 @@ public class UpdateServerFiles extends HapiApiSuite {
             // copy files to sdk directory
             FileUtils.copyDirectory(new File(uploadPath), new File(sdk_dir));
             createZip(temp_dir, zipFile, DEFAULT_SCRIPT);
-            String uploadFile = zipFile;
+            final String uploadFile = zipFile;
 
             log.info("Uploading file " + uploadFile);
             data = Files.readAllBytes(Paths.get(uploadFile));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             log.error("Directory creation failed", e);
             Assertions.fail("Directory creation failed");
         }

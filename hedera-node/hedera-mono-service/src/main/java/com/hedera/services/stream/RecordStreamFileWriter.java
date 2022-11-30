@@ -15,7 +15,7 @@
  */
 package com.hedera.services.stream;
 
-import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
+import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.convertInstantToStringWithPadding;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
@@ -27,8 +27,8 @@ import static com.swirlds.logging.LogMarker.OBJECT_STREAM_FILE;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -294,7 +294,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                             OBJECT_STREAM_FILE.getMarker(),
                             "closeCurrentAndSign :: write block number {}",
                             recordStreamFileBuilder.getBlockNumber());
-                } catch (InterruptedException | ExecutionException e) {
+                } catch (final InterruptedException | ExecutionException e) {
                     Thread.currentThread().interrupt();
                     LOG.error(
                             EXCEPTION.getMarker(),
@@ -303,7 +303,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                             recordFileNameShort,
                             e);
                     return;
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     Thread.currentThread().interrupt();
                     LOG.warn(
                             EXCEPTION.getMarker(),
@@ -317,7 +317,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 if (sidecarFileBuilder.getSidecarRecordsCount() > 0) {
                     try {
                         finalizeCurrentSidecar();
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         Thread.currentThread().interrupt();
                         LOG.warn(
                                 EXCEPTION.getMarker(),
@@ -329,12 +329,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 }
 
                 // create record file
-                try (FileOutputStream stream = new FileOutputStream(recordFile, false);
-                        GZIPOutputStream gzipStream =
+                try (final FileOutputStream stream = new FileOutputStream(recordFile, false);
+                        final GZIPOutputStream gzipStream =
                                 dynamicProperties.shouldCompressRecordFilesOnCreation()
                                         ? new GZIPOutputStream(stream)
                                         : null;
-                        SerializableDataOutputStream dos =
+                        final SerializableDataOutputStream dos =
                                 new SerializableDataOutputStream(
                                         new BufferedOutputStream(
                                                 new HashingOutputStream(
@@ -377,7 +377,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                             "File {} is closed at {}",
                             () -> recordFileNameShort,
                             Instant::now);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     Thread.currentThread().interrupt();
                     LOG.warn(
                             EXCEPTION.getMarker(),
@@ -429,13 +429,13 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     OBJECT_STREAM_FILE.getMarker(),
                     "beginNew :: write startRunningHash to metadata {}",
                     startRunningHash);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             Thread.currentThread().interrupt();
             LOG.error(
                     EXCEPTION.getMarker(),
                     "beginNew :: Got IOException when writing startRunningHash to metadata stream",
                     e);
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             Thread.currentThread().interrupt();
             LOG.error(
                     EXCEPTION.getMarker(),
@@ -469,7 +469,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     assertFirstTxnInstantIsKnown();
                     try {
                         finalizeCurrentSidecar();
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         Thread.currentThread().interrupt();
                         LOG.warn(
                                 EXCEPTION.getMarker(),
@@ -548,7 +548,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                 dosMeta.close();
                 metadataStreamDigest.reset();
                 dosMeta = null;
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 LOG.warn(
                         EXCEPTION.getMarker(),
                         "RecordStreamFileWriter::clear Exception in closing dosMeta",
@@ -635,7 +635,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     OBJECT_STREAM_FILE.getMarker(),
                     "closeCurrentAndSign :: signature file saved: {}",
                     sigFilePath);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             LOG.error(
                     EXCEPTION.getMarker(),
                     "closeCurrentAndSign ::  :: Fail to generate signature file for {}",
@@ -659,12 +659,12 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
 
     private void createSidecarFile(final Builder sidecarFileBuilder, final File sidecarFile)
             throws IOException {
-        try (FileOutputStream stream = new FileOutputStream(sidecarFile, false);
-                GZIPOutputStream gzipStream =
+        try (final FileOutputStream stream = new FileOutputStream(sidecarFile, false);
+                final GZIPOutputStream gzipStream =
                         dynamicProperties.shouldCompressRecordFilesOnCreation()
                                 ? new GZIPOutputStream(stream)
                                 : null;
-                SerializableDataOutputStream dos =
+                final SerializableDataOutputStream dos =
                         new SerializableDataOutputStream(
                                 new BufferedOutputStream(
                                         new HashingOutputStream(

@@ -18,7 +18,7 @@ package com.hedera.services.store;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A summary of the result of trying to create a store member, such as a token or scheduled entity.

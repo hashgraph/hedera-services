@@ -28,7 +28,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
@@ -44,7 +45,6 @@ import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
-import com.hederahashgraph.builder.RequestBuilder;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;
 import java.util.Collections;

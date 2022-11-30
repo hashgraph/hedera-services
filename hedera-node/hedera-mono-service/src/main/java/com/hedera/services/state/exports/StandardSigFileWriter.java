@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
-import static com.hedera.services.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
+import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
 
 import com.google.common.primitives.Ints;
 import java.io.FileOutputStream;

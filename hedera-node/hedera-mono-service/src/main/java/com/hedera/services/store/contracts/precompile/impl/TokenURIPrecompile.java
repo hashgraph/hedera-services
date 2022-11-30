@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.STRING;
-import static com.hedera.services.contracts.ParsingConstants.UINT256;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.STRING;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;

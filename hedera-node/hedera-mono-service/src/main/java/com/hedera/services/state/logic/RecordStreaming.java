@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.legacy.proto.utils.CommonUtils.extractTransactionBody;
+import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -147,7 +147,7 @@ public class RecordStreaming {
             final var transaction = rso.getTransaction();
             final var txBody = extractTransactionBody(transaction);
             type = txBody.getDataCase().toString();
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             log.error("Couldn't get transaction body", e);
         }
 

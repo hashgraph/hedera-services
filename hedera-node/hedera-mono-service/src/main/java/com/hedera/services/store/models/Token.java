@@ -47,11 +47,11 @@ import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -100,7 +100,7 @@ public class Token {
     private long lastUsedSerialNumber;
     private List<FcCustomFee> customFees;
 
-    public Token(Id id) {
+    public Token(final Id id) {
         this.id = id;
     }
 
@@ -126,13 +126,13 @@ public class Token {
                         ? consensusTimestamp + op.getAutoRenewPeriod().getSeconds()
                         : op.getExpiry().getSeconds();
 
-        var freezeKey = asUsableFcKey(op.getFreezeKey());
-        var adminKey = asUsableFcKey(op.getAdminKey());
-        var kycKey = asUsableFcKey(op.getKycKey());
-        var wipeKey = asUsableFcKey(op.getWipeKey());
-        var supplyKey = asUsableFcKey(op.getSupplyKey());
-        var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
-        var pauseKey = asUsableFcKey(op.getPauseKey());
+        final var freezeKey = asUsableFcKey(op.getFreezeKey());
+        final var adminKey = asUsableFcKey(op.getAdminKey());
+        final var kycKey = asUsableFcKey(op.getKycKey());
+        final var wipeKey = asUsableFcKey(op.getWipeKey());
+        final var supplyKey = asUsableFcKey(op.getSupplyKey());
+        final var feeScheduleKey = asUsableFcKey(op.getFeeScheduleKey());
+        final var pauseKey = asUsableFcKey(op.getPauseKey());
 
         freezeKey.ifPresent(token::setFreezeKey);
         adminKey.ifPresent(token::setAdminKey);
@@ -166,7 +166,7 @@ public class Token {
     }
 
     public void mint(
-            final TokenRelationship treasuryRel, final long amount, boolean ignoreSupplyKey) {
+            final TokenRelationship treasuryRel, final long amount, final boolean ignoreSupplyKey) {
         validateTrue(
                 amount >= 0, INVALID_TOKEN_MINT_AMOUNT, errorMessage("mint", amount, treasuryRel));
         validateTrue(
@@ -205,7 +205,7 @@ public class Token {
 
         changeSupply(treasuryRel, metadataCount, FAIL_INVALID, false);
 
-        for (ByteString m : metadata) {
+        for (final ByteString m : metadata) {
             lastUsedSerialNumber++;
             // The default sentinel account is used (0.0.0) to represent unique tokens owned by the
             // Treasury
@@ -292,14 +292,14 @@ public class Token {
      * @param serialNumbers - a list of serial numbers, representing the tokens to be wiped
      */
     public void wipe(
-            OwnershipTracker ownershipTracker,
-            TokenRelationship accountRel,
-            List<Long> serialNumbers) {
+            final OwnershipTracker ownershipTracker,
+            final TokenRelationship accountRel,
+            final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_WIPING_AMOUNT);
 
         baseWipeValidations(accountRel);
-        for (var serialNum : serialNumbers) {
+        for (final var serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
             validateTrue(uniqueToken != null, FAIL_INVALID);
             final var wipeAccountIsOwner =
@@ -310,7 +310,7 @@ public class Token {
         final var newTotalSupply = totalSupply - serialNumbers.size();
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         final var account = accountRel.getAccount();
-        for (long serialNum : serialNumbers) {
+        for (final long serialNum : serialNumbers) {
             ownershipTracker.add(id, OwnershipTracker.forRemoving(account.getId(), serialNum));
             removedUniqueTokens.add(new UniqueToken(id, serialNum, account.getId()));
         }
@@ -457,16 +457,16 @@ public class Token {
         return totalSupply;
     }
 
-    public void initTotalSupply(long totalSupply) {
+    public void initTotalSupply(final long totalSupply) {
         this.totalSupply = totalSupply;
     }
 
-    public void setTotalSupply(long totalSupply) {
+    public void setTotalSupply(final long totalSupply) {
         supplyHasChanged = true;
         this.totalSupply = totalSupply;
     }
 
-    public void initSupplyConstraints(TokenSupplyType supplyType, long maxSupply) {
+    public void initSupplyConstraints(final TokenSupplyType supplyType, final long maxSupply) {
         this.supplyType = supplyType;
         this.maxSupply = maxSupply;
     }
@@ -540,7 +540,7 @@ public class Token {
         return frozenByDefault;
     }
 
-    public void setFrozenByDefault(boolean frozenByDefault) {
+    public void setFrozenByDefault(final boolean frozenByDefault) {
         this.frozenByDefault = frozenByDefault;
     }
 
@@ -561,7 +561,7 @@ public class Token {
         return id;
     }
 
-    public void setType(TokenType type) {
+    public void setType(final TokenType type) {
         this.type = type;
     }
 
@@ -577,7 +577,7 @@ public class Token {
         return type == TokenType.NON_FUNGIBLE_UNIQUE;
     }
 
-    public void setLastUsedSerialNumber(long lastUsedSerialNumber) {
+    public void setLastUsedSerialNumber(final long lastUsedSerialNumber) {
         this.lastUsedSerialNumber = lastUsedSerialNumber;
     }
 
@@ -697,7 +697,7 @@ public class Token {
     readability of unit tests; this model object is not used in hash-based
     collections, so the performance of these methods doesn't matter. */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
     }
 
@@ -745,7 +745,7 @@ public class Token {
         this.customFees = customFees;
     }
 
-    public void setMaxSupply(long maxSupply) {
+    public void setMaxSupply(final long maxSupply) {
         this.maxSupply = maxSupply;
     }
 }

@@ -15,16 +15,19 @@
  */
 package com.hedera.services.fees.calculation;
 
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getFeeObject;
+import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getTinybarsFromTinyCents;
 import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractAutoRenew;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoAccountAutoRenew;
-import static com.hederahashgraph.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hederahashgraph.fee.FeeBuilder.getFeeObject;
-import static com.hederahashgraph.fee.FeeBuilder.getTinybarsFromTinyCents;
 
+import com.hedera.node.app.hapi.utils.exception.InvalidTxBodyException;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -43,9 +46,6 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.exception.InvalidTxBodyException;
-import com.hederahashgraph.fee.FeeObject;
-import com.hederahashgraph.fee.SigValueObj;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
