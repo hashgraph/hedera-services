@@ -28,8 +28,8 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile implements
-    EvmBalanceOfPrecompile {
+public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
+        implements EvmBalanceOfPrecompile {
 
     private BalanceOfWrapper balanceWrapper;
 
