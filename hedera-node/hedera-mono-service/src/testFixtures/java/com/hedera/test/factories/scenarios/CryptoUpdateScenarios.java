@@ -22,7 +22,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.STAKING_FUND_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoUpdateScenarios implements TxnHandlingScenario {
     CRYPTO_UPDATE_NO_NEW_KEY_SELF_PAID_SCENARIO {

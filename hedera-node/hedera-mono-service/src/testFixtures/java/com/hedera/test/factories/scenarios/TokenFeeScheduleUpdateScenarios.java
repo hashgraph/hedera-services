@@ -15,13 +15,13 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenFeeScheduleUpdateFactory.newSignedTokenFeeScheduleUpdate;
 
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
     UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST {
