@@ -31,6 +31,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,8 +40,10 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.primitives.StateView;
+import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenType;
@@ -61,16 +64,24 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenNftInfo;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -92,6 +103,9 @@ class StaticEntityAccessTest {
     @Mock private VirtualMap<VirtualBlobKey, VirtualBlobValue> blobs;
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleMap<EntityNumPair, MerkleUniqueToken> nfts;
+    @Mock private TokenInfo tokenInfo;
+    @Mock private TokenNftInfo tokenNftInfo;
+    @Mock private List<CustomFee> customFees;
 
     private StaticEntityAccess subject;
 
@@ -197,6 +211,36 @@ class StaticEntityAccessTest {
     }
 
     @Test
+    void infoForToken() {
+        given(stateView.infoForToken(tokenId)).willReturn(Optional.of(tokenInfo));
+
+        final var tokenInfo = subject.infoForToken(tokenId);
+        assertNotNull(tokenInfo.get());
+    }
+
+    @Test
+    void infoForNftToken() {
+        final var nftId =
+                NftID.newBuilder()
+                        .setTokenID(nft.tokenId())
+                        .setSerialNumber(nft.serialNo())
+                        .build();
+        given(nfts.get(EntityNumPair.fromNftId(nft))).willReturn(treasuryOwned);
+        given(stateView.infoForNft(nftId)).willReturn(Optional.of(tokenNftInfo));
+
+        final var tokenNftInfo = subject.infoForNft(nftId);
+        assertNotNull(tokenNftInfo.get());
+    }
+
+    @Test
+    void infoForTokenCustomFees() {
+        given(stateView.infoForTokenCustomFees(tokenId)).willReturn(customFees);
+
+        final var customFees = subject.infoForTokenCustomFees(tokenId);
+        assertNotNull(customFees);
+    }
+
+    @Test
     void nonMutatorsWork() {
         given(accounts.get(EntityNum.fromAccountId(id))).willReturn(someNonContractAccount);
         given(accounts.get(EntityNum.fromAccountId(nonExtantId))).willReturn(null);
@@ -293,6 +337,49 @@ class StaticEntityAccessTest {
         given(tokens.get(tokenNum)).willReturn(token);
         given(accounts.containsKey(accountNum)).willReturn(true);
         assertEquals(0, subject.balanceOf(accountId, tokenId));
+    }
+
+    @Test
+    void getKeys() throws DecoderException {
+        token.setAdminKey(TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey());
+        token.setKycKey(TxnHandlingScenario.TOKEN_KYC_KT.asJKey());
+        token.setFreezeKey(TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey());
+        token.setWipeKey(TxnHandlingScenario.TOKEN_WIPE_KT.asJKey());
+        token.setSupplyKey(TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey());
+        token.setFeeScheduleKey(TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKey());
+        token.setPauseKey(TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey());
+        given(tokens.get(tokenNum)).willReturn(token);
+
+        assertEquals(
+                TxnHandlingScenario.TOKEN_ADMIN_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.ADMIN_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_KYC_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.KYC_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_FREEZE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.FREEZE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_WIPE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.WIPE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_SUPPLY_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.SUPPLY_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_FEE_SCHEDULE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.FEE_SCHEDULE_KEY));
+        assertEquals(
+                TxnHandlingScenario.TOKEN_PAUSE_KT.asJKey(),
+                subject.keyOf(tokenId, TokenProperty.PAUSE_KEY));
+    }
+
+    @Test
+    void getInvalidTypeOfKeyFails() {
+        given(tokens.get(tokenNum)).willReturn(token);
+
+        assertThrows(
+                InvalidTransactionException.class,
+                () -> subject.keyOf(tokenId, TokenProperty.TOKEN_TYPE));
     }
 
     @Test

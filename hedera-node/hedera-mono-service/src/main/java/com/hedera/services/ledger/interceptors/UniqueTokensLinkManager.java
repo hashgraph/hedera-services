@@ -33,9 +33,9 @@ import com.hedera.services.state.virtual.UniqueTokenValue;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,7 +81,7 @@ public class UniqueTokensLinkManager {
     public UniqueTokenAdapter updateLinks(
             @Nullable final EntityNum from,
             @Nullable final EntityNum to,
-            @Nonnull final NftId nftId) {
+            @NonNull final NftId nftId) {
         final var curAccounts = accounts.get();
         final var curTokens = tokens.get();
         final var curUniqueTokens = uniqueTokens.get();
@@ -106,8 +106,8 @@ public class UniqueTokensLinkManager {
         // Update "to" account
         if (isValidAndNotTreasury(to, token)) {
             final var toAccount = curAccounts.getForModify(to);
-            var nft = listMutation.getForModify(nftId);
-            var rootKey = rootKeyOf(toAccount);
+            final var nft = listMutation.getForModify(nftId);
+            final var rootKey = rootKeyOf(toAccount);
             if (nft != null) {
                 linkInPlaceAtMapValueListHead(nftId, nft, rootKey, null, listMutation);
             } else {
@@ -126,7 +126,7 @@ public class UniqueTokensLinkManager {
         return insertedNft;
     }
 
-    private boolean isValidAndNotTreasury(EntityNum accountNum, MerkleToken token) {
+    private boolean isValidAndNotTreasury(final EntityNum accountNum, final MerkleToken token) {
         return accountNum != null
                 && !accountNum.equals(MISSING_NUM)
                 && !accountNum.equals(token.treasuryNum());

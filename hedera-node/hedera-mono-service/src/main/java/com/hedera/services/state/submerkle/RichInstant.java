@@ -19,11 +19,11 @@ import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nonnull;
 
 public class RichInstant implements Comparable<RichInstant> {
     public static final RichInstant MISSING_INSTANT = new RichInstant(0L, 0);
@@ -36,16 +36,16 @@ public class RichInstant implements Comparable<RichInstant> {
         seconds = 0;
     }
 
-    public RichInstant(long seconds, int nanos) {
+    public RichInstant(final long seconds, final int nanos) {
         this.seconds = seconds;
         this.nanos = nanos;
     }
 
-    public static RichInstant from(SerializableDataInputStream in) throws IOException {
+    public static RichInstant from(final SerializableDataInputStream in) throws IOException {
         return new RichInstant(in.readLong(), in.readInt());
     }
 
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(seconds);
         out.writeInt(nanos);
     }
@@ -61,14 +61,14 @@ public class RichInstant implements Comparable<RichInstant> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || RichInstant.class != o.getClass()) {
             return false;
         }
-        var that = (RichInstant) o;
+        final var that = (RichInstant) o;
         return seconds == that.seconds && nanos == that.nanos;
     }
 
@@ -89,7 +89,7 @@ public class RichInstant implements Comparable<RichInstant> {
 
     /* --- Helpers --- */
 
-    public static RichInstant fromGrpc(Timestamp grpc) {
+    public static RichInstant fromGrpc(final Timestamp grpc) {
         return grpc.equals(Timestamp.getDefaultInstance())
                 ? MISSING_INSTANT
                 : new RichInstant(grpc.getSeconds(), grpc.getNanos());
@@ -101,7 +101,7 @@ public class RichInstant implements Comparable<RichInstant> {
                 : Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
     }
 
-    public boolean isAfter(RichInstant other) {
+    public boolean isAfter(final RichInstant other) {
         return (seconds > other.seconds) || (seconds == other.seconds && (nanos > other.nanos));
     }
 
@@ -109,7 +109,7 @@ public class RichInstant implements Comparable<RichInstant> {
         return Instant.ofEpochSecond(seconds, nanos);
     }
 
-    public static RichInstant fromJava(Instant when) {
+    public static RichInstant fromJava(final Instant when) {
         return Optional.ofNullable(when)
                 .map(at -> new RichInstant(at.getEpochSecond(), at.getNano()))
                 .orElse(null);
@@ -120,7 +120,7 @@ public class RichInstant implements Comparable<RichInstant> {
     }
 
     @Override
-    public int compareTo(@Nonnull RichInstant o) {
+    public int compareTo(@NonNull final RichInstant o) {
         if (o.seconds == seconds) {
             return Integer.compare(nanos, o.nanos);
         }

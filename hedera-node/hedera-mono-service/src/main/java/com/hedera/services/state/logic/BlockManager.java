@@ -20,20 +20,20 @@ import static com.hedera.services.context.properties.PropertyNames.HEDERA_RECORD
 import static com.hedera.services.state.merkle.MerkleNetworkContext.ethHashFrom;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
+import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.context.properties.BootstrapProperties;
-import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.Units;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Manages the block-related fields in the {@link MerkleNetworkContext}, based on 2-second "periods"
@@ -98,7 +98,7 @@ public class BlockManager {
      * @param now the latest consensus timestamp of a user transaction
      * @return the new block number, taking this timestamp into account
      */
-    public long updateAndGetAlignmentBlockNumber(@NotNull final Instant now) {
+    public long updateAndGetAlignmentBlockNumber(@NonNull final Instant now) {
         ensureProvisionalBlockMeta(now);
         return provisionalBlockIsNew
                 ? networkCtx.get().finishBlock(provisionalFinishedBlockHash, now)
@@ -126,7 +126,7 @@ public class BlockManager {
      * @param gasLimit the gas limit of the operation
      * @return the block metadata for the operation
      */
-    public HederaBlockValues computeBlockValues(@NotNull final Instant now, final long gasLimit) {
+    public HederaBlockValues computeBlockValues(@NonNull final Instant now, final long gasLimit) {
         ensureProvisionalBlockMeta(now);
         if (provisionalBlockIsNew) {
             return new HederaBlockValues(
@@ -177,7 +177,7 @@ public class BlockManager {
             try {
                 provisionalFinishedBlockHash =
                         ethHashFrom(runningHashLeaf.get().currentRunningHash());
-            } catch (InterruptedException e) {
+            } catch (final InterruptedException e) {
                 provisionalBlockIsNew = false;
                 // This is almost certainly fatal, hence the ERROR log level
                 log.error(
@@ -189,13 +189,13 @@ public class BlockManager {
         provisionalBlockNo = curNetworkCtx.getAlignmentBlockNo() + (provisionalBlockIsNew ? 1 : 0);
     }
 
-    private boolean willCreateNewBlock(@NotNull final Instant timestamp) {
+    private boolean willCreateNewBlock(@NonNull final Instant timestamp) {
         final var curNetworkCtx = networkCtx.get();
         final var firstBlockTime = curNetworkCtx.firstConsTimeOfCurrentBlock();
         return firstBlockTime == null || !inSamePeriod(firstBlockTime, timestamp);
     }
 
-    private boolean inSamePeriod(@NotNull final Instant then, @NotNull final Instant now) {
+    private boolean inSamePeriod(@NonNull final Instant then, @NonNull final Instant now) {
         return getPeriod(now, blockPeriodMs) == getPeriod(then, blockPeriodMs);
     }
 

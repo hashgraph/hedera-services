@@ -15,9 +15,9 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.services.contracts.ParsingConstants.INT;
-import static com.hedera.services.contracts.ParsingConstants.UINT256;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
 import static com.hedera.services.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;

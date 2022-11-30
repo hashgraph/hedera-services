@@ -17,9 +17,9 @@ package com.hedera.services.utils;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.swirlds.common.FastCopyable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 public class MapValueListUtils {
     /**
@@ -37,13 +37,13 @@ public class MapValueListUtils {
      * @param <V> the type of value in the map
      * @return the new root of the list, for convenience
      */
-    @NotNull
+    @NonNull
     public static <K, V extends FastCopyable> K insertInPlaceAtMapValueListHead(
-            @NotNull final K key,
-            @NotNull final V value,
+            @NonNull final K key,
+            @NonNull final V value,
             @Nullable final K rootKey,
             @Nullable final V rootValue,
-            @NotNull final MapValueListMutation<K, V> listMutation) {
+            @NonNull final MapValueListMutation<K, V> listMutation) {
         return internalAddFirstInPlaceForMapValueList(
                 key, value, rootKey, rootValue, listMutation, true);
     }
@@ -62,13 +62,13 @@ public class MapValueListUtils {
      * @param <V> the type of value in the map
      * @return the new root of the list, for convenience
      */
-    @NotNull
+    @NonNull
     public static <K, V extends FastCopyable> K linkInPlaceAtMapValueListHead(
-            @NotNull final K key,
-            @NotNull final V value,
+            @NonNull final K key,
+            @NonNull final V value,
             @Nullable final K rootKey,
             @Nullable final V rootValue,
-            @NotNull final MapValueListMutation<K, V> listMutation) {
+            @NonNull final MapValueListMutation<K, V> listMutation) {
         return internalAddFirstInPlaceForMapValueList(
                 key, value, rootKey, rootValue, listMutation, false);
     }
@@ -85,9 +85,9 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K removeInPlaceFromMapValueList(
-            @NotNull final K key,
-            @NotNull final K root,
-            @NotNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key,
+            @NonNull final K root,
+            @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, true, true, false);
     }
 
@@ -103,9 +103,9 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K removeFromMapValueList(
-            @NotNull final K key,
-            @NotNull final K root,
-            @NotNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key,
+            @NonNull final K root,
+            @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, false, true, false);
     }
 
@@ -121,17 +121,17 @@ public class MapValueListUtils {
      * @return the new root key, for convenience
      */
     public static @Nullable <K, V extends FastCopyable> K unlinkInPlaceFromMapValueList(
-            @NotNull final K key,
-            @NotNull final K root,
-            @NotNull final MapValueListMutation<K, V> listRemoval) {
+            @NonNull final K key,
+            @NonNull final K root,
+            @NonNull final MapValueListMutation<K, V> listRemoval) {
         return internalDetachFromMapValueList(key, root, listRemoval, true, false, true);
     }
 
     @VisibleForTesting
     static @Nullable <K, V extends FastCopyable> K internalDetachFromMapValueList(
-            @NotNull final K key,
-            @NotNull final K root,
-            @NotNull final MapValueListMutation<K, V> listRemoval,
+            @NonNull final K key,
+            @NonNull final K root,
+            @NonNull final MapValueListMutation<K, V> listRemoval,
             final boolean useGetForModify,
             final boolean removeFromMap,
             final boolean resetPointers) {
@@ -203,13 +203,13 @@ public class MapValueListUtils {
         return key.equals(root) ? nextKey : root;
     }
 
-    @NotNull
+    @NonNull
     private static <K, V extends FastCopyable> K internalAddFirstInPlaceForMapValueList(
-            @NotNull final K key,
-            @NotNull final V value,
+            @NonNull final K key,
+            @NonNull final V value,
             @Nullable final K rootKey,
             @Nullable final V rootValue,
-            @NotNull final MapValueListMutation<K, V> listMutation,
+            @NonNull final MapValueListMutation<K, V> listMutation,
             final boolean insertIntoMap) {
         if (insertIntoMap) {
             listMutation.put(key, value);

@@ -19,9 +19,9 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.fees.pricing.RequiredPriceTypes;
 import com.hedera.services.config.FileNumbers;
 import com.hedera.services.files.HederaFs;
-import com.hedera.services.pricing.RequiredPriceTypes;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -87,23 +87,23 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
 
     @Inject
-    public BasicFcfsUsagePrices(HederaFs hfs, FileNumbers fileNumbers) {
+    public BasicFcfsUsagePrices(final HederaFs hfs, final FileNumbers fileNumbers) {
         this.hfs = hfs;
         this.fileNumbers = fileNumbers;
     }
 
     @Override
     public void loadPriceSchedules() {
-        var feeSchedulesId = fileNumbers.toFid(fileNumbers.feeSchedules());
+        final var feeSchedulesId = fileNumbers.toFid(fileNumbers.feeSchedules());
         if (!hfs.exists(feeSchedulesId)) {
             throw new IllegalStateException(
                     String.format(
                             "No fee schedule available at %s!", readableId(this.feeSchedules)));
         }
         try {
-            var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
+            final var schedules = CurrentAndNextFeeSchedule.parseFrom(hfs.cat(feeSchedulesId));
             setFeeSchedules(schedules);
-        } catch (InvalidProtocolBufferException e) {
+        } catch (final InvalidProtocolBufferException e) {
             log.warn(
                     "Corrupt fee schedules file at {}, may require remediation!",
                     readableId(this.feeSchedules),
@@ -114,11 +114,11 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     }
 
     @Override
-    public Map<SubType, FeeData> activePrices(TxnAccessor accessor) {
+    public Map<SubType, FeeData> activePrices(final TxnAccessor accessor) {
         try {
             return pricesGiven(
                     accessor.getFunction(), accessor.getTxnId().getTransactionValidStart());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn(
                     "Using default usage prices to calculate fees for {}!",
                     accessor.getSignedTxnWrapper(),
@@ -128,14 +128,15 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     }
 
     @Override
-    public Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at) {
+    public Map<SubType, FeeData> pricesGiven(
+            final HederaFunctionality function, final Timestamp at) {
         try {
-            Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
+            final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices =
                     applicableUsagePrices(at);
-            Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
+            final Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);
             Objects.requireNonNull(usagePrices);
             return usagePrices;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.debug(
                     "Default usage price will be used, no specific usage prices available for"
                             + " function {} @ {}!",
@@ -195,7 +196,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
             final FeeSchedule feeSchedule) {
         final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices =
                 new EnumMap<>(HederaFunctionality.class);
-        for (var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
+        for (final var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
             final var function = pricingData.getHederaFunctionality();
             Map<SubType, FeeData> pricesMap = allPrices.get(function);
             if (pricesMap == null) {
@@ -215,7 +216,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
         /* The deprecated prices are the final fallback; if even they are not set, the function will be free */
         final var oldDefaultPrices = tfs.getFeeData();
         FeeData newDefaultPrices = null;
-        for (var typedPrices : tfs.getFeesList()) {
+        for (final var typedPrices : tfs.getFeesList()) {
             final var type = typedPrices.getSubType();
             if (requiredTypes.contains(type)) {
                 pricesMap.put(type, typedPrices);
@@ -224,7 +225,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                 newDefaultPrices = typedPrices;
             }
         }
-        for (var type : requiredTypes) {
+        for (final var type : requiredTypes) {
             if (!pricesMap.containsKey(type)) {
                 if (newDefaultPrices != null) {
                     pricesMap.put(type, newDefaultPrices.toBuilder().setSubType(type).build());

@@ -31,9 +31,9 @@ import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -46,27 +46,30 @@ public class GetFileInfoAnswer implements AnswerService {
     private final OptionValidator validator;
 
     @Inject
-    public GetFileInfoAnswer(OptionValidator validator) {
+    public GetFileInfoAnswer(final OptionValidator validator) {
         this.validator = validator;
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getFileGetInfo().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(query.getFileGetInfo().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
-        var op = query.getFileGetInfo();
-        FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
+        final var op = query.getFileGetInfo();
+        final FileGetInfoResponse.Builder response = FileGetInfoResponse.newBuilder();
 
-        ResponseType type = op.getHeader().getResponseType();
+        final ResponseType type = op.getHeader().getResponseType();
         if (validity != OK) {
             log.debug(
                     "FileGetInfo not successful for: validity {}, query {} ",
@@ -77,7 +80,7 @@ public class GetFileInfoAnswer implements AnswerService {
             if (type == COST_ANSWER) {
                 response.setHeader(costAnswerHeader(OK, cost));
             } else {
-                var info = Objects.requireNonNull(view).infoForFile(op.getFileID());
+                final var info = Objects.requireNonNull(view).infoForFile(op.getFileID());
                 /* Include cost here to satisfy legacy regression tests. */
                 if (info.isPresent()) {
                     response.setHeader(answerOnlyHeader(OK, cost));
@@ -91,8 +94,8 @@ public class GetFileInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        var id = query.getFileGetInfo().getFileID();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final var id = query.getFileGetInfo().getFileID();
 
         return validator.queryableFileStatus(id, view);
     }
@@ -103,13 +106,13 @@ public class GetFileInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getFileGetInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        Transaction paymentTxn = query.getFileGetInfo().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final Transaction paymentTxn = query.getFileGetInfo().getHeader().getPayment();
         return Optional.ofNullable(SignedTxnAccessor.uncheckedFrom(paymentTxn));
     }
 }

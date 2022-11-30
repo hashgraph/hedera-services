@@ -15,8 +15,8 @@
  */
 package com.hedera.services.contracts.execution;
 
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import org.hyperledger.besu.datatypes.Hash;

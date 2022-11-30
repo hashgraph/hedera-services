@@ -22,11 +22,11 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.system.SoftwareVersion;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
-import org.jetbrains.annotations.NotNull;
 
 public class SerializableSemVers implements SoftwareVersion {
     private static final String IS_INCOMPARABLE_MSG = " cannot be compared to ";
@@ -63,13 +63,13 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     public SerializableSemVers(
-            @NotNull final SemanticVersion proto, @NotNull final SemanticVersion services) {
+            @NonNull final SemanticVersion proto, @NonNull final SemanticVersion services) {
         this.proto = proto;
         this.services = services;
     }
 
     public static SerializableSemVers forHapiAndHedera(
-            @NotNull final String proto, @NotNull final String services) {
+            @NonNull final String proto, @NonNull final String services) {
         return new SerializableSemVers(asSemVer(proto), asSemVer(services));
     }
 
@@ -114,7 +114,7 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     private boolean haveDifferentMajorAndMinorVersions(
-            @NotNull final SerializableSemVers a, @NotNull final SerializableSemVers b) {
+            @NonNull final SerializableSemVers a, @NonNull final SerializableSemVers b) {
         return a.services.getMajor() != b.services.getMajor()
                 || a.services.getMinor() != b.services.getMinor();
     }
@@ -207,7 +207,7 @@ public class SerializableSemVers implements SoftwareVersion {
         return sb.toString();
     }
 
-    private static int alphaNumberOf(@NotNull final String pre) {
+    private static int alphaNumberOf(@NonNull final String pre) {
         final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
         return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
@@ -225,7 +225,7 @@ public class SerializableSemVers implements SoftwareVersion {
 
     @VisibleForTesting
     static void setCurrentVersionHasPatchMigrationRecords(
-            boolean currentVersionHasPatchMigrationRecords) {
+            final boolean currentVersionHasPatchMigrationRecords) {
         SerializableSemVers.currentVersionHasPatchMigrationRecords =
                 currentVersionHasPatchMigrationRecords;
     }

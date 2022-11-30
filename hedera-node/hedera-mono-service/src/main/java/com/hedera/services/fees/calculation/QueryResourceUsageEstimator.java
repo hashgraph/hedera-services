@@ -19,8 +19,8 @@ import com.hedera.services.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 /**
  * Defines a type able to estimate the resource usage of one (or more) query operations, relative to
