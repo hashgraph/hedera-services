@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.mono.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
@@ -32,7 +31,7 @@ import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.services.utils.KeyUtils;
+import com.hedera.node.app.service.mono.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import java.util.Optional;

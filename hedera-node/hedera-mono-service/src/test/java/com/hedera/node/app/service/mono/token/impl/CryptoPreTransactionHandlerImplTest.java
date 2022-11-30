@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.services.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.node.app.service.mono.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -30,9 +30,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.service.mono.SigTransactionMetadata;
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
-import com.hedera.node.app.service.mono.token.impl.CryptoPreTransactionHandlerImpl;
-import com.hedera.node.app.service.mono.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
