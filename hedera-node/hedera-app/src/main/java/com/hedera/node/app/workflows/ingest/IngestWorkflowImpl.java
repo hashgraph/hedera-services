@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
@@ -26,17 +30,10 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-
 import java.nio.ByteBuffer;
 import javax.annotation.Nonnull;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static java.util.Objects.requireNonNull;
-
-/**
- * Default implementation of {@link IngestWorkflow}
- */
+/** Default implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
     private final WorkflowOnset onset;
@@ -48,7 +45,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     /**
      * Constructor of {@code IngestWorkflowImpl}
      *
-     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a transaction
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
+     *     transaction
      * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
      * @param throttleAccumulator the {@link ThrottleAccumulator} for throttling
      * @param submissionManager the {@link SubmissionManager} to submit transactions to the platform
@@ -90,12 +88,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             // 3. Get payer account
             final AccountID payerID = txBody.getTransactionID().getAccountID();
             // TODO: Get payer account
-//            final var payerOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
-//            if (payerOpt.isEmpty()) {
-//                // This is an error condition. No account!
-//                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
-//            }
-//            final var payer = payerOpt.get();
+            //            final var payerOpt =
+            // query.getAccountById(txBody.getTransactionID().getAccountID());
+            //            if (payerOpt.isEmpty()) {
+            //                // This is an error condition. No account!
+            //                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+            //            }
+            //            final var payer = payerOpt.get();
             final HederaAccount payer = null;
 
             // 4. Check payer's signature
@@ -120,11 +119,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             result = e.responseCode();
         }
 
-        final var transactionResponse = TransactionResponse.newBuilder()
-                .setNodeTransactionPrecheckCode(result)
-                .setCost(estimatedFee)
-                .build();
+        final var transactionResponse =
+                TransactionResponse.newBuilder()
+                        .setNodeTransactionPrecheckCode(result)
+                        .setCost(estimatedFee)
+                        .build();
         responseBuffer.put(transactionResponse.toByteArray());
     }
-
 }

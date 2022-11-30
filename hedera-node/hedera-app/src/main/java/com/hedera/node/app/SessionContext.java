@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,27 +33,27 @@ import javax.annotation.Nonnull;
  * @param txBodyParser a parser for {@link TransactionBody}
  */
 public record SessionContext(
-		@Nonnull Parser<Query> queryParser,
-		@Nonnull Parser<Transaction> txParser,
-		@Nonnull Parser<SignedTransaction> signedParser,
-		@Nonnull Parser<TransactionBody> txBodyParser) {
+        @Nonnull Parser<Query> queryParser,
+        @Nonnull Parser<Transaction> txParser,
+        @Nonnull Parser<SignedTransaction> signedParser,
+        @Nonnull Parser<TransactionBody> txBodyParser) {
 
-	/**
-	 * Constructor of {@code SessionContext}
-	 *
-	 * @param queryParser the {@link Query}-parser
-	 * @param txParser the {@link Transaction}-parser
-	 * @param signedParser the {@link SignedTransaction}-parser
-	 * @param txBodyParser the {@link TransactionBody}-parser
-	 */
-	public SessionContext(
-			@Nonnull final Parser<Query> queryParser,
-			@Nonnull final Parser<Transaction> txParser,
-			@Nonnull final Parser<SignedTransaction> signedParser,
-			@Nonnull final Parser<TransactionBody> txBodyParser) {
-		this.queryParser = requireNonNull(queryParser);
-		this.txParser = requireNonNull(txParser);
-		this.signedParser = requireNonNull(signedParser);
-		this.txBodyParser = requireNonNull(txBodyParser);
-	}
+    /**
+     * Constructor of {@code SessionContext}
+     *
+     * @param queryParser the {@link Query}-parser
+     * @param txParser the {@link Transaction}-parser
+     * @param signedParser the {@link SignedTransaction}-parser
+     * @param txBodyParser the {@link TransactionBody}-parser
+     */
+    public SessionContext(
+            @Nonnull final Parser<Query> queryParser,
+            @Nonnull final Parser<Transaction> txParser,
+            @Nonnull final Parser<SignedTransaction> signedParser,
+            @Nonnull final Parser<TransactionBody> txBodyParser) {
+        this.queryParser = requireNonNull(queryParser);
+        this.txParser = requireNonNull(txParser);
+        this.signedParser = requireNonNull(signedParser);
+        this.txBodyParser = requireNonNull(txBodyParser);
+    }
 }

@@ -1,4 +1,26 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.onset;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -15,20 +37,12 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
-import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
-import static java.util.Objects.requireNonNull;
+import javax.annotation.Nonnull;
 
 /**
- * This class does some pre-processing before each workflow.
- * It parses the provided {@link ByteBuffer} and checks it.
+ * This class does some pre-processing before each workflow. It parses the provided {@link
+ * ByteBuffer} and checks it.
  */
 public class WorkflowOnset {
 
@@ -63,8 +77,8 @@ public class WorkflowOnset {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public OnsetResult parseAndCheck(
-            @Nonnull final SessionContext ctx,
-            @Nonnull final ByteBuffer buffer) throws PreCheckException {
+            @Nonnull final SessionContext ctx, @Nonnull final ByteBuffer buffer)
+            throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
@@ -83,7 +97,8 @@ public class WorkflowOnset {
         final ByteString bodyBytes;
         final SignatureMap signatureMap;
         if (!tx.getSignedTransactionBytes().isEmpty()) {
-            final SignedTransaction signedTransaction = parse(ctx.signedParser(), tx.getSignedTransactionBytes(), INVALID_TRANSACTION);
+            final SignedTransaction signedTransaction =
+                    parse(ctx.signedParser(), tx.getSignedTransactionBytes(), INVALID_TRANSACTION);
             checker.checkSignedTransaction(signedTransaction);
             bodyBytes = signedTransaction.getBodyBytes();
             signatureMap = signedTransaction.getSigMap();
@@ -95,7 +110,8 @@ public class WorkflowOnset {
         }
 
         // 3. Parse and validate TransactionBody
-        final TransactionBody txBody = parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
+        final TransactionBody txBody =
+                parse(ctx.txBodyParser(), bodyBytes, INVALID_TRANSACTION_BODY);
         checker.checkTransactionBody(txBody);
 
         // 4. Get HederaFunctionality
@@ -111,18 +127,20 @@ public class WorkflowOnset {
     }
 
     private static Transaction parse(
-            @Nonnull final Parser<Transaction> parser,
-            @Nonnull final ByteBuffer buffer) throws PreCheckException {
+            @Nonnull final Parser<Transaction> parser, @Nonnull final ByteBuffer buffer)
+            throws PreCheckException {
         try {
             return parser.parseFrom(buffer);
         } catch (InvalidProtocolBufferException e) {
             throw new PreCheckException(INVALID_TRANSACTION);
         }
     }
+
     private static <T> T parse(
             @Nonnull final Parser<T> parser,
             @Nonnull final ByteString buffer,
-            @Nonnull final ResponseCodeEnum errorCode) throws PreCheckException {
+            @Nonnull final ResponseCodeEnum errorCode)
+            throws PreCheckException {
         try {
             return parser.parseFrom(buffer);
         } catch (InvalidProtocolBufferException e) {

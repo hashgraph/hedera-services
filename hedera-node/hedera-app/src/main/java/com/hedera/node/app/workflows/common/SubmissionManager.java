@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.common;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
+import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.SessionContext;
@@ -6,20 +24,12 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
+import java.nio.ByteBuffer;
+import javax.annotation.Nonnull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nonnull;
-
-import java.nio.ByteBuffer;
-import java.util.Objects;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-import static java.util.Objects.requireNonNull;
-
-/**
- * The {@code SubmissionManager} provides functionality to submit transactions to the platform.
- */
+/** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
 public class SubmissionManager {
 
     private static final Logger LOG = LogManager.getLogger(SubmissionManager.class);
@@ -35,7 +45,10 @@ public class SubmissionManager {
      * @param recordCache the {@link RecordCache}
      * @param speedometers metrics related to submissions
      */
-    public SubmissionManager(@Nonnull final Platform platform, @Nonnull final RecordCache recordCache, @Nonnull final MiscSpeedometers speedometers) {
+    public SubmissionManager(
+            @Nonnull final Platform platform,
+            @Nonnull final RecordCache recordCache,
+            @Nonnull final MiscSpeedometers speedometers) {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.speedometers = requireNonNull(speedometers);
@@ -53,7 +66,8 @@ public class SubmissionManager {
     public void submit(
             @Nonnull final SessionContext ctx,
             @Nonnull final TransactionBody txBody,
-            @Nonnull final ByteBuffer byteBuffer) throws PreCheckException {
+            @Nonnull final ByteBuffer byteBuffer)
+            throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(txBody);
         requireNonNull(byteBuffer);
@@ -61,7 +75,10 @@ public class SubmissionManager {
         final byte[] payload;
         if (txBody.hasUncheckedSubmit()) {
             try {
-                payload = ctx.txParser().parseFrom(txBody.getUncheckedSubmit().getTransactionBytes()).toByteArray();
+                payload =
+                        ctx.txParser()
+                                .parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
+                                .toByteArray();
             } catch (InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);
                 throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);

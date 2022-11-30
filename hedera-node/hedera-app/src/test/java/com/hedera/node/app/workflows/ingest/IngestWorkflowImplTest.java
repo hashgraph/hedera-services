@@ -1,4 +1,35 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.ingest;
+
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
@@ -11,49 +42,26 @@ import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopic;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import java.nio.ByteBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.ByteBuffer;
-
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CreateTransactionRecord;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.assertj.core.api.Assertions.anyOf;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
 
     private static final TransactionBody TRANSACTION_BODY = TransactionBody.getDefaultInstance();
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.getDefaultInstance();
-    private static final OnsetResult ONSET_RESULT = new OnsetResult(
-            TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic
-    );
+    private static final OnsetResult ONSET_RESULT =
+            new OnsetResult(TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic);
 
     @Mock private WorkflowOnset onset;
     @Mock private IngestChecker checker;
@@ -74,20 +82,49 @@ class IngestWorkflowImplTest {
     @BeforeEach
     void setup() {
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
-        workflow = new IngestWorkflowImpl(onset, checker, throttleAccumulator, submissionManager, opCounters);
+        workflow =
+                new IngestWorkflowImpl(
+                        onset, checker, throttleAccumulator, submissionManager, opCounters);
     }
 
     @Test
     void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new IngestWorkflowImpl(null, checker, throttleAccumulator, submissionManager, opCounters))
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        null,
+                                        checker,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(onset, null, throttleAccumulator, submissionManager, opCounters))
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset,
+                                        null,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(onset, checker, null, submissionManager, opCounters))
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset, checker, null, submissionManager, opCounters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(onset, checker, throttleAccumulator, null, opCounters))
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset, checker, throttleAccumulator, null, opCounters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new IngestWorkflowImpl(onset, checker, throttleAccumulator, submissionManager, null))
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset,
+                                        checker,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -112,7 +149,8 @@ class IngestWorkflowImplTest {
     @Test
     void testOnsetFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        when(onset.parseAndCheck(any(), any()))
+                .thenThrow(new PreCheckException(INVALID_TRANSACTION));
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -131,7 +169,9 @@ class IngestWorkflowImplTest {
     void testSemanticFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
-        doThrow(new PreCheckException(NOT_SUPPORTED)).when(checker).checkTransactionSemantic(TRANSACTION_BODY, ConsensusCreateTopic);
+        doThrow(new PreCheckException(NOT_SUPPORTED))
+                .when(checker)
+                .checkTransactionSemantic(TRANSACTION_BODY, ConsensusCreateTopic);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -150,7 +190,9 @@ class IngestWorkflowImplTest {
     void testPayerSignatureFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
-        doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE)).when(checker).checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
+        doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
+                .when(checker)
+                .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -169,7 +211,9 @@ class IngestWorkflowImplTest {
     void testSolvencyFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
-        doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L)).when(checker).checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
+        doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
+                .when(checker)
+                .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -177,7 +221,8 @@ class IngestWorkflowImplTest {
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
+        assertThat(response.getNodeTransactionPrecheckCode())
+                .isEqualTo(INSUFFICIENT_ACCOUNT_BALANCE);
         assertThat(response.getCost()).isEqualTo(42L);
         verify(opCounters).countReceived(ConsensusCreateTopic);
         verify(submissionManager, never()).submit(any(), any(), any());
@@ -203,7 +248,8 @@ class IngestWorkflowImplTest {
         verify(opCounters, never()).countSubmitted(any());
     }
 
-    private static TransactionResponse parseResponse(ByteBuffer responseBuffer) throws InvalidProtocolBufferException {
+    private static TransactionResponse parseResponse(ByteBuffer responseBuffer)
+            throws InvalidProtocolBufferException {
         final byte[] bytes = new byte[responseBuffer.position()];
         responseBuffer.get(0, bytes);
         return TransactionResponse.parseFrom(bytes);

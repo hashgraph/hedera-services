@@ -248,7 +248,8 @@ public final class MiscUtils {
     private static final Set<HederaFunctionality> CONSENSUS_THROTTLED_FUNCTIONS =
             EnumSet.of(ContractCallLocal, ContractCall, ContractCreate, EthereumTransaction);
 
-    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR = MiscUtils::saveFunctionOf;
+    public static final Function<TransactionBody, HederaFunctionality> FUNCTION_EXTRACTOR =
+            MiscUtils::saveFunctionOf;
 
     static final String TOKEN_MINT_METRIC = "mintToken";
     static final String TOKEN_BURN_METRIC = "burnToken";

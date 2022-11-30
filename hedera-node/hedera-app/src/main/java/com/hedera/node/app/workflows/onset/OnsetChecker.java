@@ -1,25 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.onset;
-
-import com.google.protobuf.GeneratedMessageV3;
-import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.records.RecordCache;
-import com.hedera.services.stats.HapiOpCounters;
-import com.hedera.services.utils.MiscUtils;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.codec.binary.StringUtils;
-import org.bouncycastle.util.Arrays;
-
-import javax.annotation.Nonnull;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
 
 import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -40,9 +34,27 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OV
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 import static java.util.Objects.requireNonNull;
 
-/**
- * This class preprocess transactions by parsing them and checking for syntax errors.
- */
+import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hedera.services.utils.MiscUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import javax.annotation.Nonnull;
+import org.apache.commons.codec.binary.StringUtils;
+import org.bouncycastle.util.Arrays;
+
+/** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
 
     private final int maxSignedTxnSize;
@@ -136,7 +148,8 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    public void checkSignedTransaction(@Nonnull final SignedTransaction tx) throws PreCheckException {
+    public void checkSignedTransaction(@Nonnull final SignedTransaction tx)
+            throws PreCheckException {
         requireNonNull(tx);
 
         if (MiscUtils.hasUnknownFields(tx)) {
@@ -155,7 +168,8 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    public void checkTransactionBody(@Nonnull final TransactionBody txBody) throws PreCheckException {
+    public void checkTransactionBody(@Nonnull final TransactionBody txBody)
+            throws PreCheckException {
         requireNonNull(txBody);
 
         if (MiscUtils.hasUnknownFields(txBody)) {
@@ -186,7 +200,6 @@ public class OnsetChecker {
         if (!isPlausibleAccount(txnId.getAccountID())) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
         }
-
 
         if (!isThisNodeAccount(txBody.getNodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
@@ -226,7 +239,9 @@ public class OnsetChecker {
     }
 
     private static boolean isPlausibleAccount(final AccountID accountID) {
-        return accountID.getAccountNum() > 0 && accountID.getRealmNum() >= 0 && accountID.getShardNum() >= 0;
+        return accountID.getAccountNum() > 0
+                && accountID.getRealmNum() >= 0
+                && accountID.getShardNum() >= 0;
     }
 
     private boolean isThisNodeAccount(final AccountID accountID) {
@@ -243,9 +258,11 @@ public class OnsetChecker {
         }
     }
 
-    private void checkTimebox(final Timestamp start, final Duration duration) throws PreCheckException {
+    private void checkTimebox(final Timestamp start, final Duration duration)
+            throws PreCheckException {
         final var validForSecs = duration.getSeconds();
-        if (validForSecs < dynamicProperties.minTxnDuration() || validForSecs > dynamicProperties.maxTxnDuration()) {
+        if (validForSecs < dynamicProperties.minTxnDuration()
+                || validForSecs > dynamicProperties.maxTxnDuration()) {
             throw new PreCheckException(INVALID_TRANSACTION_DURATION);
         }
 
@@ -265,13 +282,14 @@ public class OnsetChecker {
                 Math.min(
                         Math.max(Instant.MIN.getEpochSecond(), timestamp.getSeconds()),
                         Instant.MAX.getEpochSecond()),
-                Math.min(Math.max(Instant.MIN.getNano(), timestamp.getNanos()), Instant.MAX.getNano()));
+                Math.min(
+                        Math.max(Instant.MIN.getNano(), timestamp.getNanos()),
+                        Instant.MAX.getNano()));
     }
 
     private long safeguardedDuration(final long validForSecs, final Instant validStart) {
         return Math.min(
                 validForSecs - dynamicProperties.minValidityBuffer(),
-                Instant.MAX.getEpochSecond() - validStart.getEpochSecond()
-        );
+                Instant.MAX.getEpochSecond() - validStart.getEpochSecond());
     }
 }

@@ -40,7 +40,8 @@ public final class ServicesStatsConfig {
 
     static final String COUNTER_HANDLED_DESC_TPL = "number of %s handled";
     static final String COUNTER_RECEIVED_DESC_TPL = "number of %s received";
-    public static final String COUNTER_RECEIVED_DEPRECATED_DESC = "number of deprecated txns received";
+    public static final String COUNTER_RECEIVED_DEPRECATED_DESC =
+            "number of deprecated txns received";
     static final String COUNTER_ANSWERED_DESC_TPL = "number of %s answered";
     static final String COUNTER_SUBMITTED_DESC_TPL = "number of %s submitted";
     static final String SPEEDOMETER_HANDLED_DESC_TPL = "number of %s handled per second";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,44 +19,41 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
  * the ingestion pipeline pre-checks.
  */
 public class PreCheckException extends Exception {
-	private final ResponseCodeEnum responseCode;
+    private final ResponseCodeEnum responseCode;
 
-	/**
-	 * Constructor of {@code PreCheckException}
-	 *
-	 * @param responseCode the {@link ResponseCodeEnum responseCode}
-	 * @throws NullPointerException if {@code responseCode} is {@code null}
-	 */
-	public PreCheckException(@Nonnull final ResponseCodeEnum responseCode) {
-		super();
-		this.responseCode = requireNonNull(responseCode);
-	}
+    /**
+     * Constructor of {@code PreCheckException}
+     *
+     * @param responseCode the {@link ResponseCodeEnum responseCode}
+     * @throws NullPointerException if {@code responseCode} is {@code null}
+     */
+    public PreCheckException(@Nonnull final ResponseCodeEnum responseCode) {
+        super();
+        this.responseCode = requireNonNull(responseCode);
+    }
 
-	/**
-	 * Returns the {@code responseCode} of this {@code PreCheckException}
-	 *
-	 * @return the {@link ResponseCodeEnum responseCode}
-	 */
-	@Nonnull
-	public ResponseCodeEnum responseCode() {
-		return responseCode;
-	}
+    /**
+     * Returns the {@code responseCode} of this {@code PreCheckException}
+     *
+     * @return the {@link ResponseCodeEnum responseCode}
+     */
+    @Nonnull
+    public ResponseCodeEnum responseCode() {
+        return responseCode;
+    }
 
-	@Override
-	public String toString() {
-		return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-				.append("responseCode", responseCode)
-				.toString();
-	}
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("responseCode", responseCode)
+                .toString();
+    }
 }

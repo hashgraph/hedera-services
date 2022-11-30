@@ -1,27 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.onset;
-
-import com.google.protobuf.ByteString;
-import com.google.protobuf.UnknownFieldSet;
-import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.records.RecordCache;
-import com.hedera.services.stats.HapiOpCounters;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -45,6 +37,28 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.UnknownFieldSet;
+import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
+import com.hedera.services.records.RecordCache;
+import com.hedera.services.stats.HapiOpCounters;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class OnsetCheckerTest {
 
@@ -53,11 +67,15 @@ class OnsetCheckerTest {
     private static final int MAX_MEMO_SIZE = 2 * 1024;
     private static final long MIN_DURATION = 10L;
     private static final long MAX_DURATION = 120L;
-    private static final ByteString CONTENT = ByteString.copyFrom("Hello world!", StandardCharsets.UTF_8);
+    private static final ByteString CONTENT =
+            ByteString.copyFrom("Hello world!", StandardCharsets.UTF_8);
     private static final Duration ONE_MINUTE = Duration.newBuilder().setSeconds(60).build();
 
     @Mock private RecordCache recordCache;
-    @Mock(strictness = LENIENT) private GlobalDynamicProperties dynamicProperties;
+
+    @Mock(strictness = LENIENT)
+    private GlobalDynamicProperties dynamicProperties;
+
     @Mock private HapiOpCounters counters;
 
     private TransactionID transactionID;
@@ -74,9 +92,15 @@ class OnsetCheckerTest {
 
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
-        transactionID = TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(now).build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .build();
 
-        checker = new OnsetChecker(MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters);
+        checker =
+                new OnsetChecker(
+                        MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters);
     }
 
     @Test
@@ -85,22 +109,86 @@ class OnsetCheckerTest {
         final var nodeId = AccountID.newBuilder().build();
 
         // then
-        assertThatThrownBy(() -> new OnsetChecker(0, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        0,
+                                        MAX_LEVELS,
+                                        recordCache,
+                                        nodeId,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new OnsetChecker(-1, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        -1,
+                                        MAX_LEVELS,
+                                        recordCache,
+                                        nodeId,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, 0, recordCache, nodeId, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        0,
+                                        recordCache,
+                                        nodeId,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, -1, recordCache, nodeId, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        -1,
+                                        recordCache,
+                                        nodeId,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, MAX_LEVELS, null, nodeId, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        MAX_LEVELS,
+                                        null,
+                                        nodeId,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, MAX_LEVELS, recordCache, null, dynamicProperties, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        MAX_LEVELS,
+                                        recordCache,
+                                        null,
+                                        dynamicProperties,
+                                        counters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, null, counters))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        MAX_LEVELS,
+                                        recordCache,
+                                        nodeId,
+                                        null,
+                                        counters))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new OnsetChecker(MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, dynamicProperties, null))
+        assertThatThrownBy(
+                        () ->
+                                new OnsetChecker(
+                                        MAX_TXN_SIZE,
+                                        MAX_LEVELS,
+                                        recordCache,
+                                        nodeId,
+                                        dynamicProperties,
+                                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -127,7 +215,11 @@ class OnsetCheckerTest {
     @Test
     void testCheckTransactionWithDeprecatedBytesFails() {
         // given
-        final var tx = Transaction.newBuilder().setSignedTransactionBytes(CONTENT).setBodyBytes(CONTENT).build();
+        final var tx =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(CONTENT)
+                        .setBodyBytes(CONTENT)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransaction(tx))
@@ -140,7 +232,11 @@ class OnsetCheckerTest {
     void testCheckTransactionWithDeprecatedSignatureMapFails() {
         // given
         final var signatureMap = SignatureMap.getDefaultInstance();
-        final var tx = Transaction.newBuilder().setSignedTransactionBytes(CONTENT).setSigMap(signatureMap).build();
+        final var tx =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(CONTENT)
+                        .setSigMap(signatureMap)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransaction(tx))
@@ -180,7 +276,11 @@ class OnsetCheckerTest {
         // given
         final var field = UnknownFieldSet.Field.getDefaultInstance();
         final var unknownFields = UnknownFieldSet.newBuilder().addField(42, field).build();
-        final var tx = Transaction.newBuilder().setSignedTransactionBytes(CONTENT).setUnknownFields(unknownFields).build();
+        final var tx =
+                Transaction.newBuilder()
+                        .setSignedTransactionBytes(CONTENT)
+                        .setUnknownFields(unknownFields)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransaction(tx))
@@ -226,10 +326,11 @@ class OnsetCheckerTest {
     @Test
     void testCheckTransactionBodySuccess() {
         // given
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatCode(() -> checker.checkTransactionBody(txBody)).doesNotThrowAnyException();
@@ -251,9 +352,8 @@ class OnsetCheckerTest {
     @Test
     void testCheckTransactionBodyWithoutTransactionIDFails() {
         // given
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder().setTransactionValidDuration(ONE_MINUTE).build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -266,15 +366,17 @@ class OnsetCheckerTest {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
-        transactionID = TransactionID.newBuilder()
-                .setAccountID(payerId)
-                .setTransactionValidStart(now)
-                .setScheduled(true)
-                .build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .setScheduled(true)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -287,15 +389,17 @@ class OnsetCheckerTest {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
-        transactionID = TransactionID.newBuilder()
-                .setAccountID(payerId)
-                .setTransactionValidStart(now)
-                .setNonce(42)
-                .build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .setNonce(42)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -307,10 +411,11 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyDuplicateFails() {
         // given
         when(recordCache.isReceiptPresent(transactionID)).thenReturn(true);
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -321,11 +426,12 @@ class OnsetCheckerTest {
     @Test
     void testCheckTransactionBodyWithInvalidFeeFails() {
         // given
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .setTransactionFee(-1L)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .setTransactionFee(-1L)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -338,14 +444,16 @@ class OnsetCheckerTest {
         // given
         final var payerId = AccountID.newBuilder().build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
-        transactionID = TransactionID.newBuilder()
-                .setAccountID(payerId)
-                .setTransactionValidStart(now)
-                .build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -357,11 +465,12 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithInvalidNodeAccountFails() {
         // given
         final var nodeId = AccountID.newBuilder().setAccountNum(42L).build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .setNodeAccountID(nodeId)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .setNodeAccountID(nodeId)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -373,11 +482,12 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithTooLargeMemoFails() {
         // given
         final var memo = "1".repeat(MAX_MEMO_SIZE) + "1";
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .setMemo(memo)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .setMemo(memo)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -389,11 +499,12 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithZeroByteMemoFails() {
         // given
         final var memo = "Hello World \0";
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .setMemo(memo)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .setMemo(memo)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -405,10 +516,11 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithTooSmallDurationFails() {
         // given
         final var duration = Duration.newBuilder().setSeconds(MIN_DURATION - 1).build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(duration)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(duration)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -420,10 +532,11 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithTooLargeDurationFails() {
         // given
         final var duration = Duration.newBuilder().setSeconds(MAX_DURATION + 1).build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(duration)
-                .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(duration)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -435,12 +548,18 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithExpiredTimeFails() {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
-        final var past = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond() - 100).build();
-        transactionID = TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(past).build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        final var past =
+                Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond() - 100).build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(past)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
@@ -452,12 +571,18 @@ class OnsetCheckerTest {
     void testCheckTransactionBodyWithFutureStartFails() {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
-        final var future = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond() + 100).build();
-        transactionID = TransactionID.newBuilder().setAccountID(payerId).setTransactionValidStart(future).build();
-        final var txBody = TransactionBody.newBuilder()
-                .setTransactionID(transactionID)
-                .setTransactionValidDuration(ONE_MINUTE)
-                .build();
+        final var future =
+                Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond() + 100).build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(future)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
 
         // then
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
