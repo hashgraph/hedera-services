@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.queries.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
+import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -28,8 +28,8 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
 import com.hedera.node.app.service.mono.queries.AnswerService;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

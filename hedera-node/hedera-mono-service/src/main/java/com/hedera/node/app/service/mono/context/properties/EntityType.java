@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
-import static com.hedera.services.utils.MiscUtils.csvSet;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.csvSet;
 
 import java.util.Set;
 

@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.models.Account;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Inject;

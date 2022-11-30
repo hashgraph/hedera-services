@@ -31,8 +31,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.metrics.Counter;

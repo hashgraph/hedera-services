@@ -16,14 +16,14 @@
 package com.hedera.node.app.service.mono.state.expiry.classification;
 
 import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;

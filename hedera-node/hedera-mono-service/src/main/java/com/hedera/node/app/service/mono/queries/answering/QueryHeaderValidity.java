@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.queries.answering;
 
-import static com.hedera.services.utils.MiscUtils.activeHeaderFrom;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.activeHeaderFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_QUERY_HEADER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

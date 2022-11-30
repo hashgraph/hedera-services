@@ -15,11 +15,12 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.crypto.Signature;
@@ -40,42 +41,45 @@ import com.swirlds.common.system.SwirldDualState;
  * have active signatures for the wrapped gRPC txn to be valid; and creates the cryptographic
  * signatures at the bases of the signing hierarchies for these keys. This implicitly requests the
  * Platform to verify these cryptographic signatures, by setting them in the sigs list of the
- * platform txn, <b>before</b> {@link com.hedera.services.ServicesState#handleConsensusRound(Round,
+ * platform txn, <b>before</b> {@link ServicesState#handleConsensusRound(Round,
  * SwirldDualState)} is called with {@code isConsensus=true}.
  */
 public final class HederaToPlatformSigOps {
-    private HederaToPlatformSigOps() {
-        throw new UnsupportedOperationException("Utility Class");
-    }
+	private HederaToPlatformSigOps() {
+		throw new UnsupportedOperationException("Utility Class");
+	}
 
-    private static final Expansion.CryptoSigsCreation cryptoSigsFunction =
-            PlatformSigOps::createCryptoSigsFrom;
+	private static final Expansion.CryptoSigsCreation cryptoSigsFunction =
+			PlatformSigOps::createCryptoSigsFrom;
 
-    /**
-     * Try to set the {@link Signature} list on the accessible platform txn to exactly the
-     * base-level signatures of the signing hierarchy for each Hedera {@link JKey} required to sign
-     * the wrapped gRPC txn. (Signatures for the payer always come first.)
-     *
-     * <p>Exceptional conditions are treated as follows:
-     *
-     * <ul>
-     *   <li>If an error occurs while determining the Hedera signing keys, abort processing and
-     *       return a {@link ResponseCodeEnum} representing this error.
-     *   <li>If an error occurs while creating the platform {@link Signature} objects for either the
-     *       payer or the entities in non-payer roles, ignore it silently.
-     * </ul>
-     *
-     * @param txnAccessor the accessor for the platform txn
-     * @param sigReqs facility for listing Hedera keys required to sign the gRPC txn
-     * @param pkToSigFn source of crypto sigs for the simple keys in the Hedera key leaves
-     */
-    public static void expandIn(
-            final SwirldsTxnAccessor txnAccessor,
-            final SigRequirements sigReqs,
-            final PubKeyToSigBytes pkToSigFn) {
-        txnAccessor.getPlatformTxn().clearSignatures();
-        final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
-        new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory)
-                .execute();
-    }
+	/**
+	 * Try to set the {@link Signature} list on the accessible platform txn to exactly the
+	 * base-level signatures of the signing hierarchy for each Hedera {@link JKey} required to sign
+	 * the wrapped gRPC txn. (Signatures for the payer always come first.)
+	 *
+	 * <p>Exceptional conditions are treated as follows:
+	 *
+	 * <ul>
+	 *   <li>If an error occurs while determining the Hedera signing keys, abort processing and
+	 *       return a {@link ResponseCodeEnum} representing this error.
+	 *   <li>If an error occurs while creating the platform {@link Signature} objects for either the
+	 *       payer or the entities in non-payer roles, ignore it silently.
+	 * </ul>
+	 *
+	 * @param txnAccessor
+	 * 		the accessor for the platform txn
+	 * @param sigReqs
+	 * 		facility for listing Hedera keys required to sign the gRPC txn
+	 * @param pkToSigFn
+	 * 		source of crypto sigs for the simple keys in the Hedera key leaves
+	 */
+	public static void expandIn(
+			final SwirldsTxnAccessor txnAccessor,
+			final SigRequirements sigReqs,
+			final PubKeyToSigBytes pkToSigFn) {
+		txnAccessor.getPlatformTxn().clearSignatures();
+		final var scopedSigFactory = new ReusableBodySigningFactory(txnAccessor);
+		new Expansion(txnAccessor, sigReqs, pkToSigFn, cryptoSigsFunction, scopedSigFactory)
+				.execute();
+	}
 }

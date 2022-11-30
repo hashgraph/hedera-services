@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoS
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.List;
 import javax.inject.Inject;

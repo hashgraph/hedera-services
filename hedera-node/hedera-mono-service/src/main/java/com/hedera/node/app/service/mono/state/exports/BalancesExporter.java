@@ -15,12 +15,13 @@
  */
 package com.hedera.node.app.service.mono.state.exports;
 
-import com.hedera.services.ServicesState;
+import com.hedera.node.app.service.mono.ServicesState;
 import com.swirlds.common.system.NodeId;
+
 import java.time.Instant;
 
 public interface BalancesExporter {
-    boolean isTimeToExport(Instant now);
+	boolean isTimeToExport(Instant now);
 
-    void exportBalancesFrom(ServicesState signedState, Instant consensusTime, NodeId nodeId);
+	void exportBalancesFrom(ServicesState signedState, Instant consensusTime, NodeId nodeId);
 }

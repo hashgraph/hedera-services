@@ -18,6 +18,8 @@ package com.hedera.services.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.OwnershipTracker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

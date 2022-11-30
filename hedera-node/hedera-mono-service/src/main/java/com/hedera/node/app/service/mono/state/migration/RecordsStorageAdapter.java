@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
-import static com.hedera.services.utils.MiscUtils.forEach;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;

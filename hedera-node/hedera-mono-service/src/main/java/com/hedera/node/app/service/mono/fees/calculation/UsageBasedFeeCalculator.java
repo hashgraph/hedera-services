@@ -35,8 +35,8 @@ import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalcul
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;

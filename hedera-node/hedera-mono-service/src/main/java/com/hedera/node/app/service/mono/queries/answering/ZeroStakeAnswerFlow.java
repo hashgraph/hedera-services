@@ -21,7 +21,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.AnswerFlow;
 import com.hedera.node.app.service.mono.queries.AnswerService;
-import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import java.util.function.Supplier;

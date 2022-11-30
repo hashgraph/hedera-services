@@ -18,6 +18,7 @@ package com.hedera.services.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doCallRealMethod;
 
+import com.hedera.node.app.service.mono.stream.RecordStreamType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

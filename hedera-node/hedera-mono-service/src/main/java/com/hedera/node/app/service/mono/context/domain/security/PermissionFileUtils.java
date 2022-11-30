@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.context.domain.security;
 
-import static com.hedera.services.utils.MiscUtils.functionOf;
-import static com.hedera.services.utils.MiscUtils.functionalityOfQuery;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.functionOf;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.functionalityOfQuery;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDeleteTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusGetTopicInfo;

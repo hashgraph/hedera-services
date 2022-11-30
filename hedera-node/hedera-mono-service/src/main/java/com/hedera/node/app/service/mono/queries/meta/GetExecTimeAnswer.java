@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.AbstractAnswer;
-import com.hedera.services.stats.ExecutionTimeTracker;
+import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeResponse;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static java.util.Comparator.comparing;
@@ -25,7 +25,7 @@ import static java.util.Comparator.comparingLong;
 
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.services.txns.diligence.DuplicateClassification;
+import com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.Comparator;

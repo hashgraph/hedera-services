@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.files;
 
-import static com.hedera.services.utils.EntityIdUtils.asFile;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asFile;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;

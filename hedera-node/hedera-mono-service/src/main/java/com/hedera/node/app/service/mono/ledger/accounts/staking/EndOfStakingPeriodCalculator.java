@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -31,8 +31,8 @@ import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.merkle.map.MerkleMap;

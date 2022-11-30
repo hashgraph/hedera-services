@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.
 import com.google.common.primitives.Ints;
 import com.hedera.node.app.service.mono.state.migration.QueryableRecords;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

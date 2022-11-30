@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.exports;
 
-import static com.hedera.services.store.models.Id.MISSING_ID;
+import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.state.exports.ToStringAccountsExporter;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

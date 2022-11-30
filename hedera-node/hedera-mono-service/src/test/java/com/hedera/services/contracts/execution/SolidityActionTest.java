@@ -23,7 +23,7 @@ import com.hedera.node.app.service.mono.contracts.execution.traceability.Contrac
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import java.nio.charset.StandardCharsets;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;

@@ -18,12 +18,12 @@ package com.hedera.node.app.service.mono.state.tasks;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.timestampSidecars;
 import static com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper.baseRecordWith;
 import static com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper.finalizeAndStream;
-import static com.hedera.services.utils.EntityNum.fromLong;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromLong;
 
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.logic.RecordStreaming;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.util.List;
 import javax.inject.Inject;

@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.fees.charging;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 
 /** Defines the checks and charging actions we need to apply the Services fee policy. */
 public interface NarratedCharging {

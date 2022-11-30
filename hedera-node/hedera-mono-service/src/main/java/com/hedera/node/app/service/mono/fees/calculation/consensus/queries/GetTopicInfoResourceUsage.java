@@ -23,8 +23,8 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.TX_HASH_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getQueryFeeDataMatrices;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.getStateProofSize;
-import static com.hedera.services.utils.EntityNum.fromTopicId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;

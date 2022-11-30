@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.grpc.controllers.FreezeController;
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.store.models.Id.fromGrpcAccount;
+import static com.hedera.node.app.service.mono.store.models.Id.fromGrpcAccount;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -28,12 +28,14 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Token;
+import com.hedera.node.app.service.mono.txns.crypto.CryptoDeleteAllowanceTransitionLogic;
+import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;

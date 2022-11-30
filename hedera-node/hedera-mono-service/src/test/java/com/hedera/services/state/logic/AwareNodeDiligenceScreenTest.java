@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
@@ -31,8 +31,8 @@ import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

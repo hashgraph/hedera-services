@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.sigs.factories;
 
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import javax.inject.Inject;
 import javax.inject.Singleton;

@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
 import com.hedera.services.stream.proto.SidecarType;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

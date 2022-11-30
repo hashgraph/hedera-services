@@ -16,8 +16,8 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc.tinycentsToTinybars;
-import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
-import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYBARS_SELECTOR;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract.TO_TINYCENTS_SELECTOR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import java.math.BigInteger;
 import java.time.Instant;

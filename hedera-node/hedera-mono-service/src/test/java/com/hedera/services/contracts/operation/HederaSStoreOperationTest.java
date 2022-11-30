@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSStoreOperation;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldUpdater;
 import java.util.ArrayDeque;
 import java.util.Optional;
 import java.util.Set;

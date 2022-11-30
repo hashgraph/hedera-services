@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.state.logic.StatusChangeListener;
-import com.hedera.services.stream.RecordStreamManager;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

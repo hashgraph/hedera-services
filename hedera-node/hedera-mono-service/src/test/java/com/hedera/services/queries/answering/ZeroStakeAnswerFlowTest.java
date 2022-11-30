@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.answering.QueryHeaderValidity;
 import com.hedera.node.app.service.mono.queries.answering.ZeroStakeAnswerFlow;
-import com.hedera.services.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

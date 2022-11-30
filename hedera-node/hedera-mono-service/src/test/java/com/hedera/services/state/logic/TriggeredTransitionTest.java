@@ -16,7 +16,7 @@
 package com.hedera.services.state.logic;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -38,8 +38,8 @@ import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.logic.NetworkUtilization;
 import com.hedera.node.app.service.mono.state.logic.RequestedTransition;
 import com.hedera.node.app.service.mono.state.logic.TriggeredTransition;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.time.Instant;

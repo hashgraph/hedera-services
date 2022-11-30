@@ -30,7 +30,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFER_LIST_
 import static java.math.BigInteger.ZERO;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -50,7 +51,7 @@ import javax.inject.Singleton;
  * actual transfers requested in such a transaction.
  *
  * <p>Since in the normal transaction lifecycle, this logic will be performed during {@link
- * com.hedera.services.txns.span.SpanMapManager#expandSpan(TxnAccessor)}, we can accept some
+ * SpanMapManager#expandSpan(TxnAccessor)}, we can accept some
  * inefficient use of gRPC types.
  */
 @Singleton

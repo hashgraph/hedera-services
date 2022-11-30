@@ -15,8 +15,8 @@
  */
 package com.hedera.services.fees.charging;
 
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.logic.AwareNodeDiligenceScreen;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;

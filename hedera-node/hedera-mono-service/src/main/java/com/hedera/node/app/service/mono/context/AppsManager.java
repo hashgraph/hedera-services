@@ -15,31 +15,32 @@
  */
 package com.hedera.node.app.service.mono.context;
 
-import com.hedera.services.ServicesApp;
+import com.hedera.node.app.service.mono.ServicesApp;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public enum AppsManager {
-    APPS;
+	APPS;
 
-    private final Map<Long, ServicesApp> apps = new HashMap<>();
+	private final Map<Long, ServicesApp> apps = new HashMap<>();
 
-    public boolean includes(long nodeId) {
-        return apps.containsKey(nodeId);
-    }
+	public boolean includes(final long nodeId) {
+		return apps.containsKey(nodeId);
+	}
 
-    public void save(long id, ServicesApp app) {
-        apps.put(id, app);
-    }
+	public void save(final long id, final ServicesApp app) {
+		apps.put(id, app);
+	}
 
-    public void clear(long id) {
-        apps.remove(id);
-    }
+	public void clear(final long id) {
+		apps.remove(id);
+	}
 
-    public ServicesApp get(long id) {
-        if (!includes(id)) {
-            throw new IllegalArgumentException("No app saved for node " + id);
-        }
-        return apps.get(id);
-    }
+	public ServicesApp get(final long id) {
+		if (!includes(id)) {
+			throw new IllegalArgumentException("No app saved for node " + id);
+		}
+		return apps.get(id);
+	}
 }

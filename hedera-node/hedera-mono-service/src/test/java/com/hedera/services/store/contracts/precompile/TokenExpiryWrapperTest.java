@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

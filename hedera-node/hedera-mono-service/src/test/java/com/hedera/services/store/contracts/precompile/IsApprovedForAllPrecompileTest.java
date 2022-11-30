@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.impl.IsApprovedForAllPrecompile.decodeIsApprovedForAll;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsApprovedForAllPrecompile.decodeIsApprovedForAll;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

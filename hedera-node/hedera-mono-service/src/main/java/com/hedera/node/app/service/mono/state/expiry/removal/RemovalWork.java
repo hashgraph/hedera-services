@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
 import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 
 /** Provides the logic needed for the account and contract expiry and removal cycle */
 public interface RemovalWork {

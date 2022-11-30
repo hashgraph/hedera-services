@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.state.expiry.classification;
 
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;

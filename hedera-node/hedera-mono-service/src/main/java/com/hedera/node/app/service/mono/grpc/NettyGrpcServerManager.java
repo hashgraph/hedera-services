@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.grpc;
 
-import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
+import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.utils.Pause;
+import com.hedera.node.app.service.mono.utils.Pause;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;

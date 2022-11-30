@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;

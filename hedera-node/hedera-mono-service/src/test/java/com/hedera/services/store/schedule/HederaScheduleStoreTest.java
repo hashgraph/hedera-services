@@ -17,8 +17,8 @@ package com.hedera.services.store.schedule;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcAccountId;
-import static com.hedera.services.utils.EntityNum.fromScheduleId;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromScheduleId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
 import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
@@ -59,6 +59,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityV
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
+import com.hedera.node.app.service.mono.store.schedule.HederaScheduleStore;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

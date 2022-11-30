@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.virtual.schedule;
 
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.ScheduledTxnFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.utils.MiscUtils.FUNCTION_EXTRACTOR;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.FUNCTION_EXTRACTOR;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
@@ -41,7 +41,10 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
-import com.hedera.services.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

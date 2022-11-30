@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.submission;
 
-import static com.hedera.services.txns.submission.TxnResponseHelper.FAIL_INVALID_RESPONSE;
+import static com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper.FAIL_INVALID_RESPONSE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,9 +26,10 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.services.stats.HapiOpCounters;
-import com.hedera.services.txns.SubmissionFlow;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.mono.txns.SubmissionFlow;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;

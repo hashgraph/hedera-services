@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.Bl
 import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
 
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 
 public record BlobKey(BlobType type, long entityNum) {
     public enum BlobType {

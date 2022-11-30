@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.TxnUtils;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;

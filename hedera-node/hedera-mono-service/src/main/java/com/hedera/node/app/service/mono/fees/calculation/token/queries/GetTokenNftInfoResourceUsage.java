@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.token.queries;
 
 import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
-import static com.hedera.services.utils.MiscUtils.putIfNotNull;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.fees.usage.token.TokenGetNftInfoUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;

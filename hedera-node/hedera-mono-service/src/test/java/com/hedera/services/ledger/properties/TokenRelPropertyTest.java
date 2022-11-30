@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import org.junit.jupiter.api.Test;
 
 class TokenRelPropertyTest {

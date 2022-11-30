@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 
 import com.google.common.base.MoreObjects;
 import com.hederahashgraph.api.proto.java.AccountID;

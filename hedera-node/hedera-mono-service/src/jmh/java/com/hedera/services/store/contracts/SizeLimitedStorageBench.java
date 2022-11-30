@@ -23,6 +23,7 @@ import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hedera.services.mocks.MockStorageLimits;
 import com.hedera.services.mocks.NoopStorageFeeCharging;
 import com.hedera.services.setup.Constructables;

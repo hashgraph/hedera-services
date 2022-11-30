@@ -23,8 +23,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

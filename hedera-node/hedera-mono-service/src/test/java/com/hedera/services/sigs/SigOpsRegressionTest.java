@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.payerSig
 import static com.hedera.node.app.service.mono.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.factories.scenarios.CryptoCreateScenarios.CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO;
@@ -66,10 +66,10 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.services.txns.auth.SystemOpPolicies;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hedera.test.utils.CryptoConfigUtils;

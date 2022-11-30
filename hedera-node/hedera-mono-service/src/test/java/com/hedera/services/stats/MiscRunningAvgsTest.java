@@ -20,6 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.system.Platform;

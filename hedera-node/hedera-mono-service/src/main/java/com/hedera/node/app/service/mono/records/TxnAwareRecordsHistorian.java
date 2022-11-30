@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
-import static com.hedera.services.utils.MiscUtils.nonNegativeNanosOffset;
-import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.nonNegativeNanosOffset;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.synthWithRecordTxnId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -28,9 +28,9 @@ import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
-import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.ArrayList;

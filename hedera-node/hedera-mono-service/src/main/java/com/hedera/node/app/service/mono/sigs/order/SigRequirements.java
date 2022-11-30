@@ -24,8 +24,8 @@ import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INV
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.NONE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.MiscUtils.asUsableFcKey;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asUsableFcKey;
 import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;

@@ -16,7 +16,7 @@
 package com.hedera.services.records;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
-import static com.hedera.services.utils.SleepingPause.SLEEPING_PAUSE;
+import static com.hedera.node.app.service.mono.utils.SleepingPause.SLEEPING_PAUSE;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;

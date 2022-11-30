@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.schedule.queries;
 
 import static com.hedera.node.app.service.mono.queries.schedule.GetScheduleInfoAnswer.SCHEDULE_INFO_CTX_KEY;
-import static com.hedera.services.utils.MiscUtils.putIfNotNull;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.fees.usage.schedule.ExtantScheduleContext;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;

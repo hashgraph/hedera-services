@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;

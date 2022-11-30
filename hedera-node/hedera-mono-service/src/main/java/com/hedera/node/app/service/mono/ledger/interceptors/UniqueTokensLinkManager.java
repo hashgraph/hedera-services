@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
-import static com.hedera.services.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.linkInPlaceAtMapValueListHead;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.unlinkInPlaceFromMapValueList;
 
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

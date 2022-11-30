@@ -46,7 +46,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;

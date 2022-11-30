@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator.FUNDING_ACCOUNT_EXPIRY;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
@@ -38,8 +38,8 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.initialization.BackedSystemAccountsCreator;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;

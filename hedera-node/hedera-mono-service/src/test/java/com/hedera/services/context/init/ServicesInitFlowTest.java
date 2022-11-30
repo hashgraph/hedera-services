@@ -15,13 +15,11 @@
  */
 package com.hedera.services.context.init;
 
-import static org.mockito.Mockito.verify;
-
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.service.mono.context.init.EntitiesInitializationFlow;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.init.StateInitializationFlow;
 import com.hedera.node.app.service.mono.context.init.StoreInitializationFlow;
-import com.hedera.services.ServicesState;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,29 +27,36 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class ServicesInitFlowTest {
-    @Mock private StateInitializationFlow stateFlow;
-    @Mock private StoreInitializationFlow storeFlow;
-    @Mock private EntitiesInitializationFlow entitiesFlow;
-    @Mock private ServicesState activeState;
-    @Mock private BootstrapProperties bootstrapProperties;
+	@Mock
+	private StateInitializationFlow stateFlow;
+	@Mock
+	private StoreInitializationFlow storeFlow;
+	@Mock
+	private EntitiesInitializationFlow entitiesFlow;
+	@Mock
+	private ServicesState activeState;
+	@Mock
+	private BootstrapProperties bootstrapProperties;
 
-    private ServicesInitFlow subject;
+	private ServicesInitFlow subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new ServicesInitFlow(stateFlow, storeFlow, entitiesFlow);
-    }
+	@BeforeEach
+	void setUp() {
+		subject = new ServicesInitFlow(stateFlow, storeFlow, entitiesFlow);
+	}
 
-    @Test
-    void flowsAsExpected() {
-        // when:
-        subject.runWith(activeState, bootstrapProperties);
+	@Test
+	void flowsAsExpected() {
+		// when:
+		subject.runWith(activeState, bootstrapProperties);
 
-        // then:
-        verify(stateFlow).runWith(activeState, bootstrapProperties);
-        verify(storeFlow).run();
-        verify(entitiesFlow).run();
-    }
+		// then:
+		verify(stateFlow).runWith(activeState, bootstrapProperties);
+		verify(storeFlow).run();
+		verify(entitiesFlow).run();
+	}
 }

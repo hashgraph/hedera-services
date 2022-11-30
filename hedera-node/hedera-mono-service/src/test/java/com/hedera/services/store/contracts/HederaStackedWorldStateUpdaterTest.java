@@ -58,7 +58,12 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.store.contracts.AbstractLedgerWorldUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldUpdater;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.tuweni.bytes.Bytes;
@@ -84,7 +89,7 @@ class HederaStackedWorldStateUpdaterTest {
     @Mock private ContractAliases aliases;
     @Mock private WorldLedgers trackingLedgers;
 
-    @Mock(extraInterfaces = {HederaWorldUpdater.class})
+    @Mock(extraInterfaces = { HederaWorldUpdater.class})
     private AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater;
 
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accountsLedger;

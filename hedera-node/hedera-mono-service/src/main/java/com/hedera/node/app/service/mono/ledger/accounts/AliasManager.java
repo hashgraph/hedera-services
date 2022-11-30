@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;

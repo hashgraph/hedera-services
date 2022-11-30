@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.fees.charging.StorageFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.store.contracts.KvUsageInfo;
+import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 

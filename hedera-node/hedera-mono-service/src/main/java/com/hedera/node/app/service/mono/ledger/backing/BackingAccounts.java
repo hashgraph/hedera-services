@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.backing;
 
-import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
 
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;

@@ -38,7 +38,7 @@ import com.google.common.io.Files;
 import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.mocks.MockAppender;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;

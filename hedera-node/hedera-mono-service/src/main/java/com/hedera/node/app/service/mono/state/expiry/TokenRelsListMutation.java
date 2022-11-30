@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.state.expiry;
 
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.MapValueListMutation;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.MapValueListMutation;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TokenRelsListMutation implements MapValueListMutation<EntityNumPair, HederaTokenRel> {

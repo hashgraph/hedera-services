@@ -20,10 +20,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.annotations.HandleThrottle;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;

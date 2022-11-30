@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

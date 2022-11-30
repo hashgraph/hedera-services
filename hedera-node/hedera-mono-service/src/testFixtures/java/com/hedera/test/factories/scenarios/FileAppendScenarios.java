@@ -20,7 +20,7 @@ import static com.hedera.test.factories.txns.FileAppendFactory.TREASURY_PAYER_ID
 import static com.hedera.test.factories.txns.FileAppendFactory.newSignedFileAppend;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum FileAppendScenarios implements TxnHandlingScenario {
     VANILLA_FILE_APPEND_SCENARIO {

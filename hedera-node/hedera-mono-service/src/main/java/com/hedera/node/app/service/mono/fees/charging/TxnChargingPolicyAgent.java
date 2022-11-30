@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.fees.charging;
 
-import static com.hedera.services.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.services.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -25,7 +25,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.node.app.service.mono.state.logic.AwareNodeDiligenceScreen;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Map;
 import java.util.function.Supplier;

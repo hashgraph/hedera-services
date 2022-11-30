@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal
 import com.hedera.node.app.service.mono.grpc.marshalling.RoyaltyFeeAssessor;
 import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.txns.customfees.CustomFeeSchedules;
+import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;

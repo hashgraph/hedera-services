@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.impl.ApprovePrecompile.decodeTokenApprove;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile.decodeTokenApprove;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.enums.TokenType;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.function.UnaryOperator;

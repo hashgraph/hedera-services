@@ -15,9 +15,9 @@
  */
 package com.hedera.services.utils.forensics;
 
-import static com.hedera.services.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
-import static com.hedera.services.utils.forensics.OrderedComparison.statusHistograms;
-import static com.hedera.services.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
+import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.statusHistograms;
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
@@ -26,7 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.forensics.OrderedComparison;
+import com.hedera.node.app.service.mono.utils.forensics.RecordStreamEntry;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.File;
 import java.io.IOException;

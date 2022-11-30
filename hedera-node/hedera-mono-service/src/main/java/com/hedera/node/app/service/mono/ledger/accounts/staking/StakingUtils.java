@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCust
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.DECLINE_REWARD;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
-import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;

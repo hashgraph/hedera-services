@@ -44,8 +44,8 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.EntityCreator;
-import com.hedera.services.store.contracts.HederaWorldUpdater;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldUpdater;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;

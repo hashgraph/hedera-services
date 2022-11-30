@@ -18,9 +18,10 @@ package com.hedera.services.txns.token;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Token;
+import com.hedera.node.app.service.mono.txns.token.UnpauseLogic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

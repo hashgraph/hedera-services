@@ -46,9 +46,9 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHal
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.contracts.operation.HederaOperationUtil;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Optional;

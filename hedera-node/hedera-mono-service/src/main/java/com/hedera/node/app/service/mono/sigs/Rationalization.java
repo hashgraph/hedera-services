@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
-import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
-import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
+import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -29,9 +29,9 @@ import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
-import com.hedera.services.utils.RationalizedSigMeta;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.ArrayList;

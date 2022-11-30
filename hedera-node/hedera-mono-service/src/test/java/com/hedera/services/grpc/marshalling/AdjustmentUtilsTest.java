@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

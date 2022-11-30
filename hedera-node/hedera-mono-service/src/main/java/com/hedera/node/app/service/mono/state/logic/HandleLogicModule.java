@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.state.logic;
 
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
-import com.hedera.services.txns.ProcessLogic;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import dagger.Binds;
 import dagger.Module;
 import javax.inject.Singleton;

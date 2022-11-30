@@ -35,11 +35,11 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.execution.CallLocalEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.Deque;

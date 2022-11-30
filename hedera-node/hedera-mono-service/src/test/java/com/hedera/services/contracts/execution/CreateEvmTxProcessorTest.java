@@ -35,11 +35,11 @@ import com.hedera.node.app.service.mono.contracts.execution.CreateEvmTxProcessor
 import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
 import com.hedera.node.app.service.mono.contracts.execution.LivePricesSource;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;

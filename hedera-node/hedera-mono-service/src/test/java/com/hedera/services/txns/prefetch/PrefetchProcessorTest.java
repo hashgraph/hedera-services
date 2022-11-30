@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.prefetch;
 
-import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
-import static com.hedera.services.txns.prefetch.PrefetchProcessor.MINIMUM_THREAD_POOL_SIZE;
+import static com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor.MINIMUM_QUEUE_CAPACITY;
+import static com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor.MINIMUM_THREAD_POOL_SIZE;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,10 +26,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.txns.PreFetchableTransition;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.txns.PreFetchableTransition;
+import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
+import com.hedera.node.app.service.mono.txns.prefetch.PrefetchProcessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

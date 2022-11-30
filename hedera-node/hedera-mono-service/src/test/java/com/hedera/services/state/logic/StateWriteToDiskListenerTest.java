@@ -22,7 +22,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.state.logic.StateWriteToDiskListener;
-import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

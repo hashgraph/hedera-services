@@ -15,10 +15,10 @@
  */
 package com.hedera.services.txns.auth;
 
-import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

@@ -36,7 +36,8 @@ import static org.mockito.BDDMockito.longThat;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
-import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.txns.submission.SyntaxPrecheck;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.TransactionBody;

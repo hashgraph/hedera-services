@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.services.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;

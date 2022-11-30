@@ -15,26 +15,29 @@
  */
 package com.hedera.node.app.service.mono.context.annotations;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
+import com.hedera.node.app.service.mono.ServicesState;
 import com.swirlds.common.system.InitTrigger;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.SoftwareVersion;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.address.AddressBook;
+
+import javax.inject.Qualifier;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.inject.Qualifier;
+
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Distinguishes a bound {@code String} instance that represents the address book memo of the node
- * during {@link com.hedera.services.ServicesState#init(Platform, AddressBook, SwirldDualState,
+ * during {@link ServicesState#init(Platform, AddressBook, SwirldDualState,
  * InitTrigger, SoftwareVersion)}. The "static" qualifier is meant to emphasize the current system
  * does not allow for the possibility of the node's account changing dynamically (i.e., without a
  * network restart).
  */
-@Target({ElementType.METHOD, ElementType.PARAMETER})
+@Target({ ElementType.METHOD, ElementType.PARAMETER })
 @Qualifier
 @Retention(RUNTIME)
-public @interface StaticAccountMemo {}
+public @interface StaticAccountMemo {
+}

@@ -16,10 +16,11 @@
 package com.hedera.node.app.service.mono.state.org;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ServicesApp;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.ServicesApp;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.fchashmap.FCHashMap;
+
 import java.util.Map;
 
 /**
@@ -27,39 +28,39 @@ import java.util.Map;
  * transactions, but is not hashed or serialized.
  */
 public class StateMetadata implements FastCopyable {
-    private final ServicesApp app;
-    private final FCHashMap<ByteString, EntityNum> aliases;
+	private final ServicesApp app;
+	private final FCHashMap<ByteString, EntityNum> aliases;
 
-    public StateMetadata(final ServicesApp app, final FCHashMap<ByteString, EntityNum> aliases) {
-        this.app = app;
-        this.aliases = aliases;
-    }
+	public StateMetadata(final ServicesApp app, final FCHashMap<ByteString, EntityNum> aliases) {
+		this.app = app;
+		this.aliases = aliases;
+	}
 
-    private StateMetadata(final StateMetadata that) {
-        this.aliases = that.aliases.copy();
-        this.app = that.app;
-    }
+	private StateMetadata(final StateMetadata that) {
+		this.aliases = that.aliases.copy();
+		this.app = that.app;
+	}
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public StateMetadata copy() {
-        return new StateMetadata(this);
-    }
+	@Override
+	@SuppressWarnings("unchecked")
+	public StateMetadata copy() {
+		return new StateMetadata(this);
+	}
 
-    @Override
-    public boolean release() {
-        if (!aliases.isDestroyed()) {
-            return aliases.release();
-        } else {
-            return false;
-        }
-    }
+	@Override
+	public boolean release() {
+		if (!aliases.isDestroyed()) {
+			return aliases.release();
+		} else {
+			return false;
+		}
+	}
 
-    public ServicesApp app() {
-        return app;
-    }
+	public ServicesApp app() {
+		return app;
+	}
 
-    public Map<ByteString, EntityNum> aliases() {
-        return aliases;
-    }
+	public Map<ByteString, EntityNum> aliases() {
+		return aliases;
+	}
 }

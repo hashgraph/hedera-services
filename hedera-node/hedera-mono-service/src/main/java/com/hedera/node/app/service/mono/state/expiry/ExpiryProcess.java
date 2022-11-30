@@ -21,7 +21,7 @@ import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
 import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalWork;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.time.Instant;
 import javax.inject.Inject;
 

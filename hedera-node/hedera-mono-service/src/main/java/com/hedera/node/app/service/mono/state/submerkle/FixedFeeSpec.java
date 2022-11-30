@@ -22,9 +22,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Token;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Token;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import java.util.Objects;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

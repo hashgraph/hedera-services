@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
-import static com.hedera.services.utils.MiscUtils.readableProperty;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.readableProperty;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static java.util.stream.Collectors.joining;
 

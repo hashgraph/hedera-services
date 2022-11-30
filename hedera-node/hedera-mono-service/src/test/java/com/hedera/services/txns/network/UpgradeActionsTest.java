@@ -15,12 +15,12 @@
  */
 package com.hedera.services.txns.network;
 
-import static com.hedera.services.txns.network.UpgradeActions.EXEC_IMMEDIATE_MARKER;
-import static com.hedera.services.txns.network.UpgradeActions.EXEC_TELEMETRY_MARKER;
-import static com.hedera.services.txns.network.UpgradeActions.FREEZE_ABORTED_MARKER;
-import static com.hedera.services.txns.network.UpgradeActions.FREEZE_SCHEDULED_MARKER;
-import static com.hedera.services.txns.network.UpgradeActions.MARK;
-import static com.hedera.services.txns.network.UpgradeActions.NOW_FROZEN_MARKER;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.EXEC_IMMEDIATE_MARKER;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.EXEC_TELEMETRY_MARKER;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.FREEZE_ABORTED_MARKER;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.FREEZE_SCHEDULED_MARKER;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.MARK;
+import static com.hedera.node.app.service.mono.txns.network.UpgradeActions.NOW_FROZEN_MARKER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
+import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

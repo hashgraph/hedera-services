@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.queries;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

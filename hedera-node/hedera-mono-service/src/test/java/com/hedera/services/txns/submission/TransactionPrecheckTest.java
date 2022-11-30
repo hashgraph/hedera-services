@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.submission;
 
-import static com.hedera.services.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -37,7 +37,15 @@ import static org.mockito.BDDMockito.verify;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws;
+import com.hedera.node.app.service.mono.txns.submission.SemanticPrecheck;
+import com.hedera.node.app.service.mono.txns.submission.SolvencyPrecheck;
+import com.hedera.node.app.service.mono.txns.submission.StagedPrechecks;
+import com.hedera.node.app.service.mono.txns.submission.StructuralPrecheck;
+import com.hedera.node.app.service.mono.txns.submission.SyntaxPrecheck;
+import com.hedera.node.app.service.mono.txns.submission.SystemPrecheck;
+import com.hedera.node.app.service.mono.txns.submission.TransactionPrecheck;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.system.PlatformStatus;

@@ -16,8 +16,8 @@
 package com.hedera.services.files.sysfiles;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_GET;
-import static com.hedera.services.throttling.MapAccessType.STORAGE_PUT;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.STORAGE_PUT;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.times;
@@ -30,10 +30,10 @@ import com.hedera.node.app.service.mono.context.properties.PropertySources;
 import com.hedera.node.app.service.mono.files.sysfiles.ConfigCallbacks;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;

@@ -36,6 +36,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.txns.file.FileAppendTransitionLogic;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -46,8 +47,8 @@ import com.hedera.node.app.service.mono.files.TieredHederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.services.utils.MiscUtils;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;

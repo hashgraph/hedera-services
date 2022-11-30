@@ -41,12 +41,12 @@ import com.hedera.node.app.service.mono.contracts.execution.traceability.Solidit
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Topic;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Topic;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.ResponseCodeUtil;
-import com.hedera.services.utils.SidecarUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.ResponseCodeUtil;
+import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;

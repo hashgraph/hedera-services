@@ -24,7 +24,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;

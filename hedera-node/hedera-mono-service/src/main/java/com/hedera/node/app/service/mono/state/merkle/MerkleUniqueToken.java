@@ -35,15 +35,15 @@ package com.hedera.node.app.service.mono.state.merkle;
  * ‍
  */
 
-import static com.hedera.services.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
+import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNumPair;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;

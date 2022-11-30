@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
-import static com.hedera.services.utils.MiscUtils.readableTransferList;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.readableTransferList;
 
 import com.hederahashgraph.api.proto.java.TransferList;
 

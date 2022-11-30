@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.queries.contract;
 
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCallLocal;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
@@ -33,13 +33,13 @@ import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvi
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.queries.AbstractAnswer;
-import com.hedera.services.store.AccountStore;
-import com.hedera.services.store.contracts.CodeCache;
-import com.hedera.services.store.contracts.EntityAccess;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.contracts.StaticEntityAccess;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.store.AccountStore;
+import com.hedera.node.app.service.mono.store.contracts.CodeCache;
+import com.hedera.node.app.service.mono.store.contracts.EntityAccess;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallLocalQuery;
 import com.hederahashgraph.api.proto.java.ContractCallLocalResponse;
 import com.hederahashgraph.api.proto.java.ContractID;

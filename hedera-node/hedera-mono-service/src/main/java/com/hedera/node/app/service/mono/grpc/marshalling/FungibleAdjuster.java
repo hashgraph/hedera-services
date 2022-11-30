@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
 
 public interface FungibleAdjuster {
     BalanceChange adjustedChange(

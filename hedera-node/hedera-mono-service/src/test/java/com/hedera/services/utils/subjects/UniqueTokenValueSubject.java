@@ -24,7 +24,7 @@ import com.google.common.truth.Subject;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 

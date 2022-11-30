@@ -15,6 +15,8 @@
  */
 package com.hedera.services.stream;
 
+import com.hedera.node.app.service.mono.stream.RecordStreamType;
+
 public enum Release023xStreamType implements RecordStreamType {
     RELEASE_023x_STREAM_TYPE;
 

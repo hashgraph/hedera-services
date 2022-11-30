@@ -15,18 +15,19 @@
  */
 package com.hedera.services.txns.auth;
 
-import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNAUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.services.config.MockEntityNumbers;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;

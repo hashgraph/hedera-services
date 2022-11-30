@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.state.virtual.schedule;
 
 import static com.google.protobuf.ByteString.copyFrom;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
-import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleSchedule;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;

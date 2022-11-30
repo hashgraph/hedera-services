@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.fees.calculation.utils.AccessorBasedUsag
 import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalculator;
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeComponents;

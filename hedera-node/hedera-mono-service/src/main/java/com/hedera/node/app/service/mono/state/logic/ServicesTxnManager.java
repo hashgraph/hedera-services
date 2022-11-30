@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.annotations.RunTopLevelTransition;
 import com.hedera.node.app.service.mono.state.annotations.RunTriggeredTransition;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;

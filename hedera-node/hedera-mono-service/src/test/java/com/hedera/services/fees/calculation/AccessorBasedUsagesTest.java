@@ -17,7 +17,7 @@ package com.hedera.services.fees.calculation;
 
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fractionalFee;
-import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
+import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -76,8 +76,8 @@ import com.hedera.node.app.service.mono.fees.calculation.utils.AccessorBasedUsag
 import com.hedera.node.app.service.mono.fees.calculation.utils.OpUsageCtxHelper;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignedTransaction;

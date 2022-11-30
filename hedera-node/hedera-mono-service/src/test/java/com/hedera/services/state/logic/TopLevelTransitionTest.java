@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.logic.NonPayerKeysScreen;
 import com.hedera.node.app.service.mono.state.logic.RequestedTransition;
 import com.hedera.node.app.service.mono.state.logic.SigsAndPayerKeyScreen;
 import com.hedera.node.app.service.mono.state.logic.TopLevelTransition;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

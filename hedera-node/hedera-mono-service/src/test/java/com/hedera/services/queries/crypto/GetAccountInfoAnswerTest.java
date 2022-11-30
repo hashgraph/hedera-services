@@ -16,8 +16,8 @@
 package com.hedera.services.queries.crypto;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.REMOVED_TOKEN;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
@@ -57,10 +57,10 @@ import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.submerkle.RawTokenRelationship;
-import com.hedera.services.store.schedule.ScheduleStore;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;

@@ -15,15 +15,10 @@
  */
 package com.hedera.services.state.org;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.ServicesApp;
 import com.hedera.node.app.service.mono.state.org.StateMetadata;
-import com.hedera.services.ServicesApp;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fchashmap.FCHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,55 +26,63 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class StateMetadataTest {
-    @Mock private ServicesApp app;
-    @Mock private FCHashMap<ByteString, EntityNum> aliases;
-    @Mock private FCHashMap<ByteString, EntityNum> copyAliases;
+	@Mock
+	private ServicesApp app;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> aliases;
+	@Mock
+	private FCHashMap<ByteString, EntityNum> copyAliases;
 
-    private StateMetadata subject;
+	private StateMetadata subject;
 
-    @BeforeEach
-    void setUp() {
-        subject = new StateMetadata(app, aliases);
-    }
+	@BeforeEach
+	void setUp() {
+		subject = new StateMetadata(app, aliases);
+	}
 
-    @Test
-    void copyAsExpected() {
-        given(aliases.copy()).willReturn(copyAliases);
+	@Test
+	void copyAsExpected() {
+		given(aliases.copy()).willReturn(copyAliases);
 
-        final var copy = subject.copy();
+		final var copy = subject.copy();
 
-        assertSame(app, copy.app());
-        assertSame(copyAliases, copy.aliases());
-    }
+		assertSame(app, copy.app());
+		assertSame(copyAliases, copy.aliases());
+	}
 
-    @Test
-    void releasesAliasesOnRelease() {
-        subject.release();
+	@Test
+	void releasesAliasesOnRelease() {
+		subject.release();
 
-        verify(aliases).release();
-    }
+		verify(aliases).release();
+	}
 
-    @Test
-    void doesntReleaseAlreadyReleasedAliasesOnRelease() {
-        given(aliases.isDestroyed()).willReturn(true);
+	@Test
+	void doesntReleaseAlreadyReleasedAliasesOnRelease() {
+		given(aliases.isDestroyed()).willReturn(true);
 
-        subject.release();
+		subject.release();
 
-        verify(aliases, never()).release();
-    }
+		verify(aliases, never()).release();
+	}
 
-    @Test
-    void releasesAliasesOnArchive() {
-        subject.release();
+	@Test
+	void releasesAliasesOnArchive() {
+		subject.release();
 
-        verify(aliases).release();
-    }
+		verify(aliases).release();
+	}
 
-    @Test
-    void gettersWork() {
-        // expect:
-        assertSame(app, subject.app());
-    }
+	@Test
+	void gettersWork() {
+		// expect:
+		assertSame(app, subject.app());
+	}
 }

@@ -71,10 +71,10 @@ import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalcul
 import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.services.txns.crypto.AutoCreationLogic;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;

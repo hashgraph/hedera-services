@@ -23,8 +23,8 @@ import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullable
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullable;
 import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
-import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.describe;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.describe;
 import static java.util.Collections.unmodifiableList;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -39,8 +39,8 @@ import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;

@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.mono.sigs.order;
 
-import static com.hedera.services.txns.auth.SystemOpAuthorization.AUTHORIZED;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.AUTHORIZED;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.services.txns.auth.SystemOpAuthorization;
-import com.hedera.services.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;

@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.E
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_ACTION;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_BYTECODE;
 import static com.hedera.services.stream.proto.SidecarType.CONTRACT_STATE_CHANGE;
-import static com.hedera.services.throttling.MapAccessType.*;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.*;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;

@@ -15,19 +15,21 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.EntityNumPair.MISSING_NUM_PAIR;
-import static com.hedera.services.utils.EntityNumPair.fromLongs;
-import static com.hedera.services.utils.EntityNumPair.fromNftId;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.MISSING_NUM_PAIR;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromLongs;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromNftId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.NftId;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.NftId;
+import com.hedera.node.app.service.mono.store.models.Token;
+import com.hedera.node.app.service.mono.store.models.TokenRelationship;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.Test;

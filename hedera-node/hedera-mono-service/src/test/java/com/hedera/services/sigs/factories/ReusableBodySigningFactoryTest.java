@@ -26,7 +26,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;

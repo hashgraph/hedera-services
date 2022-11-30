@@ -15,13 +15,15 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 

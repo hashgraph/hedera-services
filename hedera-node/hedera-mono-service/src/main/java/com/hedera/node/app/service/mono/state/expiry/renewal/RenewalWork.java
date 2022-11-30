@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.expiry.renewal;
 
 import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import java.time.Instant;
 
 /** Provides the logic needed for the account and contract auto-renewal cycle */

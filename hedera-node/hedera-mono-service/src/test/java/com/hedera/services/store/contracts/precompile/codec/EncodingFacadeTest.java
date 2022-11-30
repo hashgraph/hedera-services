@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
@@ -28,7 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CustomFee;

@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.io.SelfSerializable;

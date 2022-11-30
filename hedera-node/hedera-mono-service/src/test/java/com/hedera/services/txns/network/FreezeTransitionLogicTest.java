@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.network;
 
-import static com.hedera.services.utils.MiscUtils.timestampToInstant;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -45,7 +45,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.network.FreezeTransitionLogic;
+import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;

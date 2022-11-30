@@ -21,9 +21,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
+import com.hedera.node.app.service.mono.txns.submission.SemanticPrecheck;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;

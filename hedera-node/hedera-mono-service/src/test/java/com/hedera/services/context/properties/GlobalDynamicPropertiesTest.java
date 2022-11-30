@@ -16,7 +16,7 @@
 package com.hedera.services.context.properties;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.*;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

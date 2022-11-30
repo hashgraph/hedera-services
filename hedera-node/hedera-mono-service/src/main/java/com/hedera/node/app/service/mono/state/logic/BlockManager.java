@@ -23,7 +23,7 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.services.stream.RecordsRunningHashLeaf;
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.utility.Units;
 import edu.umd.cs.findbugs.annotations.NonNull;

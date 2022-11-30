@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.state.merkle;
 
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asIdLiteral;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asIdLiteral;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asLiteralString;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.google.common.base.MoreObjects;
@@ -28,8 +28,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.serdes.TopicSerde;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.services.utils.EntityNum;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

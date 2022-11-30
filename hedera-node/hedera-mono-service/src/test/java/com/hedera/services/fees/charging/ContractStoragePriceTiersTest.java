@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
-import com.hedera.services.store.contracts.KvUsageInfo;
+import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import org.junit.jupiter.api.Test;
 

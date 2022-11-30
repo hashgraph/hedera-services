@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.hedera.services.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_INCR_NANOS;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -24,11 +24,11 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
-import com.hedera.services.stats.ExecutionTimeTracker;
-import com.hedera.services.txns.ProcessLogic;
-import com.hedera.services.txns.schedule.ScheduleProcessing;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.stats.ExecutionTimeTracker;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
+import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
+import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 import javax.inject.Inject;

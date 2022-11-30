@@ -15,12 +15,13 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
+import com.hedera.node.app.service.mono.txns.TransitionRunner;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
  * Captures a failure in transaction processing to be captured by the {@link
- * com.hedera.services.txns.TransitionRunner} and used to set the final resolved status of the
+ * TransitionRunner} and used to set the final resolved status of the
  * transaction.
  *
  * <p>Unless the contained {@link ResponseCodeEnum} is exactly {@code FAIL_INVALID}, this represents

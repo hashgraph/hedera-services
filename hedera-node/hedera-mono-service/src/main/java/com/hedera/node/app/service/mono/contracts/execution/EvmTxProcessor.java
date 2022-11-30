@@ -27,9 +27,9 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.exceptions.ResourceLimitException;
-import com.hedera.services.store.contracts.HederaMutableWorldState;
-import com.hedera.services.store.contracts.HederaWorldState;
-import com.hedera.services.store.models.Account;
+import com.hedera.node.app.service.mono.store.contracts.HederaMutableWorldState;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.services.stream.proto.SidecarType;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;

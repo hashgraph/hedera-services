@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
-import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.updateSpender;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -27,11 +27,11 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.services.store.TypedTokenStore;
-import com.hedera.services.store.models.Account;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.store.models.Token;
-import com.hedera.services.store.models.UniqueToken;
+import com.hedera.node.app.service.mono.store.TypedTokenStore;
+import com.hedera.node.app.service.mono.store.models.Account;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Token;
+import com.hedera.node.app.service.mono.store.models.UniqueToken;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import java.util.ArrayList;

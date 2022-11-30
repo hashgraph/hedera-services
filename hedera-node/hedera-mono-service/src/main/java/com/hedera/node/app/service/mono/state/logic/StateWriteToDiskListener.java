@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.logic;
 
-import com.hedera.services.txns.network.UpgradeActions;
+import com.hedera.node.app.service.mono.txns.network.UpgradeActions;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
 import javax.inject.Inject;

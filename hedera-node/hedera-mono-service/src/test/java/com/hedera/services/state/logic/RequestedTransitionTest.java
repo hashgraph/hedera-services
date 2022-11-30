@@ -15,8 +15,8 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
-import static com.hedera.services.txns.auth.SystemOpAuthorization.UNNECESSARY;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.IMPERMISSIBLE;
+import static com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization.UNNECESSARY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,9 +28,9 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import com.hedera.node.app.service.mono.state.logic.RequestedTransition;
-import com.hedera.services.txns.TransitionRunner;
-import com.hedera.services.txns.auth.SystemOpPolicies;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.TransitionRunner;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import org.junit.jupiter.api.BeforeEach;

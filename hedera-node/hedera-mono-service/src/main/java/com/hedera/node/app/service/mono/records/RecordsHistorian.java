@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
-import com.hedera.services.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.RunningHash;

@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import com.hedera.node.app.service.mono.state.logic.RecordStreaming;
 import com.hedera.node.app.service.mono.state.logic.ServicesTxnManager;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

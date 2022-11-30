@@ -15,12 +15,12 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asLiteralString;
-import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
-import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.unaliased;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asLiteralString;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.unaliased;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -37,7 +37,9 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.store.models.Id;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

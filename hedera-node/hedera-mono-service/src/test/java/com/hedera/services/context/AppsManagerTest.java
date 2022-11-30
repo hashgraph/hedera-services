@@ -15,67 +15,71 @@
  */
 package com.hedera.services.context;
 
-import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
-import static org.junit.jupiter.api.Assertions.*;
-
-import com.hedera.services.ServicesApp;
+import com.hedera.node.app.service.mono.ServicesApp;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static com.hedera.node.app.service.mono.context.AppsManager.APPS;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(MockitoExtension.class)
 class AppsManagerTest {
-    private final long nodeIdA = 1L;
-    private final long nodeIdB = 2L;
+	private final long nodeIdA = 1L;
+	private final long nodeIdB = 2L;
 
-    @Mock private ServicesApp app;
+	@Mock
+	private ServicesApp app;
 
-    @AfterEach
-    void cleanup() {
-        if (APPS.includes(nodeIdA)) {
-            APPS.clear(nodeIdA);
-        }
-        if (APPS.includes(nodeIdB)) {
-            APPS.clear(nodeIdB);
-        }
-    }
+	@AfterEach
+	void cleanup() {
+		if (APPS.includes(nodeIdA)) {
+			APPS.clear(nodeIdA);
+		}
+		if (APPS.includes(nodeIdB)) {
+			APPS.clear(nodeIdB);
+		}
+	}
 
-    @Test
-    void throwsIfNotInit() {
-        // expect:
-        assertThrows(IllegalArgumentException.class, () -> APPS.get(nodeIdA));
-    }
+	@Test
+	void throwsIfNotInit() {
+		// expect:
+		assertThrows(IllegalArgumentException.class, () -> APPS.get(nodeIdA));
+	}
 
-    @Test
-    void getsIfInit() {
-        // given:
-        APPS.save(nodeIdA, app);
+	@Test
+	void getsIfInit() {
+		// given:
+		APPS.save(nodeIdA, app);
 
-        // expect:
-        assertSame(app, APPS.get(nodeIdA));
-    }
+		// expect:
+		assertSame(app, APPS.get(nodeIdA));
+	}
 
-    @Test
-    void recognizesInit() {
-        // given:
-        APPS.save(nodeIdA, app);
+	@Test
+	void recognizesInit() {
+		// given:
+		APPS.save(nodeIdA, app);
 
-        // expect;
-        assertTrue(APPS.includes(nodeIdA));
-        assertFalse(APPS.includes(nodeIdB));
-    }
+		// expect;
+		assertTrue(APPS.includes(nodeIdA));
+		assertFalse(APPS.includes(nodeIdB));
+	}
 
-    @Test
-    void clearWorks() {
-        // given:
-        APPS.save(nodeIdA, app);
+	@Test
+	void clearWorks() {
+		// given:
+		APPS.save(nodeIdA, app);
 
-        // when:
-        APPS.clear(nodeIdA);
+		// when:
+		APPS.clear(nodeIdA);
 
-        // then:
-        assertFalse(APPS.includes(nodeIdA));
-    }
+		// then:
+		assertFalse(APPS.includes(nodeIdA));
+	}
 }

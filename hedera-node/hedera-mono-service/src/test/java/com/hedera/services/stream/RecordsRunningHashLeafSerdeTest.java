@@ -17,6 +17,7 @@ package com.hedera.services.stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 import com.swirlds.common.crypto.RunningHash;

@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.grpc.controllers.CryptoController;
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.crypto.CryptoAnswers;
 import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;

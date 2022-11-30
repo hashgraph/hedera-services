@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RE
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.utils.NftNumPair;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

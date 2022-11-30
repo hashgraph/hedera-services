@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleSig
 
 import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.node.app.service.mono.queries.schedule.ScheduleAnswers;
-import com.hedera.services.txns.submission.TxnResponseHelper;
+import com.hedera.node.app.service.mono.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Transaction;

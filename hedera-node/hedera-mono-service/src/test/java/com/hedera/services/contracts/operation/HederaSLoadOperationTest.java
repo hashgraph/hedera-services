@@ -25,8 +25,8 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaSLoadOperation;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
-import com.hedera.services.store.contracts.HederaWorldState;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaWorldState;
 import com.hedera.services.stream.proto.SidecarType;
 import java.util.ArrayDeque;
 import java.util.EnumSet;

@@ -27,6 +27,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.mono.stats.HapiOpSpeedometers;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.metrics.SpeedometerMetric;

@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.D
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;

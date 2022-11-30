@@ -17,7 +17,7 @@ package com.hedera.services.ledger.backing;
 
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
 import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.readableTokenRel;
-import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
+import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.verify;
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
 import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;

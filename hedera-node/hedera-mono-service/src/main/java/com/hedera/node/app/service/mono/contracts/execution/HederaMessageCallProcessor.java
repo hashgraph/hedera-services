@@ -21,7 +21,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
-import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;

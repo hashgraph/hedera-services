@@ -21,6 +21,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.stats.EntityUtilGauges;
 import com.swirlds.common.metrics.DoubleGauge;
 import com.swirlds.common.metrics.Metrics;
 import com.swirlds.common.system.Platform;

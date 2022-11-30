@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.RequiredPriceTypes;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;

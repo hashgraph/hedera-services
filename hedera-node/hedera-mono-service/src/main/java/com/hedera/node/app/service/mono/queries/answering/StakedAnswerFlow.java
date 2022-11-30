@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.service.mono.txns.submission.SystemPrecheck.RESTRICTED_FUNCTIONALITIES;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -33,10 +33,10 @@ import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.queries.AnswerFlow;
 import com.hedera.node.app.service.mono.queries.AnswerService;
 import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
-import com.hedera.services.throttling.FunctionalityThrottling;
-import com.hedera.services.txns.submission.PlatformSubmissionManager;
-import com.hedera.services.txns.submission.TransactionPrecheck;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
+import com.hedera.node.app.service.mono.txns.submission.PlatformSubmissionManager;
+import com.hedera.node.app.service.mono.txns.submission.TransactionPrecheck;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;

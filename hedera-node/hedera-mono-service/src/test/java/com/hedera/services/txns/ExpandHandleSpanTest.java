@@ -22,10 +22,10 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.span.ExpandHandleSpan;
-import com.hedera.services.txns.span.SpanMapManager;
-import com.hedera.services.utils.accessors.AccessorFactory;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
+import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
+import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.state.submerkle;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MISSING_NUMBER;
-import static com.hedera.services.utils.MiscUtils.asTimestamp;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.annotations.VisibleForTesting;

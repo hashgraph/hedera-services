@@ -34,7 +34,10 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.stats.MiscRunningAvgs;
+import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
+import com.hedera.node.app.service.mono.stream.RecordStreamManager;
+import com.hedera.node.app.service.mono.stream.RecordStreamObject;
+import com.hedera.node.app.service.mono.stream.RecordStreamType;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;

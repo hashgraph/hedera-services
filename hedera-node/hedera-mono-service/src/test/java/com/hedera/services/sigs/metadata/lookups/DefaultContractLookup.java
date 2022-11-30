@@ -17,7 +17,7 @@ package com.hedera.services.sigs.metadata.lookups;
 
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
 import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.services.utils.EntityNum.fromContractId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromContractId;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;

@@ -17,10 +17,10 @@ package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.MISSING_INSTANT;
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

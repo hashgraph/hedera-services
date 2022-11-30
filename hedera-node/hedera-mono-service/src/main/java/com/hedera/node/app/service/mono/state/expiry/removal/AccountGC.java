@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
-import static com.hedera.services.throttling.MapAccessType.ACCOUNTS_REMOVE;
+import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_REMOVE;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.throttling.ExpiryThrottle;
-import com.hedera.services.throttling.MapAccessType;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
+import com.hedera.node.app.service.mono.throttling.MapAccessType;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.List;
 import javax.inject.Inject;

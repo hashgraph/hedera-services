@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.EvmFnResult;
 import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;

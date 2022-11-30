@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.fchashmap.FCHashMap;
 import java.time.Instant;
 import java.util.Optional;

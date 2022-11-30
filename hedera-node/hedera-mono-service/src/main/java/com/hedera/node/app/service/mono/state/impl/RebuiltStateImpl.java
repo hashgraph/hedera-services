@@ -15,44 +15,48 @@
  */
 package com.hedera.node.app.service.mono.state.impl;
 
+import com.hedera.node.app.service.mono.ServicesState;
 import com.hedera.node.app.spi.state.State;
 import com.swirlds.fchashmap.FCHashMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
 /**
  * An implementation of {@link State} backed by a {@link FCHashMap} for aliases, that needs to be
- * rebuilt from the {@link com.hedera.services.ServicesState}.
+ * rebuilt from the {@link ServicesState}.
  *
- * @param <K> The type of key for the state
- * @param <V> The type of value for the state
+ * @param <K>
+ * 		The type of key for the state
+ * @param <V>
+ * 		The type of value for the state
  */
 public final class RebuiltStateImpl<K, V> extends StateBase<K, V> {
-    private final Map<K, V> aliases;
-    private final Instant lastModifiedTime;
+	private final Map<K, V> aliases;
+	private final Instant lastModifiedTime;
 
-    public RebuiltStateImpl(
-            @NonNull final String stateKey,
-            @NonNull final Map<K, V> aliases,
-            @NonNull final Instant lastModifiedTime) {
-        super(stateKey);
-        this.aliases = Objects.requireNonNull(aliases);
-        this.lastModifiedTime = lastModifiedTime;
-    }
+	public RebuiltStateImpl(
+			@NonNull final String stateKey,
+			@NonNull final Map<K, V> aliases,
+			@NonNull final Instant lastModifiedTime) {
+		super(stateKey);
+		this.aliases = Objects.requireNonNull(aliases);
+		this.lastModifiedTime = lastModifiedTime;
+	}
 
-    RebuiltStateImpl(@NonNull final String stateKey, @NonNull final Instant lastModifiedTime) {
-        this(stateKey, new FCHashMap<>(), lastModifiedTime);
-    }
+	RebuiltStateImpl(@NonNull final String stateKey, @NonNull final Instant lastModifiedTime) {
+		this(stateKey, new FCHashMap<>(), lastModifiedTime);
+	}
 
-    @Override
-    public Instant getLastModifiedTime() {
-        return lastModifiedTime;
-    }
+	@Override
+	public Instant getLastModifiedTime() {
+		return lastModifiedTime;
+	}
 
-    @Override
-    protected V read(final K key) {
-        return aliases.get(key);
-    }
+	@Override
+	protected V read(final K key) {
+		return aliases.get(key);
+	}
 }

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.contracts.execution.traceability;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;

@@ -35,8 +35,9 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

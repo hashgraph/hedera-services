@@ -24,8 +24,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.txns.contract.helpers.DeletionLogic;
-import com.hedera.services.utils.accessors.SignedTxnAccessor;
+import com.hedera.node.app.service.mono.txns.contract.ContractDeleteTransitionLogic;
+import com.hedera.node.app.service.mono.txns.contract.helpers.DeletionLogic;
+import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;

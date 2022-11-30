@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.services.utils.Units;
+import com.hedera.node.app.service.mono.utils.Units;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;

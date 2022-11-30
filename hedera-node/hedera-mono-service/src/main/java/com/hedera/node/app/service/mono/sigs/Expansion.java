@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
-import static com.hedera.services.utils.RationalizedSigMeta.forPayerAndOthers;
-import static com.hedera.services.utils.RationalizedSigMeta.forPayerOnly;
-import static com.hedera.services.utils.RationalizedSigMeta.noneAvailable;
+import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
+import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
+import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;

@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.exceptions;
 
-import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 
 public class DeletedAccountException extends IllegalArgumentException {
     public DeletedAccountException(Object id) {

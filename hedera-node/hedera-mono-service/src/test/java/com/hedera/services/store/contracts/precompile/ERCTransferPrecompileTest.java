@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile.decodeERCTransfer;
-import static com.hedera.services.store.contracts.precompile.impl.ERCTransferPrecompile.decodeERCTransferFrom;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile.decodeERCTransfer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.ERCTransferPrecompile.decodeERCTransferFrom;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

@@ -16,12 +16,12 @@
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
-import static com.hedera.services.utils.EntityIdUtils.isAlias;
-import static com.hedera.services.utils.EntityNum.MISSING_NUM;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
-import static com.hedera.services.utils.EntityNum.fromTopicId;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromAccountId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromTokenId;
+import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
@@ -35,8 +35,8 @@ import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
-import com.hedera.services.utils.EntityIdUtils;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

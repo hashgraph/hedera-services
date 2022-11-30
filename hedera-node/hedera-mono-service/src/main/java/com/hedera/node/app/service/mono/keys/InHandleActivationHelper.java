@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.keys;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Collections;

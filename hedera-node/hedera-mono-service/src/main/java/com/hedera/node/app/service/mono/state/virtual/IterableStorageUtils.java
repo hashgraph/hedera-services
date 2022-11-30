@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
-import static com.hedera.services.utils.MapValueListUtils.removeFromMapValueList;
+import static com.hedera.node.app.service.mono.utils.MapValueListUtils.removeFromMapValueList;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
-import com.hedera.services.utils.EntityNumPair;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualKey;

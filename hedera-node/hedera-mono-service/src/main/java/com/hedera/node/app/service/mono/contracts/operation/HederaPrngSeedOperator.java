@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 
-import com.hedera.services.txns.util.PrngLogic;
+import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;

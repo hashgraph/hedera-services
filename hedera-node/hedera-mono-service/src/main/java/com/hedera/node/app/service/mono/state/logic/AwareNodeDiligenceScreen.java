@@ -15,16 +15,16 @@
  */
 package com.hedera.node.app.service.mono.state.logic;
 
-import static com.hedera.services.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
-import static com.hedera.services.utils.EntityIdUtils.readableId;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.NODE_DUPLICATE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
-import com.hedera.services.txns.diligence.DuplicateClassification;
-import com.hedera.services.txns.validation.OptionValidator;
-import com.hedera.services.utils.accessors.TxnAccessor;
+import com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification;
+import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
+import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
