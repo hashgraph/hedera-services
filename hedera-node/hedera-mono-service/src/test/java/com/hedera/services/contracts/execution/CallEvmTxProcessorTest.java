@@ -683,7 +683,23 @@ class CallEvmTxProcessorTest {
                         ccps,
                         aliasManager,
                         blockMetaSource);
-        givenValidMockEth();
+        given(worldState.updater()).willReturn(updater);
+        given(updater.updater()).willReturn(stackedUpdater);
+        given(globalDynamicProperties.fundingAccountAddress())
+                .willReturn(new Id(0, 0, 1010).asEvmAddress());
+
+        var evmAccount = mock(EvmAccount.class);
+        given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
+        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        var senderMutableAccount = mock(MutableAccount.class);
+        given(evmAccount.getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
+        given(stackedUpdater.getSenderAccount(any()).getMutable()).willReturn(senderMutableAccount);
+        given(stackedUpdater.getOrCreate(any())).willReturn(evmAccount);
+        given(stackedUpdater.getOrCreate(any()).getMutable()).willReturn(senderMutableAccount);
+        given(blockMetaSource.computeBlockValues(anyLong())).willReturn(hederaBlockValues);
+        given(updater.getOrCreate(any())).willReturn(evmAccount);
+
         final var mockAccounts =
                 (TransactionalLedger<AccountID, AccountProperty, HederaAccount>)
                         mock(TransactionalLedger.class);
@@ -1319,7 +1335,11 @@ class CallEvmTxProcessorTest {
 
         given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
 
+        given(gasCalculator.getSelfDestructRefundAmount()).willReturn(0L);
+        given(gasCalculator.getMaxRefundQuotient()).willReturn(2L);
+
         var senderMutableAccount = mock(MutableAccount.class);
+        given(senderMutableAccount.decrementBalance(any())).willReturn(Wei.of(1234L));
         given(senderMutableAccount.incrementBalance(any())).willReturn(Wei.of(1500L));
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
 
