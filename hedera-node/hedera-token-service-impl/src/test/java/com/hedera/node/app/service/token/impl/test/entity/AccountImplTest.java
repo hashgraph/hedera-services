@@ -15,18 +15,17 @@
  */
 package com.hedera.node.app.service.token.impl.test.entity;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
 
 class AccountImplTest {
     private AccountImpl subject;

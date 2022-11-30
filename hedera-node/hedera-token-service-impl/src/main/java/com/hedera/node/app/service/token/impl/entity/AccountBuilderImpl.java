@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -22,12 +24,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
- * <strong>not</strong> exported from the module.
- * FUTURE: Should be moved to token-service-impl module
+ * <strong>not</strong> exported from the module. FUTURE: Should be moved to token-service-impl
+ * module
  */
 public class AccountBuilderImpl implements AccountBuilder {
     private final Account copyOf;

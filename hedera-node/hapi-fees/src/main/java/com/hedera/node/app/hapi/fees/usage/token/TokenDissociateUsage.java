@@ -30,7 +30,7 @@ public class TokenDissociateUsage extends TokenTxnUsage<TokenDissociateUsage> {
     }
 
     @Override
-    TokenDissociateUsage self() {
+    public TokenDissociateUsage self() {
         return this;
     }
 

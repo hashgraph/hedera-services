@@ -25,13 +25,13 @@ public enum TokenEntitySizes {
     TOKEN_ENTITY_SIZES;
 
     /* { deleted, accountsFrozenByDefault, accountsKycGrantedByDefault } */
-    static final int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
+    public static final int NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION = 3;
     /* { decimals, tokenType, supplyType } */
-    static final int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
+    public static final int NUM_INT_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 3;
     /* { expiry, maxSupply, totalSupply, autoRenewPeriod, currentSerialNum } */
-    static final int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 5;
+    public static final int NUM_LONG_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 5;
     /* { treasury } */
-    static final int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
+    public static final int NUM_ENTITY_ID_FIELDS_IN_BASE_TOKEN_REPRESENTATION = 1;
 
     public int fixedBytesInTokenRepr() {
         return NUM_FLAGS_IN_BASE_TOKEN_REPRESENTATION * BOOL_SIZE

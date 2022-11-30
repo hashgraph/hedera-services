@@ -23,7 +23,7 @@ import com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 public abstract class TokenTxnUsage<T extends TokenTxnUsage<T>> extends TxnUsage {
-    static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
+    public static TokenEntitySizes tokenEntitySizes = TOKEN_ENTITY_SIZES;
 
     abstract T self();
 
