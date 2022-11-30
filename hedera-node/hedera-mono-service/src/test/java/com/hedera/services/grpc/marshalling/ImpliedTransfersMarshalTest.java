@@ -547,14 +547,14 @@ class ImpliedTransfersMarshalTest {
         ans.add(changingHbar(adjustFrom(cModel, +50), payer));
         if (incTokens) {
             final var adjustOne =
-                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false);
+                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false, false);
             adjustOne.setExpectedDecimals(2);
 
             ans.add(adjustOne);
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false, false));
             ans.add(
                     changingNftOwnership(
                             Id.fromGrpcToken(yetAnotherId),

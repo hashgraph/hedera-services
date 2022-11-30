@@ -221,7 +221,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var change = changes.get(i);
             final var units = change.getAggregatedUnits();
             if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance()) {
+                if (change.isApprovedAllowance() || change.isForCustomFee()) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
@@ -265,6 +265,22 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         transferLogic.doZeroSum(changes);
+    }
+
+    private boolean isApprovedSenderPayingFee(
+            final List<BalanceChange> balanceChanges, final Id sender, final TokenID tokenId) {
+        final var changesForSender =
+                balanceChanges.stream().filter(c -> sender.equals(c.getAccount())).toList();
+
+        final var token = hederaTokenStore.get(tokenId);
+        final var customFees = token.customFeeSchedule();
+        final var fixedFees = customFees.stream().map(f -> f.getFixedFeeSpec()).toList();
+        final var hasTokenFixedFees = fixedFees.size() > 0;
+
+        final var hasApprovedChange =
+                changesForSender.stream().filter(c -> c.isApprovedAllowance()).count() > 0;
+
+        return hasTokenFixedFees && hasApprovedChange;
     }
 
     @Override

@@ -118,6 +118,7 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -125,7 +126,6 @@ import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -198,32 +198,31 @@ public class CryptoTransferSuite extends HapiApiSuite {
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
-//                transferWithMissingAccountGetsInvalidAccountId(),
-//                complexKeyAcctPaysForOwnTransfer(),
-//                twoComplexKeysRequired(),
-//                specialAccountsBalanceCheck(),
-//                tokenTransferFeesScaleAsExpected(),
-//                okToSetInvalidPaymentHeaderForCostAnswer(),
-//                baseCryptoTransferFeeChargedAsExpected(),
-//                autoAssociationRequiresOpenSlots(),
-//                royaltyCollectorsCanUseAutoAssociation(),
-//                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
-//                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
-//                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
-//                transferToNonAccountEntitiesReturnsInvalidAccountId(),
-//                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
-//                checksExpectedDecimalsForFungibleTokenTransferList(),
-//                allowanceTransfersWorkAsExpected(),
-//                allowanceTransfersWithComplexTransfersWork(),
-//                canUseMirrorAliasesForNonContractXfers(),
-//                canUseEip1014AliasesForXfers(),
-//                cannotTransferFromImmutableAccounts(),
-//                nftTransfersCannotRepeatSerialNos(),
-//                vanillaTransferSucceeds(),
-//                aliasKeysAreValidated(),
-//            hapiTransferFromForNFTWithCustomFeesWithAllowance(),
-            hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance()
-        );
+                transferWithMissingAccountGetsInvalidAccountId(),
+                complexKeyAcctPaysForOwnTransfer(),
+                twoComplexKeysRequired(),
+                specialAccountsBalanceCheck(),
+                tokenTransferFeesScaleAsExpected(),
+                okToSetInvalidPaymentHeaderForCostAnswer(),
+                baseCryptoTransferFeeChargedAsExpected(),
+                autoAssociationRequiresOpenSlots(),
+                royaltyCollectorsCanUseAutoAssociation(),
+                royaltyCollectorsCannotUseAutoAssociationWithoutOpenSlots(),
+                dissociatedRoyaltyCollectorsCanUseAutoAssociation(),
+                hbarAndFungibleSelfTransfersRejectedBothInPrecheckAndHandle(),
+                transferToNonAccountEntitiesReturnsInvalidAccountId(),
+                nftSelfTransfersRejectedBothInPrecheckAndHandle(),
+                checksExpectedDecimalsForFungibleTokenTransferList(),
+                allowanceTransfersWorkAsExpected(),
+                allowanceTransfersWithComplexTransfersWork(),
+                canUseMirrorAliasesForNonContractXfers(),
+                canUseEip1014AliasesForXfers(),
+                cannotTransferFromImmutableAccounts(),
+                nftTransfersCannotRepeatSerialNos(),
+                vanillaTransferSucceeds(),
+                aliasKeysAreValidated(),
+                hapiTransferFromForNFTWithCustomFeesWithAllowance(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance());
     }
 
     @Override
@@ -2162,218 +2161,295 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                                 .noAllowances()));
     }
 
-  private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithAllowance() {
-    final var TREASURY = "treasury";
-    final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
-    final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
-    final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK = "nftTokenWithRoyaltyFeeWithHbarFallback";
-    final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK = "nftTokenWithRoyaltyFeeWithTokenFallback";
-    final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-    final var RECEIVER_SIGNATURE = "receiverSignature";
-    final var SPENDER_SIGNATURE = "spenderSignature";
-    return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
-        .given(
-            newKeyNamed(MULTI_KEY),
-            newKeyNamed(RECEIVER_SIGNATURE),
-            newKeyNamed(SPENDER_SIGNATURE),
-            cryptoCreate(TREASURY),
-            cryptoCreate(OWNER)
-                .balance(100 * ONE_MILLION_HBARS)
-                .maxAutomaticTokenAssociations(5).key(MULTI_KEY),
-            cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-            cryptoCreate(RECEIVER).balance(100 * ONE_MILLION_HBARS).key(RECEIVER_SIGNATURE),
-            cryptoCreate(SPENDER).balance(100 * ONE_MILLION_HBARS).key(SPENDER_SIGNATURE),
-            tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
-                .tokenType(NON_FUNGIBLE_UNIQUE)
-                .treasury(OWNER)
-                .initialSupply(0L)
-                .supplyKey(MULTI_KEY)
-                .adminKey(MULTI_KEY)
-                .withCustom(fixedHbarFee(1, OWNER)),
-            tokenCreate(FUNGIBLE_TOKEN_FEE)
-                .tokenType(FUNGIBLE_COMMON)
-                .treasury(TREASURY)
-                    .initialSupply(1000L),
-            tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
-            tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
-            tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
-            tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
-                .tokenType(NON_FUNGIBLE_UNIQUE)
-                .treasury(OWNER)
-                .initialSupply(0L)
-                .supplyKey(MULTI_KEY)
-                .adminKey(MULTI_KEY)
-                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
-            tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
-                .tokenType(NON_FUNGIBLE_UNIQUE)
-                .treasury(OWNER)
-                .initialSupply(0L)
-                .supplyKey(MULTI_KEY)
-                .adminKey(MULTI_KEY)
-                .withCustom(
-                    royaltyFeeWithFallback(
-                        1,
-                        2,
-                        fixedHbarFeeInheritingRoyaltyCollector(1),
-                        OWNER)),
-            tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
-                .tokenType(NON_FUNGIBLE_UNIQUE)
-                .treasury(OWNER)
-                .initialSupply(0L)
-                .supplyKey(MULTI_KEY)
-                .adminKey(MULTI_KEY)
-                .withCustom(
-                    royaltyFeeWithFallback(
-                        1,
-                        2,
-                        fixedHtsFeeInheritingRoyaltyCollector(1, FUNGIBLE_TOKEN_FEE),
-                        OWNER)),
-            tokenAssociate(SENDER, List.of(NFT_TOKEN_WITH_FIXED_HBAR_FEE, NFT_TOKEN_WITH_FIXED_TOKEN_FEE, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-            tokenAssociate(RECEIVER, List.of(NFT_TOKEN_WITH_FIXED_HBAR_FEE, NFT_TOKEN_WITH_FIXED_TOKEN_FEE, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-            tokenAssociate(SPENDER, List.of(NFT_TOKEN_WITH_FIXED_HBAR_FEE, NFT_TOKEN_WITH_FIXED_TOKEN_FEE, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-            mintToken(
-                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                List.of(
-                    ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                    ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-            mintToken(
-                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                List.of(
-                    ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                    ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
-            mintToken(
-                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
-                List.of(
-                    ByteStringUtils.wrapUnsafely("meta5".getBytes()),
-                    ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
-            mintToken(
-                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
-                List.of(
-                    ByteStringUtils.wrapUnsafely("meta7".getBytes()),
-                    ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
-            cryptoTransfer(movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L).between(OWNER, SENDER)),
-            cryptoTransfer(movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L).between(OWNER, SENDER)),
-            cryptoTransfer(movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L).between(OWNER, SENDER)),
-            cryptoTransfer(movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L).between(OWNER, SENDER)),
-            cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)),
-            cryptoApproveAllowance()
-                .payingWith(DEFAULT_PAYER)
-                .addNftAllowance(
-                    SENDER,
-                    NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                    SPENDER,
-                    true,
-                    List.of(1L))
-                .addNftAllowance(
-                    SENDER,
-                    NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                    SPENDER,
-                    true,
-                    List.of(1L))
-                .addNftAllowance(
-                    SENDER,
-                    NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
-                    SPENDER,
-                    true,
-                    List.of(1L))
-                .addNftAllowance(
-                    SENDER,
-                    NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
-                    SPENDER,
-                    true,
-                    List.of(1L))
-                .via("approveTxn")
-                .signedBy(DEFAULT_PAYER, SENDER)
-        )
-        .when(
-            cryptoTransfer(
-                movingUniqueWithAllowance(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L).between(SENDER, RECEIVER)).payingWith(SPENDER).fee(ONE_HUNDRED_HBARS),
-            cryptoTransfer(movingUniqueWithAllowance(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L).between(SENDER, RECEIVER)).payingWith(SPENDER).fee(ONE_HUNDRED_HBARS),
-            cryptoTransfer(movingUniqueWithAllowance(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L).between(SENDER, RECEIVER)).payingWith(SPENDER).signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE).fee(ONE_HUNDRED_HBARS),
-            cryptoTransfer(movingUniqueWithAllowance(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L).between(SENDER, RECEIVER)).payingWith(SPENDER).signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE).fee(ONE_HUNDRED_HBARS)
-        )
-        .then(
-        );
-  }
+    private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithAllowance() {
+        final var TREASURY = "treasury";
+        final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
+        final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
+        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
+                "nftTokenWithRoyaltyFeeWithHbarFallback";
+        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
+                "nftTokenWithRoyaltyFeeWithTokenFallback";
+        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
+        final var RECEIVER_SIGNATURE = "receiverSignature";
+        final var SPENDER_SIGNATURE = "spenderSignature";
+        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        newKeyNamed(SPENDER_SIGNATURE),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(OWNER)
+                                .balance(100 * ONE_MILLION_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECEIVER)
+                                .balance(100 * ONE_MILLION_HBARS)
+                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SPENDER)
+                                .balance(100 * ONE_MILLION_HBARS)
+                                .key(SPENDER_SIGNATURE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                                OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, FUNGIBLE_TOKEN_FEE),
+                                                OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                SPENDER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        mintToken(
+                                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        mintToken(
+                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta5".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta7".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
+                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        SPENDER,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        SPENDER,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        SPENDER,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                        SPENDER,
+                                        true,
+                                        List.of(1L))
+                                .via("approveTxn")
+                                .signedBy(DEFAULT_PAYER, SENDER))
+                .when(
+                        cryptoTransfer(
+                                        movingUniqueWithAllowance(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .fee(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(
+                                        movingUniqueWithAllowance(
+                                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .fee(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(
+                                        movingUniqueWithAllowance(
+                                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                                        1L)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE)
+                                .fee(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(
+                                        movingUniqueWithAllowance(
+                                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                                        1L)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE)
+                                .fee(ONE_HUNDRED_HBARS))
+                .then();
+    }
 
-  private HapiApiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
-    final var SPENDER = "spender";
-    final var TREASURY = "treasury";
-    final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
-    final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
-    final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
-    final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-    final var RECEIVER_SIGNATURE = "receiverSignature";
-    final var SPENDER_SIGNATURE = "spenderSignature";
-    return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
-        .given(
-            newKeyNamed(RECEIVER_SIGNATURE),
-            newKeyNamed(SPENDER_SIGNATURE),
-            cryptoCreate(TREASURY),
-            cryptoCreate(OWNER)
-                .balance(100 * ONE_MILLION_HBARS),
-            cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-            cryptoCreate(RECEIVER).balance(100 * ONE_MILLION_HBARS).key(RECEIVER_SIGNATURE),
-            cryptoCreate(SPENDER).balance(100 * ONE_MILLION_HBARS).key(SPENDER_SIGNATURE),
-            tokenCreate(FUNGIBLE_TOKEN_FEE)
-                .tokenType(FUNGIBLE_COMMON)
-                .treasury(TREASURY)
-                .initialSupply(1000L),
-            tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
-            tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
-            tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
-            tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
-                .tokenType(FUNGIBLE_COMMON)
-                .treasury(OWNER)
-                .initialSupply(1000L)
-                .withCustom(fixedHbarFee(1, OWNER)),
-            tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
-                .tokenType(FUNGIBLE_COMMON)
-                .treasury(OWNER)
-                .initialSupply(1000L)
-                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
-            tokenCreate(FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
-                .tokenType(FUNGIBLE_COMMON)
-                .treasury(OWNER)
-                .initialSupply(1000L)
-                .withCustom(
-                    fractionalFee(1, 2, 1, OptionalLong.of(10), OWNER)),
-            tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
-            tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
-            tokenAssociate(SPENDER, List.of(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
-            cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
-            cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE).between(OWNER, SENDER)),
-            cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE).between(OWNER, SENDER)),
-            cryptoTransfer(moving(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE).between(OWNER, SENDER)),
-            cryptoApproveAllowance()
-                .payingWith(DEFAULT_PAYER)
-                .addTokenAllowance(
-                    SENDER,
-                    FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
-                    SPENDER,
-                    1L)
-                .addTokenAllowance(
-                    SENDER,
-                    FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
-                    SPENDER,
-                    1L)
-                .addTokenAllowance(
-                    SENDER,
-                    FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE,
-                    SPENDER,
-                    2L)
-                .via("approveTxn")
-                .signedBy(DEFAULT_PAYER, SENDER)
-        )
-        .when(
-            cryptoTransfer(
-                movingWithAllowance(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE).between(SENDER, RECEIVER)).payingWith(SPENDER).fee(ONE_HUNDRED_HBARS),
-            cryptoTransfer(movingWithAllowance(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE).between(SENDER, RECEIVER)).payingWith(SPENDER).fee(ONE_HUNDRED_HBARS),
-            cryptoTransfer(movingWithAllowance(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE).between(SENDER, RECEIVER)).payingWith(SPENDER).signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE).fee(ONE_HUNDRED_HBARS)
-        )
-        .then(
-        );
-  }
+    private HapiApiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
+        final var SPENDER = "spender";
+        final var TREASURY = "treasury";
+        final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
+        final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
+        final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
+        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
+        final var RECEIVER_SIGNATURE = "receiverSignature";
+        final var SPENDER_SIGNATURE = "spenderSignature";
+        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFees")
+                .given(
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        newKeyNamed(SPENDER_SIGNATURE),
+                        cryptoCreate(TREASURY),
+                        cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
+                        cryptoCreate(RECEIVER)
+                                .balance(100 * ONE_MILLION_HBARS)
+                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SPENDER)
+                                .balance(100 * ONE_MILLION_HBARS)
+                                .key(SPENDER_SIGNATURE),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fractionalFee(1, 2, 1, OptionalLong.of(10), OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        tokenAssociate(
+                                SPENDER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(
+                                        SENDER, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE, SPENDER, 1L)
+                                .addTokenAllowance(
+                                        SENDER, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE, SPENDER, 1L)
+                                .addTokenAllowance(
+                                        SENDER, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE, SPENDER, 2L)
+                                .via("approveTxn")
+                                .signedBy(DEFAULT_PAYER, SENDER))
+                .when(
+                        cryptoTransfer(
+                                        movingWithAllowance(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .fee(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(
+                                        movingWithAllowance(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .fee(ONE_HUNDRED_HBARS),
+                        cryptoTransfer(
+                                        movingWithAllowance(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                                .between(SENDER, RECEIVER))
+                                .payingWith(SPENDER)
+                                .signedBy(RECEIVER_SIGNATURE, SPENDER_SIGNATURE)
+                                .fee(ONE_HUNDRED_HBARS))
+                .then();
+    }
 
     @Override
     protected Logger getResultsLogger() {

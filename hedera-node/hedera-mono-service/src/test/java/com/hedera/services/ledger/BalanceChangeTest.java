@@ -124,7 +124,12 @@ class BalanceChangeTest {
     void tokenAdjust() {
         final var tokenAdjust =
                 BalanceChange.tokenAdjust(
-                        IdUtils.asModelId("1.2.3"), IdUtils.asModelId("3.2.1"), 10, null, true);
+                        IdUtils.asModelId("1.2.3"),
+                        IdUtils.asModelId("3.2.1"),
+                        10,
+                        null,
+                        true,
+                        true);
         assertEquals(10, tokenAdjust.getAggregatedUnits());
         assertEquals(0, tokenAdjust.getAllowanceUnits());
         assertEquals(new Id(1, 2, 3), tokenAdjust.getAccount());
