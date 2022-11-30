@@ -31,10 +31,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenGetInfoQuery;
 import com.hederahashgraph.api.proto.java.TokenGetInfoResponse;
 import com.hederahashgraph.api.proto.java.TokenInfo;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -49,34 +49,37 @@ public class GetTokenInfoAnswer implements AnswerService {
     }
 
     @Override
-    public boolean needsAnswerOnlyCost(Query query) {
+    public boolean needsAnswerOnlyCost(final Query query) {
         return COST_ANSWER == query.getTokenGetInfo().getHeader().getResponseType();
     }
 
     @Override
-    public boolean requiresNodePayment(Query query) {
+    public boolean requiresNodePayment(final Query query) {
         return typicallyRequiresNodePayment(query.getTokenGetInfo().getHeader().getResponseType());
     }
 
     @Override
     public Response responseGiven(
-            Query query, @Nullable StateView view, ResponseCodeEnum validity, long cost) {
+            final Query query,
+            @Nullable final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost) {
         return responseFor(query, view, validity, cost, NO_QUERY_CTX);
     }
 
     @Override
     public Response responseGiven(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Map<String, Object> queryCtx) {
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Map<String, Object> queryCtx) {
         return responseFor(query, view, validity, cost, Optional.of(queryCtx));
     }
 
     @Override
-    public ResponseCodeEnum checkValidity(Query query, StateView view) {
-        var token = query.getTokenGetInfo().getToken();
+    public ResponseCodeEnum checkValidity(final Query query, final StateView view) {
+        final var token = query.getTokenGetInfo().getToken();
 
         return view.tokenExists(token) ? OK : INVALID_TOKEN_ID;
     }
@@ -87,26 +90,26 @@ public class GetTokenInfoAnswer implements AnswerService {
     }
 
     @Override
-    public ResponseCodeEnum extractValidityFrom(Response response) {
+    public ResponseCodeEnum extractValidityFrom(final Response response) {
         return response.getTokenGetInfo().getHeader().getNodeTransactionPrecheckCode();
     }
 
     @Override
-    public Optional<SignedTxnAccessor> extractPaymentFrom(Query query) {
-        var paymentTxn = query.getTokenGetInfo().getHeader().getPayment();
+    public Optional<SignedTxnAccessor> extractPaymentFrom(final Query query) {
+        final var paymentTxn = query.getTokenGetInfo().getHeader().getPayment();
         return Optional.ofNullable(uncheckedFrom(paymentTxn));
     }
 
     private Response responseFor(
-            Query query,
-            StateView view,
-            ResponseCodeEnum validity,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
-        var op = query.getTokenGetInfo();
-        var response = TokenGetInfoResponse.newBuilder();
+            final Query query,
+            final StateView view,
+            final ResponseCodeEnum validity,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
+        final var op = query.getTokenGetInfo();
+        final var response = TokenGetInfoResponse.newBuilder();
 
-        var type = op.getHeader().getResponseType();
+        final var type = op.getHeader().getResponseType();
         if (validity != OK) {
             response.setHeader(header(validity, type, cost));
         } else {
@@ -122,13 +125,13 @@ public class GetTokenInfoAnswer implements AnswerService {
 
     @SuppressWarnings("unchecked")
     private void setAnswerOnly(
-            TokenGetInfoResponse.Builder response,
-            StateView view,
-            TokenGetInfoQuery op,
-            long cost,
-            Optional<Map<String, Object>> queryCtx) {
+            final TokenGetInfoResponse.Builder response,
+            final StateView view,
+            final TokenGetInfoQuery op,
+            final long cost,
+            final Optional<Map<String, Object>> queryCtx) {
         if (queryCtx.isPresent()) {
-            var ctx = queryCtx.get();
+            final var ctx = queryCtx.get();
             if (!ctx.containsKey(TOKEN_INFO_CTX_KEY)) {
                 response.setHeader(answerOnlyHeader(INVALID_TOKEN_ID));
             } else {
@@ -136,7 +139,7 @@ public class GetTokenInfoAnswer implements AnswerService {
                 response.setTokenInfo((TokenInfo) ctx.get(TOKEN_INFO_CTX_KEY));
             }
         } else {
-            var info = view.infoForToken(op.getToken());
+            final var info = view.infoForToken(op.getToken());
             if (info.isEmpty()) {
                 response.setHeader(answerOnlyHeader(INVALID_TOKEN_ID));
             } else {

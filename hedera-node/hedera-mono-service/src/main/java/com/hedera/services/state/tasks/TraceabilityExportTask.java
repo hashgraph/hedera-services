@@ -23,8 +23,8 @@ import static com.hedera.services.throttling.MapAccessType.BLOBS_GET;
 import static com.hedera.services.throttling.MapAccessType.STORAGE_GET;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.HederaAccount;
@@ -169,7 +169,7 @@ public class TraceabilityExportTask implements SystemTask {
             final ContractID contractId,
             final HederaAccount contract,
             final List<TransactionSidecarRecord.Builder> sidecars) {
-        var contractStorageKey = contract.getFirstContractStorageKey();
+        final var contractStorageKey = contract.getFirstContractStorageKey();
         if (contractStorageKey == null) {
             return;
         }
@@ -267,7 +267,7 @@ public class TraceabilityExportTask implements SystemTask {
     }
 
     @VisibleForTesting
-    void setExportsCompleted(int exportsCompleted) {
+    void setExportsCompleted(final int exportsCompleted) {
         this.exportsCompleted = exportsCompleted;
     }
 }

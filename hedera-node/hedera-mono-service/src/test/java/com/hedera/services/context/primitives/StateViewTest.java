@@ -58,9 +58,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.config.NetworkInfo;
 import com.hedera.services.context.MutableStateChildren;
-import com.hedera.services.ethereum.EthTxSigs;
 import com.hedera.services.files.HFileMeta;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.staking.RewardCalculator;
@@ -1272,24 +1272,24 @@ class StateViewTest {
     @Test
     void tokenCustomFeesWorks() {
         given(tokens.get(tokenNum)).willReturn(token);
-        assertEquals(grpcCustomFees, subject.tokenCustomFees(tokenId));
+        assertEquals(grpcCustomFees, subject.infoForTokenCustomFees(tokenId));
     }
 
     @Test
     void tokenCustomFeesFailsGracefully() {
         given(tokens.get(tokenNum)).willThrow(IllegalArgumentException.class);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesMissingTokenIdReturnsEmptyList() {
-        assertTrue(subject.tokenCustomFees(missingTokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(missingTokenId).isEmpty());
     }
 
     @Test
     void tokenCustomFeesWorksForMissing() {
         subject = new StateView(null, null, null);
-        assertTrue(subject.tokenCustomFees(tokenId).isEmpty());
+        assertTrue(subject.infoForTokenCustomFees(tokenId).isEmpty());
     }
 
     private final Instant nftCreation = Instant.ofEpochSecond(1_234_567L, 8);

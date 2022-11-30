@@ -16,7 +16,7 @@
 package com.hedera.services.utils;
 
 import com.swirlds.common.FastCopyable;
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Facilitates the mutation of one or more keys from an implicit map whose values compose a family

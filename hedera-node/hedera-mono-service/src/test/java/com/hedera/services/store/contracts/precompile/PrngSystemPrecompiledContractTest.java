@@ -38,10 +38,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.primitives.Longs;
+import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.context.SideEffectsTracker;
 import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.execution.LivePricesSource;
-import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 import com.hedera.services.exceptions.InvalidTransactionException;
 import com.hedera.services.exceptions.UnknownHederaFunctionality;
 import com.hedera.services.records.RecordsHistorian;

@@ -48,13 +48,13 @@ import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 /** Class that encapsulates checking schedule signatures. */
 @Singleton

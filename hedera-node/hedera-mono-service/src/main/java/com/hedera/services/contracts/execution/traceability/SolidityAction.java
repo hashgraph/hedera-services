@@ -15,7 +15,7 @@
  */
 package com.hedera.services.contracts.execution.traceability;
 
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
 
@@ -67,7 +67,7 @@ public class SolidityAction {
         return value;
     }
 
-    public void setGasUsed(long gasUsed) {
+    public void setGasUsed(final long gasUsed) {
         this.gasUsed = gasUsed;
     }
 
@@ -87,15 +87,15 @@ public class SolidityAction {
         return error;
     }
 
-    public void setCallOperationType(CallOperationType callOperationType) {
+    public void setCallOperationType(final CallOperationType callOperationType) {
         this.callOperationType = callOperationType;
     }
 
-    public void setCallingAccount(EntityId callingAccount) {
+    public void setCallingAccount(final EntityId callingAccount) {
         this.callingAccount = callingAccount;
     }
 
-    public void setCallingContract(EntityId callingContract) {
+    public void setCallingContract(final EntityId callingContract) {
         this.callingContract = callingContract;
     }
 
@@ -103,19 +103,19 @@ public class SolidityAction {
         this.error = error;
     }
 
-    public void setTargetedAddress(byte[] invalidSolidityAddress) {
+    public void setTargetedAddress(final byte[] invalidSolidityAddress) {
         this.invalidSolidityAddress = invalidSolidityAddress;
     }
 
-    public void setRecipientAccount(EntityId recipientAccount) {
+    public void setRecipientAccount(final EntityId recipientAccount) {
         this.recipientAccount = recipientAccount;
     }
 
-    public void setCallType(ContractActionType callType) {
+    public void setCallType(final ContractActionType callType) {
         this.callType = callType;
     }
 
-    public void setRecipientContract(EntityId recipientContract) {
+    public void setRecipientContract(final EntityId recipientContract) {
         this.recipientContract = recipientContract;
     }
 

@@ -21,8 +21,8 @@ import com.hedera.services.utils.EntityNumPair;
 import com.hedera.services.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
-import org.jetbrains.annotations.NotNull;
 
 public record NftId(long shard, long realm, long num, long serialNo) implements Comparable<NftId> {
     private static final Comparator<NftId> NATURAL_ORDER =
@@ -57,7 +57,7 @@ public record NftId(long shard, long realm, long num, long serialNo) implements 
     }
 
     @Override
-    public int compareTo(final @NotNull NftId that) {
+    public int compareTo(final @NonNull NftId that) {
         return NATURAL_ORDER.compare(this, that);
     }
 }

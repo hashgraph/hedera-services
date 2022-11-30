@@ -15,16 +15,16 @@
  */
 package com.hedera.services.store.contracts.precompile.utils;
 
-import static com.hedera.services.pricing.FeeSchedules.USD_TO_TINYCENTS;
+import static com.hedera.node.app.hapi.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.services.context.primitives.StateView;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.pricing.AssetsLoader;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -70,7 +70,7 @@ class PrecompilePricingUtilsTest {
 
     @Test
     void calculatesMinimumPrice() throws IOException {
-        Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
+        final Timestamp timestamp = Timestamp.newBuilder().setSeconds(123456789).build();
         given(exchange.rate(timestamp)).willReturn(exchangeRate);
         given(assetLoader.loadCanonicalPrices())
                 .willReturn(
@@ -80,7 +80,7 @@ class PrecompilePricingUtilsTest {
         given(exchangeRate.getCentEquiv()).willReturn(CENTS_RATE);
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
 
-        PrecompilePricingUtils subject =
+        final PrecompilePricingUtils subject =
                 new PrecompilePricingUtils(
                         assetLoader,
                         exchange,
@@ -89,7 +89,7 @@ class PrecompilePricingUtilsTest {
                         stateView,
                         accessorFactory);
 
-        long price =
+        final long price =
                 subject.getMinimumPriceInTinybars(
                         PrecompilePricingUtils.GasCostType.ASSOCIATE, timestamp);
 

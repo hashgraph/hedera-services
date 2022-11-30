@@ -38,9 +38,9 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -110,7 +110,7 @@ public class ReadOnlyTokenStore {
      * @return a usable model of the token-account relationship
      * @throws InvalidTransactionException if the requested relationship does not exist
      */
-    public TokenRelationship loadTokenRelationship(Token token, Account account) {
+    public TokenRelationship loadTokenRelationship(final Token token, final Account account) {
         final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
         validateUsable(merkleTokenRel);
@@ -138,7 +138,8 @@ public class ReadOnlyTokenStore {
      * @return a usable model of the token-account relationship or null if the requested
      *     relationship doesnt exist
      */
-    public TokenRelationship loadPossiblyMissingTokenRelationship(Token token, Account account) {
+    public TokenRelationship loadPossiblyMissingTokenRelationship(
+            final Token token, final Account account) {
         final var merkleTokenRel = getMerkleTokenRelationship(token, account);
 
         if (merkleTokenRel == null) {
@@ -148,12 +149,12 @@ public class ReadOnlyTokenStore {
         }
     }
 
-    public boolean hasAssociation(Token token, Account account) {
+    public boolean hasAssociation(final Token token, final Account account) {
         return tokenRels.contains(
                 Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
     }
 
-    public HederaTokenRel getMerkleTokenRelationship(Token token, Account account) {
+    public HederaTokenRel getMerkleTokenRelationship(final Token token, final Account account) {
         return tokenRels.getImmutableRef(
                 Pair.of(account.getId().asGrpcAccount(), token.getId().asGrpcToken()));
     }
@@ -172,7 +173,7 @@ public class ReadOnlyTokenStore {
      * @throws InvalidTransactionException if the requested token is missing, deleted, or expired
      *     and pending removal
      */
-    public Token loadToken(Id id) {
+    public Token loadToken(final Id id) {
         final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
         validateUsable(merkleToken);
@@ -191,7 +192,7 @@ public class ReadOnlyTokenStore {
      * @param id the token to load
      * @return a usable model of the token which is possibly paused
      */
-    public Token loadPossiblyPausedToken(Id id) {
+    public Token loadPossiblyPausedToken(final Id id) {
         final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
         validateTrue(merkleToken != null, INVALID_TOKEN_ID);
@@ -213,9 +214,9 @@ public class ReadOnlyTokenStore {
      * @throws InvalidTransactionException if the requested token class is missing, deleted, or
      *     expired and pending removal
      */
-    public void loadUniqueTokens(Token token, List<Long> serialNumbers) {
+    public void loadUniqueTokens(final Token token, final List<Long> serialNumbers) {
         final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
-        for (long serialNumber : serialNumbers) {
+        for (final long serialNumber : serialNumbers) {
             final var uniqueToken = loadUniqueToken(token.getId(), serialNumber);
             loadedUniqueTokens.put(serialNumber, uniqueToken);
         }
@@ -230,7 +231,7 @@ public class ReadOnlyTokenStore {
      * @param serialNum Serial number of the NFT
      * @return The {@link UniqueToken} model of the requested unique token
      */
-    public UniqueToken loadUniqueToken(Id tokenId, Long serialNum) {
+    public UniqueToken loadUniqueToken(final Id tokenId, final Long serialNum) {
         final var nftId = NftId.withDefaultShardRealm(tokenId.num(), serialNum);
         final var merkleUniqueToken = uniqueTokens.getImmutableRef(nftId);
         validateUsable(merkleUniqueToken);
@@ -246,7 +247,7 @@ public class ReadOnlyTokenStore {
      * @param id the token to load
      * @return a usable model of the token
      */
-    public Token loadPossiblyDeletedOrAutoRemovedToken(Id id) {
+    public Token loadPossiblyDeletedOrAutoRemovedToken(final Id id) {
         final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
         final var token = new Token(id);
@@ -269,7 +270,7 @@ public class ReadOnlyTokenStore {
      *     is erroneous
      * @return - the loaded token
      */
-    public Token loadTokenOrFailWith(Id id, ResponseCodeEnum code) {
+    public Token loadTokenOrFailWith(final Id id, final ResponseCodeEnum code) {
         final var merkleToken = tokens.getImmutableRef(id.asGrpcToken());
 
         validateUsable(merkleToken, code);
@@ -280,28 +281,28 @@ public class ReadOnlyTokenStore {
         return token;
     }
 
-    private void validateUsable(HederaTokenRel merkleTokenRelStatus) {
+    private void validateUsable(final HederaTokenRel merkleTokenRelStatus) {
         validateTrue(merkleTokenRelStatus != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
     }
 
-    private void validateUsable(MerkleToken merkleToken) {
+    private void validateUsable(final MerkleToken merkleToken) {
         validateTrue(merkleToken != null, INVALID_TOKEN_ID);
         validateFalse(merkleToken.isDeleted(), TOKEN_WAS_DELETED);
         validateFalse(merkleToken.isPaused(), TOKEN_IS_PAUSED);
     }
 
-    private void validateUsable(MerkleToken merkleToken, ResponseCodeEnum code) {
+    private void validateUsable(final MerkleToken merkleToken, final ResponseCodeEnum code) {
         validateTrue(merkleToken != null, code);
         validateFalse(merkleToken.isDeleted(), code);
         validateFalse(merkleToken.isPaused(), code);
     }
 
-    private void validateUsable(UniqueTokenAdapter uniqueTokenAdapter) {
+    private void validateUsable(final UniqueTokenAdapter uniqueTokenAdapter) {
         validateTrue(uniqueTokenAdapter != null, INVALID_NFT_ID);
     }
 
     private void initModelAccounts(
-            Token token, EntityId treasuryId, @Nullable EntityId autoRenewId) {
+            final Token token, final EntityId treasuryId, @Nullable final EntityId autoRenewId) {
         if (autoRenewId != null) {
             final var autoRenewIdentifier =
                     new Id(autoRenewId.shard(), autoRenewId.realm(), autoRenewId.num());
@@ -314,7 +315,7 @@ public class ReadOnlyTokenStore {
         token.setTreasury(treasury);
     }
 
-    private void initModelFields(Token token, MerkleToken immutableToken) {
+    private void initModelFields(final Token token, final MerkleToken immutableToken) {
         token.initTotalSupply(immutableToken.totalSupply());
         token.initSupplyConstraints(immutableToken.supplyType(), immutableToken.maxSupply());
         token.setKycKey(immutableToken.getKycKey());
@@ -334,7 +335,8 @@ public class ReadOnlyTokenStore {
         token.setAutoRenewPeriod(immutableToken.autoRenewPeriod());
     }
 
-    private void initModelFields(UniqueToken uniqueToken, UniqueTokenAdapter immutableUniqueToken) {
+    private void initModelFields(
+            final UniqueToken uniqueToken, final UniqueTokenAdapter immutableUniqueToken) {
         if (immutableUniqueToken.isVirtual()) {
             uniqueToken.setCreationTime(immutableUniqueToken.uniqueTokenValue().getCreationTime());
             uniqueToken.setMetadata(immutableUniqueToken.uniqueTokenValue().getMetadata());

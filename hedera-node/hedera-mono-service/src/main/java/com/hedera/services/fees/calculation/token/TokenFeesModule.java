@@ -17,14 +17,14 @@ package com.hedera.services.fees.calculation.token;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 
+import com.hedera.node.app.hapi.fees.usage.EstimatorFactory;
+import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.fees.annotations.FunctionKey;
 import com.hedera.services.fees.calculation.QueryResourceUsageEstimator;
 import com.hedera.services.fees.calculation.TxnResourceUsageEstimator;
 import com.hedera.services.fees.calculation.token.queries.GetTokenInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
 import com.hedera.services.fees.calculation.token.txns.*;
-import com.hedera.services.usage.EstimatorFactory;
-import com.hedera.services.usage.TxnUsageEstimator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;

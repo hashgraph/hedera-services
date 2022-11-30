@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.contracts.ParsingConstants.BYTES32;
-import static com.hedera.services.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
+import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
@@ -62,7 +62,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile {
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        final var isToken = stateView.tokenExists(tokenId);
+        final var isToken = ledgers.tokens().contains(tokenId);
         return encoder.encodeIsToken(isToken);
     }
 

@@ -17,10 +17,10 @@ package com.hedera.node.app.state.impl;
 
 import com.hedera.node.app.spi.state.State;
 import com.swirlds.fchashmap.FCHashMap;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 
 /**
  * An implementation of {@link State} backed by a {@link FCHashMap} for aliases, that needs to be
@@ -30,19 +30,19 @@ import javax.annotation.Nonnull;
  * @param <V> The type of value for the state
  */
 public final class RebuiltStateImpl<K, V> extends StateBase<K, V> {
-    private Map<K, V> aliases;
+    private final Map<K, V> aliases;
     private final Instant lastModifiedTime;
 
     public RebuiltStateImpl(
-            @Nonnull final String stateKey,
-            @Nonnull Map<K, V> aliases,
-            @Nonnull final Instant lastModifiedTime) {
+            @NonNull final String stateKey,
+            @NonNull final Map<K, V> aliases,
+            @NonNull final Instant lastModifiedTime) {
         super(stateKey);
         this.aliases = Objects.requireNonNull(aliases);
         this.lastModifiedTime = lastModifiedTime;
     }
 
-    RebuiltStateImpl(@Nonnull final String stateKey, @Nonnull final Instant lastModifiedTime) {
+    RebuiltStateImpl(@NonNull final String stateKey, @NonNull final Instant lastModifiedTime) {
         this(stateKey, new FCHashMap<>(), lastModifiedTime);
     }
 
