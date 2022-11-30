@@ -66,6 +66,13 @@ class AccountBuilderImplTest {
     }
 
     @Test
+    void checksBalance() {
+        assertThrows(IllegalArgumentException.class, () -> subject.balance(-1L).build());
+        assertThrows(
+                IllegalArgumentException.class, () -> subject.balance(50_000_000_0000L).build());
+    }
+
+    @Test
     void settersWork() {
         final var newKey = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
         subject.key(newKey);

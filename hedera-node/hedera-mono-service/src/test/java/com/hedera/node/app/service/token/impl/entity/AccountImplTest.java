@@ -16,6 +16,8 @@
 package com.hedera.node.app.service.token.impl.entity;
 
 import static com.hedera.node.app.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -46,10 +48,12 @@ class AccountImplTest {
         final var o1 = subject;
         final var o2 = o1.copy().build();
         final var o3 = o1.copy().memo("test1").build();
+        assertEquals(o1, o1);
         assertEquals(o1, o2);
+        assertNotEquals(o1, o3);
+        assertNotEquals(null, o1);
         assertNotNull(o1);
         assertNotNull(o2);
-        assertNotEquals(o1, o3);
     }
 
     @Test
@@ -91,6 +95,14 @@ class AccountImplTest {
         assertEquals(1000L, subject.stakeAtStartOfLastRewardedPeriod());
         assertEquals(3000L, subject.autoRenewAccountNumber());
         assertEquals(360000, subject.autoRenewSecs());
+        assertEquals(0, subject.shardNumber());
+        assertEquals(0, subject.realmNumber());
+        assertFalse(subject.isHollow());
+    }
+
+    @Test
+    void convertsTinybarToHbar() {
+        assertEquals(subject.balanceInTinyBar() / HBARS_TO_TINYBARS, subject.balanceInHbar());
     }
 
     private AccountImpl setUpAccount() {
