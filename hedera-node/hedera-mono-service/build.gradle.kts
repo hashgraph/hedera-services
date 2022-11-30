@@ -101,7 +101,7 @@ tasks.jar {
         tasks.jar.configure {
             manifest {
                 attributes(
-                    "Main-Class" to "com.hedera.services.ServicesMain",
+                    "Main-Class" to "com.hedera.node.app.service.mono.ServicesMain",
                     "Class-Path" to configurations.getByName("runtimeClasspath")
                         .joinToString(separator = " ") { "../../data/lib/" + it.name }
 
