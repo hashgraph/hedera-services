@@ -24,11 +24,13 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.dagger.compiler)
+    
+    implementation(libs.bundles.di)
     implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
     implementation(libs.hapi)
-    implementation(libs.javax.inject)
     implementation(libs.jackson)
     compileOnly(libs.spotbugs.annotations)
 
