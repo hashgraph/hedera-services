@@ -24,7 +24,7 @@ import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
