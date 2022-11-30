@@ -18,7 +18,7 @@ package com.hedera.services.state.expiry;
 import static java.util.Comparator.comparing;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
-import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.services.records.TxnIdRecentHistory;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;

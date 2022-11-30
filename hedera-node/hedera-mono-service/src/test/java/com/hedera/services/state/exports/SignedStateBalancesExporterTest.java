@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.services.ServicesState;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;

@@ -20,7 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.HtsFeeAssessor;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;

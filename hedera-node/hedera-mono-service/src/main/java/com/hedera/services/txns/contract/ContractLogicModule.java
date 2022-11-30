@@ -23,10 +23,10 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractUpd
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.annotations.FunctionKey;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.StoresModule;
 import com.hedera.services.txns.TransitionLogic;

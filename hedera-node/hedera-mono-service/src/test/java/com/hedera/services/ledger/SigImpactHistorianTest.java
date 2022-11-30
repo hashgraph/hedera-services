@@ -15,9 +15,9 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
-import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
-import static com.hedera.services.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN;
+import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.CHANGED;
+import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.UNCHANGED;
+import static com.hedera.node.app.service.mono.ledger.SigImpactHistorian.ChangeStatus.UNKNOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import java.time.Instant;

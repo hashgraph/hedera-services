@@ -16,7 +16,7 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;
 import com.hederahashgraph.api.proto.java.ContractID;

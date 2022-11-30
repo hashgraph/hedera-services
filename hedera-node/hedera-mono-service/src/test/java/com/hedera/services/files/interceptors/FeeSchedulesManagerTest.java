@@ -15,8 +15,8 @@
  */
 package com.hedera.services.files.interceptors;
 
-import static com.hedera.services.files.interceptors.FeeSchedulesManager.OK_FOR_NOW_VERDICT;
-import static com.hedera.services.files.interceptors.FeeSchedulesManager.YES_VERDICT;
+import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.OK_FOR_NOW_VERDICT;
+import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.YES_VERDICT;
 import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,8 +24,9 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.files.HFileMeta;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hederahashgraph.api.proto.java.FileID;
 import java.io.IOException;

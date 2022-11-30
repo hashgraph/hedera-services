@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.services.files.HybridResouceLoader;
+import com.hedera.node.app.service.mono.files.HybridResouceLoader;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.EnumMap;

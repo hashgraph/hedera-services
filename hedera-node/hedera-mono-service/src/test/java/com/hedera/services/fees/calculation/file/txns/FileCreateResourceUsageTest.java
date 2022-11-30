@@ -24,6 +24,7 @@ import static org.mockito.BDDMockito.verify;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.mono.fees.calculation.file.txns.FileCreateResourceUsage;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

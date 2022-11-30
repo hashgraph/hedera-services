@@ -15,7 +15,7 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
 import static com.hedera.services.sigs.utils.MiscCryptoUtils.decompressSecp256k1;

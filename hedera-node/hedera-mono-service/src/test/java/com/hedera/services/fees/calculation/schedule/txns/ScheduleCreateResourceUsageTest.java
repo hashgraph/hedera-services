@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hederahashgraph.api.proto.java.FeeData;

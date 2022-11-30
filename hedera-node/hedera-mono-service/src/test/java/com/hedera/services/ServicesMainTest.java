@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
-import com.hedera.services.grpc.GrpcStarter;
+import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.services.state.exports.AccountsExporter;
 import com.hedera.services.state.logic.StatusChangeListener;
 import com.hedera.services.state.migration.AccountStorageAdapter;

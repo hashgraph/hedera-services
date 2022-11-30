@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.services.ledger.accounts.TestAccount;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import java.util.Map;

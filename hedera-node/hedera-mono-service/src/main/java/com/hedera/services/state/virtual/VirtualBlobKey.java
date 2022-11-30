@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
+import static com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore.LEGACY_BLOB_CODE_INDEX;
 import static java.lang.Long.parseLong;
 
 import com.hedera.services.state.merkle.internals.BitPackUtils;

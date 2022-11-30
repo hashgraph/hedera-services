@@ -28,8 +28,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.services.config.MockGlobalDynamicProps;
-import com.hedera.services.fees.calculation.EntityScaleFactors;
-import com.hedera.services.fees.congestion.TxnRateFeeMultiplierSource;
+import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
+import com.hedera.node.app.service.mono.fees.congestion.TxnRateFeeMultiplierSource;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;

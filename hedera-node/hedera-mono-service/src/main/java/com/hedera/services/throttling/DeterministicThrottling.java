@@ -16,7 +16,7 @@
 package com.hedera.services.throttling;
 
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.grpc.marshalling.AliasResolver.usesAliases;
+import static com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver.usesAliases;
 import static com.hedera.services.utils.MiscUtils.isGasThrottled;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
@@ -28,9 +28,9 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
-import com.hedera.services.grpc.marshalling.AliasResolver;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;

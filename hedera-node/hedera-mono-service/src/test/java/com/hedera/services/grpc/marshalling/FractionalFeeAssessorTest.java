@@ -21,8 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.fees.CustomFeePayerExemptions;
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
+import com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeAssessor;
+import com.hedera.node.app.service.mono.grpc.marshalling.FractionalFeeAssessor;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;

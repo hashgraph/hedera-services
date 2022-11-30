@@ -20,7 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.diligence.DuplicateClassification;
 import com.hedera.services.txns.validation.OptionValidator;

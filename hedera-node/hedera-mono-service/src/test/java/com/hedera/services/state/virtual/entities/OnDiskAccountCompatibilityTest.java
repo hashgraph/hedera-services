@@ -18,7 +18,7 @@ package com.hedera.services.state.virtual.entities;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.state.merkle.internals.BitPackUtils;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;

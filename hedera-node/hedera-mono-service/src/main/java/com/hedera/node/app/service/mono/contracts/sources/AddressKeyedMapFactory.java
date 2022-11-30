@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.contracts.sources;
 import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
 import static java.lang.Long.parseLong;
 
-import com.hedera.services.files.store.BytesStoreAdapter;
+import com.hedera.node.app.service.mono.files.store.BytesStoreAdapter;
 import com.hedera.services.utils.EntityIdUtils;
 import java.util.Map;
 import java.util.function.Function;

@@ -20,7 +20,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileUpdate;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.txns.TransitionLogic;
 import dagger.Module;
 import dagger.Provides;

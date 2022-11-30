@@ -35,9 +35,9 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps;
-import com.hedera.services.grpc.GrpcStarter;
-import com.hedera.services.grpc.NettyGrpcServerManager;
-import com.hedera.services.ledger.backing.BackingAccounts;
+import com.hedera.node.app.service.mono.grpc.GrpcStarter;
+import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
+import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.exports.ServicesSignedStateListener;

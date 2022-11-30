@@ -15,8 +15,8 @@
  */
 package com.hedera.services.ledger.backing;
 
-import static com.hedera.services.ledger.backing.BackingTokenRels.asTokenRel;
-import static com.hedera.services.ledger.backing.BackingTokenRels.readableTokenRel;
+import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.asTokenRel;
+import static com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels.readableTokenRel;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -31,6 +31,7 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;

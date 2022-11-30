@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EntityId;
@@ -302,7 +303,7 @@ public interface TransactionContext {
     /**
      * Given the number of an account (or contract) deleted in the current transaction, returns the
      * number of its designated beneficiary. Used by the {@link
-     * com.hedera.services.ledger.interceptors.StakingAccountsCommitInterceptor} to redirect reward
+     * StakingAccountsCommitInterceptor} to redirect reward
      * payments that would have otherwise been received by deleted accounts.
      *
      * @param accountNum the number of a deleted account

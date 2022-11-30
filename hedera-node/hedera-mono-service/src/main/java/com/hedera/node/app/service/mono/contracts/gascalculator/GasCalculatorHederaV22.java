@@ -38,8 +38,8 @@ package com.hedera.node.app.service.mono.contracts.gascalculator;
  */
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 

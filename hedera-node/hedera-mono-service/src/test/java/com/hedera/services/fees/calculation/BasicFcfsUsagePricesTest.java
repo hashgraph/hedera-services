@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
+import static com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices.DEFAULT_RESOURCE_PRICES;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
@@ -35,7 +35,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.common.io.Files;
-import com.hedera.services.files.HederaFs;
+import com.hedera.node.app.service.mono.fees.calculation.BasicFcfsUsagePrices;
+import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.services.files.interceptors.MockFileNumbers;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.mocks.MockAppender;

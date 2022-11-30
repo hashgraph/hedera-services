@@ -85,7 +85,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSu
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.Query.QueryCase.TRANSACTIONGETFASTRECORD;
 
-import com.hedera.services.exceptions.UnknownHederaFunctionality;
+import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.TransactionBody;

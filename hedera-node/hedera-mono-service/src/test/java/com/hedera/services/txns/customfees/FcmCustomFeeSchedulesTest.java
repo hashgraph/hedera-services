@@ -18,7 +18,7 @@ package com.hedera.services.txns.customfees;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;

@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -26,7 +27,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  *
  * <p>We need both representations of the change-set because the Besu EVM is implemented in terms of
  * the {@link Account} type hierarchy, while the logic for the native HTS pre-compiles is
- * implemented in terms of {@link com.hedera.services.ledger.TransactionalLedger} instances.
+ * implemented in terms of {@link TransactionalLedger} instances.
  *
  * @param <W> the type of the wrapped world view
  * @param <A> the account specialization used by the wrapped world view

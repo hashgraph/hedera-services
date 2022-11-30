@@ -18,7 +18,7 @@ package com.hedera.services.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 

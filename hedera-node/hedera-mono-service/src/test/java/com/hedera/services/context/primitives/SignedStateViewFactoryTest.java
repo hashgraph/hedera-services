@@ -30,7 +30,7 @@ import com.hedera.services.ServicesState;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
-import com.hedera.services.exceptions.NoValidSignedStateException;
+import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleSpecialFiles;

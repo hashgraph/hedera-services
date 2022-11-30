@@ -15,8 +15,8 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
-import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.NO_TOKEN_FOR_HBAR_ADJUST;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAccountWithAlias;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.utils.EntityNum;

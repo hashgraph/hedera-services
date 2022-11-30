@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.contracts;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
-import static com.hedera.services.files.EntityExpiryMapFactory.entityExpiryMapFrom;
+import static com.hedera.node.app.service.mono.files.EntityExpiryMapFactory.entityExpiryMapFrom;
 import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
@@ -24,10 +24,10 @@ import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompil
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.ledger.HederaLedger;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.ContractStorageLimits;

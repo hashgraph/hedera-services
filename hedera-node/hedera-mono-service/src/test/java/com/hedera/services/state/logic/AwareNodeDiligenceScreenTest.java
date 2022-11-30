@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.txns.validation.OptionValidator;

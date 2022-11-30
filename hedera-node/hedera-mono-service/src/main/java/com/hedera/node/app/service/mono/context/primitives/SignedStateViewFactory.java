@@ -20,7 +20,7 @@ import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.ImmutableStateChildren;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
-import com.hedera.services.exceptions.NoValidSignedStateException;
+import com.hedera.node.app.service.mono.exceptions.NoValidSignedStateException;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.utils.NonAtomicReference;

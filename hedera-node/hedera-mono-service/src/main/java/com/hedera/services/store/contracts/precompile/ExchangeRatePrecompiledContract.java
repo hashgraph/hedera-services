@@ -18,7 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import com.esaulpaugh.headlong.abi.BigIntegerType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.function.Supplier;

@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValue;

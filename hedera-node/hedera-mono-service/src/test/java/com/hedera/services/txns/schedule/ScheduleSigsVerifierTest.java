@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.schedule;
 
-import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,8 +29,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableList;
-import com.hedera.services.keys.CharacteristicsFactory;
-import com.hedera.services.keys.KeyActivationCharacteristics;
+import com.hedera.node.app.service.mono.keys.CharacteristicsFactory;
+import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.SigRequirements;
 import com.hedera.services.sigs.order.SigningOrderResult;

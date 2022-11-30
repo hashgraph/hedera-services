@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleGroup;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.services.files.HybridResouceLoader;
+import com.hedera.node.app.service.mono.files.HybridResouceLoader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;

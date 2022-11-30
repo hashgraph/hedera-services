@@ -26,8 +26,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.interceptors.LinkAwareTokenRelsCommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.interceptors.TokenRelsLinkManager;
+import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
 import com.hedera.services.state.merkle.MerkleTokenRelStatus;
 import com.hedera.services.state.migration.HederaTokenRel;
 import com.hedera.services.state.validation.UsageLimits;

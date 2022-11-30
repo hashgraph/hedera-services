@@ -19,6 +19,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.keys.CharacteristicsFactory;
+import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
+import com.hedera.node.app.service.mono.keys.KeysModule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,7 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class KeysModuleTest {
     @Mock TransactionContext transactionContext;
-    @Mock CharacteristicsFactory characteristicsFactory;
+    @Mock
+	CharacteristicsFactory characteristicsFactory;
 
     @Test
     void assertThatInHandleActivationHelperInstanceIsCreated() {

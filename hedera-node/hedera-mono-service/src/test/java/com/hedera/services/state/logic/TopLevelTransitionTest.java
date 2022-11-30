@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.fees.charging.TxnChargingPolicyAgent;
+import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

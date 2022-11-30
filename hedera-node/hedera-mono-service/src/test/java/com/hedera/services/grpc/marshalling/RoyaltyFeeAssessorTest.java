@@ -27,8 +27,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.fees.CustomFeePayerExemptions;
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeAssessor;
+import com.hedera.node.app.service.mono.grpc.marshalling.FungibleAdjuster;
+import com.hedera.node.app.service.mono.grpc.marshalling.RoyaltyFeeAssessor;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;

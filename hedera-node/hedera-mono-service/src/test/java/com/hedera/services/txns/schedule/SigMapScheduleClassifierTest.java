@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.schedule;
 
-import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 import static org.junit.jupiter.api.Assertions.assertEquals;

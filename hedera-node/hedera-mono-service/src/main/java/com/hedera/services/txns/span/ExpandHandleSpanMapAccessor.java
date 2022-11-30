@@ -30,7 +30,7 @@ import com.hedera.node.app.hapi.fees.usage.token.meta.TokenWipeMeta;
 import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Map;

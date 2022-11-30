@@ -18,6 +18,7 @@ package com.hedera.services.ledger.properties;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.packedTime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.services.state.merkle.MerkleUniqueToken;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;

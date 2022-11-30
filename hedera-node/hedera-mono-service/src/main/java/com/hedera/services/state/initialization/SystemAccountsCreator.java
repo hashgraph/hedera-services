@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.initialization;
 
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.system.NodeId;

@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.contracts.operation.HederaLogOperation;
-import com.hedera.services.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.extensions.LogCaptor;

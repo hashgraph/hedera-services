@@ -35,7 +35,7 @@ import com.hedera.services.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.services.legacy.core.jproto.JEd25519Key;

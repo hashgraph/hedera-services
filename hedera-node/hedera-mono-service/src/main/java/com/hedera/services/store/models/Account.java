@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.models;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.getMaxAutomaticAssociationsFrom;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
@@ -34,6 +34,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.TypedTokenStore;
@@ -58,7 +59,7 @@ import org.hyperledger.besu.datatypes.Address;
  * Encapsulates the state and operations of a Hedera account.
  *
  * <p>Operations are validated, and throw a {@link
- * com.hedera.services.exceptions.InvalidTransactionException} with response code capturing the
+ * InvalidTransactionException} with response code capturing the
  * failure when one occurs.
  *
  * <p><b>NOTE:</b> This implementation is incomplete, and includes only the API needed to support

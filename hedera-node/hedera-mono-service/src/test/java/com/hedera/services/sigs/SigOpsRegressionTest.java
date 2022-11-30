@@ -15,9 +15,9 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
-import static com.hedera.services.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
-import static com.hedera.services.keys.HederaKeyActivation.payerSigIsActive;
+import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.ONLY_IF_SIG_IS_VALID;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.payerSigIsActive;
 import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.services.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -46,10 +46,10 @@ import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.services.config.MockEntityNumbers;
 import com.hedera.services.config.MockFileNumbers;
-import com.hedera.services.files.HederaFs;
-import com.hedera.services.keys.HederaKeyActivation;
-import com.hedera.services.keys.KeyActivationCharacteristics;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
+import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.services.sigs.metadata.SigMetadataLookup;

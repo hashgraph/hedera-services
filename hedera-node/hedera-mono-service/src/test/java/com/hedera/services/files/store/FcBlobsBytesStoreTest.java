@@ -15,7 +15,7 @@
  */
 package com.hedera.services.files.store;
 
-import static com.hedera.services.files.store.FcBlobsBytesStore.getEntityNumFromPath;
+import static com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore.getEntityNumFromPath;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,6 +26,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobKey.Type;
 import com.hedera.services.state.virtual.VirtualBlobValue;

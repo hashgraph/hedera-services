@@ -15,11 +15,12 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.services.setup.InfrastructureManager.loadOrCreateBundle;
 import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_LEDGER;
 
-import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.services.setup.Constructables;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;

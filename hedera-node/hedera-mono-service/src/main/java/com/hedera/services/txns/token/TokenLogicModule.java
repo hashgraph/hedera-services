@@ -31,7 +31,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.token.process.Dissociation;

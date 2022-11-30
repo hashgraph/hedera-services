@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.Store;
 import com.hedera.services.store.models.NftId;

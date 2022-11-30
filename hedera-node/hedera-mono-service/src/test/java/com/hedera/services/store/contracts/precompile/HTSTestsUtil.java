@@ -18,7 +18,7 @@ package com.hedera.services.store.contracts.precompile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;

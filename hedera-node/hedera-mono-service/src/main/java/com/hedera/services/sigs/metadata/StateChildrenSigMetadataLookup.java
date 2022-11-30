@@ -33,10 +33,10 @@ import static com.hedera.services.utils.EntityNum.fromTopicId;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.StateChildren;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.MetadataMapFactory;
-import com.hedera.services.files.store.FcBlobsBytesStore;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.MetadataMapFactory;
+import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.legacy.core.jproto.JContractIDKey;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.sigs.order.LinkedRefs;

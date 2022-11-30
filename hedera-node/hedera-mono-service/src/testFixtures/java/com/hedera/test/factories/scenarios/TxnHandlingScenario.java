@@ -43,8 +43,8 @@ import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.HederaFs;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;

@@ -30,11 +30,11 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.files.MetadataMapFactory;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.files.MetadataMapFactory;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.sigs.order.LinkedRefs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
@@ -71,7 +71,7 @@ import org.bouncycastle.util.encoders.Hex;
  * </ol>
  *
  * The only entry currently in the span map is the {@link
- * com.hedera.services.grpc.marshalling.ImpliedTransfers} produced by the {@link
+ * ImpliedTransfers} produced by the {@link
  * ImpliedTransfersMarshal}; this improves performance for CrypoTransfers specifically.
  *
  * <p>Other operations will certainly be able to benefit from the same infrastructure over time.

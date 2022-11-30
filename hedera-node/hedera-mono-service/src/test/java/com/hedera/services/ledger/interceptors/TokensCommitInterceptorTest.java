@@ -22,9 +22,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.ledger.CommitInterceptor;
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.TokenProperty;
+import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.interceptors.TokensCommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hederahashgraph.api.proto.java.TokenID;

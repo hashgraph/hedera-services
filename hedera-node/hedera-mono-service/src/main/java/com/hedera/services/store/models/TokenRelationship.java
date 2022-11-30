@@ -15,8 +15,8 @@
  */
 package com.hedera.services.store.models;
 
-import static com.hedera.services.exceptions.ValidationUtils.validateFalse;
-import static com.hedera.services.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.submerkle.FcTokenAssociation;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -33,7 +34,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  * Encapsulates the state and operations of a Hedera account-token relationship.
  *
  * <p>Operations are validated, and throw a {@link
- * com.hedera.services.exceptions.InvalidTransactionException} with response code capturing the
+ * InvalidTransactionException} with response code capturing the
  * failure when one occurs.
  *
  * <p><b>NOTE:</b> Some operations will likely be moved to specializations of this class as NFTs are

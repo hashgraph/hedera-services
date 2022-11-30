@@ -15,9 +15,9 @@
  */
 package com.hedera.services.txns.span;
 
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEES;
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
+import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEES;
+import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,12 +35,12 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.SignedStateViewFactory;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.grpc.marshalling.CustomFeeMeta;
-import com.hedera.services.grpc.marshalling.ImpliedTransfers;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMarshal;
-import com.hedera.services.grpc.marshalling.ImpliedTransfersMeta;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;

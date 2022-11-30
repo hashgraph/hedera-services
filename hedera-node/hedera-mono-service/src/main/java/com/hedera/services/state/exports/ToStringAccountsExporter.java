@@ -18,7 +18,7 @@ package com.hedera.services.state.exports;
 import static java.util.Comparator.comparing;
 
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
-import com.hedera.services.ledger.HederaLedger;
+import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import java.io.IOException;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.ledger.accounts.staking;
 
-import static com.hedera.services.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,8 +25,11 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.Units;

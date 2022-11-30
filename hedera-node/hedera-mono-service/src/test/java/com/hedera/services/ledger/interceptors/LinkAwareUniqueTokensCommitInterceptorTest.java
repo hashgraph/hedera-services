@@ -24,8 +24,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.ledger.EntityChangeSet;
-import com.hedera.services.ledger.properties.NftProperty;
+import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
+import com.hedera.node.app.service.mono.ledger.interceptors.LinkAwareUniqueTokensCommitInterceptor;
+import com.hedera.node.app.service.mono.ledger.interceptors.UniqueTokensLinkManager;
+import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.services.state.migration.UniqueTokenAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.validation.UsageLimits;

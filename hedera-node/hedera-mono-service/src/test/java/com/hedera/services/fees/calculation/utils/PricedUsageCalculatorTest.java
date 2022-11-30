@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.utils;
 
-import static com.hedera.services.keys.HederaKeyTraversal.numSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.numSimpleKeys;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -28,7 +28,9 @@ import com.hedera.node.app.hapi.fees.calc.OverflowCheckingCalc;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.fees.congestion.FeeMultiplierSource;
+import com.hedera.node.app.service.mono.fees.calculation.utils.AccessorBasedUsages;
+import com.hedera.node.app.service.mono.fees.calculation.utils.PricedUsageCalculator;
+import com.hedera.node.app.service.mono.fees.congestion.FeeMultiplierSource;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;

@@ -16,13 +16,14 @@
 package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link
- * com.hedera.services.exceptions.InvalidTransactionException} with response code capturing the
+ * InvalidTransactionException} with response code capturing the
  * failure when one occurs.
  */
 public class UniqueToken {

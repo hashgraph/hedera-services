@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.ledger.backing.BackingTokens;
+import com.hedera.node.app.service.mono.ledger.backing.BackingTokens;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;

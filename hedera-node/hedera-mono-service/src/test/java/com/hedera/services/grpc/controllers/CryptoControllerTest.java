@@ -34,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.Transaction
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
+import com.hedera.node.app.service.mono.grpc.controllers.CryptoController;
 import com.hedera.services.queries.answering.QueryResponseHelper;
 import com.hedera.services.queries.crypto.CryptoAnswers;
 import com.hedera.services.queries.meta.MetaAnswers;

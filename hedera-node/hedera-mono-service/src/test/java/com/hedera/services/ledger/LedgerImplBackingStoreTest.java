@@ -15,7 +15,7 @@
  */
 package com.hedera.services.ledger;
 
-import static com.hedera.services.ledger.TransactionalLedger.activeLedgerWrapping;
+import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,10 +30,12 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.ledger.LedgerCheck;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.TestAccount;
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.services.ledger.backing.HashMapTestAccounts;
-import com.hedera.services.ledger.properties.ChangeSummaryManager;
+import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import java.util.Map;
 import java.util.function.Function;

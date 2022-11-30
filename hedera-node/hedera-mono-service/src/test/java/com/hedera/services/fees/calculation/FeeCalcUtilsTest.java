@@ -15,19 +15,19 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedAdd;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.clampedMultiply;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.lookupFileExpiry;
-import static com.hedera.services.fees.calculation.FeeCalcUtils.sumOfUsages;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.ZERO_EXPIRY;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedMultiply;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.lookupAccountExpiry;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.lookupFileExpiry;
+import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.sumOfUsages;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.contracts;
 
-import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;

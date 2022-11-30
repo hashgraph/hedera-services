@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.AbstractRecordingCreateOperation;
-import com.hedera.services.ledger.accounts.ContractCustomizer;
+import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.services.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;

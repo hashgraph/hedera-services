@@ -20,8 +20,9 @@ import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
-import com.hedera.services.exceptions.InvalidTransactionException;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
+import com.hedera.node.app.service.mono.fees.calculation.contract.queries.ContractCallLocalResourceUsage;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.EntityAccess;
 import com.hedera.services.store.models.Account;
@@ -37,7 +38,7 @@ import org.apache.tuweni.bytes.Bytes;
 /**
  * Utility class for executing static EVM calls for {@link
  * com.hedera.services.queries.contract.ContractCallLocalAnswer} and {@link
- * com.hedera.services.fees.calculation.contract.queries.ContractCallLocalResourceUsage}
+ * ContractCallLocalResourceUsage}
  */
 @Singleton
 public class CallLocalExecutor {

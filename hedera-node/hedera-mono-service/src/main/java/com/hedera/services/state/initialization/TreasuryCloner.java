@@ -22,8 +22,8 @@ import static com.hedera.node.app.service.mono.config.HederaNumbers.NUM_RESERVED
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.ArrayList;

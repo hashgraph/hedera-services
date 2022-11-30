@@ -18,7 +18,7 @@ package com.hedera.services.txns.network;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.Freeze;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UncheckedSubmit;
 
-import com.hedera.services.fees.annotations.FunctionKey;
+import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.utils.UnzipUtility;

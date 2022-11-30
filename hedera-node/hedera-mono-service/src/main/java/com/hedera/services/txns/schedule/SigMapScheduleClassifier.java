@@ -15,8 +15,8 @@
  */
 package com.hedera.services.txns.schedule;
 
-import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.sourcing.PojoSigMapPubKeyToSigBytes.beginsWith;
 import static com.hedera.services.txns.schedule.SigClassification.INVALID_SCHEDULED_TXN_MATCH;
 import static com.hedera.services.txns.schedule.SigClassification.NO_MATCH;

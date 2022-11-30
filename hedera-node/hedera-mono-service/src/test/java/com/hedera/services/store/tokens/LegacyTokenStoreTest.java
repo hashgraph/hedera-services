@@ -15,14 +15,14 @@
  */
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;
 
-import com.hedera.services.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hederahashgraph.api.proto.java.AccountAmount;

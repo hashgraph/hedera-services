@@ -53,7 +53,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDI
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.EntityNumVirtualKey;

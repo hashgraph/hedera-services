@@ -15,11 +15,11 @@
  */
 package com.hedera.services.files;
 
-import static com.hedera.services.files.MetadataMapFactory.metaMapFrom;
-import static com.hedera.services.files.MetadataMapFactory.toAttr;
-import static com.hedera.services.files.MetadataMapFactory.toFid;
-import static com.hedera.services.files.MetadataMapFactory.toKeyString;
-import static com.hedera.services.files.MetadataMapFactory.toValueBytes;
+import static com.hedera.node.app.service.mono.files.MetadataMapFactory.metaMapFrom;
+import static com.hedera.node.app.service.mono.files.MetadataMapFactory.toAttr;
+import static com.hedera.node.app.service.mono.files.MetadataMapFactory.toFid;
+import static com.hedera.node.app.service.mono.files.MetadataMapFactory.toKeyString;
+import static com.hedera.node.app.service.mono.files.MetadataMapFactory.toValueBytes;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,8 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
-import com.hedera.services.files.store.FcBlobsBytesStore;
+import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import java.io.IOException;

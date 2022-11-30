@@ -36,7 +36,7 @@ import static com.hedera.services.utils.SerializationUtils.serializeHbarAllowanc
 import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorApprovals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.exceptions.NegativeAccountBalanceException;
+import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleAccountState;

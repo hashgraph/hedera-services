@@ -20,7 +20,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.fees.CustomFeePayerExemptions;
+import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeAssessor;
+import com.hedera.node.app.service.mono.grpc.marshalling.HbarFeeAssessor;
+import com.hedera.node.app.service.mono.grpc.marshalling.HtsFeeAssessor;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.state.submerkle.FcCustomFee;

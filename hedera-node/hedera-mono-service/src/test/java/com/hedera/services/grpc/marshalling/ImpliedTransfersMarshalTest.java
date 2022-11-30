@@ -15,12 +15,12 @@
  */
 package com.hedera.services.grpc.marshalling;
 
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
-import static com.hedera.services.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
-import static com.hedera.services.ledger.BalanceChange.changingFtUnits;
-import static com.hedera.services.ledger.BalanceChange.changingHbar;
-import static com.hedera.services.ledger.BalanceChange.changingNftOwnership;
-import static com.hedera.services.ledger.BalanceChange.tokenAdjust;
+import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_ALIASES;
+import static com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers.NO_CUSTOM_FEE_META;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingFtUnits;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingHbar;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
+import static com.hedera.node.app.service.mono.ledger.BalanceChange.tokenAdjust;
 import static com.hedera.test.utils.IdUtils.adjustFrom;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
@@ -44,9 +44,16 @@ import static org.mockito.BDDMockito.given;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt32Value;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.PureTransferSemanticChecks;
-import com.hedera.services.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.AliasResolver;
+import com.hedera.node.app.service.mono.grpc.marshalling.BalanceChangeManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomSchedulesManager;
+import com.hedera.node.app.service.mono.grpc.marshalling.FeeAssessor;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
+import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;

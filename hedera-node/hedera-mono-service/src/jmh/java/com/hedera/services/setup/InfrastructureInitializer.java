@@ -15,8 +15,8 @@
  */
 package com.hedera.services.setup;
 
-import static com.hedera.services.ledger.properties.AccountProperty.BALANCE;
-import static com.hedera.services.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.services.setup.Constructables.FUNDING_ID;
 import static com.hedera.services.setup.Constructables.NUM_REWARDABLE_PERIODS;
 import static com.hedera.services.setup.Constructables.STAKING_REWARD_ID;
@@ -25,9 +25,9 @@ import static com.hedera.services.setup.InfrastructureType.ACCOUNTS_MM;
 import static com.hedera.services.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 import static com.hedera.services.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
 
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.backing.BackingStore;
-import com.hedera.services.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.state.migration.HederaAccount;

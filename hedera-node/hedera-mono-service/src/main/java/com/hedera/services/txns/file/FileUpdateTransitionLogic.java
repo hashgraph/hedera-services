@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.file;
 
-import static com.hedera.services.files.TieredHederaFs.firstUnsuccessful;
+import static com.hedera.node.app.service.mono.files.TieredHederaFs.firstUnsuccessful;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
@@ -31,10 +31,10 @@ import static java.lang.Math.max;
 
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.files.HFileMeta;
-import com.hedera.services.files.HederaFs;
-import com.hedera.services.files.TieredHederaFs;
-import com.hedera.services.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.files.HFileMeta;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.files.TieredHederaFs;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.txns.TransitionLogic;
 import com.hedera.services.txns.validation.OptionValidator;

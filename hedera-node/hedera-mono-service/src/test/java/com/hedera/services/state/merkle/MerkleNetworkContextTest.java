@@ -48,7 +48,7 @@ import static org.mockito.Mockito.times;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
-import com.hedera.services.fees.congestion.MultiplierSources;
+import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.merkle.internals.BytesElement;
 import com.hedera.services.state.submerkle.ExchangeRates;

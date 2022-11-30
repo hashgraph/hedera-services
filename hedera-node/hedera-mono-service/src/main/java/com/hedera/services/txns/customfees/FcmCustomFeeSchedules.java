@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.customfees;
 
-import com.hedera.services.grpc.marshalling.CustomFeeMeta;
+import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;

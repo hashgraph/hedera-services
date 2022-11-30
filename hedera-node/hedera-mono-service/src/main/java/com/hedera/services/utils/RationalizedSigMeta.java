@@ -15,10 +15,10 @@
  */
 package com.hedera.services.utils;
 
-import static com.hedera.services.keys.HederaKeyActivation.INVALID_MISSING_SIG;
-import static com.hedera.services.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
-import static com.hedera.services.keys.HederaKeyActivation.pkToSigMapFrom;
-import static com.hedera.services.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
+import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
