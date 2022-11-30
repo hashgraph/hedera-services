@@ -30,7 +30,7 @@ public class TokenDeleteUsage extends TokenTxnUsage<TokenDeleteUsage> {
     }
 
     @Override
-    public TokenDeleteUsage self() {
+    TokenDeleteUsage self() {
         return this;
     }
 

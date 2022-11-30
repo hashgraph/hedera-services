@@ -90,7 +90,7 @@ public enum SingletonEstimatorUtils implements EstimatorUtils {
         return usages.setNodedata(node).build();
     }
 
-    public int baseRecordBytes(TransactionBody txn) {
+    int baseRecordBytes(TransactionBody txn) {
         return BASIC_TX_RECORD_SIZE
                 + txn.getMemoBytes().size()
                 + transferListBytes(txn.getCryptoTransfer().getTransfers());
