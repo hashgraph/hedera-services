@@ -15,14 +15,14 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.store.models.NftId;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;

@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.context.properties;
 import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;

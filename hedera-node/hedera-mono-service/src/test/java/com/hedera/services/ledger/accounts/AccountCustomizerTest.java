@@ -45,7 +45,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.services.ledger.properties.TestAccountProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import java.util.EnumMap;
 import org.junit.jupiter.api.Test;
 

@@ -19,6 +19,8 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EvmLog;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Collections;

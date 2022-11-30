@@ -17,7 +17,7 @@ package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.MiscUtils.perm64;
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;

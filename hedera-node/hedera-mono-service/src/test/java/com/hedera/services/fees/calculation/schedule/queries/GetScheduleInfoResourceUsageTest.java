@@ -31,7 +31,7 @@ import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.schedule.queries.GetScheduleInfoResourceUsage;
 import com.hedera.node.app.service.mono.queries.schedule.GetScheduleInfoAnswer;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;

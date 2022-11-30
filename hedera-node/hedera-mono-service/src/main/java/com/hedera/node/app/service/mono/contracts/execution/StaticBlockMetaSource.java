@@ -17,7 +17,8 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import java.time.Instant;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -28,7 +29,7 @@ import org.hyperledger.besu.evm.frame.BlockValues;
  *
  * <p>The important thing is that, unlike {@link InHandleBlockMetaSource}, here the {@code
  * computeBlockValues()} implementation has no side effects on the state of the {@link
- * com.hedera.services.state.logic.BlockManager} singleton that manages block metadata in the
+ * BlockManager} singleton that manages block metadata in the
  * working network context.
  */
 public class StaticBlockMetaSource implements BlockMetaSource {

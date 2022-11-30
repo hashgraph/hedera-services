@@ -32,8 +32,8 @@ import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingTokenRels;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

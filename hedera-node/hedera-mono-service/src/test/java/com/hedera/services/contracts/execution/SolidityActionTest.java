@@ -21,7 +21,7 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.utils.EntityIdUtils;
 import java.nio.charset.StandardCharsets;

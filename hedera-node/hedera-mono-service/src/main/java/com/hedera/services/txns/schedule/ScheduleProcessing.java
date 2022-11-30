@@ -41,9 +41,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_FUTUR
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.state.merkle.MerkleScheduledTransactions;
-import com.hedera.services.state.submerkle.RichInstant;
-import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
+import com.hedera.node.app.service.mono.state.merkle.MerkleScheduledTransactions;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.services.throttling.TimedFunctionalityThrottling;
 import com.hedera.services.throttling.annotations.ScheduleThrottle;

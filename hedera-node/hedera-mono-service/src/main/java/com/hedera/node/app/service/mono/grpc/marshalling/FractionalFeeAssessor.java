@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
-import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
-import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
-import com.hedera.services.state.submerkle.FractionalFeeSpec;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;

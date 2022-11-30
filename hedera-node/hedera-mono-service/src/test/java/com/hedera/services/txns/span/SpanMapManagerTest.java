@@ -41,8 +41,8 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;

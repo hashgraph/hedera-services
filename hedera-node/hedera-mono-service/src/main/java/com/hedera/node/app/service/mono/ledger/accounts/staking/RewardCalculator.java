@@ -20,8 +20,8 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;

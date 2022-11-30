@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.merkle;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;

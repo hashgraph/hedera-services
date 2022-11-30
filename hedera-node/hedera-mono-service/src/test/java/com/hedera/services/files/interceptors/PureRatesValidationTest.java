@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.files.interceptors.PureRatesValid
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.files.interceptors.PureRatesValidation;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import java.time.Instant;

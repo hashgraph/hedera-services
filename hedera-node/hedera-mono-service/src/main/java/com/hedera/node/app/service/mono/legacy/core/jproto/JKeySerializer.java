@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import com.hedera.services.state.serdes.IoUtils;
+import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;

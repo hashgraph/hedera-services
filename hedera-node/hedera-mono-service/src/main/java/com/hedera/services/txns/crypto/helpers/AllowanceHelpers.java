@@ -23,7 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 import com.hedera.node.app.hapi.fees.usage.crypto.AllowanceId;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;

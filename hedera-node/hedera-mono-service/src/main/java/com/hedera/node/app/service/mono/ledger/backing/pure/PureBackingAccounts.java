@@ -19,8 +19,8 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Set;

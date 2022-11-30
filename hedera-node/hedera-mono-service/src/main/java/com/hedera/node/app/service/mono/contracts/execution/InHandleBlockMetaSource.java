@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.state.logic.BlockManager;
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Hash;

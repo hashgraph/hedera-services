@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;

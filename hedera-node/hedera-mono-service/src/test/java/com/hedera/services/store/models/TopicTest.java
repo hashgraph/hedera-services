@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;

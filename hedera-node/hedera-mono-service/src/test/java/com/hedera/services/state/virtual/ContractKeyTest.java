@@ -15,10 +15,10 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.ContractKey.MERKLE_VERSION;
-import static com.hedera.services.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.services.state.virtual.ContractKey.readKeySize;
-import static com.hedera.services.state.virtual.KeyPackingUtils.asPackedInts;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKey.MERKLE_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKey.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKey.readKeySize;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.asPackedInts;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -29,6 +29,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.primitives.Ints;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;

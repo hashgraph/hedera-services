@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.FileUpdateInterceptor;
 import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

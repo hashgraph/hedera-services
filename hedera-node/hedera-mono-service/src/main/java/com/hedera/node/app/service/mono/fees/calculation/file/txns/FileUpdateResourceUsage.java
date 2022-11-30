@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.txns;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;

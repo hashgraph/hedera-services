@@ -18,7 +18,7 @@ package com.hedera.services.store;
 import static com.hedera.services.store.models.TopicConversion.fromModel;
 
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
-import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.services.store.models.Topic;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;

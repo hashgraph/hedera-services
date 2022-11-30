@@ -18,11 +18,11 @@ package com.hedera.node.app.service.mono.ledger.interceptors;
 import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValueListHead;
 import static com.hedera.services.utils.MapValueListUtils.removeInPlaceFromMapValueList;
 
-import com.hedera.services.state.expiry.TokenRelsListMutation;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.migration.HederaTokenRel;
-import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.EntityNumPair;
 import edu.umd.cs.findbugs.annotations.Nullable;

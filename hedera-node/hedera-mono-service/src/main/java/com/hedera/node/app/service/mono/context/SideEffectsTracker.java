@@ -21,8 +21,8 @@ import static com.hedera.node.app.service.mono.ledger.HederaLedger.TOKEN_ID_COMP
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.OwnershipTracker;

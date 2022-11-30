@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.span;
 
-import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_FILE_EMPTY;
@@ -36,9 +36,9 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.txns.contract.ContractCallTransitionLogic;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;

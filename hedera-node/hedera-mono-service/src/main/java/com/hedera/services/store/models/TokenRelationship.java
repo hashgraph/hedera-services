@@ -25,8 +25,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_K
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.services.state.enums.TokenType;
-import com.hedera.services.state.submerkle.FcTokenAssociation;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 

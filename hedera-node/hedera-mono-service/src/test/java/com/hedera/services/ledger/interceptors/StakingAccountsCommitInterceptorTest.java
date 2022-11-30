@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeri
 import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NA;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
-import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,12 +55,12 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManag
 import com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario;
 import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.validation.AccountUsageTracking;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;

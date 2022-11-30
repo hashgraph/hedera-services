@@ -20,7 +20,7 @@ import com.hedera.services.context.EvmResultRandomParams;
 import com.hedera.services.context.FullEvmResult;
 import com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
-import com.hedera.services.state.merkle.internals.BitPackUtils;
+import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.ArrayList;

@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.context.init;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
+import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;

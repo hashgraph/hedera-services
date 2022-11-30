@@ -23,7 +23,7 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
-import com.hedera.services.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.function.Supplier;

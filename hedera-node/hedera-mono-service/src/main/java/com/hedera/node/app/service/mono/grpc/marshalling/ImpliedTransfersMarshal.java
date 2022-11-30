@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import com.hedera.services.utils.EntityNum;

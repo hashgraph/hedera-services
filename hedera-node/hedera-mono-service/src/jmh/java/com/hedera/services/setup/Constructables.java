@@ -17,14 +17,14 @@ package com.hedera.services.setup;
 
 import static com.hedera.services.setup.InfrastructureInitializer.accountIdWith;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleAccountState;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
-import com.hedera.services.state.virtual.ContractKey;
-import com.hedera.services.state.virtual.ContractKeySerializer;
-import com.hedera.services.state.virtual.ContractKeySupplier;
-import com.hedera.services.state.virtual.IterableContractValue;
-import com.hedera.services.state.virtual.IterableContractValueSupplier;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer;
+import com.hedera.node.app.service.mono.state.virtual.ContractKeySupplier;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
+import com.hedera.node.app.service.mono.state.virtual.IterableContractValueSupplier;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;

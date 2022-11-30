@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import java.util.Collections;
 import java.util.List;

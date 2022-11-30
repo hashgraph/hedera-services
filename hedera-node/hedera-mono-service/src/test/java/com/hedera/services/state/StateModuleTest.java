@@ -16,7 +16,7 @@
 package com.hedera.services.state;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BOOTSTRAP_GENESIS_PUBLIC_KEY;
-import static com.hedera.services.state.StateModule.provideStateViews;
+import static com.hedera.node.app.service.mono.state.StateModule.provideStateViews;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
+import com.hedera.node.app.service.mono.state.StateModule;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.utility.CommonUtils;

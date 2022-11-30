@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenMetaUtils;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.system.Platform;
 import com.swirlds.common.system.events.Event;

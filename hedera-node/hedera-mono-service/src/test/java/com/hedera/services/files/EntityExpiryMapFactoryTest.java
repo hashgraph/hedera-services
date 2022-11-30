@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.files.EntityExpiryMapFactory;
 import com.hedera.services.fees.calculation.FeeCalcUtilsTest;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.test.utils.IdUtils;
 import java.util.Comparator;
 import java.util.HashMap;

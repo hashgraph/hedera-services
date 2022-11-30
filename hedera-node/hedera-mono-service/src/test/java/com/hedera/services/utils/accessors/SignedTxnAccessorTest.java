@@ -15,8 +15,8 @@
  */
 package com.hedera.services.utils.accessors;
 
-import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
-import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.txns.ethereum.TestingConstants.TRUFFLE0_PRIVATE_ECDSA_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
@@ -56,8 +56,8 @@ import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.services.utils.KeyUtils;
 import com.hedera.services.utils.RationalizedSigMeta;

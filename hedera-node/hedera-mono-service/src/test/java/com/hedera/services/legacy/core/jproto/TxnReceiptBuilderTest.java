@@ -19,13 +19,13 @@ import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MIS
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_TOPIC_SEQ_NO;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.REVERTED_SUCCESS_LITERAL;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
+import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.models;
 
-import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 
 /**
  * A utility class responsible for the mapping between a {@link Topic} and {@link MerkleTopic} ( and

@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
+import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.state.EntityCreator.NO_CUSTOM_FEES;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.SidecarType;

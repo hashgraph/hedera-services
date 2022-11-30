@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import static com.hedera.services.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
+import static com.hedera.node.app.service.mono.state.logic.NetworkUtilization.STAND_IN_CRYPTO_TRANSFER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
+import com.hedera.node.app.service.mono.state.logic.NetworkUtilization;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

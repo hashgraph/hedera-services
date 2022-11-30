@@ -19,14 +19,14 @@ import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.A
 import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ASSESSMENT_FINISHED;
 import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.FRACTIONAL_FEE_ASSESSMENT_PENDING;
 import static com.hedera.node.app.service.mono.grpc.marshalling.FixedFeeResult.ROYALTY_FEE_ASSESSMENT_PENDING;
-import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
-import static com.hedera.services.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FIXED_FEE;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.FeeType.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXCEEDED_MAX_RECURSION_DEPTH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;

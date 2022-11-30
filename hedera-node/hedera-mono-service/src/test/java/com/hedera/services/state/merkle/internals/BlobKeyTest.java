@@ -15,16 +15,17 @@
  */
 package com.hedera.services.state.merkle.internals;
 
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
-import static com.hedera.services.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
-import static com.hedera.services.state.merkle.internals.BlobKey.typeFromCharCode;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.CONTRACT_BYTECODE;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.CONTRACT_STORAGE;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.FILE_DATA;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.FILE_METADATA;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.BlobType.SYSTEM_DELETED_ENTITY_EXPIRY;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BlobKey.typeFromCharCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.node.app.service.mono.state.merkle.internals.BlobKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

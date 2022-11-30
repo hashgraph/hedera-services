@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.fees.charging.FeeChargingPolicy;
 import com.hedera.node.app.service.mono.fees.charging.TxnChargingPolicyAgent;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
-import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
+import com.hedera.node.app.service.mono.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;

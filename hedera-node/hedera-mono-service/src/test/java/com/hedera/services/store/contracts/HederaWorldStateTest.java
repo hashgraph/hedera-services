@@ -47,7 +47,7 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.EntityIdUtils;

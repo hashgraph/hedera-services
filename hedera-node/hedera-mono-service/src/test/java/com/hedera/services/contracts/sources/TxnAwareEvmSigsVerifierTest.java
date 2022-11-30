@@ -73,8 +73,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractI
 import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;

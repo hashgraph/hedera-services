@@ -47,8 +47,8 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMeta;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.PureTransferSemanticChecks;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;

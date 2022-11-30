@@ -19,8 +19,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.init.EntitiesInitializationFlow;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.state.expiry.ExpiryManager;
-import com.hedera.services.state.logic.NetworkCtxManager;
+import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
+import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

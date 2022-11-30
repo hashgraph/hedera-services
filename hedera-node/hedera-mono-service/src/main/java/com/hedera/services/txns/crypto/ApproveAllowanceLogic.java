@@ -21,7 +21,7 @@ import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.validateA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.submerkle.FcTokenAllowanceId;
+import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.TypedTokenStore;
 import com.hedera.services.store.models.Account;

@@ -17,7 +17,8 @@ package com.hedera.services.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import org.junit.jupiter.api.Test;
 
 class OnDiskTokenRelCompatabilityTest {

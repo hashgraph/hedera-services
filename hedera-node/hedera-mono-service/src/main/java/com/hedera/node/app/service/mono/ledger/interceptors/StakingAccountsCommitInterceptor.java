@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
 import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
-import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
@@ -30,9 +30,9 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManag
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.validation.AccountUsageTracking;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.validation.AccountUsageTracking;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

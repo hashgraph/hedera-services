@@ -16,7 +16,7 @@
 package com.hedera.services.contracts.operation;
 
 import static com.hedera.node.app.service.mono.contracts.operation.AbstractRecordingCreateOperation.haltWith;
-import static com.hedera.services.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,9 +30,9 @@ import com.hedera.node.app.service.mono.contracts.operation.AbstractRecordingCre
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.SidecarType;

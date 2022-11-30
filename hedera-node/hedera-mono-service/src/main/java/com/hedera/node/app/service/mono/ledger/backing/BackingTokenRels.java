@@ -18,8 +18,8 @@ package com.hedera.node.app.service.mono.ledger.backing;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityNumPair.fromAccountTokenRel;
 
-import com.hedera.services.state.migration.HederaTokenRel;
-import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.hedera.services.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;

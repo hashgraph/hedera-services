@@ -30,7 +30,7 @@ import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
 import com.hedera.node.app.service.mono.fees.congestion.TxnRateFeeMultiplierSource;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.extensions.LogCaptor;

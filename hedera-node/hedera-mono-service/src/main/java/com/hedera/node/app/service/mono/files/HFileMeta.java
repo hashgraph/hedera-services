@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.files;
 
-import static com.hedera.services.state.merkle.MerkleAccountState.DEFAULT_MEMO;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleAccountState.DEFAULT_MEMO;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;

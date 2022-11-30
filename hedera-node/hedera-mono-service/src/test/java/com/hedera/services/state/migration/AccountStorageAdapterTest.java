@@ -24,10 +24,13 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerklePayerRecords;
-import com.hedera.services.state.virtual.EntityNumVirtualKey;
-import com.hedera.services.state.virtual.entities.OnDiskAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerklePayerRecords;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.VirtualMapDataAccess;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.threading.interrupt.InterruptableConsumer;

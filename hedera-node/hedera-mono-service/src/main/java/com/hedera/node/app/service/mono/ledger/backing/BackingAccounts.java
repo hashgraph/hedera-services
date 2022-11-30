@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
-import com.hedera.services.state.migration.AccountStorageAdapter;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.migration.RecordsStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashSet;
 import java.util.Set;

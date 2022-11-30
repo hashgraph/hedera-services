@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.fees.HbarCentExchange;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.txns.util.PrngLogic;
 import java.time.Instant;
@@ -67,7 +67,8 @@ class ContractsModuleTest {
     @Mock FeeCalculator feeCalculatorProvider;
     @Mock StateView stateView;
     @Mock TxnAwareEvmSigsVerifier txnAwareEvmSigsVerifier;
-    @Mock com.hedera.services.state.expiry.ExpiringCreations ExpiringCreations;
+    @Mock
+	com.hedera.node.app.service.mono.state.expiry.ExpiringCreations ExpiringCreations;
     @Mock InfrastructureFactory InfrastructureFactory;
     @Mock Supplier<Instant> now;
     @Mock PrngLogic prngLogic;

@@ -15,10 +15,11 @@
  */
 package com.hedera.services.state.submerkle;
 
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
-import static com.hedera.services.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0260_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0270_VERSION;
+import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord.RELEASE_0280_VERSION;
 
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.serde.SerializedForms;
 import com.hedera.test.utils.SeededPropertySource;

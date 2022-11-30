@@ -43,7 +43,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.EntityCreator;
 import com.hedera.services.store.contracts.HederaWorldUpdater;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import org.hyperledger.besu.datatypes.Address;

@@ -16,7 +16,7 @@
 package com.hedera.services.ledger.backing;
 
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.services.store.models.NftId;
 import java.util.HashMap;
 import java.util.Map;

@@ -53,7 +53,7 @@ import com.hedera.node.app.service.mono.exceptions.InsufficientFundsException;
 import com.hedera.node.app.service.mono.exceptions.MissingEntityException;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.txns.crypto.AutoCreationLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.utils.IdUtils;

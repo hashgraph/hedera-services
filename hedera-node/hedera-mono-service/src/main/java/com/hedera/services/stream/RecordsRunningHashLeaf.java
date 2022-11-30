@@ -18,7 +18,7 @@ package com.hedera.services.stream;
 import static com.hedera.services.ServicesState.EMPTY_HASH;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.virtual.annotations.StateSetter;
+import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

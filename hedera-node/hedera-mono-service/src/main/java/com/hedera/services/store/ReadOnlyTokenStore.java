@@ -25,10 +25,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELE
 
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
-import com.hedera.services.state.merkle.MerkleToken;
-import com.hedera.services.state.migration.HederaTokenRel;
-import com.hedera.services.state.migration.UniqueTokenAdapter;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
@@ -103,7 +104,7 @@ public class ReadOnlyTokenStore {
      * <p><b>IMPORTANT:</b> Changes to the returned model are not automatically persisted to state!
      * The altered model must be passed to {@link TypedTokenStore#commitTokenRelationships(List)} in
      * order for its changes to be applied to the Swirlds state, and included in the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+     * ExpirableTxnRecord} for the active transaction.
      *
      * @param token the token in the relationship to load
      * @param account the account in the relationship to load
@@ -131,7 +132,7 @@ public class ReadOnlyTokenStore {
      * <p><b>IMPORTANT:</b> Changes to the returned model are not automatically persisted to state!
      * The altered model must be passed to {@link TypedTokenStore#commitTokenRelationships(List)} in
      * order for its changes to be applied to the Swirlds state, and included in the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+     * ExpirableTxnRecord} for the active transaction.
      *
      * @param token the token in the relationship to load
      * @param account the account in the relationship to load
@@ -166,7 +167,7 @@ public class ReadOnlyTokenStore {
      * <p><b>IMPORTANT:</b> Changes to the returned model are not automatically persisted to state!
      * The altered model must be passed to {@link TypedTokenStore#commitToken(Token)} in order for
      * its changes to be applied to the Swirlds state, and included in the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+     * ExpirableTxnRecord} for the active transaction.
      *
      * @param id the token to load
      * @return a usable model of the token

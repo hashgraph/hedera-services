@@ -20,7 +20,7 @@ import static com.hedera.services.utils.EntityNum.fromTopicId;
 
 import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
 import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
-import com.hedera.services.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.merkle.map.MerkleMap;

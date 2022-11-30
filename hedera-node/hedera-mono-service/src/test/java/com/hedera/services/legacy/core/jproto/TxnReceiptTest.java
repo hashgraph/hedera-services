@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;

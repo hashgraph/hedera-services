@@ -15,12 +15,13 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
-import static com.hedera.services.state.virtual.ContractValueSupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.ContractValueSupplier.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValue.RUNTIME_CONSTRUCTABLE_ID;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValueSupplier.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.ContractValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.state.virtual.ContractValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class ContractValueSupplierTest {

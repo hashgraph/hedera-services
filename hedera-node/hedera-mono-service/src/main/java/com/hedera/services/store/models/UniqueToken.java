@@ -17,7 +17,7 @@ package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 
 /**
  * Encapsulates the state and operations of a Hedera Unique token.

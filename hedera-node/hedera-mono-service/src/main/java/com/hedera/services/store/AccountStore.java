@@ -25,7 +25,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
-import com.hedera.services.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -55,7 +56,7 @@ public class AccountStore {
      * <p><b>IMPORTANT:</b> Changes to the returned model are not automatically persisted to state!
      * The altered model must be passed to {@link AccountStore#commitAccount(Account)} in order for
      * its changes to be applied to the Swirlds state, and included in the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+     * ExpirableTxnRecord} for the active transaction.
      *
      * <p>The method uses the {@link AccountStore#loadAccountOrFailWith(Id, ResponseCodeEnum)} by
      * passing a `null` explicit response code
@@ -76,7 +77,7 @@ public class AccountStore {
      * <p><b>IMPORTANT:</b> Changes to the returned model are not automatically persisted to state!
      * The altered model must be passed to {@link AccountStore#commitAccount(Account)} in order for
      * its changes to be applied to the Swirlds state, and included in the {@link
-     * com.hedera.services.state.submerkle.ExpirableTxnRecord} for the active transaction.
+     * ExpirableTxnRecord} for the active transaction.
      *
      * @param id the account to load
      * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing

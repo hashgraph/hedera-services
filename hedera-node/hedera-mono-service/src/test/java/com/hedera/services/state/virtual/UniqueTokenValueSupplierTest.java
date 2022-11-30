@@ -17,6 +17,8 @@ package com.hedera.services.state.virtual;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValue;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenValueSupplier;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.ByteArrayInputStream;

@@ -42,7 +42,7 @@ import com.hedera.node.app.spi.state.States;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import java.util.Optional;

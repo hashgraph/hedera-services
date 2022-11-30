@@ -23,8 +23,8 @@ import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

@@ -39,6 +39,7 @@ package com.hedera.node.app.service.mono.contracts.operation;
 
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.services.store.contracts.HederaWorldState;
 import java.util.Map;
@@ -68,7 +69,7 @@ public final class HederaOperationUtil {
      * deleted.
      *
      * <p>If the target {@link Address} has {@link
-     * com.hedera.services.state.merkle.MerkleAccount#isReceiverSigRequired()} set to true,
+     * MerkleAccount#isReceiverSigRequired()} set to true,
      * verification of the provided signature is performed. If the signature is not active, the
      * execution is halted with {@link HederaExceptionalHaltReason#INVALID_SIGNATURE}.
      *

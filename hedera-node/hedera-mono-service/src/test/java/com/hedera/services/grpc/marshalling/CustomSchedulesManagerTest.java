@@ -21,8 +21,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomSchedulesManager;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.customfees.CustomFeeSchedules;
 import java.util.List;

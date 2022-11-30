@@ -15,11 +15,13 @@
  */
 package com.hedera.services.state.virtual.schedule;
 
-import static com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValueSupplier.CLASS_ID;
-import static com.hedera.services.state.virtual.schedule.ScheduleSecondVirtualValueSupplier.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier.CURRENT_VERSION;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValueSupplier;
 import org.junit.jupiter.api.Test;
 
 class ScheduleSecondVirtualValueSupplierTest {

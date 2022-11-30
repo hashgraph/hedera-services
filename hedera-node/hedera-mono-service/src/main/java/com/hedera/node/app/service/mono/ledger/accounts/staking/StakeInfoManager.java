@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Arrays;

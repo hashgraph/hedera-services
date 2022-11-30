@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenMetaUtils;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
-import com.hedera.services.state.logic.PayerSigValidity;
+import com.hedera.node.app.service.mono.state.logic.PayerSigValidity;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.Platform;

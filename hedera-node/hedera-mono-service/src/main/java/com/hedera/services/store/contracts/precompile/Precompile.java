@@ -21,8 +21,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SU
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.utils.accessors.TxnAccessor;

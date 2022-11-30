@@ -15,10 +15,11 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
-import static com.hedera.services.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0180_VERSION;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken.RELEASE_0250_VERSION;
 
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.merkle.MerkleUniqueToken;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.utils.NftNumPair;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;

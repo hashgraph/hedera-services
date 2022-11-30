@@ -17,6 +17,7 @@ package com.hedera.services.state.merkle;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import org.junit.jupiter.api.Test;
 
 class StakeInfoManagementTest {

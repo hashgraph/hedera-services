@@ -16,8 +16,8 @@
 package com.hedera.services.state.exports;
 
 import static com.hedera.node.app.hapi.utils.exports.FileCompressionUtils.COMPRESSION_ALGORITHM_EXTENSION;
-import static com.hedera.services.state.exports.SigFileWriter.TYPE_FILE_HASH;
-import static com.hedera.services.state.exports.SigFileWriter.TYPE_SIGNATURE;
+import static com.hedera.node.app.service.mono.state.exports.SigFileWriter.TYPE_FILE_HASH;
+import static com.hedera.node.app.service.mono.state.exports.SigFileWriter.TYPE_SIGNATURE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +25,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.google.common.primitives.Ints;
 import com.hedera.node.app.hapi.utils.exports.FileCompressionUtils;
+import com.hedera.node.app.service.mono.state.exports.FileHashReader;
+import com.hedera.node.app.service.mono.state.exports.Sha384HashReader;
+import com.hedera.node.app.service.mono.state.exports.SigFileWriter;
+import com.hedera.node.app.service.mono.state.exports.StandardSigFileWriter;
 import com.hedera.test.utils.TestFileUtils;
 import com.swirlds.common.crypto.Cryptography;
 import java.io.ByteArrayInputStream;

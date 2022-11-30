@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.properties;
 
-import com.hedera.services.state.migration.HederaTokenRel;
+import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 

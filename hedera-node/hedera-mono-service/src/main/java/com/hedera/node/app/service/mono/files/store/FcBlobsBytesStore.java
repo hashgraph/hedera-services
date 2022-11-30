@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.files.store;
 
 import static java.lang.Long.parseLong;
 
-import com.hedera.services.state.merkle.internals.BlobKey;
-import com.hedera.services.state.virtual.VirtualBlobKey;
-import com.hedera.services.state.virtual.VirtualBlobValue;
+import com.hedera.node.app.service.mono.state.merkle.internals.BlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.AbstractMap;
 import java.util.Optional;

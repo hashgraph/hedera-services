@@ -17,8 +17,8 @@ package com.hedera.services.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.state.enums.TokenSupplyType;
-import com.hedera.services.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.enums.TokenSupplyType;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
 import org.junit.jupiter.api.Test;
 
 class TokenTypesMapperTest {

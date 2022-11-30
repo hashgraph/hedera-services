@@ -16,12 +16,13 @@
 package com.hedera.services.store.models;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.services.state.submerkle.RichInstant;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * Represents the model of a {@link com.hedera.services.state.merkle.MerkleTopic}.
+ * Represents the model of a {@link MerkleTopic}.
  *
  * @author Yoan Sredkov
  */

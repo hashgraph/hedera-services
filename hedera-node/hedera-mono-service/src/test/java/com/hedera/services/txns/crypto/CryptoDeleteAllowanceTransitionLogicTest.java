@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.services.state.enums.TokenType;
+import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

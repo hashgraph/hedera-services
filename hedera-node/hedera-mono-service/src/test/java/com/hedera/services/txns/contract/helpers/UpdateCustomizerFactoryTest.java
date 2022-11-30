@@ -32,7 +32,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
-import com.hedera.services.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;

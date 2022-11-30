@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
-import com.hedera.services.state.submerkle.CurrencyAdjustments;
+import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

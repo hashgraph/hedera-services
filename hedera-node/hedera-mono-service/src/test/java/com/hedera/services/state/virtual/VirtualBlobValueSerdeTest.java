@@ -15,6 +15,7 @@
  */
 package com.hedera.services.state.virtual;
 
+import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.test.serde.SelfSerializableDataTest;
 import com.hedera.test.utils.SeededPropertySource;
 

@@ -27,7 +27,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.services.utils.Units;
 import java.time.Instant;
 import java.time.LocalDate;

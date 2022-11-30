@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.files;
 
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.files.store.BytesStoreAdapter;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import java.util.Map;
 import java.util.regex.Pattern;
 

@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.files.interceptors;
 
 import static java.math.BigInteger.valueOf;
 
-import com.hedera.services.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import java.math.BigInteger;
 import java.util.stream.LongStream;

@@ -15,9 +15,9 @@
  */
 package com.hedera.services.state.virtual;
 
-import static com.hedera.services.state.virtual.ContractKeySerializer.CLASS_ID;
-import static com.hedera.services.state.virtual.ContractKeySerializer.CURRENT_VERSION;
-import static com.hedera.services.state.virtual.ContractKeySerializer.DATA_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.CLASS_ID;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.CURRENT_VERSION;
+import static com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer.DATA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +25,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.mono.state.virtual.ContractKey;
+import com.hedera.node.app.service.mono.state.virtual.ContractKeySerializer;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.jasperdb.files.DataFileCommon;
 import java.io.IOException;

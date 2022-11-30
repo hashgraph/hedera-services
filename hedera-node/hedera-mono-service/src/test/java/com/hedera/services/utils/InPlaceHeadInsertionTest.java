@@ -19,9 +19,9 @@ import static com.hedera.services.utils.MapValueListUtils.insertInPlaceAtMapValu
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.services.state.expiry.TokenRelsListMutation;
-import com.hedera.services.state.merkle.MerkleTokenRelStatus;
-import com.hedera.services.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.expiry.TokenRelsListMutation;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
 import com.swirlds.merkle.map.MerkleMap;
 import org.junit.jupiter.api.Test;
 

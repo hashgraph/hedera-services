@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.ledger.backing;
 
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;

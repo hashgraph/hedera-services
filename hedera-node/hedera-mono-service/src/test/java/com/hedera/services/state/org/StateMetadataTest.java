@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.state.org.StateMetadata;
 import com.hedera.services.ServicesApp;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.fchashmap.FCHashMap;

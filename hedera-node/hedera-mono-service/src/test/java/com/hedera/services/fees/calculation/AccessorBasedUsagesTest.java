@@ -15,8 +15,8 @@
  */
 package com.hedera.services.fees.calculation;
 
-import static com.hedera.services.state.submerkle.FcCustomFee.fixedFee;
-import static com.hedera.services.state.submerkle.FcCustomFee.fractionalFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
+import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fractionalFee;
 import static com.hedera.services.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
@@ -74,8 +74,8 @@ import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.utils.AccessorBasedUsages;
 import com.hedera.node.app.service.mono.fees.calculation.utils.OpUsageCtxHelper;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.CustomFee;

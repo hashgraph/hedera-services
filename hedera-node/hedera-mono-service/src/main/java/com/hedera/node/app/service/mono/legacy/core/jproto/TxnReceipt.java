@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
-import static com.hedera.services.state.serdes.IoUtils.readNullableSerializable;
-import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringFromBytes;
@@ -24,9 +24,9 @@ import static com.swirlds.common.utility.CommonUtils.getNormalisedStringFromByte
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExchangeRates;
-import com.hedera.services.state.submerkle.TxnId;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
+import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;

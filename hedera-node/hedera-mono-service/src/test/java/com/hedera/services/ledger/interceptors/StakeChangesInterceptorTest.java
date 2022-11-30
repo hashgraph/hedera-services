@@ -33,10 +33,10 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleNetworkContext;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.services.utils.EntityNum;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;

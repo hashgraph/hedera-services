@@ -15,14 +15,23 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.state.expiry.classification.ClassificationResult.*;
-import static com.hedera.services.state.tasks.SystemTaskResult.*;
+import static com.hedera.node.app.service.mono.state.expiry.classification.ClassificationResult.*;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.hedera.node.app.service.mono.state.expiry.ExpiryProcess;
+import com.hedera.node.app.service.mono.state.expiry.ExpiryRecordsHelper;
+import com.hedera.node.app.service.mono.state.expiry.removal.AccountGC;
+import com.hedera.node.app.service.mono.state.expiry.removal.ContractGC;
+import com.hedera.node.app.service.mono.state.expiry.removal.CryptoGcOutcome;
+import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
+import com.hedera.node.app.service.mono.state.expiry.removal.RemovalHelper;
+import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
 import com.hedera.services.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
@@ -32,13 +41,12 @@ import com.hedera.node.app.service.mono.fees.charging.NonHapiFeeCharging;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
-import com.hedera.services.state.expiry.classification.ClassificationWork;
-import com.hedera.services.state.expiry.removal.*;
-import com.hedera.services.state.expiry.renewal.RenewalHelper;
-import com.hedera.services.state.expiry.renewal.RenewalWork;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
+import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalHelper;
+import com.hedera.node.app.service.mono.state.expiry.renewal.RenewalWork;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.services.stats.ExpiryStats;
 import com.hedera.services.throttling.ExpiryThrottle;
 import com.hedera.services.throttling.MapAccessType;

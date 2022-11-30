@@ -18,7 +18,7 @@ package com.hedera.services.txns.customfees;
 import com.hedera.node.app.service.mono.grpc.marshalling.CustomFeeMeta;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
-import com.hedera.services.state.merkle.MerkleToken;
+import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TokenID;
 import javax.inject.Inject;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.virtual.schedule;
 
-import static com.hedera.services.state.virtual.schedule.ScheduleEqualityVirtualKey.BYTES_IN_SERIALIZED_FORM;
+import static com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey.BYTES_IN_SERIALIZED_FORM;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,6 +24,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityVirtualKeySerializer;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import java.io.IOException;

@@ -30,8 +30,8 @@ import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeInfoManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.state.merkle.MerkleStakingInfo;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.Units;
 import java.time.Instant;
 import java.time.LocalDate;

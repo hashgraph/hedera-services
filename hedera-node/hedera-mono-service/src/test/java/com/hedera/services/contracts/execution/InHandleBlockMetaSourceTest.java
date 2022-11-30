@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.contracts.execution.InHandleBlockMetaSource;
-import com.hedera.services.state.logic.BlockManager;
+import com.hedera.node.app.service.mono.state.logic.BlockManager;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
