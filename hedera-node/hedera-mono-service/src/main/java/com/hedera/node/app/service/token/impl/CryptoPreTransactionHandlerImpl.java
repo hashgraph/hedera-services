@@ -179,7 +179,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                         meta.addNonPayerKey(nftTransfer.getSenderAccountID());
                     }
 
-                    if (accountStore.isReceiverSigRequired(nftTransfer.getReceiverAccountID())) {
+                    final var result = accountStore.getKeyIfReceiverSigRequired(nftTransfer.getReceiverAccountID());
+                    if (!result.equals(KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED)) {
                         meta.addNonPayerKeyIfReceiverSigRequired(
                                 nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                     } else if (tokenMeta.metadata().hasRoyaltyWithFallback()

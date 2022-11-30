@@ -97,11 +97,6 @@ public final class AccountStore {
         return validateKey(account.get().getAccountKey());
     }
 
-    public boolean isReceiverSigRequired(final AccountID idOrAlias) {
-        final var account = getAccountLeaf(idOrAlias);
-        return !account.isEmpty() && account.get().isReceiverSigRequired();
-    }
-
     /**
      * Returns the account leaf for the given account number. If the account doesn't exist returns
      * {@code Optional.empty()}
