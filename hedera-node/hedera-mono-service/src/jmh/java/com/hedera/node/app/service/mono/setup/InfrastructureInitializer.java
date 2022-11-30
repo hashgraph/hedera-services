@@ -17,6 +17,12 @@ package com.hedera.node.app.service.mono.setup;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
+import static com.hedera.node.app.service.mono.setup.Constructables.FUNDING_ID;
+import static com.hedera.node.app.service.mono.setup.Constructables.NUM_REWARDABLE_PERIODS;
+import static com.hedera.node.app.service.mono.setup.Constructables.STAKING_REWARD_ID;
+import static com.hedera.node.app.service.mono.setup.InfrastructureType.ACCOUNTS_LEDGER;
+import static com.hedera.node.app.service.mono.setup.InfrastructureType.ACCOUNTS_MM;
+import static com.hedera.node.app.service.mono.setup.InfrastructureType.CONTRACT_STORAGE_VM;
 import static com.hedera.node.app.service.mono.state.virtual.IterableStorageUtils.overwritingUpsertMapping;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -40,15 +46,13 @@ public class InfrastructureInitializer {
             final Map<String, Object> config, final InfrastructureBundle bundle) {
         if (config.containsKey("initContracts") && config.containsKey("initKvPairs")) {
             initSomeContractStorage(
-                    bundle.get(InfrastructureType.ACCOUNTS_MM),
-                    bundle.get(InfrastructureType.CONTRACT_STORAGE_VM),
+                    bundle.get(ACCOUNTS_MM),
+                    bundle.get(CONTRACT_STORAGE_VM),
                     (int) config.get("initKvPairs"),
                     (int) config.get("initContracts"));
         }
         if (config.containsKey("userAccounts")) {
-            initSomeAccounts(
-                    bundle.get(InfrastructureType.ACCOUNTS_LEDGER),
-                    (int) config.get("userAccounts"));
+            initSomeAccounts(bundle.get(ACCOUNTS_LEDGER), (int) config.get("userAccounts"));
         }
     }
 
@@ -77,12 +81,11 @@ public class InfrastructureInitializer {
             final var num = firstAccountNum + i;
             backingAccounts.put(accountIdWith(num), account);
         }
-        backingAccounts.put(Constructables.FUNDING_ID, accountWith(0L));
-        backingAccounts.put(
-                Constructables.STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
+        backingAccounts.put(FUNDING_ID, accountWith(0L));
+        backingAccounts.put(STAKING_REWARD_ID, accountWith(250_000_000L * 100_000_000L));
 
         for (int i = 0; i < numNodeIds; i++) {
-            final var stakingInfo = new MerkleStakingInfo(Constructables.NUM_REWARDABLE_PERIODS);
+            final var stakingInfo = new MerkleStakingInfo(NUM_REWARDABLE_PERIODS);
             stakingInfo.setMaxStake(Long.MAX_VALUE);
             stakingInfos.put(EntityNum.fromInt(i), stakingInfo);
         }

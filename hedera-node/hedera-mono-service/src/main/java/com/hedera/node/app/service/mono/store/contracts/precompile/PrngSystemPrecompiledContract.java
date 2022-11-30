@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PRNG;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
@@ -138,12 +139,12 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
             return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);
-        } catch (InvalidTransactionException e) {
+        } catch (final InvalidTransactionException e) {
             return Pair.of(
                     PrecompiledContract.PrecompileContractResult.halt(
                             null, Optional.ofNullable(ExceptionalHaltReason.INVALID_OPERATION)),
                     e.getResponseCode());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("Internal precompile failure", e);
             return Pair.of(
                     PrecompiledContract.PrecompileContractResult.halt(
@@ -175,8 +176,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
 
     @VisibleForTesting
     long calculateGas(final Instant now) {
-        final var feesInTinyCents =
-                pricingUtils.getCanonicalPriceInTinyCents(PrecompilePricingUtils.GasCostType.PRNG);
+        final var feesInTinyCents = pricingUtils.getCanonicalPriceInTinyCents(PRNG);
         final var currentGasPriceInTinyCents =
                 livePricesSource.currentGasPriceInTinycents(now, ContractCall);
         return feesInTinyCents / currentGasPriceInTinyCents;

@@ -17,6 +17,13 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_TYPE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.serialNumber;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +65,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -157,8 +163,8 @@ class TokenPrecompileReadOperationsTest {
                 .willReturn(mockSynthBodyBuilder);
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
-                .thenReturn(TokenInfoWrapper.forToken(HTSTestsUtil.fungible));
-        given(encoder.encodeIsToken(true)).willReturn(HTSTestsUtil.successResult);
+                .thenReturn(TokenInfoWrapper.forToken(fungible));
+        given(encoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -168,19 +174,17 @@ class TokenPrecompileReadOperationsTest {
         final var result = subject.computeInternal(frame);
 
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
     void computeCallsCorrectImplementationForIsTokenNonFungibleToken() {
         // given
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, HTSTestsUtil.serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
-                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)),
-                        HTSTestsUtil.nonFungibleTokenAddr);
+                        Bytes.of(Integers.toBytes(ABI_ID_IS_TOKEN)), nonFungibleTokenAddr);
         givenMinimalFrameContext();
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         given(wrappedLedgers.tokens()).willReturn(tokensLedger);
@@ -190,7 +194,7 @@ class TokenPrecompileReadOperationsTest {
         isTokenPrecompile
                 .when(() -> IsTokenPrecompile.decodeIsToken(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
-        given(encoder.encodeIsToken(true)).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeIsToken(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(frame.getValue()).willReturn(Wei.ZERO);
 
@@ -200,7 +204,7 @@ class TokenPrecompileReadOperationsTest {
         final var result = subject.computeInternal(frame);
 
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -239,7 +243,7 @@ class TokenPrecompileReadOperationsTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 

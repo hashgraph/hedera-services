@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.config;
 
+import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
+
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
@@ -28,25 +30,26 @@ public class FileNumbers implements HederaFileNumbers {
     private final HederaNumbers hederaNums;
     private final PropertySource properties;
 
-    private long addressBook = EntityNumbers.UNKNOWN_NUMBER;
-    private long nodeDetails = EntityNumbers.UNKNOWN_NUMBER;
-    private long feeSchedules = EntityNumbers.UNKNOWN_NUMBER;
-    private long exchangeRates = EntityNumbers.UNKNOWN_NUMBER;
-    private long apiPermissions = EntityNumbers.UNKNOWN_NUMBER;
-    private long applicationProperties = EntityNumbers.UNKNOWN_NUMBER;
-    private long firstUpdateFile = EntityNumbers.UNKNOWN_NUMBER;
-    private long lastUpdateFile = EntityNumbers.UNKNOWN_NUMBER;
-    private long throttleDefinitions = EntityNumbers.UNKNOWN_NUMBER;
+    private long addressBook = UNKNOWN_NUMBER;
+    private long nodeDetails = UNKNOWN_NUMBER;
+    private long feeSchedules = UNKNOWN_NUMBER;
+    private long exchangeRates = UNKNOWN_NUMBER;
+    private long apiPermissions = UNKNOWN_NUMBER;
+    private long applicationProperties = UNKNOWN_NUMBER;
+    private long firstUpdateFile = UNKNOWN_NUMBER;
+    private long lastUpdateFile = UNKNOWN_NUMBER;
+    private long throttleDefinitions = UNKNOWN_NUMBER;
 
     @Inject
-    public FileNumbers(HederaNumbers hederaNums, @CompositeProps PropertySource properties) {
+    public FileNumbers(
+            final HederaNumbers hederaNums, @CompositeProps final PropertySource properties) {
         this.hederaNums = hederaNums;
         this.properties = properties;
     }
 
     @Override
     public long addressBook() {
-        if (addressBook == EntityNumbers.UNKNOWN_NUMBER) {
+        if (addressBook == UNKNOWN_NUMBER) {
             addressBook = properties.getLongProperty("files.addressBook");
         }
         return addressBook;
@@ -54,7 +57,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long nodeDetails() {
-        if (nodeDetails == EntityNumbers.UNKNOWN_NUMBER) {
+        if (nodeDetails == UNKNOWN_NUMBER) {
             nodeDetails = properties.getLongProperty("files.nodeDetails");
         }
         return nodeDetails;
@@ -62,7 +65,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long feeSchedules() {
-        if (feeSchedules == EntityNumbers.UNKNOWN_NUMBER) {
+        if (feeSchedules == UNKNOWN_NUMBER) {
             feeSchedules = properties.getLongProperty("files.feeSchedules");
         }
         return feeSchedules;
@@ -70,7 +73,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long exchangeRates() {
-        if (exchangeRates == EntityNumbers.UNKNOWN_NUMBER) {
+        if (exchangeRates == UNKNOWN_NUMBER) {
             exchangeRates = properties.getLongProperty("files.exchangeRates");
         }
         return exchangeRates;
@@ -78,7 +81,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long applicationProperties() {
-        if (applicationProperties == EntityNumbers.UNKNOWN_NUMBER) {
+        if (applicationProperties == UNKNOWN_NUMBER) {
             applicationProperties = properties.getLongProperty("files.networkProperties");
         }
         return applicationProperties;
@@ -86,7 +89,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long apiPermissions() {
-        if (apiPermissions == EntityNumbers.UNKNOWN_NUMBER) {
+        if (apiPermissions == UNKNOWN_NUMBER) {
             apiPermissions = properties.getLongProperty("files.hapiPermissions");
         }
         return apiPermissions;
@@ -94,7 +97,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long firstSoftwareUpdateFile() {
-        if (firstUpdateFile == EntityNumbers.UNKNOWN_NUMBER) {
+        if (firstUpdateFile == UNKNOWN_NUMBER) {
             firstUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getLeft();
         }
         return firstUpdateFile;
@@ -102,7 +105,7 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long lastSoftwareUpdateFile() {
-        if (lastUpdateFile == EntityNumbers.UNKNOWN_NUMBER) {
+        if (lastUpdateFile == UNKNOWN_NUMBER) {
             lastUpdateFile = properties.getEntityNumRange("files.softwareUpdateRange").getRight();
         }
         return lastUpdateFile;
@@ -115,13 +118,13 @@ public class FileNumbers implements HederaFileNumbers {
 
     @Override
     public long throttleDefinitions() {
-        if (throttleDefinitions == EntityNumbers.UNKNOWN_NUMBER) {
+        if (throttleDefinitions == UNKNOWN_NUMBER) {
             throttleDefinitions = properties.getLongProperty("files.throttleDefinitions");
         }
         return throttleDefinitions;
     }
 
-    public FileID toFid(long num) {
+    public FileID toFid(final long num) {
         return FileID.newBuilder()
                 .setShardNum(hederaNums.shard())
                 .setRealmNum(hederaNums.realm())

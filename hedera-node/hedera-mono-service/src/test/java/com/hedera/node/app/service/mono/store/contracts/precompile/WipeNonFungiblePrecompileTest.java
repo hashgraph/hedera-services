@@ -17,6 +17,17 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_NFT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleWipe;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.targetSerialNos;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.WipeNonFungiblePrecompile.decodeWipeNFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -85,7 +96,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,10 +150,7 @@ class WipeNonFungiblePrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-                    / HTSTestsUtil.DEFAULT_GAS_PRICE
-                    * 6
-                    / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private static final Bytes NON_FUNGIBLE_WIPE_INPUT =
             Bytes.fromHexString(
                     "0xf7f38e2600000000000000000000000000000000000000000000000000000000000006b000000000000000000000000000000000000000000000000000000000000006ae000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001");
@@ -198,7 +205,7 @@ class WipeNonFungiblePrecompileTest {
 
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -213,7 +220,7 @@ class WipeNonFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var expectedFailure = EncodingFacade.resultFrom(INVALID_SIGNATURE);
         final var result = subject.computeInternal(frame);
 
@@ -233,10 +240,7 @@ class WipeNonFungiblePrecompileTest {
 
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                wrappedLedgers))
+                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -246,7 +250,7 @@ class WipeNonFungiblePrecompileTest {
         given(infrastructureFactory.newWipeLogic(accountStore, tokenStore)).willReturn(wipeLogic);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -261,16 +265,11 @@ class WipeNonFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
-        verify(wipeLogic)
-                .wipe(
-                        HTSTestsUtil.nonFungibleId,
-                        HTSTestsUtil.accountId,
-                        0,
-                        HTSTestsUtil.targetSerialNos);
+        assertEquals(successResult, result);
+        verify(wipeLogic).wipe(nonFungibleId, accountId, 0, targetSerialNos);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -287,10 +286,7 @@ class WipeNonFungiblePrecompileTest {
 
         given(
                         sigsVerifier.hasActiveWipeKey(
-                                true,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                wrappedLedgers))
+                                true, nonFungibleTokenAddr, nonFungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -300,7 +296,7 @@ class WipeNonFungiblePrecompileTest {
         given(infrastructureFactory.newWipeLogic(accountStore, tokenStore)).willReturn(wipeLogic);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -313,7 +309,7 @@ class WipeNonFungiblePrecompileTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         subject.computeInternal(frame);
 
         verify(wrappedLedgers, never()).commit();
@@ -330,22 +326,21 @@ class WipeNonFungiblePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         wipeNonFungiblePrecompile
                 .when(() -> decodeWipeNFT(eq(pretendArguments), any()))
-                .thenReturn(HTSTestsUtil.nonFungibleWipe);
-        given(syntheticTxnFactory.createWipe(HTSTestsUtil.nonFungibleWipe))
+                .thenReturn(nonFungibleWipe);
+        given(syntheticTxnFactory.createWipe(nonFungibleWipe))
                 .willReturn(
                         TransactionBody.newBuilder()
                                 .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()));
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+                .willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -370,18 +365,17 @@ class WipeNonFungiblePrecompileTest {
         givenFrameContext();
         wipeNonFungiblePrecompile
                 .when(() -> decodeWipeNFT(eq(pretendArguments), any()))
-                .thenReturn(HTSTestsUtil.nonFungibleWipe);
-        given(syntheticTxnFactory.createWipe(HTSTestsUtil.nonFungibleWipe))
-                .willReturn(mockSynthBodyBuilder);
+                .thenReturn(nonFungibleWipe);
+        given(syntheticTxnFactory.createWipe(nonFungibleWipe)).willReturn(mockSynthBodyBuilder);
     }
 
     private void givenFrameContext() {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getContractAddress()).willReturn(HTSTestsUtil.contractAddr);
-        given(frame.getRecipientAddress()).willReturn(HTSTestsUtil.nonFungibleTokenAddr);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(frame.getRecipientAddress()).willReturn(nonFungibleTokenAddr);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -404,7 +398,7 @@ class WipeNonFungiblePrecompileTest {
     }
 
     private void givenMinFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }

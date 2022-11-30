@@ -16,6 +16,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -28,7 +32,6 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -53,13 +56,13 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
             TypeFactory.create("(bytes32,bytes32,int64)");
 
     public WipeFungiblePrecompile(
-            WorldLedgers ledgers,
+            final WorldLedgers ledgers,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffects,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils,
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils,
             final int functionId) {
         super(
                 ledgers,
@@ -73,7 +76,8 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         wipeOp =
                 switch (functionId) {
                     case AbiConstants.ABI_WIPE_TOKEN_ACCOUNT_FUNGIBLE -> decodeWipe(
@@ -87,11 +91,10 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         Objects.requireNonNull(
                 wipeOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(
-                PrecompilePricingUtils.GasCostType.WIPE_FUNGIBLE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(WIPE_FUNGIBLE, consensusTime);
     }
 
     public static WipeWrapper decodeWipe(
@@ -110,18 +113,16 @@ public class WipeFungiblePrecompile extends AbstractWipePrecompile {
     }
 
     private static WipeWrapper getWipeWrapper(
-            Bytes input,
-            UnaryOperator<byte[]> aliasResolver,
-            Bytes wipeTokenAccountSelector,
-            ABIType<Tuple> wipeTokenAccountDecoder) {
+            final Bytes input,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Bytes wipeTokenAccountSelector,
+            final ABIType<Tuple> wipeTokenAccountDecoder) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
+                decodeFunctionCall(input, wipeTokenAccountSelector, wipeTokenAccountDecoder);
 
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(
-                        decodedArguments.get(1), aliasResolver);
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
         final var fungibleAmount = (long) decodedArguments.get(2);
 
         return WipeWrapper.forFungible(tokenID, accountID, fungibleAmount);

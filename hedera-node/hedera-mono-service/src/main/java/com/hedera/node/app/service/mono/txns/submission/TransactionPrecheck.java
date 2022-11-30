@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.txns.submission;
 
+import static com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws.WELL_KNOWN_FLAWS;
+import static com.hedera.node.app.service.mono.txns.submission.PresolvencyFlaws.responseForFlawed;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -90,7 +92,7 @@ public final class TransactionPrecheck {
     private Pair<TxnValidityAndFeeReq, SignedTxnAccessor> performance(
             final Transaction signedTxn, final Set<Characteristic> characteristics) {
         if (currentPlatformStatus.get() != ACTIVE) {
-            return PresolvencyFlaws.WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
+            return WELL_KNOWN_FLAWS.get(PLATFORM_NOT_ACTIVE);
         }
 
         final var structuralAssessment = stagedPrechecks.assessStructure(signedTxn);
@@ -103,12 +105,12 @@ public final class TransactionPrecheck {
 
         final var syntaxStatus = stagedPrechecks.validateSyntax(txn);
         if (syntaxStatus != OK) {
-            return PresolvencyFlaws.responseForFlawed(syntaxStatus);
+            return responseForFlawed(syntaxStatus);
         }
 
         final var semanticStatus = checkSemantics(accessor, characteristics);
         if (semanticStatus != OK) {
-            return PresolvencyFlaws.responseForFlawed(semanticStatus);
+            return responseForFlawed(semanticStatus);
         }
 
         final var solvencyStatus =

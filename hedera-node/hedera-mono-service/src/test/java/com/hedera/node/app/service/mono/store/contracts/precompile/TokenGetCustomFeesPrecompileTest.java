@@ -17,7 +17,15 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -65,7 +73,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,7 +132,7 @@ class TokenGetCustomFeesPrecompileTest {
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
-                .when(() -> EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId))
+                .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
                 .thenReturn(HTSTestsUtil.tokenMerkleAddress);
 
         subject =
@@ -158,21 +165,19 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper =
-                new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final var fractionalFee = getFractionalFee();
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenGetCustomFeesPrecompile
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
 
-        given(wrappedLedgers.infoForTokenCustomFees(HTSTestsUtil.tokenMerkleId))
+        given(wrappedLedgers.infoForTokenCustomFees(tokenMerkleId))
                 .willReturn(Optional.of(List.of(fractionalFee)));
-        given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee)))
-                .willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeTokenGetCustomFees(List.of(fractionalFee))).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -180,11 +185,11 @@ class TokenGetCustomFeesPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -197,12 +202,11 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper =
-                new TokenGetCustomFeesWrapper(HTSTestsUtil.tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenGetCustomFeesPrecompile
                 .when(() -> decodeTokenGetCustomFees(pretendArguments))
                 .thenReturn(tokenCustomFeesWrapper);
@@ -213,11 +217,11 @@ class TokenGetCustomFeesPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidTokenIdResult, result);
+        assertEquals(invalidTokenIdResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -261,7 +265,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -288,7 +292,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .willReturn(mockFeeObject);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
@@ -310,7 +314,7 @@ class TokenGetCustomFeesPrecompileTest {
                         .build();
         return CustomFee.newBuilder()
                 .setFractionalFee(fractionalFee)
-                .setFeeCollectorAccountId(HTSTestsUtil.payer)
+                .setFeeCollectorAccountId(payer)
                 .build();
     }
 }

@@ -17,7 +17,17 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_EXPIRY_INFO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -65,7 +75,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -107,7 +116,7 @@ class GetTokenExpiryInfoPrecompileTest {
     private HTSPrecompiledContract subject;
     private MockedStatic<EntityIdUtils> entityIdUtils;
     private MockedStatic<GetTokenExpiryInfoPrecompile> getTokenExpiryInfoPrecompile;
-    private final EntityId treasury = HTSTestsUtil.senderId;
+    private final EntityId treasury = senderId;
 
     @BeforeEach
     void setUp() {
@@ -122,8 +131,8 @@ class GetTokenExpiryInfoPrecompileTest {
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
-                .when(() -> EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId))
-                .thenReturn(HTSTestsUtil.tokenMerkleAddress);
+                .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
+                .thenReturn(tokenMerkleAddress);
 
         subject =
                 new HTSPrecompiledContract(
@@ -155,26 +164,25 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper =
-                new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
+        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
         final var tokenInfo =
                 TokenInfo.newBuilder()
                         .setExpiry(Timestamp.newBuilder().setSeconds(442L).build())
-                        .setAutoRenewAccount(HTSTestsUtil.payer)
+                        .setAutoRenewAccount(payer)
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(555L))
                         .build();
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         getTokenExpiryInfoPrecompile
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
 
-        given(encoder.encodeGetTokenExpiryInfo(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenExpiryInfo(any())).willReturn(successResult);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo));
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -183,11 +191,11 @@ class GetTokenExpiryInfoPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -200,19 +208,18 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper =
-                new GetTokenExpiryInfoWrapper(HTSTestsUtil.tokenMerkleId);
+        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         getTokenExpiryInfoPrecompile
                 .when(() -> decodeGetTokenExpiryInfo(pretendArguments))
                 .thenReturn(getTokenExpiryInfoWrapper);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
@@ -221,11 +228,11 @@ class GetTokenExpiryInfoPrecompileTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidTokenIdResult, result);
+        assertEquals(invalidTokenIdResult, result);
     }
 
     @Test
@@ -249,7 +256,7 @@ class GetTokenExpiryInfoPrecompileTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -269,7 +276,7 @@ class GetTokenExpiryInfoPrecompileTest {
                 .willReturn(mockFeeObject);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);

@@ -17,6 +17,29 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_MINT_TOKEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.AMOUNT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.expirableTxnRecordBuilder;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failInvalidResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleMint;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleMintAmountOversize;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleMintMaxAmount;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWith10Supply;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleSuccessResultWithLongMaxValueSupply;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidSigResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.newMetadata;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftMint;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nonFungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.pendingChildConsTime;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.recipientAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMint;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMintV2;
 import static com.hedera.test.utils.TxnUtils.assertFailsWith;
@@ -96,7 +119,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -148,10 +170,7 @@ class MintPrecompilesTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-                    / HTSTestsUtil.DEFAULT_GAS_PRICE
-                    * 6
-                    / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     private static final Bytes FUNGIBLE_MINT_INPUT =
             Bytes.fromHexString(
                     "0x278e0b88000000000000000000000000000000000000000000000000000000000000043e000000000000000000000000000000000000000000000000000000000000000f00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000");
@@ -217,14 +236,11 @@ class MintPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willThrow(new InvalidTransactionException(INVALID_SIGNATURE));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -233,8 +249,7 @@ class MintPrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(INVALID_SIGNATURE))
                 .willReturn(mockRecordBuilder);
-        given(encoder.encodeMintFailure(INVALID_SIGNATURE))
-                .willReturn(HTSTestsUtil.invalidSigResult);
+        given(encoder.encodeMintFailure(INVALID_SIGNATURE)).willReturn(invalidSigResult);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -242,11 +257,11 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidSigResult, result);
+        assertEquals(invalidSigResult, result);
 
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -264,7 +279,7 @@ class MintPrecompilesTest {
                 .willThrow(new IllegalArgumentException("random error"));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -273,7 +288,7 @@ class MintPrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(creator.createUnsuccessfulSyntheticRecord(FAIL_INVALID))
                 .willReturn(mockRecordBuilder);
-        given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(HTSTestsUtil.failInvalidResult);
+        given(encoder.encodeMintFailure(FAIL_INVALID)).willReturn(failInvalidResult);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -281,11 +296,11 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.failInvalidResult, result);
+        assertEquals(failInvalidResult, result);
     }
 
     @Test
@@ -299,10 +314,7 @@ class MintPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -312,7 +324,7 @@ class MintPrecompilesTest {
         given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -329,9 +341,8 @@ class MintPrecompilesTest {
                 };
         given(mockRecordBuilder.getReceiptBuilder())
                 .willReturn(TxnReceipt.newBuilder().setSerialNumbers(mints));
-        given(encoder.encodeMintSuccess(0L, mints)).willReturn(HTSTestsUtil.successResult);
-        given(recordsHistorian.nextFollowingChildConsensusTime())
-                .willReturn(HTSTestsUtil.pendingChildConsTime);
+        given(encoder.encodeMintSuccess(0L, mints)).willReturn(successResult);
+        given(recordsHistorian.nextFollowingChildConsensusTime()).willReturn(pendingChildConsTime);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
@@ -340,19 +351,13 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
-        verify(mintLogic)
-                .mint(
-                        HTSTestsUtil.nonFungibleId,
-                        3,
-                        0,
-                        HTSTestsUtil.newMetadata,
-                        HTSTestsUtil.pendingChildConsTime);
+        verify(mintLogic).mint(nonFungibleId, 3, 0, newMetadata, pendingChildConsTime);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -369,10 +374,7 @@ class MintPrecompilesTest {
 
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true,
-                                HTSTestsUtil.nonFungibleTokenAddr,
-                                HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                true, nonFungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -382,7 +384,7 @@ class MintPrecompilesTest {
         given(infrastructureFactory.newMintLogic(accountStore, tokenStore)).willReturn(mintLogic);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -399,7 +401,7 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, а -> а);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         subject.computeInternal(frame);
 
         // then:
@@ -416,13 +418,13 @@ class MintPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(HTSTestsUtil.fungibleSuccessResultWith10Supply);
+                .willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -434,24 +436,16 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
         // then:
-        Assertions.assertEquals(HTSTestsUtil.fungibleSuccessResultWith10Supply, result);
+        assertEquals(fungibleSuccessResultWith10Supply, result);
         // and:
-        verify(mintLogic)
-                .mint(
-                        HTSTestsUtil.fungibleId,
-                        0,
-                        HTSTestsUtil.AMOUNT,
-                        Collections.emptyList(),
-                        Instant.EPOCH);
+        verify(mintLogic).mint(fungibleId, 0, AMOUNT, Collections.emptyList(), Instant.EPOCH);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(
-                        recordsHistorian,
-                        HTSTestsUtil.expirableTxnRecordBuilder,
-                        mockSynthBodyBuilder);
+                        recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -464,14 +458,14 @@ class MintPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(HTSTestsUtil.fungibleSuccessResultWith10Supply);
+                .willReturn(fungibleSuccessResultWith10Supply);
         given(worldUpdater.parentUpdater()).willReturn(Optional.empty());
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -482,7 +476,7 @@ class MintPrecompilesTest {
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         assertFailsWith(() -> subject.computeInternal(frame), FAIL_INVALID);
     }
 
@@ -493,13 +487,13 @@ class MintPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
         doCallRealMethod().when(frame).setRevertReason(any());
         mintPrecompile
                 .when(() -> decodeMint(pretendArguments))
-                .thenReturn(HTSTestsUtil.fungibleMintAmountOversize);
+                .thenReturn(fungibleMintAmountOversize);
         // when:
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
@@ -519,19 +513,17 @@ class MintPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        mintPrecompile
-                .when(() -> decodeMint(pretendArguments))
-                .thenReturn(HTSTestsUtil.fungibleMintMaxAmount);
-        given(syntheticTxnFactory.createMint(HTSTestsUtil.fungibleMintMaxAmount))
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMintMaxAmount);
+        given(syntheticTxnFactory.createMint(fungibleMintMaxAmount))
                 .willReturn(mockSynthBodyBuilder);
         given(encoder.encodeMintSuccess(anyLong(), any()))
-                .willReturn(HTSTestsUtil.fungibleSuccessResultWithLongMaxValueSupply);
+                .willReturn(fungibleSuccessResultWithLongMaxValueSupply);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
         given(mockSynthBodyBuilder.build()).willReturn(TransactionBody.newBuilder().build());
         given(mockSynthBodyBuilder.setTransactionID(any(TransactionID.class)))
@@ -543,24 +535,17 @@ class MintPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
         // then:
-        Assertions.assertEquals(HTSTestsUtil.fungibleSuccessResultWithLongMaxValueSupply, result);
+        assertEquals(fungibleSuccessResultWithLongMaxValueSupply, result);
         // and:
         verify(mintLogic)
-                .mint(
-                        HTSTestsUtil.fungibleId,
-                        0,
-                        Long.MAX_VALUE,
-                        Collections.emptyList(),
-                        Instant.EPOCH);
+                .mint(fungibleId, 0, Long.MAX_VALUE, Collections.emptyList(), Instant.EPOCH);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(
-                        recordsHistorian,
-                        HTSTestsUtil.expirableTxnRecordBuilder,
-                        mockSynthBodyBuilder);
+                        recordsHistorian, expirableTxnRecordBuilder, mockSynthBodyBuilder);
     }
 
     @Test
@@ -572,7 +557,7 @@ class MintPrecompilesTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        mintPrecompile.when(() -> decodeMint(any())).thenReturn(HTSTestsUtil.fungibleMint);
+        mintPrecompile.when(() -> decodeMint(any())).thenReturn(fungibleMint);
         given(syntheticTxnFactory.createMint(any()))
                 .willReturn(
                         TransactionBody.newBuilder()
@@ -580,14 +565,13 @@ class MintPrecompilesTest {
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+                .willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final long result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final long result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -641,26 +625,22 @@ class MintPrecompilesTest {
 
     private Bytes givenNonFungibleFrameContext() {
         final Bytes pretendArguments = givenFrameContext();
-        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(HTSTestsUtil.nftMint);
-        given(syntheticTxnFactory.createMint(HTSTestsUtil.nftMint))
-                .willReturn(mockSynthBodyBuilder);
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(nftMint);
+        given(syntheticTxnFactory.createMint(nftMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
 
     private Bytes givenFungibleFrameContext() {
         final Bytes pretendArguments = givenFrameContext();
-        mintPrecompile
-                .when(() -> decodeMint(pretendArguments))
-                .thenReturn(HTSTestsUtil.fungibleMint);
-        given(syntheticTxnFactory.createMint(HTSTestsUtil.fungibleMint))
-                .willReturn(mockSynthBodyBuilder);
+        mintPrecompile.when(() -> decodeMint(pretendArguments)).thenReturn(fungibleMint);
+        given(syntheticTxnFactory.createMint(fungibleMint)).willReturn(mockSynthBodyBuilder);
         return pretendArguments;
     }
 
     private Bytes givenFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
-        given(frame.getContractAddress()).willReturn(HTSTestsUtil.contractAddr);
-        given(frame.getRecipientAddress()).willReturn(HTSTestsUtil.recipientAddr);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(frame.getRecipientAddress()).willReturn(recipientAddr);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
@@ -680,10 +660,7 @@ class MintPrecompilesTest {
     private void givenFungibleCollaborators() {
         given(
                         sigsVerifier.hasActiveSupplyKey(
-                                true,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                HTSTestsUtil.recipientAddr,
-                                wrappedLedgers))
+                                true, fungibleTokenAddr, recipientAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(
@@ -694,7 +671,7 @@ class MintPrecompilesTest {
         given(
                         creator.createSuccessfulSyntheticRecord(
                                 Collections.emptyList(), sideEffects, EMPTY_MEMO))
-                .willReturn(HTSTestsUtil.expirableTxnRecordBuilder);
+                .willReturn(expirableTxnRecordBuilder);
     }
 
     private void givenPricingUtilsContext() {
@@ -704,7 +681,7 @@ class MintPrecompilesTest {
     }
 
     private void givenMinFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
     }

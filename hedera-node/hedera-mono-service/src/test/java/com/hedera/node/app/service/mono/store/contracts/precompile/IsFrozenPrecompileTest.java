@@ -16,6 +16,12 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_FROZEN;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenFreezeUnFreezeWrapper;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.IsFrozenPrecompile.decodeIsFrozen;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -163,8 +169,8 @@ class IsFrozenPrecompileTest {
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_IS_FROZEN)),
-                        HTSTestsUtil.fungibleTokenAddr,
-                        HTSTestsUtil.accountAddr);
+                        fungibleTokenAddr,
+                        accountAddr);
         givenMinimalFrameContext();
         givenMinimalFeesContext();
         givenLedgers();
@@ -175,8 +181,8 @@ class IsFrozenPrecompileTest {
                 .willReturn(mockSynthBodyBuilder);
         isFrozenPrecompile
                 .when(() -> decodeIsFrozen(any(), any()))
-                .thenReturn(HTSTestsUtil.tokenFreezeUnFreezeWrapper);
-        given(encoder.encodeIsFrozen(true)).willReturn(HTSTestsUtil.successResult);
+                .thenReturn(tokenFreezeUnFreezeWrapper);
+        given(encoder.encodeIsFrozen(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(tokenRels.get(any(), any())).willReturn(Boolean.TRUE);
         given(encoder.encodeIsFrozen(true)).willReturn(Bytes.fromHexString(output));
@@ -202,7 +208,7 @@ class IsFrozenPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
@@ -229,7 +235,7 @@ class IsFrozenPrecompileTest {
                 .willReturn(mockFeeObject);
         given(
                         feeCalculator.estimatedGasPriceInTinybars(
-                                HederaFunctionality.ContractCall, HTSTestsUtil.timestamp))
+                                HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
     }
 }

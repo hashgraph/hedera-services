@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
+import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_REMOVE;
 
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -78,8 +79,7 @@ public class AccountGC {
                 return new CryptoGcOutcome(unitReturns, nftReturns, false);
             }
         } else {
-            return new CryptoGcOutcome(
-                    FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
+            return new CryptoGcOutcome(UNFINISHED_NOOP_FUNGIBLE_RETURNS, nftReturns, false);
         }
     }
 

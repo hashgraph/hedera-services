@@ -35,6 +35,8 @@ package com.hedera.node.app.service.mono.state.merkle;
  * ‍
  */
 
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.signedLowOrder32From;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedHighOrder32From;
 import static com.hedera.node.app.service.mono.utils.NftNumPair.MISSING_NFT_NUM_PAIR;
 
 import com.google.common.base.MoreObjects;
@@ -85,7 +87,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
      * @param metadata metadata about the token
      * @param creationTime the consensus time at which the token was created
      */
-    public MerkleUniqueToken(EntityId owner, byte[] metadata, RichInstant creationTime) {
+    public MerkleUniqueToken(
+            final EntityId owner, final byte[] metadata, final RichInstant creationTime) {
         this.ownerCode = owner.identityCode();
         this.metadata = metadata;
         this.packedCreationTime =
@@ -102,7 +105,10 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
      * @param numbers the packed representation of the token type number and serial number
      */
     public MerkleUniqueToken(
-            int ownerCode, byte[] metadata, long packedCreationTime, long numbers) {
+            final int ownerCode,
+            final byte[] metadata,
+            final long packedCreationTime,
+            final long numbers) {
         this.numbers = numbers;
         this.ownerCode = ownerCode;
         this.metadata = metadata;
@@ -120,7 +126,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -128,7 +134,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
             return false;
         }
 
-        var that = (MerkleUniqueToken) o;
+        final var that = (MerkleUniqueToken) o;
         return this.numbers == that.numbers
                 && this.ownerCode == that.ownerCode
                 && this.spenderCode == that.spenderCode
@@ -154,8 +160,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     public String toString() {
         final var then =
                 Instant.ofEpochSecond(
-                        BitPackUtils.unsignedHighOrder32From(packedCreationTime),
-                        BitPackUtils.signedLowOrder32From(packedCreationTime));
+                        unsignedHighOrder32From(packedCreationTime),
+                        signedLowOrder32From(packedCreationTime));
         return MoreObjects.toStringHelper(MerkleUniqueToken.class)
                 .add("id", EntityIdUtils.asScopedSerialNoLiteral(numbers))
                 .add("owner", EntityId.fromIdentityCode(ownerCode).toAbbrevString())
@@ -179,7 +185,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         ownerCode = in.readInt();
         packedCreationTime = in.readLong();
         metadata = in.readByteArray(UPPER_BOUND_METADATA_BYTES);
@@ -195,7 +202,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeInt(ownerCode);
         out.writeLong(packedCreationTime);
         out.writeByteArray(metadata);
@@ -218,7 +225,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
         return copy;
     }
 
-    public void setOwner(EntityId owner) {
+    public void setOwner(final EntityId owner) {
         throwIfImmutable("Cannot change this unique token's owner if it's immutable.");
         this.ownerCode = owner.identityCode();
     }
@@ -227,7 +234,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
         return new EntityId(0, 0, BitPackUtils.numFromCode(ownerCode));
     }
 
-    public void setSpender(EntityId spender) {
+    public void setSpender(final EntityId spender) {
         throwIfImmutable("Cannot change this unique token's spender if it's immutable.");
         this.spenderCode = spender.identityCode();
     }
@@ -262,8 +269,8 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
 
     public RichInstant getCreationTime() {
         return new RichInstant(
-                BitPackUtils.unsignedHighOrder32From(packedCreationTime),
-                BitPackUtils.signedLowOrder32From(packedCreationTime));
+                unsignedHighOrder32From(packedCreationTime),
+                signedLowOrder32From(packedCreationTime));
     }
 
     public void setMetadata(final byte[] metadata) {
@@ -288,7 +295,7 @@ public class MerkleUniqueToken extends PartialMerkleLeaf
     }
 
     @Override
-    public void setKey(EntityNumPair phl) {
+    public void setKey(final EntityNumPair phl) {
         this.numbers = phl.value();
     }
 }

@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.state.merkle;
 
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedNums;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asRelationshipLiteral;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -57,12 +57,14 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
 
     public MerkleTokenRelStatus(final Pair<AccountID, TokenID> grpcRel) {
         this.numbers =
-                BitPackUtils.packedNums(
-                        grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
+                packedNums(grpcRel.getLeft().getAccountNum(), grpcRel.getRight().getTokenNum());
     }
 
     public MerkleTokenRelStatus(
-            long balance, boolean frozen, boolean kycGranted, boolean automaticAssociation) {
+            final long balance,
+            final boolean frozen,
+            final boolean kycGranted,
+            final boolean automaticAssociation) {
         this.balance = balance;
         this.frozen = frozen;
         this.kycGranted = kycGranted;
@@ -70,11 +72,11 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     public MerkleTokenRelStatus(
-            long balance,
-            boolean frozen,
-            boolean kycGranted,
-            boolean automaticAssociation,
-            long numbers) {
+            final long balance,
+            final boolean frozen,
+            final boolean kycGranted,
+            final boolean automaticAssociation,
+            final long numbers) {
         this.balance = balance;
         this.frozen = frozen;
         this.kycGranted = kycGranted;
@@ -82,7 +84,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         this.automaticAssociation = automaticAssociation;
     }
 
-    private MerkleTokenRelStatus(MerkleTokenRelStatus that) {
+    private MerkleTokenRelStatus(final MerkleTokenRelStatus that) {
         this.balance = that.balance;
         this.frozen = that.frozen;
         this.kycGranted = that.kycGranted;
@@ -104,7 +106,8 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         balance = in.readLong();
         frozen = in.readBoolean();
         kycGranted = in.readBoolean();
@@ -121,7 +124,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(balance);
         out.writeBoolean(frozen);
         out.writeBoolean(kycGranted);
@@ -133,7 +136,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
 
     /* --- Object --- */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -141,7 +144,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
             return false;
         }
 
-        var that = (MerkleTokenRelStatus) o;
+        final var that = (MerkleTokenRelStatus) o;
         return this.balance == that.balance
                 && this.frozen == that.frozen
                 && this.kycGranted == that.kycGranted
@@ -169,7 +172,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         return balance;
     }
 
-    public void setBalance(long balance) {
+    public void setBalance(final long balance) {
         throwIfImmutable("Cannot change this token relation's balance if it's immutable.");
         if (balance < 0) {
             throw new IllegalArgumentException(
@@ -182,7 +185,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         return frozen;
     }
 
-    public void setFrozen(boolean frozen) {
+    public void setFrozen(final boolean frozen) {
         throwIfImmutable("Cannot change this token relation's frozen status if it's immutable.");
         this.frozen = frozen;
     }
@@ -191,7 +194,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         return kycGranted;
     }
 
-    public void setKycGranted(boolean kycGranted) {
+    public void setKycGranted(final boolean kycGranted) {
         throwIfImmutable("Cannot change this token relation's grant kyc if it's immutable.");
         this.kycGranted = kycGranted;
     }
@@ -200,7 +203,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
         return automaticAssociation;
     }
 
-    public void setAutomaticAssociation(boolean automaticAssociation) {
+    public void setAutomaticAssociation(final boolean automaticAssociation) {
         throwIfImmutable(
                 "Cannot change this token relation's automaticAssociation if it's immutable.");
         this.automaticAssociation = automaticAssociation;
@@ -237,7 +240,7 @@ public class MerkleTokenRelStatus extends PartialMerkleLeaf
     }
 
     @Override
-    public void setKey(EntityNumPair numbers) {
+    public void setKey(final EntityNumPair numbers) {
         this.numbers = numbers.value();
     }
 

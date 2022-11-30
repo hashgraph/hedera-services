@@ -16,11 +16,25 @@
 package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALL;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CALLCODE;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CREATE;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_CREATE2;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_DELEGATECALL;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_STATICCALL;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType.OP_UNKNOWN;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CALL;
+import static com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType.CREATE;
+import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
@@ -58,7 +72,8 @@ public class HederaTracer implements HederaOperationTracer {
     }
 
     @Override
-    public void tracePostExecution(MessageFrame currentFrame, OperationResult operationResult) {
+    public void tracePostExecution(
+            final MessageFrame currentFrame, final OperationResult operationResult) {
         if (areActionSidecarsEnabled) {
             final var frameState = currentFrame.getState();
             if (frameState != State.CODE_EXECUTING) {
@@ -127,7 +142,7 @@ public class HederaTracer implements HederaOperationTracer {
         if (frameState == State.CODE_SUCCESS || frameState == State.COMPLETED_SUCCESS) {
             action.setGasUsed(action.getGas() - frame.getRemainingGas());
             // externalize output for calls only - create output is externalized in bytecode sidecar
-            if (action.getCallType() != ContractActionType.CREATE) {
+            if (action.getCallType() != CREATE) {
                 action.setOutput(frame.getOutputData().toArrayUnsafe());
             } else {
                 action.setOutput(new byte[0]);
@@ -139,7 +154,7 @@ public class HederaTracer implements HederaOperationTracer {
                     .ifPresentOrElse(
                             bytes -> action.setRevertReason(bytes.toArrayUnsafe()),
                             () -> action.setRevertReason(new byte[0]));
-            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+            if (frame.getType().equals(CONTRACT_CREATION)) {
                 action.setRecipientContract(null);
             }
         } else if (frameState == State.EXCEPTIONAL_HALT) {
@@ -152,7 +167,7 @@ public class HederaTracer implements HederaOperationTracer {
                 if (exceptionalHaltReason.equals(INVALID_SOLIDITY_ADDRESS)) {
                     final var syntheticInvalidAction =
                             new SolidityAction(
-                                    ContractActionType.CALL,
+                                    CALL,
                                     frame.getRemainingGas(),
                                     null,
                                     0,
@@ -171,7 +186,7 @@ public class HederaTracer implements HederaOperationTracer {
             } else {
                 action.setError(new byte[0]);
             }
-            if (frame.getType().equals(Type.CONTRACT_CREATION)) {
+            if (frame.getType().equals(CONTRACT_CREATION)) {
                 action.setRecipientContract(null);
             }
         }
@@ -200,27 +215,25 @@ public class HederaTracer implements HederaOperationTracer {
 
     private ContractActionType toContractActionType(final MessageFrame.Type type) {
         return switch (type) {
-            case CONTRACT_CREATION -> ContractActionType.CREATE;
-            case MESSAGE_CALL -> ContractActionType.CALL;
+            case CONTRACT_CREATION -> CREATE;
+            case MESSAGE_CALL -> CALL;
         };
     }
 
     private CallOperationType toCallOperationType(final int opCode) {
         return switch (opCode) {
-            case OP_CODE_CREATE -> CallOperationType.OP_CREATE;
-            case OP_CODE_CALL -> CallOperationType.OP_CALL;
-            case OP_CODE_CALLCODE -> CallOperationType.OP_CALLCODE;
-            case OP_CODE_DELEGATECALL -> CallOperationType.OP_DELEGATECALL;
-            case OP_CODE_CREATE2 -> CallOperationType.OP_CREATE2;
-            case OP_CODE_STATICCALL -> CallOperationType.OP_STATICCALL;
-            default -> CallOperationType.OP_UNKNOWN;
+            case OP_CODE_CREATE -> OP_CREATE;
+            case OP_CODE_CALL -> OP_CALL;
+            case OP_CODE_CALLCODE -> OP_CALLCODE;
+            case OP_CODE_DELEGATECALL -> OP_DELEGATECALL;
+            case OP_CODE_CREATE2 -> OP_CREATE2;
+            case OP_CODE_STATICCALL -> OP_STATICCALL;
+            default -> OP_UNKNOWN;
         };
     }
 
     private CallOperationType toCallOperationType(final Type type) {
-        return type == Type.CONTRACT_CREATION
-                ? CallOperationType.OP_CREATE
-                : CallOperationType.OP_CALL;
+        return type == CONTRACT_CREATION ? OP_CREATE : OP_CALL;
     }
 
     private Address asMirrorAddress(final Address addressOrAlias, final MessageFrame messageFrame) {

@@ -15,7 +15,25 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ALIAS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_RECEIVER_SIG_REQUIRED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -204,7 +222,7 @@ public class HederaLedger {
 
     public String currentChangeSet() {
         if (accountsLedger.isInTransaction()) {
-            var sb =
+            final var sb =
                     new StringBuilder("--- ACCOUNTS ---\n").append(accountsLedger.changeSetSoFar());
             if (tokenRelsLedger != null) {
                 sb.append("\n--- TOKEN RELATIONSHIPS ---\n")
@@ -222,34 +240,33 @@ public class HederaLedger {
 
     /* -- CURRENCY MANIPULATION -- */
     public long getBalance(final AccountID id) {
-        return (long) accountsLedger.get(id, AccountProperty.BALANCE);
+        return (long) accountsLedger.get(id, BALANCE);
     }
 
     public void adjustBalance(final AccountID id, final long adjustment) {
-        long newBalance = computeNewBalance(id, adjustment);
+        final long newBalance = computeNewBalance(id, adjustment);
         setBalance(id, newBalance);
     }
 
-    void doTransfer(AccountID from, AccountID to, long adjustment) {
-        long newFromBalance = computeNewBalance(from, -1 * adjustment);
-        long newToBalance = computeNewBalance(to, adjustment);
+    void doTransfer(final AccountID from, final AccountID to, final long adjustment) {
+        final long newFromBalance = computeNewBalance(from, -1 * adjustment);
+        final long newToBalance = computeNewBalance(to, adjustment);
 
         setBalance(from, newFromBalance);
         setBalance(to, newToBalance);
     }
 
     /* --- TOKEN MANIPULATION --- */
-    public long getTokenBalance(AccountID aId, TokenID tId) {
-        var relationship = BackingTokenRels.asTokenRel(aId, tId);
-        return (long) tokenRelsLedger.get(relationship, TokenRelProperty.TOKEN_BALANCE);
+    public long getTokenBalance(final AccountID aId, final TokenID tId) {
+        final var relationship = BackingTokenRels.asTokenRel(aId, tId);
+        return (long) tokenRelsLedger.get(relationship, TOKEN_BALANCE);
     }
 
-    public boolean allTokenBalancesVanish(AccountID aId) {
+    public boolean allTokenBalancesVanish(final AccountID aId) {
         if (tokenRelsLedger == null) {
             throw new IllegalStateException("Ledger has no manageable token relationships!");
         }
-        final var positiveBalances =
-                (int) accountsLedger.get(aId, AccountProperty.NUM_POSITIVE_BALANCES);
+        final var positiveBalances = (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES);
         return positiveBalances == 0;
     }
 
@@ -262,36 +279,36 @@ public class HederaLedger {
     }
 
     private void changeNumTreasuryTitles(final AccountID aId, final int delta) {
-        final var numTreasuryTitles =
-                (int) accountsLedger.get(aId, AccountProperty.NUM_TREASURY_TITLES);
-        accountsLedger.set(aId, AccountProperty.NUM_TREASURY_TITLES, numTreasuryTitles + delta);
+        final var numTreasuryTitles = (int) accountsLedger.get(aId, NUM_TREASURY_TITLES);
+        accountsLedger.set(aId, NUM_TREASURY_TITLES, numTreasuryTitles + delta);
     }
 
     public boolean isKnownTreasury(final AccountID aId) {
-        return (int) accountsLedger.get(aId, AccountProperty.NUM_TREASURY_TITLES) > 0;
+        return (int) accountsLedger.get(aId, NUM_TREASURY_TITLES) > 0;
     }
 
     public boolean hasAnyFungibleTokenBalance(final AccountID aId) {
-        return (int) accountsLedger.get(aId, AccountProperty.NUM_POSITIVE_BALANCES) > 0;
+        return (int) accountsLedger.get(aId, NUM_POSITIVE_BALANCES) > 0;
     }
 
     public boolean hasAnyNfts(final AccountID aId) {
-        return (long) accountsLedger.get(aId, AccountProperty.NUM_NFTS_OWNED) > 0L;
+        return (long) accountsLedger.get(aId, NUM_NFTS_OWNED) > 0L;
     }
 
-    public ResponseCodeEnum adjustTokenBalance(AccountID aId, TokenID tId, long adjustment) {
+    public ResponseCodeEnum adjustTokenBalance(
+            final AccountID aId, final TokenID tId, final long adjustment) {
         return tokenStore.adjustBalance(aId, tId, adjustment);
     }
 
-    public ResponseCodeEnum grantKyc(AccountID aId, TokenID tId) {
+    public ResponseCodeEnum grantKyc(final AccountID aId, final TokenID tId) {
         return tokenStore.grantKyc(aId, tId);
     }
 
-    public ResponseCodeEnum freeze(AccountID aId, TokenID tId) {
+    public ResponseCodeEnum freeze(final AccountID aId, final TokenID tId) {
         return tokenStore.freeze(aId, tId);
     }
 
-    public ResponseCodeEnum unfreeze(AccountID aId, TokenID tId) {
+    public ResponseCodeEnum unfreeze(final AccountID aId, final TokenID tId) {
         return tokenStore.unfreeze(aId, tId);
     }
 
@@ -301,7 +318,7 @@ public class HederaLedger {
     }
 
     public ResponseCodeEnum doTokenTransfer(
-            TokenID tId, AccountID from, AccountID to, long adjustment) {
+            final TokenID tId, final AccountID from, final AccountID to, final long adjustment) {
         ResponseCodeEnum validity = adjustTokenBalance(from, tId, -adjustment);
         if (validity == OK) {
             validity = adjustTokenBalance(to, tId, adjustment);
@@ -313,29 +330,31 @@ public class HederaLedger {
         return validity;
     }
 
-    public void doZeroSum(List<BalanceChange> changes) {
+    public void doZeroSum(final List<BalanceChange> changes) {
         transferLogic.doZeroSum(changes);
     }
 
     /* -- ACCOUNT META MANIPULATION -- */
-    public AccountID create(AccountID sponsor, long balance, HederaAccountCustomizer customizer) {
-        long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
+    public AccountID create(
+            final AccountID sponsor, final long balance, final HederaAccountCustomizer customizer) {
+        final long newSponsorBalance = computeNewBalance(sponsor, -1 * balance);
         setBalance(sponsor, newSponsorBalance);
 
-        var id = ids.newAccountId(sponsor);
+        final var id = ids.newAccountId(sponsor);
         spawn(id, balance, customizer);
 
         return id;
     }
 
-    public void spawn(AccountID id, long balance, HederaAccountCustomizer customizer) {
+    public void spawn(
+            final AccountID id, final long balance, final HederaAccountCustomizer customizer) {
         accountsLedger.create(id);
         setBalance(id, balance);
         customizer.customize(id, accountsLedger);
     }
 
-    public void customize(AccountID id, HederaAccountCustomizer customizer) {
-        if ((boolean) accountsLedger.get(id, AccountProperty.IS_DELETED)) {
+    public void customize(final AccountID id, final HederaAccountCustomizer customizer) {
+        if ((boolean) accountsLedger.get(id, IS_DELETED)) {
             throw new DeletedAccountException(id);
         }
         customizer.customize(id, accountsLedger);
@@ -348,54 +367,55 @@ public class HederaLedger {
      * @param id target account
      * @param customizer properties to update
      */
-    public void customizePotentiallyDeleted(AccountID id, HederaAccountCustomizer customizer) {
+    public void customizePotentiallyDeleted(
+            final AccountID id, final HederaAccountCustomizer customizer) {
         customizer.customize(id, accountsLedger);
     }
 
-    public void delete(AccountID id, AccountID beneficiary) {
+    public void delete(final AccountID id, final AccountID beneficiary) {
         doTransfer(id, beneficiary, getBalance(id));
-        accountsLedger.set(id, AccountProperty.IS_DELETED, true);
+        accountsLedger.set(id, IS_DELETED, true);
     }
 
     /* -- ACCOUNT PROPERTY ACCESS -- */
-    public boolean exists(AccountID id) {
+    public boolean exists(final AccountID id) {
         return accountsLedger.exists(id);
     }
 
-    public long expiry(AccountID id) {
-        return (long) accountsLedger.get(id, AccountProperty.EXPIRY);
+    public long expiry(final AccountID id) {
+        return (long) accountsLedger.get(id, EXPIRY);
     }
 
-    public long autoRenewPeriod(AccountID id) {
-        return (long) accountsLedger.get(id, AccountProperty.AUTO_RENEW_PERIOD);
+    public long autoRenewPeriod(final AccountID id) {
+        return (long) accountsLedger.get(id, AUTO_RENEW_PERIOD);
     }
 
-    public boolean isSmartContract(AccountID id) {
-        return (boolean) accountsLedger.get(id, AccountProperty.IS_SMART_CONTRACT);
+    public boolean isSmartContract(final AccountID id) {
+        return (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
     }
 
-    public boolean isReceiverSigRequired(AccountID id) {
-        return (boolean) accountsLedger.get(id, AccountProperty.IS_RECEIVER_SIG_REQUIRED);
+    public boolean isReceiverSigRequired(final AccountID id) {
+        return (boolean) accountsLedger.get(id, IS_RECEIVER_SIG_REQUIRED);
     }
 
-    public int maxAutomaticAssociations(AccountID id) {
-        return (int) accountsLedger.get(id, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS);
+    public int maxAutomaticAssociations(final AccountID id) {
+        return (int) accountsLedger.get(id, MAX_AUTOMATIC_ASSOCIATIONS);
     }
 
-    public int alreadyUsedAutomaticAssociations(AccountID id) {
-        return (int) accountsLedger.get(id, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS);
+    public int alreadyUsedAutomaticAssociations(final AccountID id) {
+        return (int) accountsLedger.get(id, USED_AUTOMATIC_ASSOCIATIONS);
     }
 
-    public void setMaxAutomaticAssociations(AccountID id, int max) {
-        accountsLedger.set(id, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, max);
+    public void setMaxAutomaticAssociations(final AccountID id, final int max) {
+        accountsLedger.set(id, MAX_AUTOMATIC_ASSOCIATIONS, max);
     }
 
-    public void setAlreadyUsedAutomaticAssociations(AccountID id, int usedCount) {
-        accountsLedger.set(id, AccountProperty.USED_AUTOMATIC_ASSOCIATIONS, usedCount);
+    public void setAlreadyUsedAutomaticAssociations(final AccountID id, final int usedCount) {
+        accountsLedger.set(id, USED_AUTOMATIC_ASSOCIATIONS, usedCount);
     }
 
-    public boolean isDeleted(AccountID id) {
-        return (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED);
+    public boolean isDeleted(final AccountID id) {
+        return (boolean) accountsLedger.get(id, IS_DELETED);
     }
 
     public boolean isDetached(final AccountID id) {
@@ -404,45 +424,44 @@ public class HederaLedger {
 
     public ResponseCodeEnum usabilityOf(final AccountID id) {
         try {
-            final var isDeleted = (boolean) accountsLedger.get(id, AccountProperty.IS_DELETED);
+            final var isDeleted = (boolean) accountsLedger.get(id, IS_DELETED);
             if (isDeleted) {
-                final var isContract =
-                        (boolean) accountsLedger.get(id, AccountProperty.IS_SMART_CONTRACT);
+                final var isContract = (boolean) accountsLedger.get(id, IS_SMART_CONTRACT);
                 return isContract ? CONTRACT_DELETED : ACCOUNT_DELETED;
             }
             return validator.expiryStatusGiven(accountsLedger, id);
-        } catch (MissingEntityException ignore) {
+        } catch (final MissingEntityException ignore) {
             return INVALID_ACCOUNT_ID;
         }
     }
 
-    public JKey key(AccountID id) {
-        return (JKey) accountsLedger.get(id, AccountProperty.KEY);
+    public JKey key(final AccountID id) {
+        return (JKey) accountsLedger.get(id, KEY);
     }
 
-    public String memo(AccountID id) {
-        return (String) accountsLedger.get(id, AccountProperty.MEMO);
+    public String memo(final AccountID id) {
+        return (String) accountsLedger.get(id, MEMO);
     }
 
     public ByteString alias(final AccountID id) {
-        return (ByteString) accountsLedger.get(id, AccountProperty.ALIAS);
+        return (ByteString) accountsLedger.get(id, ALIAS);
     }
 
     public void clearAlias(final AccountID id) {
-        accountsLedger.set(id, AccountProperty.ALIAS, ByteString.EMPTY);
+        accountsLedger.set(id, ALIAS, ByteString.EMPTY);
     }
 
-    public boolean isPendingCreation(AccountID id) {
+    public boolean isPendingCreation(final AccountID id) {
         return accountsLedger.existsPending(id);
     }
 
     /* -- HELPERS -- */
-    private boolean isLegalToAdjust(long balance, long adjustment) {
+    private boolean isLegalToAdjust(final long balance, final long adjustment) {
         return (balance + adjustment >= 0);
     }
 
     private long computeNewBalance(final AccountID id, final long adjustment) {
-        if ((boolean) accountsLedger.get(id, AccountProperty.IS_DELETED)) {
+        if ((boolean) accountsLedger.get(id, IS_DELETED)) {
             throw new DeletedAccountException(id);
         }
         if (isDetached(id)) {
@@ -455,8 +474,8 @@ public class HederaLedger {
         return balance + adjustment;
     }
 
-    private void setBalance(AccountID id, long newBalance) {
-        accountsLedger.set(id, AccountProperty.BALANCE, newBalance);
+    private void setBalance(final AccountID id, final long newBalance) {
+        accountsLedger.set(id, BALANCE, newBalance);
     }
 
     /* -- Only used by unit tests --- */

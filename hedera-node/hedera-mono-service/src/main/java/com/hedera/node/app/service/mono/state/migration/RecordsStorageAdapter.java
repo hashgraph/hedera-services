@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.state.migration.QueryableRecords.NO_QUERYABLE_RECORDS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -118,12 +119,12 @@ public class RecordsStorageAdapter {
         if (accountsOnDisk) {
             final var payerRecordsView = payerRecords.get(payerNum);
             return (payerRecordsView == null)
-                    ? QueryableRecords.NO_QUERYABLE_RECORDS
+                    ? NO_QUERYABLE_RECORDS
                     : payerRecordsView.asQueryableRecords();
         } else {
             final var payerAccountView = legacyAccounts.get(payerNum);
             return (payerAccountView == null)
-                    ? QueryableRecords.NO_QUERYABLE_RECORDS
+                    ? NO_QUERYABLE_RECORDS
                     : new QueryableRecords(
                             payerAccountView.numRecords(), payerAccountView.recordIterator());
         }

@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.validateAllowanceLimitsOn;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -25,7 +28,6 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.models.UniqueToken;
-import com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -96,8 +98,7 @@ public class ApproveAllowanceLogic {
         for (final var allowance : cryptoAllowances) {
             final var owner = allowance.getOwner();
             final var accountToApprove =
-                    AllowanceHelpers.fetchOwnerAccount(
-                            owner, payerAccount, accountStore, entitiesChanged);
+                    fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
             final var cryptoMap = accountToApprove.getMutableCryptoAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -110,7 +111,7 @@ public class ApproveAllowanceLogic {
             }
             if (amount > 0) {
                 cryptoMap.put(spender.asEntityNum(), amount);
-                AllowanceHelpers.validateAllowanceLimitsOn(
+                validateAllowanceLimitsOn(
                         accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
                 entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
             }
@@ -139,11 +140,10 @@ public class ApproveAllowanceLogic {
         if (tokenAllowances.isEmpty()) {
             return;
         }
-        for (var allowance : tokenAllowances) {
+        for (final var allowance : tokenAllowances) {
             final var owner = allowance.getOwner();
             final var accountToApprove =
-                    AllowanceHelpers.fetchOwnerAccount(
-                            owner, payerAccount, accountStore, entitiesChanged);
+                    fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
             final var tokensMap = accountToApprove.getMutableFungibleTokenAllowances();
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
@@ -159,7 +159,7 @@ public class ApproveAllowanceLogic {
             }
             if (amount > 0) {
                 tokensMap.put(key, amount);
-                AllowanceHelpers.validateAllowanceLimitsOn(
+                validateAllowanceLimitsOn(
                         accountToApprove, dynamicProperties.maxAllowanceLimitPerAccount());
                 entitiesChanged.put(accountToApprove.getId().num(), accountToApprove);
             }
@@ -179,11 +179,10 @@ public class ApproveAllowanceLogic {
         if (nftAllowances.isEmpty()) {
             return;
         }
-        for (var allowance : nftAllowances) {
+        for (final var allowance : nftAllowances) {
             final var owner = allowance.getOwner();
             final var approvingAccount =
-                    AllowanceHelpers.fetchOwnerAccount(
-                            owner, payerAccount, accountStore, entitiesChanged);
+                    fetchOwnerAccount(owner, payerAccount, accountStore, entitiesChanged);
             final var spenderId = Id.fromGrpcAccount(allowance.getSpender());
             accountStore.loadAccountOrFailWith(spenderId, INVALID_ALLOWANCE_SPENDER_ID);
 
@@ -197,12 +196,12 @@ public class ApproveAllowanceLogic {
                 } else {
                     approveForAllNfts.remove(key);
                 }
-                AllowanceHelpers.validateAllowanceLimitsOn(
+                validateAllowanceLimitsOn(
                         approvingAccount, dynamicProperties.maxAllowanceLimitPerAccount());
             }
 
             final var nfts =
-                    AllowanceHelpers.updateSpender(
+                    updateSpender(
                             tokenStore,
                             approvingAccount.getId(),
                             spenderId,

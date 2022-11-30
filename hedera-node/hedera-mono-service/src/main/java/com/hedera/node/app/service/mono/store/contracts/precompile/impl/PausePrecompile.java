@@ -18,6 +18,9 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.PAUSE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -31,7 +34,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -52,35 +54,35 @@ public class PausePrecompile extends AbstractWritePrecompile {
     private final EvmSigsVerifier sigsVerifier;
 
     public PausePrecompile(
-            WorldLedgers ledgers,
+            final WorldLedgers ledgers,
             final ContractAliases aliases,
             final EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffects,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils) {
+            final SideEffectsTracker sideEffects,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.aliases = aliases;
         this.sigsVerifier = sigsVerifier;
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         pauseOp = decodePause(input);
         transactionBody = syntheticTxnFactory.createPause(pauseOp);
         return transactionBody;
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
         Objects.requireNonNull(
                 pauseOp, "`body` method should be called before `getMinimumFeeInTinybars`");
-        return pricingUtils.getMinimumPriceInTinybars(
-                PrecompilePricingUtils.GasCostType.PAUSE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(PAUSE, consensusTime);
     }
 
     @Override
-    public void run(MessageFrame frame) {
+    public void run(final MessageFrame frame) {
         Objects.requireNonNull(pauseOp, "`body` method should be called before `run`");
 
         /* --- Check required signatures --- */
@@ -113,9 +115,9 @@ public class PausePrecompile extends AbstractWritePrecompile {
 
     public static PauseWrapper decodePause(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
+                decodeFunctionCall(input, PAUSE_TOKEN_SELECTOR, PAUSE_TOKEN_DECODER);
 
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
 
         return new PauseWrapper(tokenID);
     }

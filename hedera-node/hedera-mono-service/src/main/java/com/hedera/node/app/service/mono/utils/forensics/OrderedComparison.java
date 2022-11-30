@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -45,8 +47,8 @@ public class OrderedComparison {
      */
     public static List<DifferingEntries> findDifferencesBetweenV6(
             final String firstStreamDir, final String secondStreamDir) throws IOException {
-        final var firstEntries = RecordParsers.parseV6RecordStreamEntriesIn(firstStreamDir);
-        final var secondEntries = RecordParsers.parseV6RecordStreamEntriesIn(secondStreamDir);
+        final var firstEntries = parseV6RecordStreamEntriesIn(firstStreamDir);
+        final var secondEntries = parseV6RecordStreamEntriesIn(secondStreamDir);
         return diff(firstEntries, secondEntries);
     }
 

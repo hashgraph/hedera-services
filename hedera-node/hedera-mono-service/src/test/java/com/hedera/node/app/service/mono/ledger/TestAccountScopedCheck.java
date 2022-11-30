@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.LONG;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.OBJ;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -32,7 +36,7 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
     @Override
     public ResponseCodeEnum checkUsing(
             final TestAccount account, final Map<TestAccountProperty, Object> changeSet) {
-        Function<TestAccountProperty, Object> getter =
+        final Function<TestAccountProperty, Object> getter =
                 prop -> {
                     if (changeSet != null && changeSet.containsKey(prop)) {
                         return changeSet.get(prop);
@@ -47,21 +51,19 @@ class TestAccountScopedCheck implements LedgerCheck<TestAccount, TestAccountProp
     public ResponseCodeEnum checkUsing(
             final Function<TestAccountProperty, Object> extantProps,
             final Map<TestAccountProperty, Object> changeSet) {
-        if ((boolean) extantProps.apply(TestAccountProperty.FLAG)) {
+        if ((boolean) extantProps.apply(FLAG)) {
             return ACCOUNT_IS_TREASURY;
         }
-        if ((long) extantProps.apply(TestAccountProperty.LONG) != 123L) {
+        if ((long) extantProps.apply(LONG) != 123L) {
             return ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
         }
-        if (!extantProps.apply(TestAccountProperty.OBJ).equals("DEFAULT")) {
+        if (!extantProps.apply(OBJ).equals("DEFAULT")) {
             return ACCOUNT_STILL_OWNS_NFTS;
         }
-        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES)
-                == TestAccount.Allowance.MISSING) {
+        if (extantProps.apply(HBAR_ALLOWANCES) == TestAccount.Allowance.MISSING) {
             return SPENDER_DOES_NOT_HAVE_ALLOWANCE;
         }
-        if (extantProps.apply(TestAccountProperty.HBAR_ALLOWANCES)
-                == TestAccount.Allowance.INSUFFICIENT) {
+        if (extantProps.apply(HBAR_ALLOWANCES) == TestAccount.Allowance.INSUFFICIENT) {
             return AMOUNT_EXCEEDS_ALLOWANCE;
         }
         return OK;

@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
+import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
@@ -93,11 +94,7 @@ public final class HederaKeyActivation {
             final JKey key,
             final Function<byte[], TransactionSignature> sigsFn,
             final BiPredicate<JKey, TransactionSignature> validity) {
-        return isActive(
-                key,
-                sigsFn,
-                validity,
-                DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS);
+        return isActive(key, sigsFn, validity, DEFAULT_ACTIVATION_CHARACTERISTICS);
     }
 
     public static boolean isActive(
@@ -115,7 +112,7 @@ public final class HederaKeyActivation {
                             ? characteristics.sigsNeededForList((JKeyList) key)
                             : characteristics.sigsNeededForThreshold((JThresholdKey) key);
             var n = 0;
-            for (var child : children) {
+            for (final var child : children) {
                 if (isActive(child, sigsFn, validity)) {
                     n++;
                 }
@@ -139,7 +136,7 @@ public final class HederaKeyActivation {
     public static Function<byte[], TransactionSignature> pkToSigMapFrom(
             final List<TransactionSignature> sigs) {
         return pk -> {
-            for (var sig : sigs) {
+            for (final var sig : sigs) {
                 if (keysMatch(pk, sig.getExpandedPublicKeyDirect())) {
                     return sig;
                 }
@@ -148,7 +145,7 @@ public final class HederaKeyActivation {
         };
     }
 
-    public static boolean keysMatch(byte[] sourceKey, byte[] sigKey) {
+    public static boolean keysMatch(final byte[] sourceKey, final byte[] sigKey) {
         if (sourceKey.length == ED25519_PUBLIC_KEY_LEN) {
             return Arrays.equals(sourceKey, sigKey);
         } else if (sourceKey.length == COMPRESSED_SECP256K1_PUBLIC_KEY_LEN) {
@@ -163,7 +160,8 @@ public final class HederaKeyActivation {
             if (!xCoordsMatch) {
                 return false;
             } else {
-                /* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords. */
+                /* Two secp25681 public keys with the same x-coord can differ at most in the parity of their y-coords
+                . */
                 return (sourceKey[0] & PARITY_MASK)
                         == (sigKey[UNCOMPRESSED_SECP256K1_PUBLIC_KEY_LEN - 1] & PARITY_MASK);
             }

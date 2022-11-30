@@ -16,6 +16,11 @@
 package com.hedera.node.app.service.mono.ledger.accounts;
 
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.AUTO_RENEW_PERIOD;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.EXPIRY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.KEY;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
@@ -101,7 +106,7 @@ public class ContractCustomizer {
     public static ContractCustomizer fromSponsorContract(
             final AccountID sponsor,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
-        var key = (JKey) ledger.get(sponsor, AccountProperty.KEY);
+        var key = (JKey) ledger.get(sponsor, KEY);
         if (key instanceof JContractIDKey) {
             key = null;
         }
@@ -120,11 +125,10 @@ public class ContractCustomizer {
             final AccountID sponsor,
             final TransactionalLedger<AccountID, AccountProperty, HederaAccount> ledger) {
         return new HederaAccountCustomizer()
-                .memo((String) ledger.get(sponsor, AccountProperty.MEMO))
-                .expiry((long) ledger.get(sponsor, AccountProperty.EXPIRY))
-                .autoRenewPeriod((long) ledger.get(sponsor, AccountProperty.AUTO_RENEW_PERIOD))
-                .autoRenewAccount(
-                        (EntityId) ledger.get(sponsor, AccountProperty.AUTO_RENEW_ACCOUNT_ID))
+                .memo((String) ledger.get(sponsor, MEMO))
+                .expiry((long) ledger.get(sponsor, EXPIRY))
+                .autoRenewPeriod((long) ledger.get(sponsor, AUTO_RENEW_PERIOD))
+                .autoRenewAccount((EntityId) ledger.get(sponsor, AUTO_RENEW_ACCOUNT_ID))
                 .maxAutomaticAssociations(
                         (int) ledger.get(sponsor, AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS))
                 .stakedId((long) ledger.get(sponsor, AccountProperty.STAKED_ID))
@@ -147,7 +151,7 @@ public class ContractCustomizer {
                 (cryptoAdminKey == null)
                         ? new JContractIDKey(id.getShardNum(), id.getRealmNum(), id.getAccountNum())
                         : cryptoAdminKey;
-        ledger.set(id, AccountProperty.KEY, newKey);
+        ledger.set(id, KEY, newKey);
     }
 
     /**

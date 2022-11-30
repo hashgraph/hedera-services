@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.token;
 
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -24,7 +25,6 @@ import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.txns.validation.TokenListChecks;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -72,7 +72,7 @@ public class AssociateLogic {
         if (!op.hasAccount()) {
             return INVALID_ACCOUNT_ID;
         }
-        if (TokenListChecks.repeatsItself(op.getTokensList())) {
+        if (repeatsItself(op.getTokensList())) {
             return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
         }
 

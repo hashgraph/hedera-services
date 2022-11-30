@@ -15,8 +15,9 @@
  */
 package com.hedera.node.app.service.mono.state.virtual.entities;
 
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.unsignedLowOrder32From;
+
 import com.hedera.node.app.service.mono.state.merkle.MerkleTokenRelStatus;
-import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
@@ -125,7 +126,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     @StateSetter
-    public void setNumbers(long numbers) {
+    public void setNumbers(final long numbers) {
         throwIfImmutable("Tried to set numbers on an immutable OnDiskTokenRel");
         this.numbers = numbers;
     }
@@ -193,7 +194,7 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
 
     @Override
     public long getRelatedTokenNum() {
-        return BitPackUtils.unsignedLowOrder32From(numbers);
+        return unsignedLowOrder32From(numbers);
     }
 
     @Override
@@ -254,10 +255,10 @@ public class OnDiskTokenRel implements VirtualValue, HederaTokenRel {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        OnDiskTokenRel that = (OnDiskTokenRel) o;
+        final OnDiskTokenRel that = (OnDiskTokenRel) o;
         return prev == that.prev
                 && next == that.next
                 && numbers == that.numbers

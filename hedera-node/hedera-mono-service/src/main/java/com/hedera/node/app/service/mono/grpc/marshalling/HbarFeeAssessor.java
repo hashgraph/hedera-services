@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
+import static com.hedera.node.app.service.mono.grpc.marshalling.AdjustmentUtils.adjustForAssessedHbar;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
@@ -33,14 +34,14 @@ public class HbarFeeAssessor {
     }
 
     public ResponseCodeEnum assess(
-            Id payer,
-            FcCustomFee hbarFee,
-            BalanceChangeManager changeManager,
-            List<FcAssessedCustomFee> accumulator) {
+            final Id payer,
+            final FcCustomFee hbarFee,
+            final BalanceChangeManager changeManager,
+            final List<FcAssessedCustomFee> accumulator) {
         final var collector = hbarFee.getFeeCollectorAsId();
         final var fixedSpec = hbarFee.getFixedFeeSpec();
         final var amount = fixedSpec.getUnitsToCollect();
-        AdjustmentUtils.adjustForAssessedHbar(payer, collector, amount, changeManager);
+        adjustForAssessedHbar(payer, collector, amount, changeManager);
         final var effPayerAccountNums = new long[] {payer.num()};
         final var assessed =
                 new FcAssessedCustomFee(collector.asEntityId(), amount, effPayerAccountNums);

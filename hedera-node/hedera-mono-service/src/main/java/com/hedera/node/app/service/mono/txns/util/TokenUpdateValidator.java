@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.txns.util;
 
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.checkKeys;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.txns.validation.TokenListChecks;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -30,8 +30,9 @@ public class TokenUpdateValidator {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static ResponseCodeEnum validate(TransactionBody txnBody, OptionValidator validator) {
-        TokenUpdateTransactionBody op = txnBody.getTokenUpdate();
+    public static ResponseCodeEnum validate(
+            final TransactionBody txnBody, final OptionValidator validator) {
+        final TokenUpdateTransactionBody op = txnBody.getTokenUpdate();
 
         if (!op.hasToken()) {
             return INVALID_TOKEN_ID;
@@ -42,7 +43,7 @@ public class TokenUpdateValidator {
             return validity;
         }
 
-        var hasNewSymbol = op.getSymbol().length() > 0;
+        final var hasNewSymbol = op.getSymbol().length() > 0;
         if (hasNewSymbol) {
             validity = validator.tokenSymbolCheck(op.getSymbol());
             if (validity != OK) {
@@ -50,7 +51,7 @@ public class TokenUpdateValidator {
             }
         }
 
-        var hasNewTokenName = op.getName().length() > 0;
+        final var hasNewTokenName = op.getName().length() > 0;
         if (hasNewTokenName) {
             validity = validator.tokenNameCheck(op.getName());
             if (validity != OK) {
@@ -59,7 +60,7 @@ public class TokenUpdateValidator {
         }
 
         validity =
-                TokenListChecks.checkKeys(
+                checkKeys(
                         op.hasAdminKey(), op.getAdminKey(),
                         op.hasKycKey(), op.getKycKey(),
                         op.hasWipeKey(), op.getWipeKey(),

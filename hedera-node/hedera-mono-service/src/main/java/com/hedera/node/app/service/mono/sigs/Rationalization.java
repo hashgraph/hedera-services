@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
+import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -24,7 +26,6 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
@@ -59,8 +60,8 @@ public class Rationalization {
     private ResponseCodeEnum finalStatus;
     private List<TransactionSignature> txnSigs;
     private SigningOrderResult<ResponseCodeEnum> lastOrderResult;
-    private List<TransactionSignature> realPayerSigs = new ArrayList<>();
-    private List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
+    private final List<TransactionSignature> realPayerSigs = new ArrayList<>();
+    private final List<TransactionSignature> realOtherPartySigs = new ArrayList<>();
 
     @Inject
     public Rationalization(
@@ -169,11 +170,11 @@ public class Rationalization {
     }
 
     private List<TransactionSignature> rationalize(
-            List<TransactionSignature> realSigs, int startingAt) {
+            final List<TransactionSignature> realSigs, final int startingAt) {
         final var maxSubListEnd = txnSigs.size();
         final var requestedSubListEnd = startingAt + realSigs.size();
         if (requestedSubListEnd <= maxSubListEnd) {
-            var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
+            final var candidateSigs = txnSigs.subList(startingAt, startingAt + realSigs.size());
             /* If all the key material is unchanged from expandSignatures(), we are done */
             if (allVaryingMaterialEquals(candidateSigs, realSigs)) {
                 return candidateSigs;
@@ -185,18 +186,18 @@ public class Rationalization {
     }
 
     private ResponseCodeEnum expandIn(
-            List<TransactionSignature> target, Expansion.SigReqsFunction keysFn) {
+            final List<TransactionSignature> target, final Expansion.SigReqsFunction keysFn) {
         lastOrderResult =
                 keysFn.apply(
                         txnAccessor.getTxn(),
-                        CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY,
+                        CODE_ORDER_RESULT_FACTORY,
                         null,
                         txnAccessor.getPayer());
         if (lastOrderResult.hasErrorReport()) {
             return lastOrderResult.getErrorReport();
         }
         final var creation =
-                PlatformSigOps.createCryptoSigsFrom(
+                createCryptoSigsFrom(
                         lastOrderResult.getOrderedKeys(), pkToSigFn, bodySigningFactory);
         if (creation.hasFailed()) {
             return creation.asCode();
@@ -234,7 +235,7 @@ public class Rationalization {
         return txnSigs;
     }
 
-    void setReqOthersSigs(List<JKey> reqOthersSigs) {
+    void setReqOthersSigs(final List<JKey> reqOthersSigs) {
         this.reqOthersSigs = reqOthersSigs;
     }
 
@@ -242,7 +243,7 @@ public class Rationalization {
         return reqOthersSigs;
     }
 
-    void setLastOrderResult(SigningOrderResult<ResponseCodeEnum> lastOrderResult) {
+    void setLastOrderResult(final SigningOrderResult<ResponseCodeEnum> lastOrderResult) {
         this.lastOrderResult = lastOrderResult;
     }
 
@@ -250,7 +251,7 @@ public class Rationalization {
         return lastOrderResult;
     }
 
-    void setReqPayerSig(JKey reqPayerSig) {
+    void setReqPayerSig(final JKey reqPayerSig) {
         this.reqPayerSig = reqPayerSig;
     }
 
@@ -258,11 +259,11 @@ public class Rationalization {
         return reqPayerSig;
     }
 
-    void setFinalStatus(ResponseCodeEnum finalStatus) {
+    void setFinalStatus(final ResponseCodeEnum finalStatus) {
         this.finalStatus = finalStatus;
     }
 
-    void setVerifiedSync(boolean verifiedSync) {
+    void setVerifiedSync(final boolean verifiedSync) {
         this.verifiedSync = verifiedSync;
     }
 

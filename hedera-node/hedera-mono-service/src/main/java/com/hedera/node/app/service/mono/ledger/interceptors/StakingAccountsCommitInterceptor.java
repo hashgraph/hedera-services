@@ -15,7 +15,18 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NA;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalDeclineRewardGiven;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalStakedToMeGiven;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.hasStakeMetaChanges;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.roundedToHbar;
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.updateBalance;
 import static com.hedera.node.app.service.mono.ledger.interceptors.StakeChangeScenario.FROM_ACCOUNT_TO_ACCOUNT;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_DELETED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -111,7 +122,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // Once rewards are activated, they remain activated
             rewardsActivated = rewardsActivated || networkCtx.get().areRewardsActivated();
             // Only updated and consulted if rewards are not activated
-            newFundingBalance = StakingUtils.NA;
+            newFundingBalance = NA;
 
             updateRewardsAndElections(pendingChanges);
             finalizeStakeMetadata(pendingChanges);
@@ -128,13 +139,13 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     @Override
     public void finish(final int i, final HederaAccount mutableAccount) {
-        if (stakedToMeUpdates[i] != StakingUtils.NA) {
+        if (stakedToMeUpdates[i] != NA) {
             mutableAccount.setStakedToMe(stakedToMeUpdates[i]);
         }
-        if (stakePeriodStartUpdates[i] != StakingUtils.NA) {
+        if (stakePeriodStartUpdates[i] != NA) {
             mutableAccount.setStakePeriodStart(stakePeriodStartUpdates[i]);
         }
-        if (stakeAtStartOfLastRewardedPeriodUpdates[i] != StakingUtils.NA) {
+        if (stakeAtStartOfLastRewardedPeriodUpdates[i] != NA) {
             mutableAccount.setStakeAtStartOfLastRewardedPeriod(
                     stakeAtStartOfLastRewardedPeriodUpdates[i]);
         }
@@ -179,7 +190,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             if (!rewardsActivated
                     && pendingChanges.id(i).getAccountNum()
                             == accountNumbers.stakingRewardAccount()) {
-                newFundingBalance = StakingUtils.finalBalanceGiven(account, changes);
+                newFundingBalance = finalBalanceGiven(account, changes);
             }
         }
     }
@@ -198,7 +209,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final var fundingI =
                     stakeChangeManager.findOrAdd(
                             accountNumbers.stakingRewardAccount(), pendingChanges);
-            StakingUtils.updateBalance(-rewardsPaid, fundingI, pendingChanges);
+            updateBalance(-rewardsPaid, fundingI, pendingChanges);
         }
     }
 
@@ -209,14 +220,14 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final var account = pendingChanges.entity(i);
             final var changes = pendingChanges.changes(i);
             setCurrentAndNewIds(account, changes);
-            final var stakeMetaChanged = StakingUtils.hasStakeMetaChanges(changes, account);
+            final var stakeMetaChanged = hasStakeMetaChanges(changes, account);
             // Because awardStake() and withdrawStake() are very fast, we don't worry about
             // optimizing the FROM_NODE_TO_NODE case with curStakedId == newStakedId, despite
             // how common it is
             if (scenario.withdrawsFromNode()) {
                 stakeChangeManager.withdrawStake(
                         -curStakedId - 1,
-                        StakingUtils.roundedToHbar(account.totalStake()),
+                        roundedToHbar(account.totalStake()),
                         account.isDeclinedReward());
                 if (stakeMetaChanged) {
                     // This account may be leaving some rewards from its current node unclaimed;
@@ -229,19 +240,18 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             }
             if (scenario.awardsToNode()) {
                 final var stakeToAward =
-                        StakingUtils.finalBalanceGiven(account, changes)
-                                + StakingUtils.finalStakedToMeGiven(i, account, stakedToMeUpdates);
+                        finalBalanceGiven(account, changes)
+                                + finalStakedToMeGiven(i, account, stakedToMeUpdates);
                 stakeChangeManager.awardStake(
                         -newStakedId - 1,
-                        StakingUtils.roundedToHbar(stakeToAward),
-                        StakingUtils.finalDeclineRewardGiven(account, changes));
+                        roundedToHbar(stakeToAward),
+                        finalDeclineRewardGiven(account, changes));
             }
             if (stakeMetaChanged) {
                 stakeAtStartOfLastRewardedPeriodUpdates[i] =
-                        StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
+                        NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
             } else if (shouldRememberStakeStartFor(account, curStakedId, rewardsEarned[i])) {
-                stakeAtStartOfLastRewardedPeriodUpdates[i] =
-                        StakingUtils.roundedToHbar(account.totalStake());
+                stakeAtStartOfLastRewardedPeriodUpdates[i] = roundedToHbar(account.totalStake());
             }
             final var wasRewarded =
                     rewardsEarned[i] > 0
@@ -268,7 +278,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 // has almost certainly changed from what it was at the start of the day
                 return account.totalStakeAtStartOfLastRewardedPeriod();
             } else {
-                return StakingUtils.roundedToHbar(account.totalStake());
+                return roundedToHbar(account.totalStake());
             }
         }
     }
@@ -281,10 +291,10 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             final EntityChangeSet<AccountID, HederaAccount, AccountProperty> pendingChanges) {
         // Common case that deserves performance optimization
         if (scenario == FROM_ACCOUNT_TO_ACCOUNT && curStakedId == newStakedId) {
-            final var finalBalance = StakingUtils.finalBalanceGiven(account, changes);
+            final var finalBalance = finalBalanceGiven(account, changes);
             final var initialBalance = account.getBalance();
-            final var roundedFinalBalance = StakingUtils.roundedToHbar(finalBalance);
-            final var roundedInitialBalance = StakingUtils.roundedToHbar(initialBalance);
+            final var roundedFinalBalance = roundedToHbar(finalBalance);
+            final var roundedInitialBalance = roundedToHbar(initialBalance);
             final var delta = roundedFinalBalance - roundedInitialBalance;
             // Even if the stakee's total stake hasn't changed, we still want to
             // trigger a reward situation whenever the staker balance changes; c.f.,
@@ -293,7 +303,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             alterStakedToMe(curStakedId, delta, alwaysUpdate, pendingChanges);
         } else {
             if (scenario.withdrawsFromAccount()) {
-                final var roundedInitialBalance = StakingUtils.roundedToHbar(account.getBalance());
+                final var roundedInitialBalance = roundedToHbar(account.getBalance());
                 // Always trigger a reward situation for the old stakee when they are
                 // losing an indirect staker, even if it doesn't change their total stake
                 alterStakedToMe(curStakedId, -roundedInitialBalance, true, pendingChanges);
@@ -301,9 +311,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             if (scenario.awardsToAccount()) {
                 // Always trigger a reward situation for the new stakee when they are
                 // losing an indirect staker, even if it doesn't change their total stake
-                final var roundedFinalBalance =
-                        StakingUtils.roundedToHbar(
-                                StakingUtils.finalBalanceGiven(account, changes));
+                final var roundedFinalBalance = roundedToHbar(finalBalanceGiven(account, changes));
                 alterStakedToMe(newStakedId, roundedFinalBalance, true, pendingChanges);
             }
         }
@@ -376,7 +384,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         var receiverNum = numFromCode(account.number());
         // We cannot reward a deleted account, so keep redirecting to the beneficiaries of deleted
         // accounts until we find a non-deleted account to try to reward (it may still decline)
-        if (Boolean.TRUE.equals(changes.get(AccountProperty.IS_DELETED))) {
+        if (Boolean.TRUE.equals(changes.get(IS_DELETED))) {
             var j = 1;
             final var maxRedirects = txnCtx.numDeletedAccountsAndContracts();
             do {
@@ -394,7 +402,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 final var redirectI = stakeChangeManager.findOrAdd(receiverNum, pendingChanges);
                 account = pendingChanges.entity(redirectI);
                 changes = pendingChanges.changes(redirectI);
-            } while (Boolean.TRUE.equals(changes.get(AccountProperty.IS_DELETED)));
+            } while (Boolean.TRUE.equals(changes.get(IS_DELETED)));
         }
         // The final beneficiary might still decline the reward
         if (rewardCalculator.applyReward(reward, account, changes)) {
@@ -404,7 +412,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
 
     @VisibleForTesting
     boolean hasBeenRewarded(final int i) {
-        return rewardsEarned[i] != StakingUtils.NA;
+        return rewardsEarned[i] != NA;
     }
 
     /**
@@ -424,9 +432,9 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         return rewardsActivated
                 && account != null
                 && account.getStakedId() < 0
-                && (stakedToMeUpdate != StakingUtils.NA
-                        || changes.containsKey(AccountProperty.BALANCE)
-                        || StakingUtils.hasStakeMetaChanges(changes, account));
+                && (stakedToMeUpdate != NA
+                        || changes.containsKey(BALANCE)
+                        || hasStakeMetaChanges(changes, account));
     }
 
     /**
@@ -458,17 +466,17 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
         // during reconnect. 0.0.800 will be added to the change-list in a reward situation,
         // after this, it should have NA set instead of any old values.
 
-        Arrays.fill(rewardsEarned, StakingUtils.NA);
-        Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, StakingUtils.NA);
-        Arrays.fill(stakedToMeUpdates, StakingUtils.NA);
-        Arrays.fill(stakePeriodStartUpdates, StakingUtils.NA);
+        Arrays.fill(rewardsEarned, NA);
+        Arrays.fill(stakeAtStartOfLastRewardedPeriodUpdates, NA);
+        Arrays.fill(stakedToMeUpdates, NA);
+        Arrays.fill(stakePeriodStartUpdates, NA);
     }
 
     private void setCurrentAndNewIds(
             @Nullable final HederaAccount account,
             @NonNull final Map<AccountProperty, Object> changes) {
         curStakedId = account == null ? 0L : account.getStakedId();
-        newStakedId = (long) changes.getOrDefault(AccountProperty.STAKED_ID, curStakedId);
+        newStakedId = (long) changes.getOrDefault(STAKED_ID, curStakedId);
     }
 
     @VisibleForTesting
@@ -478,7 +486,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
             // Alice cannot receive a reward for today, so nothing to remember here
             return false;
         }
-        if (reward == StakingUtils.NA) {
+        if (reward == NA) {
             // Alice's stake could not have changed this transaction, so nothing to remember
             return false;
         } else if (reward > 0) {
@@ -506,7 +514,7 @@ public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor 
                 return true;
             }
             if (account.totalStakeAtStartOfLastRewardedPeriod()
-                    != StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
+                    != NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE) {
                 // Alice was in a reward situation, but did not earn anything because she already
                 // received a reward earlier today; we preserve our memory of her stake from then
                 return false;

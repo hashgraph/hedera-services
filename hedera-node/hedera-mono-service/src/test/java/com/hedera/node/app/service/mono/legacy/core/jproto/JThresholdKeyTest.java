@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.legacy.core.jproto;
 
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKeyListTest.randomValidECDSASecp256K1Key;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,25 +54,25 @@ class JThresholdKeyTest {
         assertFalse(cut.isEmpty());
     }
 
-    private Key thresholdKey(KeyList keyList, int threshold) {
+    private Key thresholdKey(final KeyList keyList, final int threshold) {
         return Key.newBuilder()
                 .setThresholdKey(ThresholdKey.newBuilder().setKeys(keyList).setThreshold(threshold))
                 .build();
     }
 
-    private JKey jThresholdKey(KeyList keyList, int threshold) throws Exception {
+    private JKey jThresholdKey(final KeyList keyList, final int threshold) throws Exception {
         return JKey.convertKey(thresholdKey(keyList, threshold), 1);
     }
 
     @Test
     void JThresholdKeyWithVariousThresholdTest() throws Exception {
-        Key validContractIDKey =
+        final Key validContractIDKey =
                 Key.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(1L).build())
                         .build();
-        Key validRSA3072Key =
+        final Key validRSA3072Key =
                 Key.newBuilder().setRSA3072(TxnUtils.randomUtf8ByteString(16)).build();
-        KeyList validKeyList =
+        final KeyList validKeyList =
                 KeyList.newBuilder().addKeys(validContractIDKey).addKeys(validRSA3072Key).build();
 
         assertFalse(jThresholdKey(validKeyList, 0).isValid());
@@ -82,29 +83,29 @@ class JThresholdKeyTest {
 
     @Test
     void invalidJThresholdKeyTest() throws Exception {
-        Key validED25519Key =
+        final Key validED25519Key =
                 Key.newBuilder()
                         .setEd25519(TxnUtils.randomUtf8ByteString(JEd25519Key.ED25519_BYTE_LENGTH))
                         .build();
-        Key validECDSA384Key =
+        final Key validECDSA384Key =
                 Key.newBuilder().setECDSA384(TxnUtils.randomUtf8ByteString(24)).build();
-        Key validECDSASecp256Key = JKeyListTest.randomValidECDSASecp256K1Key();
+        final Key validECDSASecp256Key = randomValidECDSASecp256K1Key();
 
-        KeyList invalidKeyList1 = KeyList.newBuilder().build();
-        Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
-        KeyList invalidKeyList2 =
+        final KeyList invalidKeyList1 = KeyList.newBuilder().build();
+        final Key invalidKey1 = thresholdKey(invalidKeyList1, 1);
+        final KeyList invalidKeyList2 =
                 KeyList.newBuilder().addKeys(validED25519Key).addKeys(invalidKey1).build();
-        Key invalidKey2 = thresholdKey(invalidKeyList2, 2);
-        KeyList invalidKeyList3 =
+        final Key invalidKey2 = thresholdKey(invalidKeyList2, 2);
+        final KeyList invalidKeyList3 =
                 KeyList.newBuilder().addKeys(validECDSA384Key).addKeys(invalidKey2).build();
-        Key invalidKey3 = thresholdKey(invalidKeyList2, 2);
-        KeyList invalidKeyList4 =
+        final Key invalidKey3 = thresholdKey(invalidKeyList2, 2);
+        final KeyList invalidKeyList4 =
                 KeyList.newBuilder().addKeys(validECDSASecp256Key).addKeys(invalidKey3).build();
 
-        JKey jThresholdKey1 = JKey.convertKey(invalidKey1, 1);
+        final JKey jThresholdKey1 = JKey.convertKey(invalidKey1, 1);
         assertFalse(jThresholdKey1.isValid());
 
-        JKey jThresholdKey2 = JKey.convertKey(invalidKey2, 1);
+        final JKey jThresholdKey2 = JKey.convertKey(invalidKey2, 1);
         assertFalse(jThresholdKey2.isValid());
 
         assertFalse(jThresholdKey(invalidKeyList3, 1).isValid());
@@ -114,7 +115,7 @@ class JThresholdKeyTest {
     @Test
     void degenerateKeyNotForScheduledTxn() {
         // given:
-        var subject = new JThresholdKey(null, 0);
+        final var subject = new JThresholdKey(null, 0);
 
         // expect:
         assertFalse(subject.isForScheduledTxn());
@@ -123,23 +124,23 @@ class JThresholdKeyTest {
     @Test
     void delegatesScheduledScope() {
         // setup:
-        var ed25519Key = new JEd25519Key("ed25519".getBytes());
-        var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
-        var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
-        var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
-        var contractKey = new JContractIDKey(0, 0, 75231);
+        final var ed25519Key = new JEd25519Key("ed25519".getBytes());
+        final var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
+        final var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
+        final var ecdsasecp256k1Key = new JECDSASecp256k1Key("ecdsasecp256k1".getBytes());
+        final var contractKey = new JContractIDKey(0, 0, 75231);
         // and:
-        List<JKey> keys =
+        final List<JKey> keys =
                 List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey, ecdsasecp256k1Key);
-        var delegate = new JKeyList(keys);
+        final var delegate = new JKeyList(keys);
 
         // given:
-        var subject = new JThresholdKey(delegate, 1);
+        final var subject = new JThresholdKey(delegate, 1);
         // and:
         assertFalse(subject.isForScheduledTxn());
 
         // expect:
-        for (JKey key : keys) {
+        for (final JKey key : keys) {
             key.setForScheduledTxn(true);
             assertTrue(subject.isForScheduledTxn());
             key.setForScheduledTxn(false);
@@ -149,20 +150,20 @@ class JThresholdKeyTest {
     @Test
     void propagatesSettingScheduledScope() {
         // setup:
-        var ed25519Key = new JEd25519Key("ed25519".getBytes());
-        var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
-        var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
-        var contractKey = new JContractIDKey(0, 0, 75231);
+        final var ed25519Key = new JEd25519Key("ed25519".getBytes());
+        final var ecdsa384Key = new JECDSA_384Key("ecdsa384".getBytes());
+        final var rsa3072Key = new JRSA_3072Key("rsa3072".getBytes());
+        final var contractKey = new JContractIDKey(0, 0, 75231);
         // and:
-        List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
+        final List<JKey> keys = List.of(ed25519Key, ecdsa384Key, rsa3072Key, contractKey);
 
         // given:
-        var subject = new JThresholdKey(new JKeyList(keys), 1);
+        final var subject = new JThresholdKey(new JKeyList(keys), 1);
 
         // when:
         subject.setForScheduledTxn(true);
         // then:
-        for (JKey key : keys) {
+        for (final JKey key : keys) {
             assertTrue(key.isForScheduledTxn());
         }
         // and when:

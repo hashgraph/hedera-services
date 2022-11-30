@@ -18,6 +18,13 @@ package com.hedera.node.app.service.mono.state.submerkle;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MAX_PSEUDORANDOM_BYTES_LENGTH;
 import static com.hedera.node.app.service.mono.context.SideEffectsTracker.MISSING_NUMBER;
+import static com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext.MAX_PENDING_REWARDS;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.packedTime;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableString;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asTimestamp;
 import static java.util.stream.Collectors.joining;
 
@@ -26,7 +33,6 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -302,20 +308,20 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        IoUtils.writeNullableSerializable(receipt, out);
+        writeNullableSerializable(receipt, out);
 
         out.writeByteArray(txnHash);
 
-        IoUtils.writeNullableSerializable(txnId, out);
+        writeNullableSerializable(txnId, out);
 
-        IoUtils.writeNullable(consensusTime, out, RichInstant::serialize);
-        IoUtils.writeNullableString(memo, out);
+        writeNullable(consensusTime, out, RichInstant::serialize);
+        writeNullableString(memo, out);
 
         out.writeLong(this.fee);
 
-        IoUtils.writeNullableSerializable(hbarAdjustments, out);
-        IoUtils.writeNullableSerializable(contractCallResult, out);
-        IoUtils.writeNullableSerializable(contractCreateResult, out);
+        writeNullableSerializable(hbarAdjustments, out);
+        writeNullableSerializable(contractCallResult, out);
+        writeNullableSerializable(contractCreateResult, out);
 
         out.writeLong(expiry);
         out.writeLong(submittingMember);
@@ -323,7 +329,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         out.writeSerializableList(tokens, true, true);
         out.writeSerializableList(tokenAdjustments, true, true);
 
-        IoUtils.writeNullableSerializable(scheduleRef, out);
+        writeNullableSerializable(scheduleRef, out);
         out.writeSerializableList(nftTokenAdjustments, true, true);
         out.writeSerializableList(assessedCustomFees, true, true);
         out.writeSerializableList(newTokenAssociations, true, true);
@@ -343,7 +349,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
         out.writeByteArray(alias.toByteArray());
         out.writeByteArray(ethereumHash);
-        IoUtils.writeNullableSerializable(stakingRewardsPaid, out);
+        writeNullableSerializable(stakingRewardsPaid, out);
 
         if (pseudoRandomNumber >= 0) {
             out.writeByte(PRNG_INT_OUTPUT);
@@ -359,22 +365,22 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version)
             throws IOException {
-        receipt = IoUtils.readNullableSerializable(in);
+        receipt = readNullableSerializable(in);
         txnHash = in.readByteArray(MAX_TXN_HASH_BYTES);
-        txnId = IoUtils.readNullableSerializable(in);
-        consensusTime = IoUtils.readNullable(in, RichInstant::from);
+        txnId = readNullableSerializable(in);
+        consensusTime = readNullable(in, RichInstant::from);
         memo = IoUtils.readNullableString(in, MAX_MEMO_BYTES);
         fee = in.readLong();
-        hbarAdjustments = IoUtils.readNullableSerializable(in);
-        contractCallResult = IoUtils.readNullableSerializable(in);
-        contractCreateResult = IoUtils.readNullableSerializable(in);
+        hbarAdjustments = readNullableSerializable(in);
+        contractCallResult = readNullableSerializable(in);
+        contractCreateResult = readNullableSerializable(in);
         expiry = in.readLong();
         submittingMember = in.readLong();
         // Added in 0.7
         tokens = in.readSerializableList(MAX_INVOLVED_TOKENS);
         tokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
         // Added in 0.8
-        scheduleRef = IoUtils.readNullableSerializable(in);
+        scheduleRef = readNullableSerializable(in);
         // Added in 0.16
         nftTokenAdjustments = in.readSerializableList(MAX_INVOLVED_TOKENS);
         assessedCustomFees = in.readSerializableList(MAX_ASSESSED_CUSTOM_FEES_CHANGES);
@@ -403,7 +409,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
         }
         // Added in 0.27
         if (version >= RELEASE_0270_VERSION) {
-            stakingRewardsPaid = IoUtils.readNullableSerializable(in);
+            stakingRewardsPaid = readNullableSerializable(in);
         }
 
         if (version >= RELEASE_0280_VERSION) {
@@ -784,7 +790,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
 
         public Builder setParentConsensusTime(final Instant consTime) {
             this.packedParentConsensusTime =
-                    BitPackUtils.packedTime(consTime.getEpochSecond(), consTime.getNano());
+                    packedTime(consTime.getEpochSecond(), consTime.getNano());
             return this;
         }
 
@@ -851,8 +857,7 @@ public class ExpirableTxnRecord implements FastCopyable, SerializableHashable {
             // child records for the first transaction submitted.
             // This condition avoids aggregating balances for the parent and child
             // records only in this case for clarity.
-            if (adjustsThere == 1
-                    && that.hbarAdjustments.hbars[0] == MerkleNetworkContext.MAX_PENDING_REWARDS) {
+            if (adjustsThere == 1 && that.hbarAdjustments.hbars[0] == MAX_PENDING_REWARDS) {
                 return;
             }
 

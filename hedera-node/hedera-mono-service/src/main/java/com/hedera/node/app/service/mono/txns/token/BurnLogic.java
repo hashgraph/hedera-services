@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.token;
 
+import static com.hedera.node.app.service.mono.txns.token.TokenOpsValidator.validateTokenOpsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -71,13 +72,13 @@ public class BurnLogic {
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
-        TokenBurnTransactionBody op = txn.getTokenBurn();
+        final TokenBurnTransactionBody op = txn.getTokenBurn();
 
         if (!op.hasToken()) {
             return INVALID_TOKEN_ID;
         }
 
-        return TokenOpsValidator.validateTokenOpsWith(
+        return validateTokenOpsWith(
                 op.getSerialNumbersCount(),
                 op.getAmount(),
                 dynamicProperties.areNftsEnabled(),

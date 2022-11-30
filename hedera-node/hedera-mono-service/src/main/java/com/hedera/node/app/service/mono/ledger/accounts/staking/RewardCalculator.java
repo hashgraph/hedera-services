@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.finalBalanceGiven;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
 import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 
@@ -68,7 +69,7 @@ public class RewardCalculator {
             if (isDeclined) {
                 return false;
             }
-            final var balance = StakingUtils.finalBalanceGiven(account, changes);
+            final var balance = finalBalanceGiven(account, changes);
             changes.put(BALANCE, balance + reward);
             rewardsPaid += reward;
         }

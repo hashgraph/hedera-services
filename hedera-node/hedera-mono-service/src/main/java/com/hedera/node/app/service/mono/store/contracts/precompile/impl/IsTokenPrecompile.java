@@ -17,6 +17,8 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT_BOOL_PAIR;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -26,7 +28,6 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -43,17 +44,18 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile {
     private static final ABIType<Tuple> IS_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
     public IsTokenPrecompile(
-            TokenID tokenId,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WorldLedgers ledgers,
-            EncodingFacade encoder,
-            PrecompilePricingUtils pricingUtils,
-            StateView stateView) {
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils,
+            final StateView stateView) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils, stateView);
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeIsToken(input);
         tokenId = tokenInfoWrapper.tokenID();
         return super.body(input, aliasResolver);
@@ -67,9 +69,8 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile {
 
     public static TokenInfoWrapper decodeIsToken(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+                decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         return TokenInfoWrapper.forToken(tokenID);
     }
 }

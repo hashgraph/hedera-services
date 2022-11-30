@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.file;
 
+import static com.hedera.node.app.service.mono.txns.file.FileUpdateTransitionLogic.mapToStatus;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -69,17 +70,17 @@ public class FileAppendTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        var op = txnCtx.accessor().getTxn().getFileAppend();
+        final var op = txnCtx.accessor().getTxn().getFileAppend();
 
         try {
-            var target = op.getFileID();
-            var data = op.getContents().toByteArray();
+            final var target = op.getFileID();
+            final var data = op.getContents().toByteArray();
 
-            ResponseCodeEnum validity;
+            final ResponseCodeEnum validity;
             if (fileNumbers.isSoftwareUpdateFile(target.getFileNum())) {
                 validity = hfs.exists(target) ? OK : INVALID_FILE_ID;
             } else {
-                Optional<HFileMeta> attr =
+                final Optional<HFileMeta> attr =
                         hfs.exists(target) ? Optional.of(hfs.getattr(target)) : Optional.empty();
                 validity = classify(attr);
             }
@@ -97,9 +98,9 @@ public class FileAppendTransitionLogic implements TransitionLogic {
             final var result = hfs.append(target, data);
             final var status = result.outcome();
             txnCtx.setStatus(status);
-        } catch (IllegalArgumentException iae) {
-            FileUpdateTransitionLogic.mapToStatus(iae, txnCtx);
-        } catch (Exception unknown) {
+        } catch (final IllegalArgumentException iae) {
+            mapToStatus(iae, txnCtx);
+        } catch (final Exception unknown) {
             log.warn(
                     "Unrecognized failure handling {}!",
                     txnCtx.accessor().getSignedTxnWrapper(),
@@ -112,7 +113,7 @@ public class FileAppendTransitionLogic implements TransitionLogic {
         if (attr.isEmpty()) {
             return INVALID_FILE_ID;
         } else {
-            var info = attr.get();
+            final var info = attr.get();
             if (info.isDeleted()) {
                 return FILE_DELETED;
             } else if (info.getWacl().isEmpty()) {

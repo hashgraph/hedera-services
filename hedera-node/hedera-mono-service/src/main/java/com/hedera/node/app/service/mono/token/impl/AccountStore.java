@@ -16,6 +16,9 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
+import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.service.mono.token.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.mono.token.util.AliasUtils.fromMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
@@ -65,7 +68,7 @@ public final class AccountStore {
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
-            return KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID);
+            return withFailureReason(INVALID_ACCOUNT_ID);
         }
         return validateKey(account.get().getAccountKey());
     }
@@ -85,11 +88,11 @@ public final class AccountStore {
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
-            return KeyOrLookupFailureReason.withFailureReason(INVALID_ACCOUNT_ID);
+            return withFailureReason(INVALID_ACCOUNT_ID);
         }
 
         if (!account.get().isReceiverSigRequired()) {
-            return KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
+            return PRESENT_BUT_NOT_REQUIRED;
         }
         return validateKey(account.get().getAccountKey());
     }
@@ -136,8 +139,8 @@ public final class AccountStore {
         }
         if (key.isEmpty()) {
             // FUTURE : need new response code ACCOUNT_IS_IMMUTABLE
-            return KeyOrLookupFailureReason.withFailureReason(ALIAS_IS_IMMUTABLE);
+            return withFailureReason(ALIAS_IS_IMMUTABLE);
         }
-        return KeyOrLookupFailureReason.withKey(key);
+        return withKey(key);
     }
 }

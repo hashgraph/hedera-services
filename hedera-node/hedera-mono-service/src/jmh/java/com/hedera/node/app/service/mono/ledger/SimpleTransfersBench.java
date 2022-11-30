@@ -16,11 +16,12 @@
 package com.hedera.node.app.service.mono.ledger;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.setup.InfrastructureManager.loadOrCreateBundle;
+import static com.hedera.node.app.service.mono.setup.InfrastructureType.ACCOUNTS_LEDGER;
 
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.setup.Constructables;
 import com.hedera.node.app.service.mono.setup.InfrastructureBundle;
-import com.hedera.node.app.service.mono.setup.InfrastructureManager;
 import com.hedera.node.app.service.mono.setup.InfrastructureType;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,8 +62,8 @@ public class SimpleTransfersBench {
     public void setupInfrastructure() {
         Constructables.registerForAccounts();
         Constructables.registerForMerkleMap();
-        bundle = InfrastructureManager.loadOrCreateBundle(activeConfig(), requiredInfra());
-        ledger = bundle.get(InfrastructureType.ACCOUNTS_LEDGER);
+        bundle = loadOrCreateBundle(activeConfig(), requiredInfra());
+        ledger = bundle.get(ACCOUNTS_LEDGER);
         ids = new AccountID[userAccounts + 1001];
         for (int j = 1; j < userAccounts + 1001; j++) {
             ids[j] = AccountID.newBuilder().setAccountNum(j).build();
@@ -106,6 +107,6 @@ public class SimpleTransfersBench {
     }
 
     private List<InfrastructureType> requiredInfra() {
-        return List.of(InfrastructureType.ACCOUNTS_LEDGER);
+        return List.of(ACCOUNTS_LEDGER);
     }
 }

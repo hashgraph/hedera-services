@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.contracts.execution.HederaMessageCallProcessor.INVALID_TRANSFER;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
@@ -90,7 +91,7 @@ public interface Precompile {
         // No-op
     }
 
-    default void handleSentHbars(MessageFrame frame) {
+    default void handleSentHbars(final MessageFrame frame) {
         if (!Objects.equals(Wei.ZERO, frame.getValue())) {
             frame.setRevertReason(INVALID_TRANSFER);
             frame.setState(REVERT);
@@ -104,7 +105,7 @@ public interface Precompile {
     }
 
     default Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
-        return EncodingFacade.SUCCESS_RESULT;
+        return SUCCESS_RESULT;
     }
 
     default Bytes getFailureResultFor(final ResponseCodeEnum status) {

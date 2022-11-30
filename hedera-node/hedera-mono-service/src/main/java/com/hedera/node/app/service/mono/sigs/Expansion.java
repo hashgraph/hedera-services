@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerAndOthers;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.forPayerOnly;
 import static com.hedera.node.app.service.mono.utils.RationalizedSigMeta.noneAvailable;
@@ -22,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
@@ -109,7 +109,7 @@ class Expansion {
         final var orderResult =
                 sigReqsFn.apply(
                         txnAccessor.getTxn(),
-                        CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY,
+                        CODE_ORDER_RESULT_FACTORY,
                         linkedRefs,
                         txnAccessor.getPayer());
         if (orderResult.hasErrorReport()) {

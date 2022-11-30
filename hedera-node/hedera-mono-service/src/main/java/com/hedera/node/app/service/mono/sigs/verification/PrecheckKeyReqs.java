@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.sigs.verification;
 
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
@@ -22,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
 import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
-import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -62,8 +62,8 @@ public class PrecheckKeyReqs {
      * @return a list of keys precheck requires to have active signatures.
      * @throws Exception if the txn does not reference valid keys.
      */
-    public List<JKey> getRequiredKeys(TransactionBody txn) throws Exception {
-        List<JKey> keys = new ArrayList<>();
+    public List<JKey> getRequiredKeys(final TransactionBody txn) throws Exception {
+        final List<JKey> keys = new ArrayList<>();
 
         addPayerKeys(txn, keys);
         if (isQueryPayment.test(txn)) {
@@ -73,18 +73,17 @@ public class PrecheckKeyReqs {
         return keys;
     }
 
-    private void addPayerKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-        final var payerResult =
-                sigReqs.keysForPayer(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
+    private void addPayerKeys(final TransactionBody txn, final List<JKey> keys) throws Exception {
+        final var payerResult = sigReqs.keysForPayer(txn, CODE_ORDER_RESULT_FACTORY);
         if (payerResult.hasErrorReport()) {
             throw new InvalidPayerAccountException();
         }
         keys.addAll(payerResult.getOrderedKeys());
     }
 
-    private void addQueryPaymentKeys(TransactionBody txn, List<JKey> keys) throws Exception {
-        final var otherResult =
-                sigReqs.keysForOtherParties(txn, CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY);
+    private void addQueryPaymentKeys(final TransactionBody txn, final List<JKey> keys)
+            throws Exception {
+        final var otherResult = sigReqs.keysForOtherParties(txn, CODE_ORDER_RESULT_FACTORY);
         if (otherResult.hasErrorReport()) {
             final var errorStatus = otherResult.getErrorReport();
             if (INVALID_ACCOUNT_STATUSES.contains(errorStatus)) {
@@ -94,7 +93,7 @@ public class PrecheckKeyReqs {
             }
         }
 
-        for (var nonPayerKey : otherResult.getOrderedKeys()) {
+        for (final var nonPayerKey : otherResult.getOrderedKeys()) {
             if (!nonPayerKey.equals(keys.get(0))) {
                 keys.add(nonPayerKey);
             }

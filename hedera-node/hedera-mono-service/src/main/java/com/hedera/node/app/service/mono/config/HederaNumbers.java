@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.config;
 
+import static com.hedera.node.app.service.mono.config.EntityNumbers.UNKNOWN_NUMBER;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_REALM;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_SHARD;
 
@@ -33,23 +34,23 @@ public class HederaNumbers {
 
     private final PropertySource properties;
 
-    private long realm = EntityNumbers.UNKNOWN_NUMBER;
-    private long shard = EntityNumbers.UNKNOWN_NUMBER;
+    private long realm = UNKNOWN_NUMBER;
+    private long shard = UNKNOWN_NUMBER;
 
     @Inject
-    public HederaNumbers(@CompositeProps PropertySource properties) {
+    public HederaNumbers(@CompositeProps final PropertySource properties) {
         this.properties = properties;
     }
 
     public long realm() {
-        if (realm == EntityNumbers.UNKNOWN_NUMBER) {
+        if (realm == UNKNOWN_NUMBER) {
             realm = properties.getLongProperty(HEDERA_REALM);
         }
         return realm;
     }
 
     public long shard() {
-        if (shard == EntityNumbers.UNKNOWN_NUMBER) {
+        if (shard == UNKNOWN_NUMBER) {
             shard = properties.getLongProperty(HEDERA_SHARD);
         }
         return shard;

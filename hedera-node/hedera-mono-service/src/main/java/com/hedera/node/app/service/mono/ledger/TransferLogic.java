@@ -15,6 +15,15 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.BALANCE;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.CRYPTO_ALLOWANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_NFTS_OWNED;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -51,11 +60,11 @@ import org.apache.commons.lang3.tuple.Pair;
 public class TransferLogic {
     public static final List<AccountProperty> TOKEN_TRANSFER_SIDE_EFFECTS =
             List.of(
-                    AccountProperty.NUM_POSITIVE_BALANCES,
-                    AccountProperty.NUM_ASSOCIATIONS,
-                    AccountProperty.NUM_NFTS_OWNED,
-                    AccountProperty.USED_AUTOMATIC_ASSOCIATIONS,
-                    AccountProperty.NUM_TREASURY_TITLES);
+                    NUM_POSITIVE_BALANCES,
+                    NUM_ASSOCIATIONS,
+                    NUM_NFTS_OWNED,
+                    USED_AUTOMATIC_ASSOCIATIONS,
+                    NUM_TREASURY_TITLES);
 
     private final TokenStore tokenStore;
     private final AutoCreationLogic autoCreationLogic;
@@ -146,7 +155,7 @@ public class TransferLogic {
         if (validity == OK && autoCreationFee > 0) {
             updatedPayerBalance =
                     (updatedPayerBalance == Long.MIN_VALUE)
-                            ? (long) accountsLedger.get(topLevelPayer, AccountProperty.BALANCE)
+                            ? (long) accountsLedger.get(topLevelPayer, BALANCE)
                             : updatedPayerBalance;
             if (autoCreationFee > updatedPayerBalance) {
                 validity = INSUFFICIENT_PAYER_BALANCE;
@@ -172,10 +181,8 @@ public class TransferLogic {
         feeDistribution.distributeChargedFee(autoCreationFee, accountsLedger);
 
         // deduct the auto creation fee from payer of the transaction
-        final var payerBalance =
-                (long) accountsLedger.get(txnCtx.activePayer(), AccountProperty.BALANCE);
-        accountsLedger.set(
-                txnCtx.activePayer(), AccountProperty.BALANCE, payerBalance - autoCreationFee);
+        final var payerBalance = (long) accountsLedger.get(txnCtx.activePayer(), BALANCE);
+        accountsLedger.set(txnCtx.activePayer(), BALANCE, payerBalance - autoCreationFee);
         txnCtx.addFeeChargedToPayer(autoCreationFee);
     }
 
@@ -184,7 +191,7 @@ public class TransferLogic {
             final var accountId = change.accountId();
             if (change.isForHbar()) {
                 final var newBalance = change.getNewBalance();
-                accountsLedger.set(accountId, AccountProperty.BALANCE, newBalance);
+                accountsLedger.set(accountId, BALANCE, newBalance);
                 if (change.isApprovedAllowance()) {
                     adjustCryptoAllowance(change, accountId);
                 }
@@ -192,7 +199,7 @@ public class TransferLogic {
                 adjustFungibleTokenAllowance(change, accountId);
             } else if (change.isForNft()) {
                 // wipe the allowance on this uniqueToken
-                nftsLedger.set(change.nftId(), NftProperty.SPENDER, MISSING_ENTITY_ID);
+                nftsLedger.set(change.nftId(), SPENDER, MISSING_ENTITY_ID);
             }
         }
     }
@@ -218,8 +225,7 @@ public class TransferLogic {
         final var payerNum = EntityNum.fromAccountId(change.getPayerID());
         final var hbarAllowances =
                 new TreeMap<>(
-                        (Map<EntityNum, Long>)
-                                accountsLedger.get(ownerID, AccountProperty.CRYPTO_ALLOWANCES));
+                        (Map<EntityNum, Long>) accountsLedger.get(ownerID, CRYPTO_ALLOWANCES));
         final var currentAllowance = hbarAllowances.get(payerNum);
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
         if (newAllowance != 0) {
@@ -227,7 +233,7 @@ public class TransferLogic {
         } else {
             hbarAllowances.remove(payerNum);
         }
-        accountsLedger.set(ownerID, AccountProperty.CRYPTO_ALLOWANCES, hbarAllowances);
+        accountsLedger.set(ownerID, CRYPTO_ALLOWANCES, hbarAllowances);
     }
 
     @SuppressWarnings("unchecked")
@@ -239,8 +245,7 @@ public class TransferLogic {
         final var fungibleAllowances =
                 new TreeMap<>(
                         (Map<FcTokenAllowanceId, Long>)
-                                accountsLedger.get(
-                                        ownerID, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES));
+                                accountsLedger.get(ownerID, FUNGIBLE_TOKEN_ALLOWANCES));
         final var currentAllowance = fungibleAllowances.get(allowanceId);
         final var newAllowance = currentAllowance + change.getAllowanceUnits();
         if (newAllowance == 0) {
@@ -248,7 +253,7 @@ public class TransferLogic {
         } else {
             fungibleAllowances.put(allowanceId, newAllowance);
         }
-        accountsLedger.set(ownerID, AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
+        accountsLedger.set(ownerID, FUNGIBLE_TOKEN_ALLOWANCES, fungibleAllowances);
     }
 
     /**
