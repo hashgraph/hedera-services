@@ -77,6 +77,7 @@ import java.util.List;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.util.encoders.Hex;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -204,6 +205,8 @@ class AutoCreationLogicTest {
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
+        final var pretendAddress = Address.BLS12_G2MUL.toArray();
+        given(aliasManager.keyAliasToEVMAddress(ecKeyAlias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange(ecKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -216,6 +219,7 @@ class AutoCreationLogicTest {
         assertEquals(initialTransfer, input.getNewBalance());
         verify(aliasManager).link(ecKeyAlias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(ecKeyAlias);
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(pretendAddress));
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);

@@ -23,6 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
@@ -50,6 +51,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private String account;
     @Nullable private String protoSaveLoc = null;
     private boolean loggingHexedCryptoKeys = false;
+    private String hexedAliasSource = null;
     private String aliasKeySource = null;
     private Optional<String> registryEntry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
@@ -75,6 +77,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         this.referenceType = type;
         if (type == ReferenceType.ALIAS_KEY_NAME) {
             aliasKeySource = reference;
+        } else if (type == ReferenceType.HEXED_CONTRACT_ALIAS) {
+            hexedAliasSource = reference;
         } else {
             account = reference;
         }
@@ -283,6 +287,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             target =
                     AccountID.newBuilder()
                             .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+                            .build();
+        } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
+            target =
+                    AccountID.newBuilder()
+                            .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
                             .build();
         } else {
             target = TxnUtils.asId(account, spec);
