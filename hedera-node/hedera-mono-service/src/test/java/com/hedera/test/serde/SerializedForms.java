@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.legacy.core.jproto.TxnReceiptSerdeTest;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceiptSerdeTest;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
 import com.hedera.services.state.merkle.MerkleAccountStateSerdeTest;
 import com.hedera.node.app.service.mono.state.merkle.MerkleEntityId;

@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.KvUsageInfo;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.ledger.backing.HashMapBackingAccounts;
+import com.hedera.node.app.service.mono.ledger.backing.HashMapBackingAccounts;
 import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
