@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.ledger.properties;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;

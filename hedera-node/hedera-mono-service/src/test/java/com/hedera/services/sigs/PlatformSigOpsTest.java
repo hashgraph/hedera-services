@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.sigs.PlatformSigOps.createCryptoSigsFrom;
+import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.keys.NodeFactory.list;
@@ -33,13 +33,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractIDKey;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.test.factories.keys.KeyTree;
 import java.util.ArrayList;
 import java.util.List;

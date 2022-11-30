@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.context.properties.ScreenedNodeFileProps
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.grpc.NettyGrpcServerManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
-import com.hedera.services.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.exports.ServicesSignedStateListener;
 import com.hedera.services.state.exports.SignedStateBalancesExporter;

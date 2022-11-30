@@ -19,9 +19,9 @@ import static com.hedera.services.state.serdes.IoUtils.byteStream;
 import static com.hedera.services.state.serdes.IoUtils.readNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
-import com.hedera.services.legacy.core.jproto.JObjectType;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JObjectType;
 import com.hedera.services.state.serdes.IoUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;

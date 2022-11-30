@@ -21,8 +21,8 @@ import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -33,7 +33,7 @@ import java.time.Instant;
 /**
  * Encapsulates a set of customizations to a smart contract. Primarily delegates to an {@link
  * HederaAccountCustomizer}, but with a bit of extra logic to deal with {@link
- * com.hedera.services.legacy.core.jproto.JContractIDKey} management.
+ * JContractIDKey} management.
  */
 public class ContractCustomizer {
     // Null if the contract is immutable; then its key derives from its entity id

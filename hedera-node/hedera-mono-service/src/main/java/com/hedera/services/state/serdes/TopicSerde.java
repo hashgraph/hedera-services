@@ -23,7 +23,7 @@ import static com.hedera.services.state.serdes.IoUtils.writeNullable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableSerializable;
 import static com.hedera.services.state.serdes.IoUtils.writeNullableString;
 
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

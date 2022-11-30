@@ -35,8 +35,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfree
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUpdate;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.token.TokenAnswers;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.token.TokenAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

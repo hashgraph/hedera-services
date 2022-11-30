@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.charging.NarratedCharging;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;
 import com.hedera.services.state.submerkle.EntityId;

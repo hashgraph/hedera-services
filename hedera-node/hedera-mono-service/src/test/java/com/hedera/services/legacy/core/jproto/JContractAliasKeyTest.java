@@ -18,6 +18,7 @@ package com.hedera.services.legacy.core.jproto;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractAliasKey;
 import org.junit.jupiter.api.Test;
 
 class JContractAliasKeyTest {

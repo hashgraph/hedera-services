@@ -15,7 +15,7 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -28,6 +28,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractAliasKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractAliasKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSA_384Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;

@@ -18,8 +18,8 @@ package com.hedera.services.keys;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.keys.RevocationServiceCharacteristics;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

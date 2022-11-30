@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import com.hedera.services.sigs.metadata.SafeLookupResult;
-import com.hedera.services.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
 import com.hederahashgraph.api.proto.java.TopicID;
 
 /**

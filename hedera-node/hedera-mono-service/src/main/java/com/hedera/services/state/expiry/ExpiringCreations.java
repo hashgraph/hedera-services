@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
@@ -23,7 +23,7 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.charging.NarratedCharging;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.CurrencyAdjustments;

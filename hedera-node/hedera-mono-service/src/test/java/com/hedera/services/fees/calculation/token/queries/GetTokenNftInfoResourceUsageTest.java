@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.token.queries;
 
-import static com.hedera.services.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.token.GetTokenNftInfoAnswer.NFT_INFO_CTX_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;

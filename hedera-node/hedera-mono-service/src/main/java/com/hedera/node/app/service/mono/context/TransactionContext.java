@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.context;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.ledger.interceptors.StakingAccountsCommitInterceptor;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;

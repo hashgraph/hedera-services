@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;

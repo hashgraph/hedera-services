@@ -16,6 +16,8 @@
 package com.hedera.services.legacy.core.jproto;
 
 import java.util.List;
+
+import com.hedera.node.app.service.mono.legacy.core.jproto.JObjectType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

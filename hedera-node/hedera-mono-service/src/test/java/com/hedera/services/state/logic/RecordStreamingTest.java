@@ -24,7 +24,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.stream.NonBlockingHandoff;
 import com.hedera.services.stream.RecordStreamObject;
 import com.hederahashgraph.api.proto.java.AccountID;

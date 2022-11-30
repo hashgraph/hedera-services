@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.queries.meta.GetExecTimeAnswer;
 import com.hedera.services.stats.ExecutionTimeTracker;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.NetworkGetExecutionTimeQuery;

@@ -46,6 +46,7 @@ import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvi
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.store.AccountStore;

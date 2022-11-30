@@ -28,8 +28,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.GetBySolidi
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelete;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.contract.ContractAnswers;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.contract.ContractAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

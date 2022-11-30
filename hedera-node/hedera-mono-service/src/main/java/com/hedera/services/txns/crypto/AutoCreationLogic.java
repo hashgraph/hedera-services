@@ -16,7 +16,7 @@
 package com.hedera.services.txns.crypto;
 
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -37,9 +37,9 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.records.InProgressChildRecord;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.records.InProgressChildRecord;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;

@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfers;
 import com.hedera.node.app.service.mono.grpc.marshalling.ImpliedTransfersMarshal;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.virtual.VirtualBlobKey;
 import com.hedera.services.state.virtual.VirtualBlobValue;
@@ -139,7 +139,7 @@ public class SpanMapManager {
      * {@code handleTransaction}.
      *
      * <p>As an additional side effect, this method adds an instance of {@link EthTxExpansion} to
-     * the accessor's span map. The {@link com.hedera.services.sigs.order.LinkedRefs} instance in
+     * the accessor's span map. The {@link LinkedRefs} instance in
      * the expansion can be used in {@code handleTransaction} to validate that no input to the
      * pre-computed results has changed. Furthermore, if any of the pre-computation steps failed
      * (e.g., the call data file did not exist), the expansion will include that failure status, and

@@ -18,9 +18,9 @@ package com.hedera.node.app.service.mono.keys;
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;

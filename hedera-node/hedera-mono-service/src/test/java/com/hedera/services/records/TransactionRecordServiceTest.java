@@ -38,6 +38,7 @@ import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessin
 import com.hedera.node.app.service.mono.contracts.execution.traceability.CallOperationType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.SolidityAction;
+import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.state.logic;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.function.BiPredicate;

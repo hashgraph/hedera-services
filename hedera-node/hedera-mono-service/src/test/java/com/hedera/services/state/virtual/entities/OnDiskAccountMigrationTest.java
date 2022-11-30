@@ -17,7 +17,7 @@ package com.hedera.services.state.virtual.entities;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.test.utils.SeededPropertySource;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -17,8 +17,8 @@ package com.hedera.services.state;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.HederaLedger;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.RecordCache;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcAssessedCustomFee;
 import com.hedera.services.utils.accessors.TxnAccessor;

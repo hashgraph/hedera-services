@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.ACCOUNTS_STAKING_REWARD_ACCOUNT;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
-import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
 import static com.hedera.services.state.EntityCreator.NO_CUSTOM_FEES;
 import static com.hedera.services.utils.Units.HBARS_TO_TINYBARS;
 
@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleStakingInfo;

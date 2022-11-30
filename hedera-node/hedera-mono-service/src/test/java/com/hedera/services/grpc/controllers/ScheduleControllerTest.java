@@ -23,8 +23,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.grpc.controllers.ScheduleController;
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.schedule.ScheduleAnswers;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.schedule.ScheduleAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

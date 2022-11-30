@@ -47,7 +47,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.init.ServicesInitFlow;
 import com.hedera.node.app.service.mono.context.properties.BootstrapProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertyNames;
-import com.hedera.services.sigs.EventExpansion;
+import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
 import com.hedera.services.state.initialization.SystemAccountsCreator;

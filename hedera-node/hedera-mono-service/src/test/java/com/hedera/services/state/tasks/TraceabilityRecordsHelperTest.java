@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.TxnId;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;

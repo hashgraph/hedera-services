@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemDelet
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 import com.hedera.node.app.service.mono.fees.annotations.FunctionKey;
-import com.hedera.services.legacy.handler.SmartContractRequestHandler;
+import com.hedera.node.app.service.mono.legacy.handler.SmartContractRequestHandler;
 import com.hedera.services.txns.consensus.ConsensusLogicModule;
 import com.hedera.services.txns.contract.ContractLogicModule;
 import com.hedera.services.txns.contract.ContractSysDelTransitionLogic;

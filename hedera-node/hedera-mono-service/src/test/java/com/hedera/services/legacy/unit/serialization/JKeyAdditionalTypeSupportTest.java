@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JContractAliasKey;
-import com.hedera.services.legacy.core.jproto.JDelegatableContractAliasKey;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractAliasKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractAliasKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
 import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;

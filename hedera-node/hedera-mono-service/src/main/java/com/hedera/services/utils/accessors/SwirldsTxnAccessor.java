@@ -15,8 +15,8 @@
  */
 package com.hedera.services.utils.accessors;
 
-import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.utils;
 
-import static com.hedera.services.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
+import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.signalsKeyRemoval;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

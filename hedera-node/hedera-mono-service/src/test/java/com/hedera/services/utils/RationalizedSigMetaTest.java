@@ -18,7 +18,7 @@ package com.hedera.services.utils;
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.EXPECTED_SIG;
 import static com.hedera.services.sigs.factories.PlatformSigFactoryTest.pk;
-import static com.hedera.services.sigs.utils.MiscCryptoUtils.decompressSecp256k1;
+import static com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils.decompressSecp256k1;
 import static com.hedera.test.factories.keys.KeyTree.withRoot;
 import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;

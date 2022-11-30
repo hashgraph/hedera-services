@@ -15,15 +15,15 @@
  */
 package com.hedera.services.state.merkle;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.numFromCode;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;

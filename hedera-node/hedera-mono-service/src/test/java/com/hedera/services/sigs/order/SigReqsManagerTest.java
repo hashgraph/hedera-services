@@ -15,19 +15,22 @@
  */
 package com.hedera.services.sigs.order;
 
-import static com.hedera.services.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
+import static com.hedera.node.app.service.mono.sigs.order.SigReqsManager.TOKEN_META_TRANSFORM;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.mono.sigs.order.SigReqsManager;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
 import com.hedera.services.ServicesState;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.services.sigs.ExpansionHelper;
-import com.hedera.services.sigs.metadata.SigMetadataLookup;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.ExpansionHelper;
+import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.services.state.migration.StateVersions;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import java.time.Instant;

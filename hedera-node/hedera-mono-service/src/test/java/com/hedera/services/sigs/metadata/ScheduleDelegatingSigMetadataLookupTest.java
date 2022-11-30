@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.services.sigs.order.KeyOrderingFailure;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.ScheduleSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.RichInstant;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;

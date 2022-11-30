@@ -15,7 +15,7 @@
  */
 package com.hedera.services.store.models;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

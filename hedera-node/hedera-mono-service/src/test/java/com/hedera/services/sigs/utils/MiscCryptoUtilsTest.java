@@ -18,6 +18,7 @@ package com.hedera.services.sigs.utils;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;

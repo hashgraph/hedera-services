@@ -18,6 +18,7 @@ package com.hedera.services.sigs.order;
 import static java.util.Collections.EMPTY_LIST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
 import org.junit.jupiter.api.Test;
 
 class SigningOrderResultTest {

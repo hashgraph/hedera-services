@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;

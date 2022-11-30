@@ -15,14 +15,14 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
 import static com.hedera.services.utils.EntityNum.fromContractId;
 
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.metadata.ContractSigningMetadata;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.function.Supplier;

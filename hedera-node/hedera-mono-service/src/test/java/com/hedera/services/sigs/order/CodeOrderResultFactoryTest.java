@@ -15,13 +15,15 @@
  */
 package com.hedera.services.sigs.order;
 
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
 import org.junit.jupiter.api.Test;
 
 class CodeOrderResultFactoryTest {

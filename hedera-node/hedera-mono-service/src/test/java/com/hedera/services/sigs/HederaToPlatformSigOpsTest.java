@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.sigs.HederaToPlatformSigOps.expandIn;
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.node.app.service.mono.sigs.HederaToPlatformSigOps.expandIn;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
 import static com.hedera.test.factories.sigs.SigWrappers.asValid;
 import static com.hedera.test.factories.sigs.SyncVerifiers.ALWAYS_VALID;
@@ -35,16 +35,17 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.factories.PlatformSigFactory;
-import com.hedera.services.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.sourcing.KeyType;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.SigObserver;
-import com.hedera.services.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.Rationalization;
+import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
+import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.SigObserver;
+import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;

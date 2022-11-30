@@ -18,8 +18,8 @@ package com.hedera.services.state.logic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.Rationalization;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.Rationalization;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

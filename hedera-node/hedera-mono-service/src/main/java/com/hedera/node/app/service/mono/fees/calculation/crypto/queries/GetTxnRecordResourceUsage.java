@@ -15,17 +15,17 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
-import static com.hedera.services.queries.meta.GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY;
-import static com.hedera.services.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
-import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.CHILD_RECORDS_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.DUPLICATE_RECORDS_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PRIORITY_RECORD_CTX_KEY;
 import static com.hedera.services.utils.MiscUtils.putIfNotNull;
 
 import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.service.mono.fees.calculation.QueryResourceUsageEstimator;
-import com.hedera.services.queries.answering.AnswerFunctions;
-import com.hedera.services.records.RecordCache;
+import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;

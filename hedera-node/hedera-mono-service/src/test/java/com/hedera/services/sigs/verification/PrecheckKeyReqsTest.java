@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs.verification;
 
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,13 +24,15 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.verifyNoMoreInteractions;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.sigs.order.CodeOrderResultFactory;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.order.SigningOrderResult;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
+import com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
+import com.hedera.node.app.service.mono.sigs.verification.InvalidPayerAccountException;
+import com.hedera.node.app.service.mono.sigs.verification.PrecheckKeyReqs;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import java.util.function.Predicate;

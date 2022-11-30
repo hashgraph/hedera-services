@@ -15,8 +15,8 @@
  */
 package com.hedera.services.mocks;
 
-import com.hedera.services.records.InProgressChildRecord;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.InProgressChildRecord;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.state.submerkle.TxnId;

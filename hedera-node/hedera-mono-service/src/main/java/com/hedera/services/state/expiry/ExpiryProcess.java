@@ -17,7 +17,7 @@ package com.hedera.services.state.expiry;
 
 import static com.hedera.services.state.tasks.SystemTaskResult.*;
 
-import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.classification.ClassificationWork;
 import com.hedera.services.state.expiry.removal.RemovalWork;
 import com.hedera.services.state.expiry.renewal.RenewalWork;

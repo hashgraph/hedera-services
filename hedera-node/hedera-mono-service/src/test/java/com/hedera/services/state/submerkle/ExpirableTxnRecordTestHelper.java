@@ -19,7 +19,7 @@ import static com.hedera.services.state.submerkle.EntityId.fromGrpcScheduleId;
 import static com.hedera.services.state.submerkle.ExpirableTxnRecord.NO_TOKENS;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.utils.MiscUtils;
 import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;

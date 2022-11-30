@@ -23,7 +23,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
-import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.services.state.logic.AwareNodeDiligenceScreen;
 import com.hedera.services.utils.accessors.SwirldsTxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionID;

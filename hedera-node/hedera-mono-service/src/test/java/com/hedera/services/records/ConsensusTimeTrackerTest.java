@@ -15,7 +15,7 @@
  */
 package com.hedera.services.records;
 
-import static com.hedera.services.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_INCORPORATE_CALL;
+import static com.hedera.node.app.service.mono.records.ConsensusTimeTracker.DEFAULT_NANOS_PER_INCORPORATE_CALL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;

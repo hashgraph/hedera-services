@@ -21,7 +21,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.services.state.expiry.EntityAutoExpiry;
 import com.hedera.services.state.expiry.ExpiryManager;
 import com.hedera.services.stats.ExecutionTimeTracker;

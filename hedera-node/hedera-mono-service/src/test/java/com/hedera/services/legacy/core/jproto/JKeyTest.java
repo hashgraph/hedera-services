@@ -29,6 +29,12 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSA_384Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JRSA_3072Key;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;

@@ -35,14 +35,16 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
+import com.hedera.node.app.service.mono.queries.answering.QueryHeaderValidity;
+import com.hedera.node.app.service.mono.queries.answering.StakedAnswerFlow;
 import com.hedera.services.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.UsagePricesProvider;
-import com.hedera.services.queries.AnswerService;
-import com.hedera.services.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.service.mono.queries.AnswerService;
+import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.services.throttling.FunctionalityThrottling;
 import com.hedera.services.txns.submission.PlatformSubmissionManager;
 import com.hedera.services.txns.submission.TransactionPrecheck;

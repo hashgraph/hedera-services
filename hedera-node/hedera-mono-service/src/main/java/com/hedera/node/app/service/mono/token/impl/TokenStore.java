@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.token.impl;
 
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcCustomFee;

@@ -26,7 +26,7 @@ import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
-import com.hedera.services.queries.validation.QueryFeeCheck;
+import com.hedera.node.app.service.mono.queries.validation.QueryFeeCheck;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

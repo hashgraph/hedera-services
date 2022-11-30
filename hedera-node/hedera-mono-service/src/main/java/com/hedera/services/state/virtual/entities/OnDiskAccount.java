@@ -18,7 +18,7 @@ package com.hedera.services.state.virtual.entities;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 import static com.hedera.services.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.state.virtual.KeyPackingUtils.MISSING_KEY_SENTINEL;
@@ -37,8 +37,8 @@ import static com.hedera.services.utils.SerializationUtils.serializeNftOperatorA
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceException;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeySerializer;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
 import com.hedera.services.state.merkle.MerkleAccountState;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.state.submerkle.EntityId;

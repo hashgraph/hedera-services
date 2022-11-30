@@ -15,7 +15,7 @@
  */
 package com.hedera.services.txns.span;
 
-import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

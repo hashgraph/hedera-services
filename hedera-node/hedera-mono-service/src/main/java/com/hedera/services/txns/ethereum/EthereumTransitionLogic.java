@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.SynthCreationCustomizer;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.services.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.services.state.migration.HederaAccount;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Id;

@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORE
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.precompile.codec.Association;

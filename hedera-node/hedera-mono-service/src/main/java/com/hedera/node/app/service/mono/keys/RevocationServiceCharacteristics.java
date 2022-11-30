@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
-import static com.hedera.services.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
 
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 
 public final class RevocationServiceCharacteristics {
     private RevocationServiceCharacteristics() {

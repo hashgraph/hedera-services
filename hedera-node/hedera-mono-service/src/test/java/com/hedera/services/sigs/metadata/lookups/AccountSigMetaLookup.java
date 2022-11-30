@@ -15,8 +15,8 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import com.hedera.services.sigs.metadata.AccountSigningMetadata;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 
 /**

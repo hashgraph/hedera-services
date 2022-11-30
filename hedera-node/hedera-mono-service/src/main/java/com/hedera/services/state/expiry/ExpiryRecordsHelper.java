@@ -15,13 +15,13 @@
  */
 package com.hedera.services.state.expiry;
 
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.SUCCESS_LITERAL;
 import static com.hedera.services.utils.MiscUtils.synthWithRecordTxnId;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.state.submerkle.*;

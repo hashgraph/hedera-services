@@ -15,14 +15,14 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
 import static com.hedera.services.utils.EntityIdUtils.isAlias;
 import static com.hedera.services.utils.EntityNum.fromAccountId;
 
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.metadata.AccountSigningMetadata;
-import com.hedera.services.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;

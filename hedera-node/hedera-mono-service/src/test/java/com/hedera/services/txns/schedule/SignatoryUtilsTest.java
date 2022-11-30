@@ -28,9 +28,9 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.BDDMockito.willAnswer;
 
 import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.services.store.schedule.ScheduleStore;
 import com.hedera.test.utils.IdUtils;

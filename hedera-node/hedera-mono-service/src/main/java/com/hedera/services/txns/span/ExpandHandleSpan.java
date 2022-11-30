@@ -16,6 +16,7 @@
 package com.hedera.services.txns.span;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.service.mono.sigs.EventExpansion;
 import com.hedera.services.ServicesState;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
@@ -27,7 +28,7 @@ import com.swirlds.common.system.transaction.Transaction;
 
 /**
  * Encapsulates a "span" that tracks our contact with a given {@link Transaction} between the {@link
- * com.hedera.services.sigs.EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
+ * EventExpansion#expandAllSigs(Event, ServicesState)} and {@link
  * com.hedera.services.ServicesState#handleConsensusRound(Round, SwirldDualState)} platform
  * callbacks.
  *

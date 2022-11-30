@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.fees.calculation.contract.queries.GetContractInfoResourceUsage;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
-import com.hedera.services.queries.contract.GetContractInfoAnswer;
+import com.hedera.node.app.service.mono.queries.contract.GetContractInfoAnswer;
 import com.hederahashgraph.api.proto.java.ContractGetInfoQuery;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;

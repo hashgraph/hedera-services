@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.legacy.core.jproto.JThresholdKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
 
 public enum DefaultActivationCharacteristics implements KeyActivationCharacteristics {
     DEFAULT_ACTIVATION_CHARACTERISTICS;

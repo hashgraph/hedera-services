@@ -43,7 +43,7 @@ import com.hedera.node.app.service.mono.contracts.execution.StaticBlockMetaProvi
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
-import com.hedera.services.queries.contract.ContractCallLocalAnswer;
+import com.hedera.node.app.service.mono.queries.contract.ContractCallLocalAnswer;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;

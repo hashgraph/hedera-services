@@ -15,13 +15,13 @@
  */
 package com.hedera.services.state.tasks;
 
-import static com.hedera.services.records.TxnAwareRecordsHistorian.timestampSidecars;
+import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.timestampSidecars;
 import static com.hedera.services.state.expiry.ExpiryRecordsHelper.baseRecordWith;
 import static com.hedera.services.state.expiry.ExpiryRecordsHelper.finalizeAndStream;
 import static com.hedera.services.utils.EntityNum.fromLong;
 
-import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.logic.RecordStreaming;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;

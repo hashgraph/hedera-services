@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.swirlds.common.crypto.SignatureType;

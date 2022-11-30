@@ -19,7 +19,7 @@ import static java.util.Comparator.comparing;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
-import com.hedera.services.records.TxnIdRecentHistory;
+import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;
 import com.hedera.services.state.migration.RecordsStorageAdapter;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;

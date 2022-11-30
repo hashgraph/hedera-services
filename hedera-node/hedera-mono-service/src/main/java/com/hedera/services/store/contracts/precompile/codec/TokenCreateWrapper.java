@@ -18,7 +18,7 @@ package com.hedera.services.store.contracts.precompile.codec;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;

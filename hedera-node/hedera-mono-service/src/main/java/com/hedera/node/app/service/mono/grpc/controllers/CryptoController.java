@@ -32,9 +32,9 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.NONE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetRecord;
 
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.crypto.CryptoAnswers;
-import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.crypto.CryptoAnswers;
+import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

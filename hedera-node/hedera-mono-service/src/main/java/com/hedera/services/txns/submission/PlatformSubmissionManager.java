@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.records.RecordCache;
+import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hedera.services.utils.accessors.SignedTxnAccessor;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

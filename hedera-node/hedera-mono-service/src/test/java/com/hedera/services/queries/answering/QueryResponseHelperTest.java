@@ -23,8 +23,9 @@ import static org.mockito.BDDMockito.inOrder;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.never;
 
-import com.hedera.services.queries.AnswerFlow;
-import com.hedera.services.queries.AnswerService;
+import com.hedera.node.app.service.mono.queries.AnswerFlow;
+import com.hedera.node.app.service.mono.queries.AnswerService;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
 import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;

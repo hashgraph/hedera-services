@@ -15,13 +15,13 @@
  */
 package com.hedera.services.sigs.metadata;
 
-import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
-import static com.hedera.services.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,18 +31,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.services.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
-import com.hedera.services.legacy.core.jproto.JContractIDKey;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.JKeyList;
-import com.hedera.services.sigs.order.KeyOrderingFailure;
-import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
 import com.hedera.services.state.merkle.MerkleToken;

@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimp
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.swirlds.common.crypto.TransactionSignature;

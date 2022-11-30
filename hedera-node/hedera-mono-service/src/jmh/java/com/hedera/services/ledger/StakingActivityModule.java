@@ -42,7 +42,7 @@ import com.hedera.services.mocks.MockEntityCreator;
 import com.hedera.services.mocks.MockProps;
 import com.hedera.services.mocks.MockRecordsHistorian;
 import com.hedera.services.mocks.MockTransactionContext;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.setup.InfrastructureBundle;
 import com.hedera.services.setup.InfrastructureType;
 import com.hedera.services.state.EntityCreator;

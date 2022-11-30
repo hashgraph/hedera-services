@@ -32,8 +32,8 @@ import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.services.records.ConsensusTimeTracker;
-import com.hedera.services.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.services.state.expiry.removal.CryptoGcOutcome;
 import com.hedera.services.state.expiry.removal.FungibleTreasuryReturns;
 import com.hedera.services.state.expiry.removal.NonFungibleTreasuryReturns;

@@ -18,6 +18,12 @@ package com.hedera.services.queries.crypto;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.node.app.service.mono.queries.crypto.CryptoAnswers;
+import com.hedera.node.app.service.mono.queries.crypto.GetAccountBalanceAnswer;
+import com.hedera.node.app.service.mono.queries.crypto.GetAccountInfoAnswer;
+import com.hedera.node.app.service.mono.queries.crypto.GetAccountRecordsAnswer;
+import com.hedera.node.app.service.mono.queries.crypto.GetLiveHashAnswer;
+import com.hedera.node.app.service.mono.queries.crypto.GetStakersAnswer;
 import org.junit.jupiter.api.Test;
 
 class CryptoAnswersTest {

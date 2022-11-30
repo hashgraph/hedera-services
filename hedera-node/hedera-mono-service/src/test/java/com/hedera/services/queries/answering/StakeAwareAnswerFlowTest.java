@@ -19,7 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.context.NodeInfo;
-import com.hedera.services.queries.AnswerService;
+import com.hedera.node.app.service.mono.queries.AnswerService;
+import com.hedera.node.app.service.mono.queries.answering.StakeAwareAnswerFlow;
+import com.hedera.node.app.service.mono.queries.answering.StakedAnswerFlow;
+import com.hedera.node.app.service.mono.queries.answering.ZeroStakeAnswerFlow;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import org.junit.jupiter.api.BeforeEach;

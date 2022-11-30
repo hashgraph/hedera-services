@@ -15,7 +15,7 @@
  */
 package com.hedera.services.sigs;
 
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,15 +25,17 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.factories.TxnScopedPlatformSigFactory;
-import com.hedera.services.sigs.order.LinkedRefs;
-import com.hedera.services.sigs.order.SigRequirements;
-import com.hedera.services.sigs.order.SigningOrderResult;
-import com.hedera.services.sigs.sourcing.KeyType;
-import com.hedera.services.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.services.sigs.sourcing.SigObserver;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.Expansion;
+import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
+import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
+import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.SigObserver;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

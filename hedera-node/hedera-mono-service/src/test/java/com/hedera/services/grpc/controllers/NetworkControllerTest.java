@@ -20,8 +20,8 @@ import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.grpc.controllers.NetworkController;
-import com.hedera.services.queries.answering.QueryResponseHelper;
-import com.hedera.services.queries.meta.MetaAnswers;
+import com.hedera.node.app.service.mono.queries.answering.QueryResponseHelper;
+import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
 import com.hedera.services.txns.submission.TxnResponseHelper;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;

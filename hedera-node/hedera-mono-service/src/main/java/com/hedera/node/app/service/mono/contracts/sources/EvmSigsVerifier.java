@@ -37,7 +37,7 @@ package com.hedera.node.app.service.mono.contracts.sources;
  *
  */
 
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.store.contracts.WorldLedgers;
 import org.hyperledger.besu.datatypes.Address;
 

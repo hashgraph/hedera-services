@@ -30,9 +30,9 @@ import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFee
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.FeeExemptions;
-import com.hedera.services.legacy.exception.InvalidAccountIDException;
-import com.hedera.services.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.services.sigs.verification.PrecheckVerifier;
+import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.verification.PrecheckVerifier;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityNum;

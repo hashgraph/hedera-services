@@ -34,6 +34,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.queries.file.GetFileInfoAnswer;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;

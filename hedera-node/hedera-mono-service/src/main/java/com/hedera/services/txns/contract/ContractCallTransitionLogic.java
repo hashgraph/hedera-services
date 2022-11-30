@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.records.TransactionRecordService;
+import com.hedera.node.app.service.mono.records.TransactionRecordService;
 import com.hedera.services.store.AccountStore;
 import com.hedera.services.store.contracts.CodeCache;
 import com.hedera.services.store.contracts.EntityAccess;

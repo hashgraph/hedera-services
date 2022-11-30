@@ -15,9 +15,9 @@
  */
 package com.hedera.services.legacy.core.jproto;
 
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
-import static com.hedera.services.legacy.core.jproto.TxnReceipt.MISSING_SCHEDULED_TXN_ID;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_RUNNING_HASH_VERSION;
+import static com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt.MISSING_SCHEDULED_TXN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.ExchangeRates;
 import com.hedera.services.state.submerkle.ExpirableTxnRecordTestHelper;

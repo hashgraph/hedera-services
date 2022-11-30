@@ -39,7 +39,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
+import com.hedera.node.app.service.mono.records.InProgressChildRecord;
+import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian;
 import com.hedera.services.state.expiry.ExpiringCreations;
 import com.hedera.services.state.expiry.ExpiringEntity;
 import com.hedera.services.state.expiry.ExpiryManager;

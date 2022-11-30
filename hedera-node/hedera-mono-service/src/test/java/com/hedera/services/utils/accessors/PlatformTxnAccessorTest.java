@@ -40,7 +40,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.services.utils.RationalizedSigMeta;
 import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.TxnUtils;

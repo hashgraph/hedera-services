@@ -35,16 +35,16 @@ package com.hedera.services.txns.schedule;
  */
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
-import static com.hedera.services.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
+import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.keys.CharacteristicsFactory;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
 import com.hedera.node.app.service.mono.keys.InHandleActivationHelper;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.sigs.annotations.WorkingStateSigReqs;
-import com.hedera.services.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.services.state.virtual.schedule.ScheduleVirtualValue;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;

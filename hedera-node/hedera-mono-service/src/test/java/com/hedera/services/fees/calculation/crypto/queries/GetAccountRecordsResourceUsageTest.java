@@ -15,7 +15,7 @@
  */
 package com.hedera.services.fees.calculation.crypto.queries;
 
-import static com.hedera.services.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
+import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.TxnUtils.recordOne;
 import static com.hedera.test.utils.TxnUtils.recordTwo;
@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetAccountRecordsResourceUsage;
-import com.hedera.services.queries.answering.AnswerFunctions;
+import com.hedera.node.app.service.mono.queries.answering.AnswerFunctions;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.migration.AccountStorageAdapter;
 import com.hedera.services.state.migration.QueryableRecords;

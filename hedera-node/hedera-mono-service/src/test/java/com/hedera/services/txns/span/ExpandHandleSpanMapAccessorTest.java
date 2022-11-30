@@ -28,7 +28,7 @@ import com.hedera.node.app.hapi.fees.usage.crypto.CryptoUpdateMeta;
 import com.hedera.node.app.hapi.fees.usage.util.UtilPrngMeta;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
-import com.hedera.services.sigs.order.LinkedRefs;
+import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.math.BigInteger;

@@ -15,11 +15,11 @@
  */
 package com.hedera.services.sigs.metadata.lookups;
 
-import static com.hedera.services.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
 import static com.hedera.services.utils.EntityNum.fromTopicId;
 
-import com.hedera.services.sigs.metadata.SafeLookupResult;
-import com.hedera.services.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
 import com.hedera.services.state.merkle.MerkleTopic;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.TopicID;

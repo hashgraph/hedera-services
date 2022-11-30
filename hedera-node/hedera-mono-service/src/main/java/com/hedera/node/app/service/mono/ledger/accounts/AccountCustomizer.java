@@ -36,7 +36,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.BeanProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.submerkle.EntityId;
 import java.util.EnumMap;
 import java.util.Map;

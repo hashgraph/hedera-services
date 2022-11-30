@@ -18,6 +18,8 @@ package com.hedera.services.sigs.sourcing;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMap;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import org.junit.jupiter.api.Test;

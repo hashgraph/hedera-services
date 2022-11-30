@@ -42,8 +42,8 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.T
 import static com.hedera.node.app.service.mono.ledger.properties.TokenProperty.WIPE_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.legacy.core.jproto.JEd25519Key;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.enums.TokenSupplyType;
 import com.hedera.services.state.enums.TokenType;
 import com.hedera.services.state.merkle.MerkleToken;

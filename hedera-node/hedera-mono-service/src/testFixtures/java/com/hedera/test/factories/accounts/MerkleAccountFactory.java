@@ -18,7 +18,7 @@ package com.hedera.test.factories.accounts;
 import static com.hedera.services.store.models.Id.MISSING_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.FcTokenAllowanceId;

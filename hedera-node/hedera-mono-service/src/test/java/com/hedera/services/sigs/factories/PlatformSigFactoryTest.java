@@ -15,13 +15,14 @@
  */
 package com.hedera.services.sigs.factories;
 
-import static com.hedera.services.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.ed25519Sig;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.pkSigRepr;
-import static com.hedera.services.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
+import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.allVaryingMaterialEquals;
+import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.ed25519Sig;
+import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.pkSigRepr;
+import static com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory.varyingMaterialEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.List;

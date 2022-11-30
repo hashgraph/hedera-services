@@ -18,6 +18,13 @@ package com.hedera.services.queries.meta;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.BDDMockito.mock;
 
+import com.hedera.node.app.service.mono.queries.meta.GetAccountDetailsAnswer;
+import com.hedera.node.app.service.mono.queries.meta.GetExecTimeAnswer;
+import com.hedera.node.app.service.mono.queries.meta.GetFastTxnRecordAnswer;
+import com.hedera.node.app.service.mono.queries.meta.GetTxnReceiptAnswer;
+import com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer;
+import com.hedera.node.app.service.mono.queries.meta.GetVersionInfoAnswer;
+import com.hedera.node.app.service.mono.queries.meta.MetaAnswers;
 import org.junit.jupiter.api.Test;
 
 class MetaAnswersTest {

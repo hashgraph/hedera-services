@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.keys;
 import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteristics.DEFAULT_ACTIVATION_CHARACTERISTICS;
 
 import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.services.legacy.core.jproto.JKeyList;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Function;
 import javax.inject.Inject;
