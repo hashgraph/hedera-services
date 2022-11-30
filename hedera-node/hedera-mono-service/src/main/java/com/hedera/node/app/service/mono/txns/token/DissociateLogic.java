@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.token;
 
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.repeatsItself;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -26,7 +27,6 @@ import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.mono.txns.token.process.Dissociation;
 import com.hedera.node.app.service.mono.txns.token.process.DissociationFactory;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.txns.validation.TokenListChecks;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -70,18 +70,18 @@ public class DissociateLogic {
         // --- Persist the updated models ---
         accountStore.commitAccount(account);
         final List<TokenRelationship> allUpdatedRels = new ArrayList<>();
-        for (var dissociation : dissociations) {
+        for (final var dissociation : dissociations) {
             dissociation.addUpdatedModelRelsTo(allUpdatedRels);
         }
         tokenStore.commitTokenRelationships(allUpdatedRels);
     }
 
     public ResponseCodeEnum validateSyntax(final TransactionBody txn) {
-        TokenDissociateTransactionBody op = txn.getTokenDissociate();
+        final TokenDissociateTransactionBody op = txn.getTokenDissociate();
         if (!op.hasAccount()) {
             return INVALID_ACCOUNT_ID;
         }
-        if (TokenListChecks.repeatsItself(op.getTokensList())) {
+        if (repeatsItself(op.getTokensList())) {
             return TOKEN_ID_REPEATED_IN_TOKEN_LIST;
         }
         return OK;

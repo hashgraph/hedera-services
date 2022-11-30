@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
+import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.OWNER;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
@@ -68,7 +69,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
                         // operation)
                         try {
                             uniqueTokensLinkManager.updateLinks(fromAccount.asNum(), null, nftId);
-                        } catch (Exception irrecoverable) {
+                        } catch (final Exception irrecoverable) {
                             log.error(
                                     "Unable to update links burning {} from owner {}",
                                     nftId,
@@ -76,14 +77,14 @@ public class LinkAwareUniqueTokensCommitInterceptor
                                     irrecoverable);
                         }
                     }
-                } else if (changes.containsKey(NftProperty.OWNER)) {
-                    final var toAccount = (EntityId) changes.get(NftProperty.OWNER);
+                } else if (changes.containsKey(OWNER)) {
+                    final var toAccount = (EntityId) changes.get(OWNER);
                     if (!Objects.equals(fromAccount, toAccount)) {
                         // NFT owner changed (could be a treasury exit or return)
                         try {
                             uniqueTokensLinkManager.updateLinks(
                                     fromAccount.asNum(), toAccount.asNum(), nftId);
-                        } catch (Exception irrecoverable) {
+                        } catch (final Exception irrecoverable) {
                             log.error(
                                     "Unable to update links changing {} owner from {} to {}",
                                     nftId,
@@ -95,7 +96,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
                 }
             } else if (changes != null) {
                 burnOrMint = true;
-                final var newOwner = (EntityId) changes.get(NftProperty.OWNER);
+                final var newOwner = (EntityId) changes.get(OWNER);
                 if (!MISSING_ENTITY_ID.equals(newOwner)) {
                     // Non-treasury-owned NFT minted via a multi-stage contract operation
                     final var nftKey = pendingChanges.id(i);
@@ -103,7 +104,7 @@ public class LinkAwareUniqueTokensCommitInterceptor
                         final var mintedNft =
                                 uniqueTokensLinkManager.updateLinks(null, newOwner.asNum(), nftKey);
                         pendingChanges.cacheEntity(i, mintedNft);
-                    } catch (Exception irrecoverable) {
+                    } catch (final Exception irrecoverable) {
                         log.error(
                                 "Unable to update links minting {} to owner {}",
                                 nftId,

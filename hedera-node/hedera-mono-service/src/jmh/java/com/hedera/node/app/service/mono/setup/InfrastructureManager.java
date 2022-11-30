@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.setup;
 
+import static com.hedera.node.app.service.mono.setup.InfrastructureBundle.allImplied;
+import static com.hedera.node.app.service.mono.setup.InfrastructureInitializer.initializeBundle;
+
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory;
 import com.hedera.node.app.service.mono.state.virtual.VirtualMapFactory.JasperDbBuilderFactory;
 import com.swirlds.jasperdb.JasperDbBuilder;
@@ -37,7 +40,7 @@ public class InfrastructureManager {
 
     public static InfrastructureBundle loadOrCreateBundle(
             final Map<String, Object> config, Collection<InfrastructureType> types) {
-        types = InfrastructureBundle.allImplied(types);
+        types = allImplied(types);
         final InfrastructureBundle bundle;
         final var dir = bundleDirFor(config, types);
         ensure(dir);
@@ -63,7 +66,7 @@ public class InfrastructureManager {
         final var bundle = new InfrastructureBundle(types);
         bundle.abInitio(dir);
         System.out.println("\n- And initializing bundle at " + dir + "...");
-        InfrastructureInitializer.initializeBundle(config, bundle);
+        initializeBundle(config, bundle);
         bundle.toStorage(dir);
         return bundle;
     }

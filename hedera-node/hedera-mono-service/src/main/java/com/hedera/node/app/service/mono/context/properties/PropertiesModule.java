@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.SemanticVersions.SEMANTIC_VERSIONS;
+
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import dagger.Binds;
 import dagger.Module;
@@ -26,14 +28,14 @@ public interface PropertiesModule {
     @Provides
     @Singleton
     @CompositeProps
-    static PropertySource providePropertySource(PropertySources propertySources) {
+    static PropertySource providePropertySource(final PropertySources propertySources) {
         return propertySources.asResolvingSource();
     }
 
     @Provides
     @Singleton
     static SemanticVersions provideSemanticVersions() {
-        return SemanticVersions.SEMANTIC_VERSIONS;
+        return SEMANTIC_VERSIONS;
     }
 
     @Binds

@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -35,7 +36,7 @@ class TokenExpiryWrapperTest {
 
     @Test
     void autoRenewAccountIsCheckedAsExpected() {
-        Assertions.assertEquals(HTSTestsUtil.payer, wrapper.autoRenewAccount());
+        Assertions.assertEquals(payer, wrapper.autoRenewAccount());
         assertEquals(442L, wrapper.second());
         assertEquals(555L, wrapper.autoRenewPeriod());
         wrapper.setAutoRenewAccount(EntityId.fromIdentityCode(10).toGrpcAccountId());
@@ -64,6 +65,6 @@ class TokenExpiryWrapperTest {
     }
 
     public static TokenExpiryWrapper createTokenExpiryWrapper() {
-        return new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 555L);
+        return new TokenExpiryWrapper(442L, payer, 555L);
     }
 }

@@ -15,13 +15,14 @@
  */
 package com.hedera.node.app.service.mono.state.submerkle;
 
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.numFromCode;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asEvmAddress;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
-import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -56,13 +57,13 @@ public class EntityId implements SelfSerializable {
         /* For RuntimeConstructable */
     }
 
-    public EntityId(Id id) {
+    public EntityId(final Id id) {
         this.shard = id.shard();
         this.realm = id.realm();
         this.num = id.num();
     }
 
-    public EntityId(long shard, long realm, long num) {
+    public EntityId(final long shard, final long realm, final long num) {
         this.shard = shard;
         this.realm = realm;
         this.num = num;
@@ -74,7 +75,7 @@ public class EntityId implements SelfSerializable {
      * @return the code for this id
      */
     public int identityCode() {
-        return BitPackUtils.codeFromNum(num);
+        return codeFromNum(num);
     }
 
     /**
@@ -83,8 +84,8 @@ public class EntityId implements SelfSerializable {
      * @param code the compressed representation
      * @return the equivalent entity id
      */
-    public static EntityId fromIdentityCode(int code) {
-        return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, BitPackUtils.numFromCode(code));
+    public static EntityId fromIdentityCode(final int code) {
+        return new EntityId(DEFAULT_SHARD, DEFAULT_REALM, numFromCode(code));
     }
 
     /* --- SelfSerializable --- */
@@ -101,7 +102,7 @@ public class EntityId implements SelfSerializable {
      * @param num the number of the entity id.
      * @return the equivalent entity id using the node's shard and realm.
      */
-    public static EntityId fromNum(long num) {
+    public static EntityId fromNum(final long num) {
         return new EntityId(
                 StaticPropertiesHolder.STATIC_PROPERTIES.getShard(),
                 StaticPropertiesHolder.STATIC_PROPERTIES.getRealm(),
@@ -114,14 +115,15 @@ public class EntityId implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         shard = in.readLong();
         realm = in.readLong();
         num = in.readLong();
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(shard);
         out.writeLong(realm);
         out.writeLong(num);
@@ -129,24 +131,24 @@ public class EntityId implements SelfSerializable {
 
     /* --- Object --- */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || EntityId.class != o.getClass()) {
             return false;
         }
-        EntityId that = (EntityId) o;
+        final EntityId that = (EntityId) o;
         return shard == that.shard && realm == that.realm && num == that.num;
     }
 
-    public boolean matches(AccountID aId) {
+    public boolean matches(final AccountID aId) {
         return shard == aId.getShardNum()
                 && realm == aId.getRealmNum()
                 && num == aId.getAccountNum();
     }
 
-    public boolean matches(Id id) {
+    public boolean matches(final Id id) {
         return shard == id.shard() && realm == id.realm() && num == id.num();
     }
 
@@ -184,47 +186,47 @@ public class EntityId implements SelfSerializable {
         return num;
     }
 
-    public void setNum(long num) {
+    public void setNum(final long num) {
         this.num = num;
     }
 
     /* --- Helpers --- */
-    public static EntityId fromGrpcAccountId(AccountID id) {
+    public static EntityId fromGrpcAccountId(final AccountID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
     }
 
-    public static EntityId fromGrpcFileId(FileID id) {
+    public static EntityId fromGrpcFileId(final FileID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getFileNum());
     }
 
-    public static EntityId fromGrpcTopicId(TopicID id) {
+    public static EntityId fromGrpcTopicId(final TopicID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getTopicNum());
     }
 
-    public static EntityId fromGrpcTokenId(TokenID id) {
+    public static EntityId fromGrpcTokenId(final TokenID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getTokenNum());
     }
 
-    public static EntityId fromGrpcScheduleId(ScheduleID id) {
+    public static EntityId fromGrpcScheduleId(final ScheduleID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }
         return new EntityId(id.getShardNum(), id.getRealmNum(), id.getScheduleNum());
     }
 
-    public static EntityId fromGrpcContractId(ContractID id) {
+    public static EntityId fromGrpcContractId(final ContractID id) {
         if (id == null) {
             return MISSING_ENTITY_ID;
         }

@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.validation;
 
+import static com.hedera.node.app.service.mono.txns.validation.PureValidation.checkKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_SCHEDULE_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FREEZE_KEY;
@@ -152,7 +153,7 @@ public final class TokenListChecks {
 
     private static ResponseCodeEnum checkAdminKey(final boolean hasAdminKey, final Key adminKey) {
         if (hasAdminKey && !adminKeyRemoval.test(adminKey)) {
-            return PureValidation.checkKey(adminKey, INVALID_ADMIN_KEY);
+            return checkKey(adminKey, INVALID_ADMIN_KEY);
         }
         return OK;
     }
@@ -160,7 +161,7 @@ public final class TokenListChecks {
     private static ResponseCodeEnum checkKeyOfType(
             final boolean hasKey, final Key key, final ResponseCodeEnum code) {
         if (hasKey) {
-            return PureValidation.checkKey(key, code);
+            return checkKey(key, code);
         }
         return OK;
     }

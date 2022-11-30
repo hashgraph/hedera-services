@@ -17,6 +17,9 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils.buildKeyValueWrapper;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -27,11 +30,9 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompileUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -50,16 +51,17 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     private TokenProperty keyType;
 
     public GetTokenKeyPrecompile(
-            TokenID tokenId,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WorldLedgers ledgers,
-            EncodingFacade encoder,
-            PrecompilePricingUtils pricingUtils) {
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var getTokenKeyWrapper = decodeGetTokenKey(input);
         tokenId = getTokenKeyWrapper.tokenID();
         keyType = getTokenKeyWrapper.tokenKeyType();
@@ -67,18 +69,17 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile {
     }
 
     @Override
-    public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         validateTrue(ledgers.tokens().exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(keyType);
-        JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
-        return encoder.encodeGetTokenKey(PrecompileUtils.buildKeyValueWrapper(key));
+        final JKey key = (JKey) ledgers.tokens().get(tokenId, keyType);
+        return encoder.encodeGetTokenKey(buildKeyValueWrapper(key));
     }
 
-    public static GetTokenKeyWrapper decodeGetTokenKey(Bytes input) {
+    public static GetTokenKeyWrapper decodeGetTokenKey(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+                decodeFunctionCall(input, GET_TOKEN_KEYS_SELECTOR, GET_TOKEN_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var tokenType = ((BigInteger) decodedArguments.get(1)).longValue();
         return new GetTokenKeyWrapper(tokenID, tokenType);
     }

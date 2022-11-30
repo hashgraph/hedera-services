@@ -15,6 +15,30 @@
  */
 package com.hedera.node.app.service.mono.context.properties;
 
+import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.GLOBAL_DYNAMIC_PROPS;
+import static com.hedera.node.app.service.mono.context.properties.BootstrapProperties.transformFor;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_DIR_PATH;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_ENABLED;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_EXPORT_PERIOD_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CACHE_RECORDS_TTL;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_DEFAULT_LIFETIME;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_GAS_PER_SEC;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FILES_MAX_SIZE_KB;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MAX_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.HEDERA_TXN_MIN_VALID_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_FUNDING_ACCOUNT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.LEDGER_TRANSFERS_MAX_LEN;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.SCHEDULING_WHITE_LIST;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.parseAccount;
 import static java.util.Map.entry;
 
@@ -51,35 +75,23 @@ public final class ScreenedSysFileProps implements PropertySource {
 
     private static final Map<String, String> STANDARDIZED_NAMES =
             Map.ofEntries(
-                    entry("defaultContractDurationSec", PropertyNames.CONTRACTS_DEFAULT_LIFETIME),
-                    entry("maxGasLimit", PropertyNames.CONTRACTS_MAX_GAS_PER_SEC),
-                    entry("maxFileSize", PropertyNames.FILES_MAX_SIZE_KB),
-                    entry("defaultFeeCollectionAccount", PropertyNames.LEDGER_FUNDING_ACCOUNT),
-                    entry("txReceiptTTL", PropertyNames.CACHE_RECORDS_TTL),
-                    entry(
-                            "exchangeRateAllowedPercentage",
-                            PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
-                    entry(
-                            "accountBalanceExportPeriodMinutes",
-                            PropertyNames.BALANCES_EXPORT_PERIOD_SECS),
-                    entry("accountBalanceExportEnabled", PropertyNames.BALANCES_EXPORT_ENABLED),
-                    entry(
-                            "nodeAccountBalanceValidity",
-                            PropertyNames.BALANCES_NODE_BALANCE_WARN_THRESHOLD),
-                    entry("accountBalanceExportDir", PropertyNames.BALANCES_EXPORT_DIR_PATH),
-                    entry("transferListSizeLimit", PropertyNames.LEDGER_TRANSFERS_MAX_LEN),
-                    entry("txMaximumDuration", PropertyNames.HEDERA_TXN_MAX_VALID_DURATION),
-                    entry("txMinimumDuration", PropertyNames.HEDERA_TXN_MIN_VALID_DURATION),
-                    entry("txMinimumRemaining", PropertyNames.HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
-                    entry(
-                            "maximumAutoRenewDuration",
-                            PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
-                    entry(
-                            "minimumAutoRenewDuration",
-                            PropertyNames.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
-                    entry(
-                            "localCallEstReturnBytes",
-                            PropertyNames.CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
+                    entry("defaultContractDurationSec", CONTRACTS_DEFAULT_LIFETIME),
+                    entry("maxGasLimit", CONTRACTS_MAX_GAS_PER_SEC),
+                    entry("maxFileSize", FILES_MAX_SIZE_KB),
+                    entry("defaultFeeCollectionAccount", LEDGER_FUNDING_ACCOUNT),
+                    entry("txReceiptTTL", CACHE_RECORDS_TTL),
+                    entry("exchangeRateAllowedPercentage", RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT),
+                    entry("accountBalanceExportPeriodMinutes", BALANCES_EXPORT_PERIOD_SECS),
+                    entry("accountBalanceExportEnabled", BALANCES_EXPORT_ENABLED),
+                    entry("nodeAccountBalanceValidity", BALANCES_NODE_BALANCE_WARN_THRESHOLD),
+                    entry("accountBalanceExportDir", BALANCES_EXPORT_DIR_PATH),
+                    entry("transferListSizeLimit", LEDGER_TRANSFERS_MAX_LEN),
+                    entry("txMaximumDuration", HEDERA_TXN_MAX_VALID_DURATION),
+                    entry("txMinimumDuration", HEDERA_TXN_MIN_VALID_DURATION),
+                    entry("txMinimumRemaining", HEDERA_TXN_MIN_VALIDITY_BUFFER_SECS),
+                    entry("maximumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION),
+                    entry("minimumAutoRenewDuration", LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION),
+                    entry("localCallEstReturnBytes", CONTRACTS_LOCAL_CALL_EST_RET_BYTES));
     private static final Map<String, UnaryOperator<String>> STANDARDIZED_FORMATS =
             Map.ofEntries(
                     entry(
@@ -93,31 +105,29 @@ public final class ScreenedSysFileProps implements PropertySource {
     private static final Map<String, Predicate<Object>> VALUE_SCREENS =
             Map.ofEntries(
                     entry(
-                            PropertyNames.RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
+                            RATES_INTRA_DAY_CHANGE_LIMIT_PERCENT,
                             limitPercent -> (int) limitPercent > 0),
                     entry(
-                            PropertyNames.SCHEDULING_WHITE_LIST,
+                            SCHEDULING_WHITE_LIST,
                             whitelist ->
                                     ((Set<HederaFunctionality>) whitelist)
                                             .stream()
                                                     .noneMatch(
                                                             MiscUtils.QUERY_FUNCTIONS::contains)),
                     entry(
-                            PropertyNames.TOKENS_MAX_SYMBOL_UTF8_BYTES,
+                            TOKENS_MAX_SYMBOL_UTF8_BYTES,
                             maxUtf8Bytes ->
                                     (int) maxUtf8Bytes
                                             <= MerkleToken.UPPER_BOUND_SYMBOL_UTF8_BYTES),
                     entry(
-                            PropertyNames.TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
+                            TOKENS_MAX_TOKEN_NAME_UTF8_BYTES,
                             maxUtf8Bytes ->
                                     (int) maxUtf8Bytes
                                             <= MerkleToken.UPPER_BOUND_TOKEN_NAME_UTF8_BYTES),
-                    entry(PropertyNames.LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(LEDGER_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
+                    entry(LEDGER_TOKEN_TRANSFERS_MAX_LEN, maxLen -> (int) maxLen >= 2),
                     entry(
-                            PropertyNames.LEDGER_TOKEN_TRANSFERS_MAX_LEN,
-                            maxLen -> (int) maxLen >= 2),
-                    entry(
-                            PropertyNames.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
+                            CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
                             maxRefundPercentage ->
                                     (int) maxRefundPercentage >= 0
                                             && (int) maxRefundPercentage <= 100));
@@ -141,7 +151,7 @@ public final class ScreenedSysFileProps implements PropertySource {
                                         Setting::getName, this::asTypedValue, (a, b) -> b));
         final var msg =
                 "Global/dynamic properties overridden in system file are:\n  "
-                        + BootstrapProperties.GLOBAL_DYNAMIC_PROPS.stream()
+                        + GLOBAL_DYNAMIC_PROPS.stream()
                                 .filter(from121::containsKey)
                                 .sorted()
                                 .map(name -> String.format("%s=%s", name, from121.get(name)))
@@ -165,7 +175,7 @@ public final class ScreenedSysFileProps implements PropertySource {
 
     private boolean isValidGlobalDynamic(final Setting prop) {
         final var name = prop.getName();
-        final var clearlyBelongs = BootstrapProperties.GLOBAL_DYNAMIC_PROPS.contains(name);
+        final var clearlyBelongs = GLOBAL_DYNAMIC_PROPS.contains(name);
         if (!clearlyBelongs) {
             log.warn(String.format(MISPLACED_PROP_TPL, name));
         }
@@ -183,7 +193,7 @@ public final class ScreenedSysFileProps implements PropertySource {
         if (STANDARDIZED_FORMATS.containsKey(rawName)) {
             try {
                 builder.setValue(STANDARDIZED_FORMATS.get(rawName).apply(rawProp.getValue()));
-            } catch (Exception reason) {
+            } catch (final Exception reason) {
                 log.warn(
                         String.format(
                                 UNTRANSFORMABLE_PROP_TPL,
@@ -197,14 +207,14 @@ public final class ScreenedSysFileProps implements PropertySource {
     }
 
     private Object asTypedValue(final Setting prop) {
-        return BootstrapProperties.transformFor(prop.getName()).apply(prop.getValue());
+        return transformFor(prop.getName()).apply(prop.getValue());
     }
 
     private boolean hasParseableValue(final Setting prop) {
         try {
-            BootstrapProperties.transformFor(prop.getName()).apply(prop.getValue());
+            transformFor(prop.getName()).apply(prop.getValue());
             return true;
-        } catch (Exception reason) {
+        } catch (final Exception reason) {
             log.warn(
                     String.format(
                             UNPARSEABLE_PROP_TPL,

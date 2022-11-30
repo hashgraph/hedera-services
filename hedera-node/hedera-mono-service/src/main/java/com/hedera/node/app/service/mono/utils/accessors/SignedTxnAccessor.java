@@ -19,6 +19,8 @@ import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsageUtils.TOKEN
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.hasUnknownFields;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -60,7 +62,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.sourcing.PojoSigMapPubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -155,7 +156,7 @@ public class SignedTxnAccessor implements TxnAccessor {
             txnWrapper = Transaction.parseFrom(signedTxnWrapperBytes);
         }
         this.signedTxnWrapper = txnWrapper;
-        usesUnknownFields |= MiscUtils.hasUnknownFields(signedTxnWrapper);
+        usesUnknownFields |= hasUnknownFields(signedTxnWrapper);
 
         final var signedTxnBytes = signedTxnWrapper.getSignedTransactionBytes();
         if (signedTxnBytes.isEmpty()) {
@@ -164,7 +165,7 @@ public class SignedTxnAccessor implements TxnAccessor {
             hash = noThrowSha384HashOf(signedTxnWrapperBytes);
         } else {
             final var signedTxn = SignedTransaction.parseFrom(signedTxnBytes);
-            usesUnknownFields |= MiscUtils.hasUnknownFields(signedTxn);
+            usesUnknownFields |= hasUnknownFields(signedTxn);
             txnBytes = unwrapUnsafelyIfPossible(signedTxn.getBodyBytes());
             sigMap = signedTxn.getSigMap();
             hash = noThrowSha384HashOf(unwrapUnsafelyIfPossible(signedTxnBytes));
@@ -175,7 +176,7 @@ public class SignedTxnAccessor implements TxnAccessor {
         // Note that the SignatureMap was parsed with either the top-level
         // Transaction or the SignedTransaction, so we've already checked
         // it for unknown fields either way; only still need to check the body
-        usesUnknownFields |= MiscUtils.hasUnknownFields(txn);
+        usesUnknownFields |= hasUnknownFields(txn);
         memo = txn.getMemo();
         txnId = txn.getTransactionID();
         sigMapSize = sigMap.getSerializedSize();
@@ -449,7 +450,7 @@ public class SignedTxnAccessor implements TxnAccessor {
     }
 
     protected EntityNum unaliased(final AccountID idOrAlias) {
-        if (EntityIdUtils.isAlias(idOrAlias)) {
+        if (isAlias(idOrAlias)) {
             return lookUpAlias(idOrAlias.getAlias());
         }
         return EntityNum.fromAccountId(idOrAlias);

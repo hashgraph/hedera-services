@@ -17,9 +17,9 @@ package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.RichInstant.MISSING_INSTANT;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -88,7 +88,8 @@ public class TxnId implements SelfSerializable {
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int version) throws IOException {
+    public void deserialize(final SerializableDataInputStream in, final int version)
+            throws IOException {
         payerAccount = in.readSerializable(true, EntityId::new);
         validStart = RichInstant.from(in);
         scheduled = in.readBoolean();
@@ -102,7 +103,7 @@ public class TxnId implements SelfSerializable {
     }
 
     @Override
-    public void serialize(SerializableDataOutputStream out) throws IOException {
+    public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeSerializable(payerAccount, true);
         validStart.serialize(out);
         out.writeBoolean(scheduled);
@@ -116,14 +117,14 @@ public class TxnId implements SelfSerializable {
 
     /* --- Objects --- */
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || TxnId.class != o.getClass()) {
             return false;
         }
-        var that = (TxnId) o;
+        final var that = (TxnId) o;
         return this.scheduled == that.scheduled
                 && Objects.equals(payerAccount, that.payerAccount)
                 && Objects.equals(validStart, that.validStart)
@@ -155,7 +156,7 @@ public class TxnId implements SelfSerializable {
     }
 
     public TransactionID toGrpc() {
-        var grpc = TransactionID.newBuilder().setAccountID(EntityIdUtils.asAccount(payerAccount));
+        final var grpc = TransactionID.newBuilder().setAccountID(asAccount(payerAccount));
 
         if (!validStart.isMissing()) {
             grpc.setTransactionValidStart(validStart.toGrpc());

@@ -21,6 +21,18 @@ import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUti
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_INFO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createTokenInfoWrapperForToken;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidSerialNumberResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.parentContractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.parentContractAddressConvertedToContractId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.senderAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile.decodeGetTokenInfo;
@@ -87,7 +99,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -151,9 +162,7 @@ class GetTokenInfoPrecompilesTest {
 
     // Key properties
     private final Key tokenKey =
-            Key.newBuilder()
-                    .setContractID(HTSTestsUtil.parentContractAddressConvertedToContractId)
-                    .build();
+            Key.newBuilder().setContractID(parentContractAddressConvertedToContractId).build();
     private final List<Key> tokenKeys = new ArrayList<>();
 
     // Expiry properties
@@ -180,10 +189,7 @@ class GetTokenInfoPrecompilesTest {
 
     // Info objects
     private final NftID nftID =
-            NftID.newBuilder()
-                    .setTokenID(HTSTestsUtil.tokenMerkleId)
-                    .setSerialNumber(serialNumber)
-                    .build();
+            NftID.newBuilder().setTokenID(tokenMerkleId).setSerialNumber(serialNumber).build();
     private TokenInfo.Builder tokenInfo;
     private TokenNftInfo nonFungibleTokenInfo;
 
@@ -200,7 +206,7 @@ class GetTokenInfoPrecompilesTest {
 
         entityIdUtils = Mockito.mockStatic(EntityIdUtils.class);
         entityIdUtils
-                .when(() -> EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId))
+                .when(() -> EntityIdUtils.asTypedEvmAddress(tokenMerkleId))
                 .thenReturn(HTSTestsUtil.tokenMerkleAddress);
         entityIdUtils
                 .when(() -> EntityIdUtils.asTypedEvmAddress(treasury))
@@ -222,17 +228,17 @@ class GetTokenInfoPrecompilesTest {
                         .setLedgerId(fromString("0x03"))
                         .setNftID(
                                 NftID.newBuilder()
-                                        .setTokenID(HTSTestsUtil.tokenMerkleId)
+                                        .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
                                         .build())
-                        .setAccountID(HTSTestsUtil.payer)
+                        .setAccountID(payer)
                         .setCreationTime(
                                 new RichInstant(
                                                 unsignedHighOrder32From(creationTime),
                                                 signedLowOrder32From(creationTime))
                                         .toGrpc())
                         .setMetadata(metadata)
-                        .setSpenderId(HTSTestsUtil.sender)
+                        .setSpenderId(sender)
                         .build();
 
         subject =
@@ -269,21 +275,20 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -291,11 +296,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -308,12 +313,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -321,24 +325,23 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(0, false);
         final var supplyKey =
                 Key.newBuilder()
-                        .setDelegatableContractId(
-                                HTSTestsUtil.parentContractAddressConvertedToContractId)
+                        .setDelegatableContractId(parentContractAddressConvertedToContractId)
                         .build();
         tokenInfo.setSupplyKey(supplyKey);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
         entityIdUtils
                 .when(
                         () ->
                                 EntityIdUtils.asTypedEvmAddress(
-                                        HTSTestsUtil.parentContractAddressConvertedToContractId))
-                .thenReturn(HTSTestsUtil.parentContractAddress);
+                                        parentContractAddressConvertedToContractId))
+                .thenReturn(parentContractAddress);
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -346,11 +349,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -363,12 +366,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -376,10 +378,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithAllKeys();
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -387,11 +389,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -404,22 +406,20 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build()))
-                .willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -427,11 +427,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -445,12 +445,11 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
@@ -458,18 +457,18 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
         given(
                         wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
                                         .setSerialNumber(serialNumber)
-                                        .setTokenID(HTSTestsUtil.tokenMerkleId)
+                                        .setTokenID(tokenMerkleId)
                                         .build(),
                                 networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
-                .willReturn(HTSTestsUtil.successResult);
+                .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -477,11 +476,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -494,12 +493,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -508,10 +506,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fixedFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -519,11 +517,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -536,12 +534,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -550,10 +547,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fixedFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -561,11 +558,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -578,12 +575,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -592,10 +588,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(fractionalFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -603,11 +599,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -621,12 +617,11 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
@@ -636,19 +631,19 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
         given(
                         wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
-                                        .setTokenID(HTSTestsUtil.tokenMerkleId)
+                                        .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
                                         .build(),
                                 networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
-                .willReturn(HTSTestsUtil.successResult);
+                .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -656,11 +651,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -674,12 +669,11 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
@@ -689,19 +683,19 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo.addAllCustomFees(List.of(royaltyFee));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
         given(
                         wrappedLedgers.infoForNft(
                                 NftID.newBuilder()
-                                        .setTokenID(HTSTestsUtil.tokenMerkleId)
+                                        .setTokenID(tokenMerkleId)
                                         .setSerialNumber(serialNumber)
                                         .build(),
                                 networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
-                .willReturn(HTSTestsUtil.successResult);
+                .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -709,11 +703,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -726,12 +720,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -739,18 +732,18 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidTokenIdResult, result);
+        assertEquals(invalidTokenIdResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -763,12 +756,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -776,18 +768,18 @@ class GetTokenInfoPrecompilesTest {
         givenMinimalContextForInvalidTokenIdCall(pretendArguments);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
         givenReadOnlyFeeSchedule();
 
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidTokenIdResult, result);
+        assertEquals(invalidTokenIdResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -801,12 +793,11 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
@@ -814,7 +805,7 @@ class GetTokenInfoPrecompilesTest {
 
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
         given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
                 .willReturn(Optional.empty());
@@ -825,11 +816,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.invalidSerialNumberResult, result);
+        assertEquals(invalidSerialNumberResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -842,12 +833,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         tokenInfoPrecompile
                 .when(() -> decodeGetTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -855,10 +845,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -866,11 +856,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -883,12 +873,11 @@ class GetTokenInfoPrecompilesTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForToken(HTSTestsUtil.tokenMerkleId);
+        final var tokenInfoWrapper = createTokenInfoWrapperForToken(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId));
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId));
         fungibleTokenInfoPrecompile
                 .when(() -> decodeGetFungibleTokenInfo(pretendArguments))
                 .thenReturn(tokenInfoWrapper);
@@ -896,11 +885,10 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
 
-        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build()))
-                .willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetFungibleTokenInfo(tokenInfo.build())).willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -908,11 +896,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -926,12 +914,11 @@ class GetTokenInfoPrecompilesTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
         final var tokenInfoWrapper =
-                HTSTestsUtil.createTokenInfoWrapperForNonFungibleToken(
-                        HTSTestsUtil.tokenMerkleId, serialNumber);
+                createTokenInfoWrapperForNonFungibleToken(tokenMerkleId, serialNumber);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO)),
-                        EntityIdUtils.asTypedEvmAddress(HTSTestsUtil.tokenMerkleId),
+                        EntityIdUtils.asTypedEvmAddress(tokenMerkleId),
                         Bytes.wrap(new byte[] {Long.valueOf(serialNumber).byteValue()}));
         nonFungibleTokenInfoPrecompile
                 .when(() -> decodeGetNonFungibleTokenInfo(pretendArguments))
@@ -940,13 +927,13 @@ class GetTokenInfoPrecompilesTest {
         tokenInfo = createTokenInfoWithSingleKey(1, true);
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ByteString.copyFromUtf8("0xff"));
-        given(wrappedLedgers.infoForToken(HTSTestsUtil.tokenMerkleId, networkInfo.ledgerId()))
+        given(wrappedLedgers.infoForToken(tokenMerkleId, networkInfo.ledgerId()))
                 .willReturn(Optional.of(tokenInfo.build()));
         given(wrappedLedgers.infoForNft(nftID, networkInfo.ledgerId()))
                 .willReturn(Optional.of(nonFungibleTokenInfo));
 
         given(encoder.encodeGetNonFungibleTokenInfo(tokenInfo.build(), nonFungibleTokenInfo))
-                .willReturn(HTSTestsUtil.successResult);
+                .willReturn(successResult);
 
         givenMinimalContextForSuccessfulCall(pretendArguments);
         givenReadOnlyFeeSchedule();
@@ -954,11 +941,11 @@ class GetTokenInfoPrecompilesTest {
         // when:
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
-        subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         final var result = subject.computeInternal(frame);
 
         // then:
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
         // and:
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -1022,7 +1009,7 @@ class GetTokenInfoPrecompilesTest {
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.ZERO);
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(frame.getSenderAddress()).willReturn(senderAddress);
         final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
         given(worldUpdater.parentUpdater()).willReturn(parent);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
@@ -1059,18 +1046,12 @@ class GetTokenInfoPrecompilesTest {
                         .setAmount(amount)
                         .setDenominatingTokenId(feeTokenEntityId)
                         .build();
-        return CustomFee.newBuilder()
-                .setFixedFee(fixedFee)
-                .setFeeCollectorAccountId(HTSTestsUtil.payer)
-                .build();
+        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(payer).build();
     }
 
     private CustomFee getFixedFeeWithoutDenomination() {
         final var fixedFee = FixedFee.newBuilder().setAmount(amount).build();
-        return CustomFee.newBuilder()
-                .setFixedFee(fixedFee)
-                .setFeeCollectorAccountId(HTSTestsUtil.payer)
-                .build();
+        return CustomFee.newBuilder().setFixedFee(fixedFee).setFeeCollectorAccountId(payer).build();
     }
 
     private CustomFee getFractionalFee() {
@@ -1084,7 +1065,7 @@ class GetTokenInfoPrecompilesTest {
                         .build();
         return CustomFee.newBuilder()
                 .setFractionalFee(fractionalFee)
-                .setFeeCollectorAccountId(HTSTestsUtil.payer)
+                .setFeeCollectorAccountId(payer)
                 .build();
     }
 
@@ -1122,16 +1103,16 @@ class GetTokenInfoPrecompilesTest {
                                                 unsignedHighOrder32From(expiryPeriod),
                                                 signedLowOrder32From(expiryPeriod))
                                         .toGrpc())
-                        .setAutoRenewAccount(HTSTestsUtil.sender)
+                        .setAutoRenewAccount(sender)
                         .setAutoRenewPeriod(
                                 Duration.newBuilder().setSeconds(autoRenewPeriod).build())
-                        .setTokenId(HTSTestsUtil.tokenMerkleId)
+                        .setTokenId(tokenMerkleId)
                         .setDeleted(isDeleted)
                         .setSymbol(symbol)
                         .setName(name)
                         .setMemo(memo)
                         .setDecimals(decimals)
-                        .setTreasury(HTSTestsUtil.sender)
+                        .setTreasury(sender)
                         .setTotalSupply(totalSupply)
                         .setMaxSupply(maxSupply);
 
@@ -1144,12 +1125,12 @@ class GetTokenInfoPrecompilesTest {
                 TokenInfo.newBuilder()
                         .setLedgerId(fromString("0x03"))
                         .setSupplyTypeValue(1)
-                        .setTokenId(HTSTestsUtil.tokenMerkleId)
+                        .setTokenId(tokenMerkleId)
                         .setDeleted(false)
                         .setSymbol(symbol)
                         .setName(name)
                         .setMemo(memo)
-                        .setTreasury(HTSTestsUtil.sender)
+                        .setTreasury(sender)
                         .setTotalSupply(totalSupply)
                         .setMaxSupply(maxSupply);
 

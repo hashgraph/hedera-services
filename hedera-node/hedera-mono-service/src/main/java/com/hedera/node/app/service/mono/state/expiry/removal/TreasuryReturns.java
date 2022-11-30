@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
+import static com.hedera.node.app.service.mono.state.expiry.removal.ContractGC.ROOT_KEY_UPDATE_WORK;
+import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
+import static com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
+import static com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+import static com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.NFTS_GET;
@@ -107,9 +112,9 @@ public class TreasuryReturns {
         final var expiredNum = expired.getEntityNum();
         final var numRels = expired.getNumAssociations();
         if (numRels == 0) {
-            return FungibleTreasuryReturns.FINISHED_NOOP_FUNGIBLE_RETURNS;
-        } else if (!expiryThrottle.allow(ContractGC.ROOT_KEY_UPDATE_WORK)) {
-            return FungibleTreasuryReturns.UNFINISHED_NOOP_FUNGIBLE_RETURNS;
+            return FINISHED_NOOP_FUNGIBLE_RETURNS;
+        } else if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+            return UNFINISHED_NOOP_FUNGIBLE_RETURNS;
         } else {
             final var outcome = tryFungibleReturns(expiredNum, expired);
             final var mutableExpired = entityLookup.getMutableAccount(expiredNum);
@@ -129,9 +134,9 @@ public class TreasuryReturns {
         final var expiredNum = expired.getEntityNum();
         final var numNfts = expired.getNftsOwned();
         if (numNfts == 0) {
-            return NonFungibleTreasuryReturns.FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
-        } else if (!expiryThrottle.allow(ContractGC.ROOT_KEY_UPDATE_WORK)) {
-            return NonFungibleTreasuryReturns.UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+            return FINISHED_NOOP_NON_FUNGIBLE_RETURNS;
+        } else if (!expiryThrottle.allow(ROOT_KEY_UPDATE_WORK)) {
+            return UNFINISHED_NOOP_NON_FUNGIBLE_RETURNS;
         } else {
             final var outcome = tryNftReturns(expiredNum, expired);
             final var mutableExpired = entityLookup.getMutableAccount(expiredNum);

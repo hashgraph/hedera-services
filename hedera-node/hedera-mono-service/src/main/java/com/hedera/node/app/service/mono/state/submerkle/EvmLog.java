@@ -15,9 +15,11 @@
  */
 package com.hedera.node.app.service.mono.state.submerkle;
 
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.readNullableSerializable;
+import static com.hedera.node.app.service.mono.state.serdes.IoUtils.writeNullableSerializable;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.service.mono.state.serdes.IoUtils;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -102,7 +104,7 @@ public class EvmLog implements SelfSerializable {
             throws IOException {
         data = in.readByteArray(MAX_DATA_BYTES);
         bloom = in.readByteArray(MAX_BLOOM_BYTES);
-        contractId = IoUtils.readNullableSerializable(in);
+        contractId = readNullableSerializable(in);
         final int numTopics = in.readInt();
         if (numTopics > 0) {
             topics = new LinkedList<>();
@@ -116,7 +118,7 @@ public class EvmLog implements SelfSerializable {
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         out.writeByteArray(data);
         out.writeByteArray(bloom);
-        IoUtils.writeNullableSerializable(contractId, out);
+        writeNullableSerializable(contractId, out);
         out.writeInt(topics.size());
         for (final byte[] topic : topics) {
             out.writeByteArray(topic);

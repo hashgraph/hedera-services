@@ -17,6 +17,8 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -26,7 +28,6 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -53,7 +54,7 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetTokenInfo(input);
         tokenId = tokenInfoWrapper.tokenID();
         return super.body(input, aliasResolver);
@@ -70,10 +71,9 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
 
     public static TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
+                decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
 
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         return TokenInfoWrapper.forToken(tokenID);
     }
 }

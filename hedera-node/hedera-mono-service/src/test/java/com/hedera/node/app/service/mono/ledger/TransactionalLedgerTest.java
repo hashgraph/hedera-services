@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.mono.ledger;
 
+import static com.hedera.node.app.service.mono.ledger.accounts.TestAccount.Allowance.INSUFFICIENT;
+import static com.hedera.node.app.service.mono.ledger.accounts.TestAccount.Allowance.MISSING;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.FLAG;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.HBAR_ALLOWANCES;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.LONG;
+import static com.hedera.node.app.service.mono.ledger.properties.TestAccountProperty.OBJ;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_NOT_GENESIS_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -115,7 +121,7 @@ class TransactionalLedgerTest {
         setupInterceptedTestLedger();
         final var statefulChanges = testLedger.getPendingChanges();
 
-        statefulChanges.include(1L, anAccount, Map.of(TestAccountProperty.FLAG, true));
+        statefulChanges.include(1L, anAccount, Map.of(FLAG, true));
         testLedger.begin();
 
         assertEquals(0, statefulChanges.size());
@@ -158,10 +164,10 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(1L);
-        testLedger.set(1L, TestAccountProperty.OBJ, things);
-        testLedger.set(1L, TestAccountProperty.FLAG, true);
+        testLedger.set(1L, OBJ, things);
+        testLedger.set(1L, FLAG, true);
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things);
+        testLedger.set(2L, OBJ, things);
         testLedger.destroy(2L);
         testLedger.commit();
 
@@ -170,9 +176,7 @@ class TransactionalLedgerTest {
         assertEquals(1, changes.size());
         assertEquals(1L, changes.id(0));
         assertNull(changes.entity(0));
-        assertEquals(
-                Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true),
-                changes.changes(0));
+        assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
         verify(backingTestAccounts).put(1L, expectedCommit);
         assertTrue(testLedger.getCreatedKeys().isEmpty());
     }
@@ -184,10 +188,10 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(1L);
-        testLedger.set(1L, TestAccountProperty.OBJ, things);
-        testLedger.set(1L, TestAccountProperty.FLAG, true);
+        testLedger.set(1L, OBJ, things);
+        testLedger.set(1L, FLAG, true);
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things);
+        testLedger.set(2L, OBJ, things);
         testLedger.commit();
 
         verify(testInterceptor).finish(eq(0), any(TestAccount.class));
@@ -238,9 +242,9 @@ class TransactionalLedgerTest {
                         TestAccount.Allowance.OK);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things);
-        testLedger.set(1L, TestAccountProperty.FLAG, true);
-        testLedger.set(2L, TestAccountProperty.OBJ, things);
+        testLedger.set(1L, OBJ, things);
+        testLedger.set(1L, FLAG, true);
+        testLedger.set(2L, OBJ, things);
         testLedger.destroy(2L);
         testLedger.commit();
 
@@ -249,9 +253,7 @@ class TransactionalLedgerTest {
         assertEquals(1, changes.size());
         assertEquals(1L, changes.id(0));
         assertSame(anAccount, changes.entity(0));
-        assertEquals(
-                Map.of(TestAccountProperty.OBJ, things, TestAccountProperty.FLAG, true),
-                changes.changes(0));
+        assertEquals(Map.of(OBJ, things, FLAG, true), changes.changes(0));
         verify(backingTestAccounts).put(1L, expectedCommit);
         assertTrue(testLedger.getChangedKeys().isEmpty());
     }
@@ -263,12 +265,12 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(1L);
-        testLedger.set(1L, TestAccountProperty.OBJ, things);
-        testLedger.set(1L, TestAccountProperty.FLAG, true);
+        testLedger.set(1L, OBJ, things);
+        testLedger.set(1L, FLAG, true);
         testLedger.commit();
 
-        verify(propertyChangeObserver).newProperty(1L, TestAccountProperty.OBJ, things);
-        verify(propertyChangeObserver).newProperty(1L, TestAccountProperty.FLAG, true);
+        verify(propertyChangeObserver).newProperty(1L, OBJ, things);
+        verify(propertyChangeObserver).newProperty(1L, FLAG, true);
         verifyNoMoreInteractions(propertyChangeObserver);
     }
 
@@ -298,7 +300,7 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, new Object());
+        testLedger.set(1L, OBJ, new Object());
         testLedger.rollback();
 
         assertTrue(testLedger.getChanges().isEmpty());
@@ -320,8 +322,8 @@ class TransactionalLedgerTest {
                         anAccount.validFungibleAllowances,
                         anAccount.validNftAllowances);
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.FLAG, !anAccount.flag);
-        var account = testLedger.getFinalized(1L);
+        testLedger.set(1L, FLAG, !anAccount.flag);
+        final var account = testLedger.getFinalized(1L);
 
         assertEquals(newAccount1, account);
         verify(backingTestAccounts).getRef(1L);
@@ -392,7 +394,7 @@ class TransactionalLedgerTest {
         willThrow(IllegalStateException.class).given(backingTestAccounts).put(any(), any());
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
+        testLedger.set(1L, OBJ, things[0]);
         testLedger.create(2L);
 
         assertThrows(IllegalStateException.class, () -> testLedger.commit());
@@ -456,9 +458,9 @@ class TransactionalLedgerTest {
         testLedger.create(3L);
         testLedger.destroy(3L);
 
-        boolean has1 = testLedger.exists(1L);
-        boolean has2 = testLedger.exists(2L);
-        boolean has3 = testLedger.exists(3L);
+        final boolean has1 = testLedger.exists(1L);
+        final boolean has2 = testLedger.exists(2L);
+        final boolean has3 = testLedger.exists(3L);
 
         assertTrue(has1);
         assertTrue(has2);
@@ -481,9 +483,7 @@ class TransactionalLedgerTest {
     void throwsIfNotInTransaction() {
         setupTestLedger();
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> testLedger.set(1L, TestAccountProperty.OBJ, things[0]));
+        assertThrows(IllegalStateException.class, () -> testLedger.set(1L, OBJ, things[0]));
         assertThrows(IllegalStateException.class, () -> testLedger.create(2L));
         assertThrows(IllegalStateException.class, () -> testLedger.destroy(1L));
     }
@@ -494,9 +494,7 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
 
-        assertThrows(
-                MissingEntityException.class,
-                () -> testLedger.set(0L, TestAccountProperty.OBJ, things[0]));
+        assertThrows(MissingEntityException.class, () -> testLedger.set(0L, OBJ, things[0]));
     }
 
     @Test
@@ -513,8 +511,7 @@ class TransactionalLedgerTest {
     void throwsOnGettingPropOfMissingAccount() {
         setupTestLedger();
 
-        assertThrows(
-                IllegalArgumentException.class, () -> testLedger.get(2L, TestAccountProperty.OBJ));
+        assertThrows(IllegalArgumentException.class, () -> testLedger.get(2L, OBJ));
     }
 
     @Test
@@ -523,9 +520,9 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.LONG, 3L);
+        testLedger.set(1L, LONG, 3L);
 
-        final long value = (long) testLedger.get(1L, TestAccountProperty.LONG);
+        final long value = (long) testLedger.get(1L, LONG);
 
         verify(backingTestAccounts, times(2)).contains(1L);
         assertEquals(3L, value);
@@ -537,7 +534,7 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things[2]);
+        testLedger.set(2L, OBJ, things[2]);
 
         assertEquals(new TestAccount(0L, things[2], false), testLedger.getFinalized(2L));
     }
@@ -548,9 +545,9 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things[2]);
+        testLedger.set(2L, OBJ, things[2]);
 
-        Object thing = testLedger.get(2L, TestAccountProperty.OBJ);
+        final Object thing = testLedger.get(2L, OBJ);
 
         assertEquals(things[2], thing);
     }
@@ -561,9 +558,9 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things[2]);
+        testLedger.set(2L, OBJ, things[2]);
 
-        final var flag = (boolean) testLedger.get(2L, TestAccountProperty.FLAG);
+        final var flag = (boolean) testLedger.get(2L, FLAG);
 
         assertFalse(flag);
     }
@@ -586,7 +583,7 @@ class TransactionalLedgerTest {
                         anAccount.validNftAllowances);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
+        testLedger.set(1L, OBJ, things[0]);
 
         assertEquals(expected, testLedger.getFinalized(1L));
     }
@@ -597,16 +594,16 @@ class TransactionalLedgerTest {
 
         given(backingTestAccounts.getRef(1L)).willReturn(anAccount);
         given(backingTestAccounts.contains(1L)).willReturn(true);
-        ArgumentCaptor<TestAccount> captor = forClass(TestAccount.class);
-        final var changesToUndo = List.of(TestAccountProperty.FLAG);
+        final ArgumentCaptor<TestAccount> captor = forClass(TestAccount.class);
+        final var changesToUndo = List.of(FLAG);
 
         assertThrows(
                 IllegalStateException.class, () -> testLedger.undoChangesOfType(changesToUndo));
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
-        testLedger.set(1L, TestAccountProperty.FLAG, true);
-        testLedger.undoChangesOfType(List.of(TestAccountProperty.FLAG));
+        testLedger.set(1L, OBJ, things[0]);
+        testLedger.set(1L, FLAG, true);
+        testLedger.undoChangesOfType(List.of(FLAG));
         testLedger.commit();
 
         verify(backingTestAccounts).put(longThat(l -> l == 1L), captor.capture());
@@ -621,7 +618,7 @@ class TransactionalLedgerTest {
 
         testLedger.begin();
         testLedger.create(1L);
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
+        testLedger.set(1L, OBJ, things[0]);
         assertFalse(testLedger.getChanges().isEmpty());
         testLedger.begin();
         assertTrue(testLedger.getChanges().isEmpty());
@@ -649,9 +646,9 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
+        testLedger.set(1L, OBJ, things[0]);
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things[2]);
+        testLedger.set(2L, OBJ, things[2]);
         testLedger.rollback();
 
         assertFalse(testLedger.isInTransaction());
@@ -669,12 +666,12 @@ class TransactionalLedgerTest {
         final var expected2 = new TestAccount(2L, things[2], false);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.OBJ, things[0]);
+        testLedger.set(1L, OBJ, things[0]);
         testLedger.create(2L);
-        testLedger.set(2L, TestAccountProperty.OBJ, things[2]);
-        testLedger.set(2L, TestAccountProperty.LONG, 2L);
+        testLedger.set(2L, OBJ, things[2]);
+        testLedger.set(2L, LONG, 2L);
         testLedger.create(3L);
-        testLedger.set(3L, TestAccountProperty.OBJ, things[3]);
+        testLedger.set(3L, OBJ, things[3]);
         testLedger.destroy(3L);
         testLedger.commit();
 
@@ -714,9 +711,9 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.LONG, 123L);
-        testLedger.set(1L, TestAccountProperty.FLAG, false);
-        testLedger.set(1L, TestAccountProperty.OBJ, "DEFAULT");
+        testLedger.set(1L, LONG, 123L);
+        testLedger.set(1L, FLAG, false);
+        testLedger.set(1L, OBJ, "DEFAULT");
         testLedger.commit();
 
         assertEquals(ResponseCodeEnum.OK, testLedger.validate(1L, scopedCheck));
@@ -733,9 +730,9 @@ class TransactionalLedgerTest {
     void validationFailsAsExpected() {
         setupCheckableTestLedger();
 
-        TestAccount account2 = new TestAccount(321L, things[1], false, 667L);
-        TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
-        TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
+        final TestAccount account2 = new TestAccount(321L, things[1], false, 667L);
+        final TestAccount account3 = new TestAccount(123L, things[1], true, 667L);
+        final TestAccount account4 = new TestAccount(123L, "RANDOM", false, 667L);
 
         when(backingTestAccounts.contains(2L)).thenReturn(true);
         when(backingTestAccounts.getImmutableRef(2L)).thenReturn(account2);
@@ -758,10 +755,10 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.LONG, 123L);
-        testLedger.set(1L, TestAccountProperty.FLAG, false);
-        testLedger.set(1L, TestAccountProperty.OBJ, "DEFAULT");
-        testLedger.set(1L, TestAccountProperty.HBAR_ALLOWANCES, TestAccount.Allowance.MISSING);
+        testLedger.set(1L, LONG, 123L);
+        testLedger.set(1L, FLAG, false);
+        testLedger.set(1L, OBJ, "DEFAULT");
+        testLedger.set(1L, HBAR_ALLOWANCES, MISSING);
         testLedger.commit();
 
         assertEquals(SPENDER_DOES_NOT_HAVE_ALLOWANCE, testLedger.validate(1L, scopedCheck));
@@ -776,10 +773,10 @@ class TransactionalLedgerTest {
         given(backingTestAccounts.contains(1L)).willReturn(true);
 
         testLedger.begin();
-        testLedger.set(1L, TestAccountProperty.LONG, 123L);
-        testLedger.set(1L, TestAccountProperty.FLAG, false);
-        testLedger.set(1L, TestAccountProperty.OBJ, "DEFAULT");
-        testLedger.set(1L, TestAccountProperty.HBAR_ALLOWANCES, TestAccount.Allowance.INSUFFICIENT);
+        testLedger.set(1L, LONG, 123L);
+        testLedger.set(1L, FLAG, false);
+        testLedger.set(1L, OBJ, "DEFAULT");
+        testLedger.set(1L, HBAR_ALLOWANCES, INSUFFICIENT);
         testLedger.commit();
 
         assertEquals(AMOUNT_EXCEEDS_ALLOWANCE, testLedger.validate(1L, scopedCheck));

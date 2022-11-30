@@ -16,6 +16,8 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -25,7 +27,6 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -46,17 +47,17 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
     private long serialNumber;
 
     public NonFungibleTokenInfoPrecompile(
-            TokenID tokenId,
-            SyntheticTxnFactory syntheticTxnFactory,
-            WorldLedgers ledgers,
-            EncodingFacade encoder,
-            PrecompilePricingUtils pricingUtils,
-            StateView stateView) {
+            final TokenID tokenId,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final WorldLedgers ledgers,
+            final EncodingFacade encoder,
+            final PrecompilePricingUtils pricingUtils,
+            final StateView stateView) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils, stateView);
     }
 
     @Override
-    public Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetNonFungibleTokenInfo(input);
         tokenId = tokenInfoWrapper.tokenID();
         serialNumber = tokenInfoWrapper.serialNumber();
@@ -81,12 +82,12 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
 
     public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
+                decodeFunctionCall(
                         input,
                         GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
                         GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
 
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var serialNum = (long) decodedArguments.get(1);
         return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNum);
     }

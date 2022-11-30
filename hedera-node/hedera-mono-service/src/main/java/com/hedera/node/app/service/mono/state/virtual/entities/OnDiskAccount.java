@@ -19,11 +19,14 @@ import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPos
 import static com.hedera.node.app.hapi.utils.ByteStringUtils.wrapUnsafely;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
 import static com.hedera.node.app.service.mono.legacy.core.jproto.JKey.equalUpToDecodability;
+import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.codeFromNum;
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.MISSING_KEY_SENTINEL;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.computeNonZeroBytes;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
 import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePossiblyMissingKey;
+import static com.hedera.node.app.service.mono.state.virtual.utils.EntityIoUtils.readBytes;
+import static com.hedera.node.app.service.mono.state.virtual.utils.EntityIoUtils.writeBytes;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.SerializationUtils.deserializeFungibleAllowances;
 import static com.hedera.node.app.service.mono.utils.SerializationUtils.deserializeHbarAllowances;
@@ -37,7 +40,6 @@ import com.hedera.node.app.service.mono.exceptions.NegativeAccountBalanceExcepti
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccountState;
-import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
@@ -45,7 +47,6 @@ import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedConsumer;
 import com.hedera.node.app.service.mono.state.virtual.utils.CheckedSupplier;
-import com.hedera.node.app.service.mono.state.virtual.utils.EntityIoUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
@@ -225,7 +226,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         for (final var v : longs) {
             writeLongFn.accept(v);
         }
-        EntityIoUtils.writeBytes(serializedVariablePart(), writeIntFn, writeBytesFn);
+        writeBytes(serializedVariablePart(), writeIntFn, writeBytesFn);
     }
 
     private void deserializeFrom(
@@ -242,7 +243,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
         for (var i = 0; i < LongValues.COUNT; i++) {
             longs[i] = readLongFn.get();
         }
-        final var variableSource = EntityIoUtils.readBytes(readIntFn, readBytesFn);
+        final var variableSource = readBytes(readIntFn, readBytesFn);
         deserializeVariablePart(variableSource);
     }
 
@@ -719,7 +720,7 @@ public class OnDiskAccount implements VirtualValue, HederaAccount {
 
     @Override
     public int number() {
-        return BitPackUtils.codeFromNum(getAccountNumber());
+        return codeFromNum(getAccountNumber());
     }
 
     @Override

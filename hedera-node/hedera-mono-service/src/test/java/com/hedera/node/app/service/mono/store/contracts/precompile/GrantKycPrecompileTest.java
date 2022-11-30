@@ -17,6 +17,13 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_GRANT_TOKEN_KYC;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.grantRevokeKycWrapper;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GrantKycPrecompile.decodeGrantTokenKyc;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
@@ -77,7 +84,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -128,10 +134,7 @@ class GrantKycPrecompileTest {
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
     private static final long EXPECTED_GAS_PRICE =
-            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE)
-                    / HTSTestsUtil.DEFAULT_GAS_PRICE
-                    * 6
-                    / 5;
+            (TEST_SERVICE_FEE + TEST_NETWORK_FEE + TEST_NODE_FEE) / DEFAULT_GAS_PRICE * 6 / 5;
     public static final Bytes GRANT_TOKEN_KYC_INPUT =
             Bytes.fromHexString(
                     "0x8f8d7f9900000000000000000000000000000000000000000000000000000000000004b200000000000000000000000000000000000000000000000000000000000004b0");
@@ -188,7 +191,7 @@ class GrantKycPrecompileTest {
         final var result = subject.computeInternal(frame);
 
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -203,19 +206,18 @@ class GrantKycPrecompileTest {
         given(feeCalculator.computeFee(any(), any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any()))
-                .willReturn(HTSTestsUtil.DEFAULT_GAS_PRICE);
+                .willReturn(DEFAULT_GAS_PRICE);
         grantKycPrecompile
                 .when(() -> decodeGrantTokenKyc(any(), any()))
-                .thenReturn(HTSTestsUtil.grantRevokeKycWrapper);
-        given(syntheticTxnFactory.createGrantKyc(HTSTestsUtil.grantRevokeKycWrapper))
+                .thenReturn(grantRevokeKycWrapper);
+        given(syntheticTxnFactory.createGrantKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
-        final var result =
-                subject.getPrecompile().getGasRequirement(HTSTestsUtil.TEST_CONSENSUS_TIME);
+        final var result = subject.getPrecompile().getGasRequirement(TEST_CONSENSUS_TIME);
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
     }
@@ -232,14 +234,14 @@ class GrantKycPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 
     private void givenFrameContext() {
         givenMinimalFrameContext();
-        given(frame.getContractAddress()).willReturn(HTSTestsUtil.contractAddr);
-        given(frame.getRecipientAddress()).willReturn(HTSTestsUtil.fungibleTokenAddr);
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(frame.getRecipientAddress()).willReturn(fungibleTokenAddr);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
     }
@@ -263,17 +265,14 @@ class GrantKycPrecompileTest {
         given(grantKycLogic.validate(any())).willReturn(OK);
         grantKycPrecompile
                 .when(() -> decodeGrantTokenKyc(any(), any()))
-                .thenReturn(HTSTestsUtil.grantRevokeKycWrapper);
-        given(syntheticTxnFactory.createGrantKyc(HTSTestsUtil.grantRevokeKycWrapper))
+                .thenReturn(grantRevokeKycWrapper);
+        given(syntheticTxnFactory.createGrantKyc(grantRevokeKycWrapper))
                 .willReturn(
                         TransactionBody.newBuilder()
                                 .setTokenGrantKyc(TokenGrantKycTransactionBody.newBuilder()));
         given(
                         sigsVerifier.hasActiveKycKey(
-                                true,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                wrappedLedgers))
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
     }
 

@@ -16,6 +16,8 @@
 package com.hedera.node.app.service.mono.txns.crypto;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.validOwner;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 import com.hedera.node.app.service.mono.store.AccountStore;
@@ -23,7 +25,6 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.UniqueToken;
-import com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import java.util.ArrayList;
@@ -75,15 +76,12 @@ public class DeleteAllowanceLogic {
         for (final var allowance : nftAllowances) {
             final var serialNums = allowance.getSerialNumbersList();
             final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
-            final var owner =
-                    AllowanceHelpers.fetchOwnerAccount(
-                            allowance.getOwner(), payerAccount, accountStore);
+            final var owner = fetchOwnerAccount(allowance.getOwner(), payerAccount, accountStore);
             final var token = tokenStore.loadPossiblyPausedToken(tokenId);
             for (final var serial : serialNums) {
                 final var nft = tokenStore.loadUniqueToken(tokenId, serial);
                 validateTrue(
-                        AllowanceHelpers.validOwner(nft, owner.getId(), token),
-                        SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+                        validOwner(nft, owner.getId(), token), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
                 nft.clearSpender();
                 nfts.add(nft);
             }

@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
+import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.aggregateNftAllowances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_TOKEN_MAX_SUPPLY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_CANNOT_GRANT_APPROVE_FOR_ALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DELEGATING_SPENDER_DOES_NOT_HAVE_APPROVE_FOR_ALL;
@@ -35,7 +36,6 @@ import com.hedera.node.app.service.mono.store.ReadOnlyTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
-import com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
@@ -286,7 +286,7 @@ public class ApproveAllowanceChecks extends AllowanceChecks {
         final var totalAllowances =
                 cryptoAllowances.size()
                         + tokenAllowances.size()
-                        + AllowanceHelpers.aggregateNftAllowances(nftAllowances);
+                        + aggregateNftAllowances(nftAllowances);
         return validateTotalAllowances(totalAllowances);
     }
 

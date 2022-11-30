@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.UPDATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -40,13 +41,13 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     protected Id tokenId;
 
     protected AbstractTokenUpdatePrecompile(
-            WorldLedgers ledgers,
-            ContractAliases aliases,
-            EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffectsTracker,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils) {
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffectsTracker,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
                 sideEffectsTracker,
@@ -58,15 +59,14 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(
-                PrecompilePricingUtils.GasCostType.UPDATE, consensusTime);
+    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
+        return pricingUtils.getMinimumPriceInTinybars(UPDATE, consensusTime);
     }
 
     @Override
-    public void run(MessageFrame frame) {
+    public void run(final MessageFrame frame) {
 
-        var hederaTokenStore = initializeHederaTokenStore();
+        final var hederaTokenStore = initializeHederaTokenStore();
 
         /* --- Check required signatures --- */
         final var hasRequiredSigs =
@@ -79,7 +79,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
         validateTrue(hasRequiredSigs, INVALID_SIGNATURE);
         hederaTokenStore.setAccountsLedger(ledgers.accounts());
         /* --- Build the necessary infrastructure to execute the transaction --- */
-        TokenUpdateLogic updateLogic =
+        final TokenUpdateLogic updateLogic =
                 infrastructureFactory.newTokenUpdateLogic(hederaTokenStore, ledgers, sideEffects);
 
         final var validity = updateLogic.validate(transactionBody.build());

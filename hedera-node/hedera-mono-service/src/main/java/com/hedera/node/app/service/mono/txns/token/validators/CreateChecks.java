@@ -15,6 +15,11 @@
  */
 package com.hedera.node.app.service.mono.txns.token.validators;
 
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.checkKeys;
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.nftSupplyKeyCheck;
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.suppliesCheck;
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.supplyTypeCheck;
+import static com.hedera.node.app.service.mono.txns.validation.TokenListChecks.typeCheck;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
@@ -25,7 +30,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_F
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.txns.validation.TokenListChecks;
 import com.hedera.node.app.service.mono.utils.TokenTypesMapper;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
@@ -50,7 +54,7 @@ public final class CreateChecks {
     public Function<TransactionBody, ResponseCodeEnum> validatorForConsTime(
             final Instant curConsTime) {
         return txnBody -> {
-            TokenCreateTransactionBody op = txnBody.getTokenCreation();
+            final TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
             final var domainType = TokenTypesMapper.mapToDomain(op.getTokenType());
             if (domainType == TokenType.NON_FUNGIBLE_UNIQUE
@@ -73,24 +77,22 @@ public final class CreateChecks {
                 return validity;
             }
 
-            validity =
-                    TokenListChecks.typeCheck(
-                            op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+            validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
             if (validity != OK) {
                 return validity;
             }
 
-            validity = TokenListChecks.supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
+            validity = supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
             if (validity != OK) {
                 return validity;
             }
 
-            validity = TokenListChecks.suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
+            validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
             if (validity != OK) {
                 return validity;
             }
 
-            validity = TokenListChecks.nftSupplyKeyCheck(op.getTokenType(), op.hasSupplyKey());
+            validity = nftSupplyKeyCheck(op.getTokenType(), op.hasSupplyKey());
             if (validity != OK) {
                 return validity;
             }
@@ -100,7 +102,7 @@ public final class CreateChecks {
             }
 
             validity =
-                    TokenListChecks.checkKeys(
+                    checkKeys(
                             op.hasAdminKey(), op.getAdminKey(),
                             op.hasKycKey(), op.getKycKey(),
                             op.hasWipeKey(), op.getWipeKey(),

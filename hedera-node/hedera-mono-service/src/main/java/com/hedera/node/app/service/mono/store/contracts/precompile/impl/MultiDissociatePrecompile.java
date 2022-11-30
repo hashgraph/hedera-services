@@ -16,6 +16,9 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenIDsFromBytesArray;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -29,7 +32,6 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -76,20 +78,18 @@ public class MultiDissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp) {
+    public long getGasRequirement(final long blockTimestamp) {
         return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody);
     }
 
     public static Dissociation decodeMultipleDissociations(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
+                decodeFunctionCall(input, DISSOCIATE_TOKENS_SELECTOR, DISSOCIATE_TOKENS_DECODER);
 
         final var accountID =
-                DecodingFacade.convertLeftPaddedAddressToAccountId(
-                        decodedArguments.get(0), aliasResolver);
-        final var tokenIDs = DecodingFacade.decodeTokenIDsFromBytesArray(decodedArguments.get(1));
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
+        final var tokenIDs = decodeTokenIDsFromBytesArray(decodedArguments.get(1));
 
         return Dissociation.multiDissociation(accountID, tokenIDs);
     }

@@ -20,6 +20,8 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -31,7 +33,6 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -104,7 +105,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
         final var offset = impliedTokenId == null ? 1 : 0;
 
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
+                decodeFunctionCall(
                         input,
                         offset == 0
                                 ? ERC_GET_APPROVED_FUNCTION_SELECTOR
@@ -116,7 +117,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
         final var tId =
                 offset == 0
                         ? impliedTokenId
-                        : DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
         final var serialNo = (BigInteger) decodedArguments.get(offset);
         return new GetApprovedWrapper(tId, serialNo.longValueExact());

@@ -19,6 +19,11 @@ import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_UPDATE_TOKEN_INFO_V3;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV3;
@@ -77,7 +82,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -194,7 +198,7 @@ class TokenUpdatePrecompileTest {
         subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -219,7 +223,7 @@ class TokenUpdatePrecompileTest {
         subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -244,7 +248,7 @@ class TokenUpdatePrecompileTest {
         subject.getPrecompile().getMinimumFeeInTinybars(Timestamp.getDefaultInstance());
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -267,7 +271,7 @@ class TokenUpdatePrecompileTest {
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.failResult, result);
+        assertEquals(failResult, result);
     }
 
     @Test
@@ -287,7 +291,7 @@ class TokenUpdatePrecompileTest {
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.failResult, result);
+        assertEquals(failResult, result);
     }
 
     @Test
@@ -329,10 +333,10 @@ class TokenUpdatePrecompileTest {
     }
 
     private void givenFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(frame.getContractAddress()).willReturn(HTSTestsUtil.contractAddr);
-        given(frame.getRecipientAddress()).willReturn(HTSTestsUtil.fungibleTokenAddr);
+        given(frame.getContractAddress()).willReturn(contractAddr);
+        given(frame.getRecipientAddress()).willReturn(fungibleTokenAddr);
         given(frame.getRemainingGas()).willReturn(300L);
         given(frame.getValue()).willReturn(Wei.ZERO);
     }
@@ -350,10 +354,7 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContext() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                wrappedLedgers))
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -373,10 +374,7 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV2() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                wrappedLedgers))
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);
@@ -396,10 +394,7 @@ class TokenUpdatePrecompileTest {
     private void givenUpdateTokenContextV3() {
         given(
                         sigsVerifier.hasActiveAdminKey(
-                                true,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                HTSTestsUtil.fungibleTokenAddr,
-                                wrappedLedgers))
+                                true, fungibleTokenAddr, fungibleTokenAddr, wrappedLedgers))
                 .willReturn(true);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
                 .willReturn(hederaTokenStore);

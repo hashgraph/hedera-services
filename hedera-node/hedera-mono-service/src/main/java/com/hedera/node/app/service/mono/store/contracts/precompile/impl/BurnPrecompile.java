@@ -17,6 +17,10 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.BURN_NFT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -35,7 +39,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -141,10 +144,7 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         Objects.requireNonNull(
                 burnOp, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(
-                (burnOp.type() == NON_FUNGIBLE_UNIQUE)
-                        ? PrecompilePricingUtils.GasCostType.BURN_NFT
-                        : PrecompilePricingUtils.GasCostType.BURN_FUNGIBLE,
-                consensusTime);
+                (burnOp.type() == NON_FUNGIBLE_UNIQUE) ? BURN_NFT : BURN_FUNGIBLE, consensusTime);
     }
 
     @Override
@@ -163,11 +163,11 @@ public class BurnPrecompile extends AbstractWritePrecompile {
         return getBurnWrapper(input, BURN_TOKEN_SELECTOR);
     }
 
-    private static BurnWrapper getBurnWrapper(Bytes input, Bytes burnTokenSelector) {
+    private static BurnWrapper getBurnWrapper(final Bytes input, final Bytes burnTokenSelector) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
+                decodeFunctionCall(input, burnTokenSelector, BURN_TOKEN_DECODER);
 
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
         final var fungibleAmount = (long) decodedArguments.get(1);
         final var serialNumbers = (long[]) decodedArguments.get(2);
 

@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.STRING;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -25,7 +26,6 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -78,8 +78,7 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile {
 
     public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
+                decodeFunctionCall(input, TOKEN_URI_NFT_SELECTOR, TOKEN_URI_NFT_DECODER);
 
         final var tokenId = (BigInteger) decodedArguments.get(0);
 

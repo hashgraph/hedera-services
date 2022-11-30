@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.stats;
 
+import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.GAUGE_FORMAT;
+import static com.hedera.node.app.service.mono.stats.ServicesStatsManager.STAT_CATEGORY;
+
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
@@ -150,9 +153,9 @@ public class ThrottleGauges {
         final var name = type.toLowerCase() + String.format(THROTTLE_NAME_TPL, throttleName);
         final var desc = String.format(THROTTLE_DESCRIPTION_TPL, type, throttleName);
         final var config =
-                new DoubleGauge.Config(ServicesStatsManager.STAT_CATEGORY, name)
+                new DoubleGauge.Config(STAT_CATEGORY, name)
                         .withDescription(desc)
-                        .withFormat(ServicesStatsManager.GAUGE_FORMAT);
+                        .withFormat(GAUGE_FORMAT);
         final var gauge = platform.getMetrics().getOrCreate(config);
         log.info("Registered {} gauge for '{}' under name '{}'", status, desc, name);
         return gauge;

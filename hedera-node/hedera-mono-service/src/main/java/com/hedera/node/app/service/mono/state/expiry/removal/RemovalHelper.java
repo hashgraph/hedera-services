@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.DONE;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NO_CAPACITY_LEFT;
 import static com.hedera.node.app.service.mono.throttling.MapAccessType.ACCOUNTS_GET_FOR_MODIFY;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -58,19 +61,19 @@ public class RemovalHelper implements RemovalWork {
     @Override
     public SystemTaskResult tryToMarkDetached(final EntityNum num, final boolean isContract) {
         if (nothingToDoForDetached(isContract)) {
-            return SystemTaskResult.NOTHING_TO_DO;
+            return NOTHING_TO_DO;
         }
         if (!expiryThrottle.allowOne(ACCOUNTS_GET_FOR_MODIFY)) {
-            return SystemTaskResult.NO_CAPACITY_LEFT;
+            return NO_CAPACITY_LEFT;
         }
         accountGC.markDetached(num);
-        return SystemTaskResult.DONE;
+        return DONE;
     }
 
     @Override
     public SystemTaskResult tryToRemoveAccount(final EntityNum account) {
         if (!properties.shouldAutoRenewAccounts()) {
-            return SystemTaskResult.NOTHING_TO_DO;
+            return NOTHING_TO_DO;
         }
         return remove(account, false);
     }
@@ -78,7 +81,7 @@ public class RemovalHelper implements RemovalWork {
     @Override
     public SystemTaskResult tryToRemoveContract(final EntityNum contract) {
         if (!properties.shouldAutoRenewContracts()) {
-            return SystemTaskResult.NOTHING_TO_DO;
+            return NOTHING_TO_DO;
         }
         return remove(contract, true);
     }
@@ -86,7 +89,7 @@ public class RemovalHelper implements RemovalWork {
     private SystemTaskResult remove(final EntityNum num, final boolean isContract) {
         final var lastClassified = classifier.getLastClassified();
         if (isContract && !contractGC.expireBestEffort(num, lastClassified)) {
-            return SystemTaskResult.NO_CAPACITY_LEFT;
+            return NO_CAPACITY_LEFT;
         }
         final var gcOutcome = accountGC.expireBestEffort(num, lastClassified);
         if (gcOutcome.needsExternalizing()) {
@@ -96,9 +99,9 @@ public class RemovalHelper implements RemovalWork {
             if (isContract) {
                 expiryStats.countRemovedContract();
             }
-            return SystemTaskResult.DONE;
+            return DONE;
         } else {
-            return SystemTaskResult.NO_CAPACITY_LEFT;
+            return NO_CAPACITY_LEFT;
         }
     }
 

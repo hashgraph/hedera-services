@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.state.virtual;
 
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.deserializeUint256Key;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytes;
+import static com.hedera.node.app.service.mono.state.virtual.KeyPackingUtils.serializePackedBytesToBuffer;
 import static com.swirlds.common.utility.NonCryptographicHashing.hash32;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -170,7 +173,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             out.write((byte) (contractId >> (b * 8)));
         }
-        KeyPackingUtils.serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
+        serializePackedBytes(uint256Key, uint256KeyNonZeroBytes, out);
         return 1 + contractIdNonZeroBytes + uint256KeyNonZeroBytes;
     }
 
@@ -180,8 +183,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         for (int b = contractIdNonZeroBytes - 1; b >= 0; b--) {
             byteBuffer.put((byte) (contractId >> (b * 8)));
         }
-        KeyPackingUtils.serializePackedBytesToBuffer(
-                uint256Key, uint256KeyNonZeroBytes, byteBuffer);
+        serializePackedBytesToBuffer(uint256Key, uint256KeyNonZeroBytes, byteBuffer);
     }
 
     @Override
@@ -193,7 +195,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
                 deserializeContractID(
                         contractIdNonZeroBytes, in, SerializableDataInputStream::readByte);
         this.uint256Key =
-                KeyPackingUtils.deserializeUint256Key(
+                deserializeUint256Key(
                         uint256KeyNonZeroBytes, in, SerializableDataInputStream::readByte);
     }
 
@@ -203,8 +205,7 @@ public final class ContractKey implements VirtualKey<ContractKey> {
         this.contractIdNonZeroBytes = getContractIdNonZeroBytesFromPacked(packedSize);
         this.uint256KeyNonZeroBytes = getUint256KeyNonZeroBytesFromPacked(packedSize);
         this.contractId = deserializeContractID(contractIdNonZeroBytes, buf, ByteBuffer::get);
-        this.uint256Key =
-                KeyPackingUtils.deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
+        this.uint256Key = deserializeUint256Key(uint256KeyNonZeroBytes, buf, ByteBuffer::get);
     }
 
     @Override

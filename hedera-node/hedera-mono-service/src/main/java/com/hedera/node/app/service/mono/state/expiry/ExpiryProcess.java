@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.state.expiry;
 
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NOTHING_TO_DO;
+import static com.hedera.node.app.service.mono.state.tasks.SystemTaskResult.NO_CAPACITY_LEFT;
+
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.state.expiry.classification.ClassificationWork;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
@@ -46,12 +50,12 @@ public class ExpiryProcess implements SystemTask {
     @Override
     public SystemTaskResult process(final long literalNum, final Instant now) {
         if (!consensusTimeTracker.hasMoreStandaloneRecordTime()) {
-            return SystemTaskResult.NEEDS_DIFFERENT_CONTEXT;
+            return NEEDS_DIFFERENT_CONTEXT;
         }
         final var entityNum = EntityNum.fromLong(literalNum);
         final var result = classifier.classify(entityNum, now);
         return switch (result) {
-            case COME_BACK_LATER -> SystemTaskResult.NO_CAPACITY_LEFT;
+            case COME_BACK_LATER -> NO_CAPACITY_LEFT;
 
             case DETACHED_ACCOUNT -> removalWork.tryToMarkDetached(entityNum, false);
             case EXPIRED_ACCOUNT_READY_TO_RENEW -> renewalWork.tryToRenewAccount(entityNum, now);
@@ -61,7 +65,7 @@ public class ExpiryProcess implements SystemTask {
             case EXPIRED_CONTRACT_READY_TO_RENEW -> renewalWork.tryToRenewContract(entityNum, now);
             case DETACHED_CONTRACT_GRACE_PERIOD_OVER -> removalWork.tryToRemoveContract(entityNum);
 
-            default -> SystemTaskResult.NOTHING_TO_DO;
+            default -> NOTHING_TO_DO;
         };
     }
 }

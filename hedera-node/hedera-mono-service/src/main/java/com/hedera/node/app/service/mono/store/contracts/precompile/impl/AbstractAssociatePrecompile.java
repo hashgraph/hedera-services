@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType.ASSOCIATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -111,7 +112,6 @@ public abstract class AbstractAssociatePrecompile implements Precompile {
 
     @Override
     public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        return pricingUtils.getMinimumPriceInTinybars(
-                PrecompilePricingUtils.GasCostType.ASSOCIATE, consensusTime);
+        return pricingUtils.getMinimumPriceInTinybars(ASSOCIATE, consensusTime);
     }
 }

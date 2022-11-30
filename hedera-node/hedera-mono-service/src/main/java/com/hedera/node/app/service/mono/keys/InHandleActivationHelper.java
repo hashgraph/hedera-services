@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
+import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
+
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -49,7 +51,8 @@ public class InHandleActivationHelper {
     private Function<byte[], TransactionSignature> sigsFn = NO_LAST_SIGS_FN;
 
     public InHandleActivationHelper(
-            CharacteristicsFactory characteristics, Supplier<SwirldsTxnAccessor> accessorSource) {
+            final CharacteristicsFactory characteristics,
+            final Supplier<SwirldsTxnAccessor> accessorSource) {
         this.characteristics = characteristics;
         this.accessorSource = accessorSource;
     }
@@ -62,7 +65,7 @@ public class InHandleActivationHelper {
      * @return whether or not the given set of keys are sufficient for signing the active
      *     transaction
      */
-    public boolean areOtherPartiesActive(BiPredicate<JKey, TransactionSignature> tests) {
+    public boolean areOtherPartiesActive(final BiPredicate<JKey, TransactionSignature> tests) {
         ensureUpToDate();
         return arePartiesActive(false, accessor.getTxn(), tests);
     }
@@ -78,7 +81,8 @@ public class InHandleActivationHelper {
      *     referenced by the active transaction
      */
     public boolean areScheduledPartiesActive(
-            TransactionBody scheduledTxn, BiPredicate<JKey, TransactionSignature> tests) {
+            final TransactionBody scheduledTxn,
+            final BiPredicate<JKey, TransactionSignature> tests) {
         ensureUpToDate();
         return arePartiesActive(true, scheduledTxn, tests);
     }
@@ -89,11 +93,11 @@ public class InHandleActivationHelper {
      *
      * @param visitor the consumer to give the tour to
      */
-    public void visitScheduledCryptoSigs(BiConsumer<JKey, TransactionSignature> visitor) {
+    public void visitScheduledCryptoSigs(final BiConsumer<JKey, TransactionSignature> visitor) {
         ensureUpToDate();
         for (final var req : otherParties) {
             if (req.isForScheduledTxn()) {
-                HederaKeyTraversal.visitSimpleKeys(
+                visitSimpleKeys(
                         req, key -> visitor.accept(key, sigsFn.apply(key.primitiveKeyIfPresent())));
             }
         }
@@ -111,9 +115,9 @@ public class InHandleActivationHelper {
     }
 
     private boolean arePartiesActive(
-            boolean useScheduleKeys,
-            TransactionBody txn,
-            BiPredicate<JKey, TransactionSignature> givenTests) {
+            final boolean useScheduleKeys,
+            final TransactionBody txn,
+            final BiPredicate<JKey, TransactionSignature> givenTests) {
         final var activeCharacter = characteristics.inferredFor(txn);
         for (final var key : otherParties) {
             if (key.isForScheduledTxn() != useScheduleKeys) {
@@ -127,7 +131,7 @@ public class InHandleActivationHelper {
     }
 
     private void ensureUpToDate() {
-        var current = accessorSource.get();
+        final var current = accessorSource.get();
         if (accessor != current) {
             final var sigMeta = current.getSigMeta();
             if (sigMeta.couldRationalizeOthers()) {

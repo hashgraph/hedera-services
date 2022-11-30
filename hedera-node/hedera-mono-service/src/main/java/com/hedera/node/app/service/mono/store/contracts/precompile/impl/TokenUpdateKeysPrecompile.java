@@ -19,6 +19,10 @@ import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BR
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -57,13 +61,13 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     TokenUpdateKeysWrapper updateOp;
 
     public TokenUpdateKeysPrecompile(
-            WorldLedgers ledgers,
-            ContractAliases aliases,
-            EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffectsTracker,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils pricingUtils) {
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffectsTracker,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils pricingUtils) {
         super(
                 ledgers,
                 aliases,
@@ -75,29 +79,28 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
     }
 
     @Override
-    public TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver) {
+    public TransactionBody.Builder body(
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         updateOp = decodeUpdateTokenKeys(input, aliasResolver);
         transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
         return transactionBody;
     }
 
     @Override
-    public void run(MessageFrame frame) {
+    public void run(final MessageFrame frame) {
         Objects.requireNonNull(updateOp);
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateOp.tokenID());
-        type = UpdateType.UPDATE_TOKEN_KEYS;
+        type = UPDATE_TOKEN_KEYS;
         super.run(frame);
     }
 
     public static TokenUpdateKeysWrapper decodeUpdateTokenKeys(
-            Bytes input, UnaryOperator<byte[]> aliasResolver) {
+            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
-                DecodingFacade.decodeFunctionCall(
-                        input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
-        final var tokenID = DecodingFacade.convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var tokenKeys =
-                DecodingFacade.decodeTokenKeys(decodedArguments.get(1), aliasResolver);
+                decodeFunctionCall(input, TOKEN_UPDATE_KEYS_SELECTOR, TOKEN_UPDATE_KEYS_DECODER);
+        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tokenKeys = decodeTokenKeys(decodedArguments.get(1), aliasResolver);
         return new TokenUpdateKeysWrapper(tokenID, tokenKeys);
     }
 }

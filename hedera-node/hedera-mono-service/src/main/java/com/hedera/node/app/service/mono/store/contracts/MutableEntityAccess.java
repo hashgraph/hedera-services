@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import static com.hedera.node.app.service.mono.store.contracts.StaticEntityAccess.explicitCodeFetch;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -111,12 +112,12 @@ public class MutableEntityAccess implements EntityAccess {
     }
 
     @Override
-    public boolean isUsable(Address address) {
+    public boolean isUsable(final Address address) {
         return ledger.usabilityOf(accountIdFromEvmAddress(address)) == OK;
     }
 
     @Override
-    public boolean isTokenAccount(Address address) {
+    public boolean isTokenAccount(final Address address) {
         return tokensLedger.exists(tokenIdFromEvmAddress(address));
     }
 
@@ -152,8 +153,7 @@ public class MutableEntityAccess implements EntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        return StaticEntityAccess.explicitCodeFetch(
-                bytecode.get(), accountIdFromEvmAddress(address));
+        return explicitCodeFetch(bytecode.get(), accountIdFromEvmAddress(address));
     }
 
     @Override

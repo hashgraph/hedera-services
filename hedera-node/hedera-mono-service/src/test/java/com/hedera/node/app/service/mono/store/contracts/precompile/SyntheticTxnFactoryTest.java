@@ -17,10 +17,22 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.account;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fixedFee;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fractionalFee;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.payer;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.receiver;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.royaltyFee;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.token;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory.MOCK_INITCODE;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -64,18 +76,28 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Transfe
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.UnpauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyFactory;
 import com.hedera.test.utils.IdUtils;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransferList;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -390,7 +412,7 @@ class SyntheticTxnFactoryTest {
         assertTrue(result.hasContractCall());
         assertEquals(1, txnBody.getContractCall().getGas());
         assertEquals(
-                EntityIdUtils.contractIdFromEvmAddress(
+                contractIdFromEvmAddress(
                         Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArray()),
                 txnBody.getContractCall().getContractID());
         assertEquals(
@@ -466,12 +488,7 @@ class SyntheticTxnFactoryTest {
                         .setIsApproval(true)
                         .build();
 
-        final var nftChange =
-                changingNftOwnership(
-                        Id.fromGrpcToken(HTSTestsUtil.token),
-                        HTSTestsUtil.token,
-                        xfer,
-                        HTSTestsUtil.payer);
+        final var nftChange = changingNftOwnership(Id.fromGrpcToken(token), token, xfer, payer);
 
         final var result = subject.createAccount(alias, balance, 1);
 
@@ -595,9 +612,7 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedFungibleApproveAllowance() {
         final var amount = BigInteger.ONE;
-        var allowances =
-                new ApproveWrapper(
-                        HTSTestsUtil.token, HTSTestsUtil.receiver, amount, BigInteger.ZERO, true);
+        final var allowances = new ApproveWrapper(token, receiver, amount, BigInteger.ZERO, true);
 
         final var result = subject.createFungibleApproval(allowances);
         final var txnBody = result.build();
@@ -605,31 +620,23 @@ class SyntheticTxnFactoryTest {
         assertEquals(
                 amount.longValue(),
                 txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getAmount());
-        Assertions.assertEquals(
-                HTSTestsUtil.token,
-                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
-        Assertions.assertEquals(
-                HTSTestsUtil.receiver,
-                txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
+        assertEquals(token, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getTokenId());
+        assertEquals(
+                receiver, txnBody.getCryptoApproveAllowance().getTokenAllowances(0).getSpender());
     }
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithOwnerAsOperator() {
-        var allowances =
-                new ApproveWrapper(
-                        HTSTestsUtil.token,
-                        HTSTestsUtil.receiver,
-                        BigInteger.ZERO,
-                        BigInteger.ONE,
-                        false);
+        final var allowances =
+                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var ownerId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, ownerId, ownerId);
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        Assertions.assertEquals(HTSTestsUtil.token, allowance.getTokenId());
-        Assertions.assertEquals(HTSTestsUtil.receiver, allowance.getSpender());
+        assertEquals(token, allowance.getTokenId());
+        assertEquals(receiver, allowance.getSpender());
         assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
         assertEquals(AccountID.getDefaultInstance(), allowance.getDelegatingSpender());
         assertEquals(1L, allowance.getSerialNumbers(0));
@@ -637,13 +644,8 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithNonOwnerOperator() {
-        var allowances =
-                new ApproveWrapper(
-                        HTSTestsUtil.token,
-                        HTSTestsUtil.receiver,
-                        BigInteger.ZERO,
-                        BigInteger.ONE,
-                        false);
+        final var allowances =
+                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var ownerId = new EntityId(0, 0, 666);
         final var operatorId = new EntityId(0, 0, 777);
 
@@ -651,8 +653,8 @@ class SyntheticTxnFactoryTest {
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        Assertions.assertEquals(HTSTestsUtil.token, allowance.getTokenId());
-        Assertions.assertEquals(HTSTestsUtil.receiver, allowance.getSpender());
+        assertEquals(token, allowance.getTokenId());
+        assertEquals(receiver, allowance.getSpender());
         assertEquals(ownerId.toGrpcAccountId(), allowance.getOwner());
         assertEquals(operatorId.toGrpcAccountId(), allowance.getDelegatingSpender());
         assertEquals(1L, allowance.getSerialNumbers(0));
@@ -660,35 +662,29 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedNonfungibleApproveAllowanceWithoutOwner() {
-        var allowances =
-                new ApproveWrapper(
-                        HTSTestsUtil.token,
-                        HTSTestsUtil.receiver,
-                        BigInteger.ZERO,
-                        BigInteger.ONE,
-                        false);
+        final var allowances =
+                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
         final var operatorId = new EntityId(0, 0, 666);
 
         final var result = subject.createNonfungibleApproval(allowances, null, operatorId);
         final var txnBody = result.build();
 
         final var allowance = txnBody.getCryptoApproveAllowance().getNftAllowances(0);
-        Assertions.assertEquals(HTSTestsUtil.token, allowance.getTokenId());
-        Assertions.assertEquals(HTSTestsUtil.receiver, allowance.getSpender());
+        assertEquals(token, allowance.getTokenId());
+        assertEquals(receiver, allowance.getSpender());
         assertEquals(AccountID.getDefaultInstance(), allowance.getOwner());
         assertEquals(1L, allowance.getSerialNumbers(0));
     }
 
     @Test
     void createsAdjustAllowanceForAllNFT() {
-        var allowances = new SetApprovalForAllWrapper(nonFungible, HTSTestsUtil.receiver, true);
+        final var allowances = new SetApprovalForAllWrapper(nonFungible, receiver, true);
 
         final var result = subject.createApproveAllowanceForAllNFT(allowances);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(
-                HTSTestsUtil.receiver,
-                txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
+        assertEquals(
+                receiver, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getSpender());
         assertEquals(
                 nonFungible, txnBody.getCryptoApproveAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
@@ -698,23 +694,16 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsDeleteAllowance() {
-        var allowances =
-                new ApproveWrapper(
-                        HTSTestsUtil.token,
-                        HTSTestsUtil.receiver,
-                        BigInteger.ZERO,
-                        BigInteger.ONE,
-                        false);
+        final var allowances =
+                new ApproveWrapper(token, receiver, BigInteger.ZERO, BigInteger.ONE, false);
 
         final var result = subject.createDeleteAllowance(allowances, HTSTestsUtil.senderId);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(
-                HTSTestsUtil.token,
-                txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
+        assertEquals(token, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getTokenId());
         assertEquals(
                 1L, txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getSerialNumbers(0));
-        Assertions.assertEquals(
+        assertEquals(
                 HTSTestsUtil.sender,
                 txnBody.getCryptoDeleteAllowance().getNftAllowances(0).getOwner());
     }
@@ -758,21 +747,21 @@ class SyntheticTxnFactoryTest {
                         null,
                         new byte[] {},
                         new byte[] {},
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress));
+                        contractIdFromEvmAddress(contractAddress));
         final var multiKey =
                 new KeyValueWrapper(
                         false,
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                        contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
                         new byte[] {},
                         null);
         final var wrapper =
-                HTSTestsUtil.createTokenCreateWrapperWithKeys(
+                createTokenCreateWrapperWithKeys(
                         List.of(
                                 new TokenKeyWrapper(254, multiKey),
                                 new TokenKeyWrapper(1, adminKey)));
-        wrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
-        wrapper.setFractionalFees(List.of(HTSTestsUtil.fractionalFee));
+        wrapper.setFixedFees(List.of(fixedFee));
+        wrapper.setFractionalFees(List.of(fractionalFee));
 
         // when
         final var result = subject.createTokenCreate(wrapper);
@@ -784,7 +773,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(TokenType.FUNGIBLE_COMMON, txnBody.getTokenType());
         assertEquals("token", txnBody.getName());
         assertEquals("symbol", txnBody.getSymbol());
-        Assertions.assertEquals(HTSTestsUtil.account, txnBody.getTreasury());
+        assertEquals(account, txnBody.getTreasury());
         assertEquals("memo", txnBody.getMemo());
         assertEquals(TokenSupplyType.INFINITE, txnBody.getSupplyType());
         assertEquals(Long.MAX_VALUE, txnBody.getInitialSupply());
@@ -793,7 +782,7 @@ class SyntheticTxnFactoryTest {
         assertFalse(txnBody.getFreezeDefault());
         assertEquals(442L, txnBody.getExpiry().getSeconds());
         assertEquals(555L, txnBody.getAutoRenewPeriod().getSeconds());
-        Assertions.assertEquals(HTSTestsUtil.payer, txnBody.getAutoRenewAccount());
+        assertEquals(payer, txnBody.getAutoRenewAccount());
 
         // keys assertions
         assertTrue(txnBody.hasAdminKey());
@@ -807,8 +796,8 @@ class SyntheticTxnFactoryTest {
 
         // assert custom fees
         assertEquals(2, txnBody.getCustomFeesCount());
-        Assertions.assertEquals(HTSTestsUtil.fixedFee.asGrpc(), txnBody.getCustomFees(0));
-        Assertions.assertEquals(HTSTestsUtil.fractionalFee.asGrpc(), txnBody.getCustomFees(1));
+        assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+        assertEquals(fractionalFee.asGrpc(), txnBody.getCustomFees(1));
     }
 
     @Test
@@ -817,15 +806,15 @@ class SyntheticTxnFactoryTest {
         final var multiKey =
                 new KeyValueWrapper(
                         false,
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                        contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
                         new byte[] {},
                         null);
         final var wrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                         List.of(new TokenKeyWrapper(112, multiKey)));
-        wrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
-        wrapper.setRoyaltyFees(List.of(HTSTestsUtil.royaltyFee));
+        wrapper.setFixedFees(List.of(fixedFee));
+        wrapper.setRoyaltyFees(List.of(royaltyFee));
 
         // when
         final var result = subject.createTokenCreate(wrapper);
@@ -837,7 +826,7 @@ class SyntheticTxnFactoryTest {
         assertEquals(TokenType.NON_FUNGIBLE_UNIQUE, txnBody.getTokenType());
         assertEquals("nft", txnBody.getName());
         assertEquals("NFT", txnBody.getSymbol());
-        Assertions.assertEquals(HTSTestsUtil.account, txnBody.getTreasury());
+        assertEquals(account, txnBody.getTreasury());
         assertEquals("nftMemo", txnBody.getMemo());
         assertEquals(TokenSupplyType.FINITE, txnBody.getSupplyType());
         assertEquals(0L, txnBody.getInitialSupply());
@@ -858,8 +847,8 @@ class SyntheticTxnFactoryTest {
 
         // assert custom fees
         assertEquals(2, txnBody.getCustomFeesCount());
-        Assertions.assertEquals(HTSTestsUtil.fixedFee.asGrpc(), txnBody.getCustomFees(0));
-        Assertions.assertEquals(HTSTestsUtil.royaltyFee.asGrpc(), txnBody.getCustomFees(1));
+        assertEquals(fixedFee.asGrpc(), txnBody.getCustomFees(0));
+        assertEquals(royaltyFee.asGrpc(), txnBody.getCustomFees(1));
     }
 
     @Test
@@ -891,16 +880,16 @@ class SyntheticTxnFactoryTest {
                         null,
                         new byte[] {},
                         new byte[] {},
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress));
+                        contractIdFromEvmAddress(contractAddress));
         final var multiKey =
                 new KeyValueWrapper(
                         false,
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                        contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
                         new byte[] {},
                         null);
         final var tokenUpdateWrapper =
-                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                createFungibleTokenUpdateWrapperWithKeys(
                         List.of(
                                 new TokenKeyWrapper(112, multiKey),
                                 new TokenKeyWrapper(1, adminKey)));
@@ -911,7 +900,7 @@ class SyntheticTxnFactoryTest {
 
         assertEquals("fungible", txnBody.getName());
         assertEquals("G", txnBody.getSymbol());
-        Assertions.assertEquals(HTSTestsUtil.account, txnBody.getTreasury());
+        assertEquals(account, txnBody.getTreasury());
         assertEquals("G token memo", txnBody.getMemo().getValue());
         assertEquals(1, txnBody.getExpiry().getSeconds());
         assertEquals(2, txnBody.getAutoRenewPeriod().getSeconds());
@@ -935,16 +924,16 @@ class SyntheticTxnFactoryTest {
                         null,
                         new byte[] {},
                         new byte[] {},
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress));
+                        contractIdFromEvmAddress(contractAddress));
         final var multiKey =
                 new KeyValueWrapper(
                         false,
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                        contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
                         new byte[] {},
                         null);
         final var wrapper =
-                HTSTestsUtil.createNonFungibleTokenUpdateWrapperWithKeys(
+                createNonFungibleTokenUpdateWrapperWithKeys(
                         List.of(
                                 new TokenKeyWrapper(112, multiKey),
                                 new TokenKeyWrapper(2, ComplexKey),
@@ -979,11 +968,11 @@ class SyntheticTxnFactoryTest {
                         null,
                         new byte[] {},
                         new byte[] {},
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress));
+                        contractIdFromEvmAddress(contractAddress));
         final var multiKey =
                 new KeyValueWrapper(
                         false,
-                        EntityIdUtils.contractIdFromEvmAddress(HTSTestsUtil.contractAddress),
+                        contractIdFromEvmAddress(contractAddress),
                         new byte[] {},
                         new byte[] {},
                         null);
@@ -1407,58 +1396,54 @@ class SyntheticTxnFactoryTest {
     @Test
     void createsExpectedUpdateTokenExpiryInfo() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(
-                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 555L));
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getTokenUpdate().getToken());
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
-        Assertions.assertEquals(HTSTestsUtil.payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroExpiry() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(
-                        HTSTestsUtil.token, new TokenExpiryWrapper(0L, HTSTestsUtil.payer, 555L));
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(0L, payer, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getTokenUpdate().getToken());
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
         assertEquals(0L, txnBody.getTokenUpdate().getExpiry().getSeconds());
-        Assertions.assertEquals(HTSTestsUtil.payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithZeroAutoRenewPeriod() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(
-                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, HTSTestsUtil.payer, 0L));
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 0L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getTokenUpdate().getToken());
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
-        Assertions.assertEquals(HTSTestsUtil.payer, txnBody.getTokenUpdate().getAutoRenewAccount());
+        assertEquals(payer, txnBody.getTokenUpdate().getAutoRenewAccount());
         assertEquals(0L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());
     }
 
     @Test
     void createsExpectedUpdateTokenExpiryInfoWithNoAutoRenewAccount() {
         final var updateExpiryInfo =
-                new TokenUpdateExpiryInfoWrapper(
-                        HTSTestsUtil.token, new TokenExpiryWrapper(442L, null, 555L));
+                new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, null, 555L));
 
         final var result = subject.createTokenUpdateExpiryInfo(updateExpiryInfo);
         final var txnBody = result.build();
 
-        Assertions.assertEquals(HTSTestsUtil.token, txnBody.getTokenUpdate().getToken());
+        assertEquals(token, txnBody.getTokenUpdate().getToken());
         assertEquals(442L, txnBody.getTokenUpdate().getExpiry().getSeconds());
         assertTrue(txnBody.getTokenUpdate().getAutoRenewAccount().toString().isEmpty());
         assertEquals(555L, txnBody.getTokenUpdate().getAutoRenewPeriod().getSeconds());

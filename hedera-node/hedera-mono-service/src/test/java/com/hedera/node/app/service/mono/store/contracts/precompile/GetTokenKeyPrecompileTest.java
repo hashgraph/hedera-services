@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidTokenIdResult;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenKeyPrecompile.decodeGetTokenKey;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,7 +62,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,7 +99,7 @@ class GetTokenKeyPrecompileTest {
                     "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
     private HTSPrecompiledContract subject;
     private MockedStatic<GetTokenKeyPrecompile> getTokenKeyPrecompile;
-    private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 1L);
+    private GetTokenKeyWrapper wrapper = new GetTokenKeyWrapper(fungible, 1L);
     private final byte[] ed25519Key =
             new byte[] {
                 -98, 65, 115, 52, -46, -22, 107, -28, 89, 98, 64, 96, -29, -17, -36, 27, 69, -102,
@@ -146,19 +149,19 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
+        given(tokens.get(fungible, TokenProperty.ADMIN_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -170,20 +173,20 @@ class GetTokenKeyPrecompileTest {
         givenMinimalFrameContext();
         givenMinimalContextForCall();
         givenJKeyContractAndDelegateContext();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 16L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 16L);
+        given(tokens.get(fungible, TokenProperty.SUPPLY_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -194,20 +197,20 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 4L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 4L);
+        given(tokens.get(fungible, TokenProperty.FREEZE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -218,20 +221,20 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 8L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.WIPE_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 8L);
+        given(tokens.get(fungible, TokenProperty.WIPE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -242,20 +245,20 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 64L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 64L);
+        given(tokens.get(fungible, TokenProperty.PAUSE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -266,20 +269,20 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 32L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 32L);
+        given(tokens.get(fungible, TokenProperty.FEE_SCHEDULE_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -290,20 +293,20 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 2L);
-        given(tokens.get(HTSTestsUtil.fungible, TokenProperty.KYC_KEY)).willReturn(key);
+        wrapper = new GetTokenKeyWrapper(fungible, 2L);
+        given(tokens.get(fungible, TokenProperty.KYC_KEY)).willReturn(key);
         given(key.getECDSASecp256k1Key()).willReturn(new byte[0]);
         given(key.getEd25519()).willReturn(ed25519Key);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
-        given(encoder.encodeGetTokenKey(any())).willReturn(HTSTestsUtil.successResult);
+        given(encoder.encodeGetTokenKey(any())).willReturn(successResult);
         given(tokens.exists(any())).willReturn(true);
         // when
         subject.prepareFields(frame);
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.successResult, result);
+        assertEquals(successResult, result);
     }
 
     @Test
@@ -314,7 +317,7 @@ class GetTokenKeyPrecompileTest {
                         "0x3c4dd32e00000000000000000000000000000000000000000000000000000000000010650000000000000000000000000000000000000000000000000000000000000001");
         givenMinimalFrameContext();
         givenMinimalContextForCall();
-        wrapper = new GetTokenKeyWrapper(HTSTestsUtil.fungible, 200L);
+        wrapper = new GetTokenKeyWrapper(fungible, 200L);
         given(wrappedLedgers.tokens()).willReturn(tokens);
         getTokenKeyPrecompile.when(() -> decodeGetTokenKey(input)).thenReturn(wrapper);
         given(tokens.exists(any())).willReturn(true);
@@ -323,7 +326,7 @@ class GetTokenKeyPrecompileTest {
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.failResult, result);
+        assertEquals(HTSTestsUtil.failResult, result);
     }
 
     @Test
@@ -342,7 +345,7 @@ class GetTokenKeyPrecompileTest {
         subject.prepareComputation(input, a -> a);
         final var result = subject.computeInternal(frame);
         // then
-        Assertions.assertEquals(HTSTestsUtil.invalidTokenIdResult, result);
+        assertEquals(invalidTokenIdResult, result);
     }
 
     @Test
@@ -357,7 +360,7 @@ class GetTokenKeyPrecompileTest {
     }
 
     private void givenMinimalFrameContext() {
-        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
+        given(frame.getSenderAddress()).willReturn(contractAddress);
         given(frame.getValue()).willReturn(Wei.ZERO);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }

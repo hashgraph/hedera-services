@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -264,7 +265,7 @@ public class SyntheticTxnFactory {
             final long gas, final Bytes functionParameters) {
         final var builder = ContractCallTransactionBody.newBuilder();
 
-        builder.setContractID(HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID);
+        builder.setContractID(HTS_PRECOMPILE_MIRROR_ID);
         builder.setGas(gas);
         builder.setFunctionParameters(ByteString.copyFrom(functionParameters.toArray()));
 

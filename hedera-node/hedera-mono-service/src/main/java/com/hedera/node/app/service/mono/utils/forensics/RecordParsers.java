@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
+import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static java.util.Comparator.comparing;
 
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,10 +65,9 @@ public class RecordParsers {
                                 final var itemRecord = item.getRecord();
                                 entries.add(
                                         new RecordStreamEntry(
-                                                SignedTxnAccessor.uncheckedFrom(
-                                                        item.getTransaction()),
+                                                uncheckedFrom(item.getTransaction()),
                                                 itemRecord,
-                                                MiscUtils.timestampToInstant(
+                                                timestampToInstant(
                                                         itemRecord.getConsensusTimestamp())));
                             });
         }

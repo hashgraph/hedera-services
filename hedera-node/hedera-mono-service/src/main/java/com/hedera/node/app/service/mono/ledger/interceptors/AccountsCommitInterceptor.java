@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.ledger.interceptors;
 
+import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.IS_SMART_CONTRACT;
+
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.CommitInterceptor;
 import com.hedera.node.app.service.mono.ledger.EntityChangeSet;
@@ -71,7 +73,7 @@ public class AccountsCommitInterceptor
             final var changes = pendingChanges.changes(i);
             // A null account means a new entity
             if (account == null && usageTracking != null) {
-                if (Boolean.TRUE.equals(changes.get(AccountProperty.IS_SMART_CONTRACT))) {
+                if (Boolean.TRUE.equals(changes.get(IS_SMART_CONTRACT))) {
                     numNewContracts++;
                 } else {
                     numNewAccounts++;

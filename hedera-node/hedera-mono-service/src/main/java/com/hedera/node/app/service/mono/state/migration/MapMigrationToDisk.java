@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.state.migration;
 
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.ACCOUNTS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.PAYER_RECORDS;
+import static com.hedera.node.app.service.mono.state.migration.StateChildIndices.TOKEN_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
@@ -69,8 +72,7 @@ public class MapMigrationToDisk {
                 new NonAtomicReference<>(virtualMapFactory.newOnDiskAccountStorage());
 
         final var inMemoryAccounts =
-                (MerkleMap<EntityNum, MerkleAccount>)
-                        mutableState.getChild(StateChildIndices.ACCOUNTS);
+                (MerkleMap<EntityNum, MerkleAccount>) mutableState.getChild(ACCOUNTS);
         final MerkleMap<EntityNum, MerklePayerRecords> payerRecords = new MerkleMap<>();
         withLoggedDuration(
                 () ->
@@ -96,8 +98,8 @@ public class MapMigrationToDisk {
                                 }),
                 log,
                 "accounts-to-disk migration");
-        mutableState.setChild(StateChildIndices.ACCOUNTS, onDiskAccounts.get());
-        mutableState.setChild(StateChildIndices.PAYER_RECORDS, payerRecords);
+        mutableState.setChild(ACCOUNTS, onDiskAccounts.get());
+        mutableState.setChild(PAYER_RECORDS, payerRecords);
     }
 
     @SuppressWarnings("unchecked")
@@ -112,7 +114,7 @@ public class MapMigrationToDisk {
 
         final var inMemoryRels =
                 (MerkleMap<EntityNumPair, MerkleTokenRelStatus>)
-                        mutableState.getChild(StateChildIndices.TOKEN_ASSOCIATIONS);
+                        mutableState.getChild(TOKEN_ASSOCIATIONS);
         withLoggedDuration(
                 () ->
                         forEach(
@@ -130,7 +132,7 @@ public class MapMigrationToDisk {
                                 }),
                 log,
                 "token-rels-to-disk migration");
-        mutableState.setChild(StateChildIndices.TOKEN_ASSOCIATIONS, onDiskRels.get());
+        mutableState.setChild(TOKEN_ASSOCIATIONS, onDiskRels.get());
     }
 
     private MapMigrationToDisk() {

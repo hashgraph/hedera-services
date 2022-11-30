@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -46,9 +48,7 @@ import com.hedera.node.app.service.mono.state.migration.HederaTokenRel;
 import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -215,18 +215,13 @@ class MutableEntityAccessTest {
     @Test
     void checksIfTokenAccount() {
         // given:
-        given(
-                        tokensLedger.exists(
-                                EntityIdUtils.tokenIdFromEvmAddress(
-                                        HTSTestsUtil.fungibleTokenAddr)))
-                .willReturn(true);
+        given(tokensLedger.exists(tokenIdFromEvmAddress(fungibleTokenAddr))).willReturn(true);
 
         // when:
-        assertTrue(subject.isTokenAccount(HTSTestsUtil.fungibleTokenAddr));
+        assertTrue(subject.isTokenAccount(fungibleTokenAddr));
 
         // and:
-        verify(tokensLedger)
-                .exists(EntityIdUtils.tokenIdFromEvmAddress(HTSTestsUtil.fungibleTokenAddr));
+        verify(tokensLedger).exists(tokenIdFromEvmAddress(fungibleTokenAddr));
     }
 
     @Test

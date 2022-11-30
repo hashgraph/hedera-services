@@ -24,6 +24,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static com.hedera.node.app.service.mono.store.contracts.WorldLedgers.staticLedgersWith;
 import static com.hedera.test.utils.IdUtils.asContract;
 import static com.swirlds.common.utility.CommonUtils.unhex;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -80,7 +81,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,7 +133,7 @@ class AbstractLedgerWorldUpdaterTest {
     void isPossibleToWrapStaticLedgers() {
         final var staticLedgers = WorldLedgers.staticLedgersWith(aliases, staticEntityAccess);
         subject = new MockLedgerWorldUpdater(worldState, staticLedgers, customizer);
-        Assertions.assertDoesNotThrow(() -> subject.wrappedTrackingLedgers(sideEffectsTracker));
+        assertDoesNotThrow(() -> subject.wrappedTrackingLedgers(sideEffectsTracker));
     }
 
     @Test
@@ -557,8 +557,7 @@ class AbstractLedgerWorldUpdaterTest {
                 new MockLedgerWorldUpdater(
                         worldState, staticLedgersWith(aliases, null), customizer);
 
-        Assertions.assertDoesNotThrow(
-                () -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
+        assertDoesNotThrow(() -> subject.createAccount(aAddress, aNonce, Wei.of(aHbarBalance)));
     }
 
     private void setupLedgers() {

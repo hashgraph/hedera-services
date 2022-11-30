@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.context.properties.PropertyNames.
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_RATE;
+import static com.hedera.node.app.service.mono.mocks.MockDynamicProperties.mockPropertiesWith;
 
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -40,7 +41,6 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.ChangeSummaryManager;
 import com.hedera.node.app.service.mono.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.mocks.MockAccountTracking;
-import com.hedera.node.app.service.mono.mocks.MockDynamicProperties;
 import com.hedera.node.app.service.mono.mocks.MockEntityCreator;
 import com.hedera.node.app.service.mono.mocks.MockProps;
 import com.hedera.node.app.service.mono.mocks.MockRecordsHistorian;
@@ -89,7 +89,7 @@ public interface StakingActivityModule {
     @Provides
     @Singleton
     static GlobalDynamicProperties provideGlobalDynamicProperties() {
-        return MockDynamicProperties.mockPropertiesWith(500_000_000, 163_840);
+        return mockPropertiesWith(500_000_000, 163_840);
     }
 
     @Provides

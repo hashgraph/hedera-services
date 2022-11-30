@@ -16,6 +16,14 @@
 package com.hedera.node.app.service.mono.sigs.metadata;
 
 import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.IMMUTABLE_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_CONTRACT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.INVALID_TOPIC;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_ACCOUNT;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_FILE;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_SCHEDULE;
+import static com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure.MISSING_TOKEN;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -31,7 +39,6 @@ import com.hedera.node.app.service.mono.files.store.FcBlobsBytesStore;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
@@ -85,7 +92,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         }
         final var meta = metaMap.get(id);
         return (meta == null)
-                ? SafeLookupResult.failure(KeyOrderingFailure.MISSING_FILE)
+                ? SafeLookupResult.failure(MISSING_FILE)
                 : new SafeLookupResult<>(new FileSigningMetadata(meta.getWacl()));
     }
 
@@ -97,7 +104,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         }
         final var topic = stateChildren.topics().get(fromTopicId(id));
         if (topic == null || topic.isDeleted()) {
-            return SafeLookupResult.failure(KeyOrderingFailure.INVALID_TOPIC);
+            return SafeLookupResult.failure(INVALID_TOPIC);
         } else {
             final var effAdminKey = topic.hasAdminKey() ? topic.getAdminKey() : null;
             final var effSubmitKey = topic.hasSubmitKey() ? topic.getSubmitKey() : null;
@@ -113,7 +120,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         }
         final var token = stateChildren.tokens().get(fromTokenId(id));
         return (token == null)
-                ? SafeLookupResult.failure(KeyOrderingFailure.MISSING_TOKEN)
+                ? SafeLookupResult.failure(MISSING_TOKEN)
                 : new SafeLookupResult<>(tokenMetaTransform.apply(token));
     }
 
@@ -139,7 +146,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
             }
             final var explicitId = aliasManager.lookupIdBy(alias);
             return (explicitId == MISSING_NUM)
-                    ? SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT)
+                    ? SafeLookupResult.failure(MISSING_ACCOUNT)
                     : lookupAccountByNumber(explicitId, linkedRefs);
         } else {
             return lookupAccountByNumber(fromAccountId(idOrAlias), linkedRefs);
@@ -158,7 +165,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                         .byId()
                         .get(new EntityNumVirtualKey(EntityNum.fromScheduleId(id)));
         if (schedule == null) {
-            return SafeLookupResult.failure(KeyOrderingFailure.MISSING_SCHEDULE);
+            return SafeLookupResult.failure(MISSING_SCHEDULE);
         } else {
             final var scheduleMeta =
                     new ScheduleSigningMetadata(
@@ -179,7 +186,7 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
                         ? EntityIdUtils.unaliased(idOrAlias, aliasManager)
                         : EntityIdUtils.unaliased(idOrAlias, aliasManager, linkedRefs::link);
         return (id == MISSING_NUM)
-                ? SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT)
+                ? SafeLookupResult.failure(INVALID_CONTRACT)
                 : lookupContractByNumber(id, linkedRefs);
     }
 
@@ -190,11 +197,11 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         }
         final var contract = stateChildren.accounts().get(id);
         if (contract == null || contract.isDeleted() || !contract.isSmartContract()) {
-            return SafeLookupResult.failure(KeyOrderingFailure.INVALID_CONTRACT);
+            return SafeLookupResult.failure(INVALID_CONTRACT);
         } else {
             final JKey key;
             if ((key = contract.getAccountKey()) == null || key instanceof JContractIDKey) {
-                return SafeLookupResult.failure(KeyOrderingFailure.IMMUTABLE_CONTRACT);
+                return SafeLookupResult.failure(IMMUTABLE_CONTRACT);
             } else {
                 return new SafeLookupResult<>(
                         new ContractSigningMetadata(key, contract.isReceiverSigRequired()));
@@ -209,11 +216,11 @@ public final class StateChildrenSigMetadataLookup implements SigMetadataLookup {
         }
         final var account = stateChildren.accounts().get(id);
         if (account == null) {
-            return SafeLookupResult.failure(KeyOrderingFailure.MISSING_ACCOUNT);
+            return SafeLookupResult.failure(MISSING_ACCOUNT);
         } else {
             final var key = account.getAccountKey();
             if (key == null || key.isEmpty()) {
-                return SafeLookupResult.failure(KeyOrderingFailure.IMMUTABLE_ACCOUNT);
+                return SafeLookupResult.failure(IMMUTABLE_ACCOUNT);
             }
             return new SafeLookupResult<>(
                     new AccountSigningMetadata(

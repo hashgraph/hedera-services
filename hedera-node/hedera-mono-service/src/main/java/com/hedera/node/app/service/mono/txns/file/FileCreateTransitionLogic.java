@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.txns.file;
 
+import static com.hedera.node.app.service.mono.context.primitives.StateView.EMPTY_WACL;
+import static com.hedera.node.app.service.mono.txns.file.FileUpdateTransitionLogic.wrapped;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -25,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.service.mono.context.TransactionContext;
-import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
@@ -70,26 +71,26 @@ public class FileCreateTransitionLogic implements TransitionLogic {
 
     @Override
     public void doStateTransition() {
-        var op = txnCtx.accessor().getTxn().getFileCreate();
+        final var op = txnCtx.accessor().getTxn().getFileCreate();
 
         try {
-            var validity = assessedValidity(op);
+            final var validity = assessedValidity(op);
             if (validity != OK) {
                 txnCtx.setStatus(validity);
                 return;
             }
 
-            var attr = asAttr(op);
-            var sponsor = txnCtx.activePayer();
-            var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
+            final var attr = asAttr(op);
+            final var sponsor = txnCtx.activePayer();
+            final var created = hfs.create(op.getContents().toByteArray(), attr, sponsor);
 
             txnCtx.setCreated(created);
             txnCtx.setStatus(SUCCESS);
             sigImpactHistorian.markEntityChanged(created.getFileNum());
             usageLimits.refreshFiles();
-        } catch (IllegalArgumentException iae) {
+        } catch (final IllegalArgumentException iae) {
             FileUpdateTransitionLogic.mapToStatus(iae, txnCtx);
-        } catch (Exception unknown) {
+        } catch (final Exception unknown) {
             log.warn(
                     "Unrecognized failure handling {}!",
                     txnCtx.accessor().getSignedTxnWrapper(),
@@ -112,27 +113,23 @@ public class FileCreateTransitionLogic implements TransitionLogic {
         if (!usageLimits.areCreatableFiles(1)) {
             return MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
         }
-        if (op.hasKeys()
-                && !validator.hasGoodEncoding(FileUpdateTransitionLogic.wrapped(op.getKeys()))) {
+        if (op.hasKeys() && !validator.hasGoodEncoding(wrapped(op.getKeys()))) {
             return INVALID_FILE_WACL;
         }
 
         return OK;
     }
 
-    private HFileMeta asAttr(FileCreateTransactionBody op) {
-        JKey wacl =
-                op.hasKeys()
-                        ? asFcKeyUnchecked(FileUpdateTransitionLogic.wrapped(op.getKeys()))
-                        : StateView.EMPTY_WACL;
+    private HFileMeta asAttr(final FileCreateTransactionBody op) {
+        final JKey wacl = op.hasKeys() ? asFcKeyUnchecked(wrapped(op.getKeys())) : EMPTY_WACL;
 
         return new HFileMeta(false, wacl, op.getExpirationTime().getSeconds(), op.getMemo());
     }
 
-    private ResponseCodeEnum validate(TransactionBody fileCreateTxn) {
-        var op = fileCreateTxn.getFileCreate();
+    private ResponseCodeEnum validate(final TransactionBody fileCreateTxn) {
+        final var op = fileCreateTxn.getFileCreate();
 
-        var memoValidity = validator.memoCheck(op.getMemo());
+        final var memoValidity = validator.memoCheck(op.getMemo());
         if (memoValidity != OK) {
             return memoValidity;
         }
@@ -141,7 +138,7 @@ public class FileCreateTransitionLogic implements TransitionLogic {
             return INVALID_EXPIRATION_TIME;
         }
 
-        var effectiveDuration =
+        final var effectiveDuration =
                 Duration.newBuilder()
                         .setSeconds(
                                 op.getExpirationTime().getSeconds()
