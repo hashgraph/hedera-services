@@ -13,22 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.entity;
-
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.jupiter.api.Assertions.*;
+package com.hedera.node.app.service.token.impl.test.entity;
 
 import com.hedera.node.app.service.token.entity.AccountBuilder;
+import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
+import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.services.utils.KeyUtils;
-import java.util.Optional;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.*;
+
 class AccountBuilderImplTest {
     private AccountBuilder subject;
-    private final HederaKey key = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
+    public static Key A_CONTRACT_KEY = Key.newBuilder().setContractID(
+            ContractID.newBuilder().setShardNum(1L).setRealmNum(1L).setContractNum(3L).build())
+            .build();
+    private final HederaKey key = asHederaKey(A_CONTRACT_KEY).get();
 
     @BeforeEach
     void setUp() {
@@ -44,8 +51,8 @@ class AccountBuilderImplTest {
         assertEquals(Optional.empty(), account.alias());
         assertEquals(key, account.key().get());
         assertEquals(123456789L, account.expiry());
-        assertEquals(20000000000L, account.balanceInTinyBar());
-        assertEquals(20000000000L / HBARS_TO_TINYBARS, account.balanceInHbar());
+        assertEquals(20_000_000_000L, account.balanceInTinyBar());
+        assertEquals(20_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
         assertEquals("test", account.memo());
         assertTrue(account.isDeleted());
         assertTrue(account.isSmartContract());
@@ -56,27 +63,27 @@ class AccountBuilderImplTest {
         assertEquals(20, account.numAssociations());
         assertEquals(10, account.numPositiveBalances());
         assertEquals(20, account.ethereumNonce());
-        assertEquals(1000000L, account.stakedToMe());
-        assertEquals(123456L, account.stakePeriodStart());
+        assertEquals(1_000_000L, account.stakedToMe());
+        assertEquals(123_456L, account.stakePeriodStart());
         assertEquals(2, account.stakedNum());
         assertFalse(account.declineReward());
-        assertEquals(1000L, account.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(3000L, account.autoRenewAccountNumber());
-        assertEquals(360000, account.autoRenewSecs());
+        assertEquals(1_000L, account.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(3_000L, account.autoRenewAccountNumber());
+        assertEquals(360_000, account.autoRenewSecs());
     }
 
     @Test
     void checksBalance() {
         assertThrows(IllegalArgumentException.class, () -> subject.balance(-1L));
-        assertThrows(IllegalArgumentException.class, () -> subject.balance(50_000_000_0000L));
+        assertThrows(IllegalArgumentException.class, () -> subject.balance(50_000_000_0000L * HBARS_TO_TINYBARS));
     }
 
     @Test
     void settersWork() {
-        final var newKey = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
+        final var newKey = asHederaKey(A_CONTRACT_KEY).get();
         subject.key(newKey);
-        subject.expiry(1234567890L);
-        subject.balance(40000000000L);
+        subject.expiry(1_234_567_890L);
+        subject.balance(40_000_000_000L);
         subject.memo("test2");
         subject.deleted(false);
         subject.receiverSigRequired(false);
@@ -87,21 +94,21 @@ class AccountBuilderImplTest {
         subject.numAssociations(40);
         subject.numPositiveBalances(20);
         subject.ethereumNonce(40);
-        subject.stakedToMe(2000000L);
-        subject.stakePeriodStart(1234567L);
+        subject.stakedToMe(2_000_000L);
+        subject.stakePeriodStart(1_234_567L);
         subject.stakedNum(3);
         subject.declineReward(true);
-        subject.stakeAtStartOfLastRewardedPeriod(10000L);
-        subject.autoRenewAccountNumber(30000L);
-        subject.autoRenewSecs(3600000);
+        subject.stakeAtStartOfLastRewardedPeriod(10_000L);
+        subject.autoRenewAccountNumber(30_000L);
+        subject.autoRenewSecs(3_600_000);
 
         final var account = subject.build();
         assertEquals(2, account.accountNumber());
         assertEquals(Optional.empty(), account.alias());
         assertEquals(newKey, account.key().get());
-        assertEquals(1234567890L, account.expiry());
-        assertEquals(40000000000L, account.balanceInTinyBar());
-        assertEquals(40000000000L / HBARS_TO_TINYBARS, account.balanceInHbar());
+        assertEquals(1_234_567_890L, account.expiry());
+        assertEquals(40_000_000_000L, account.balanceInTinyBar());
+        assertEquals(40_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
         assertEquals("test2", account.memo());
         assertFalse(account.isDeleted());
         assertTrue(account.isSmartContract());
@@ -112,13 +119,13 @@ class AccountBuilderImplTest {
         assertEquals(40, account.numAssociations());
         assertEquals(20, account.numPositiveBalances());
         assertEquals(40, account.ethereumNonce());
-        assertEquals(2000000L, account.stakedToMe());
-        assertEquals(1234567L, account.stakePeriodStart());
+        assertEquals(2_000_000L, account.stakedToMe());
+        assertEquals(1_234_567L, account.stakePeriodStart());
         assertEquals(3, account.stakedNum());
         assertTrue(account.declineReward());
-        assertEquals(10000L, account.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(30000L, account.autoRenewAccountNumber());
-        assertEquals(3600000, account.autoRenewSecs());
+        assertEquals(10_000L, account.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(30_000L, account.autoRenewAccountNumber());
+        assertEquals(3_600_000, account.autoRenewSecs());
     }
 
     private AccountImpl setUpAccount() {
@@ -126,8 +133,8 @@ class AccountBuilderImplTest {
                 2,
                 Optional.empty(),
                 Optional.of(key),
-                123456789L,
-                20000000000L,
+                12_3456_789L,
+                20_000_000_000L,
                 "test",
                 true,
                 true,
@@ -138,12 +145,12 @@ class AccountBuilderImplTest {
                 20,
                 10,
                 20,
-                1000000L,
-                123456L,
+                1_000_000L,
+                123_456L,
                 2,
                 false,
-                1000L,
-                3000L,
-                360000);
+                1_000L,
+                3_000L,
+                360_000);
     }
 }

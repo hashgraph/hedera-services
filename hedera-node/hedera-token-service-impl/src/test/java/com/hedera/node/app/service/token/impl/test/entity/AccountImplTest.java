@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.entity;
-
-import static com.hedera.node.app.Utils.asHederaKey;
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.*;
+package com.hedera.node.app.service.token.impl.test.entity;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import static org.junit.jupiter.api.Assertions.*;
 
 class AccountImplTest {
     private AccountImpl subject;
@@ -58,7 +59,7 @@ class AccountImplTest {
 
     @Test
     void hashCodeWorks() {
-        assertEquals(1212503389, subject.hashCode());
+        assertEquals(12_1250_3389, subject.hashCode());
     }
 
     @Test
@@ -76,8 +77,8 @@ class AccountImplTest {
         assertEquals(2, subject.accountNumber());
         assertEquals(Optional.empty(), subject.alias());
         assertEquals(key, subject.key().get());
-        assertEquals(123456789L, subject.expiry());
-        assertEquals(20000000000L, subject.balance());
+        assertEquals(123_456_789L, subject.expiry());
+        assertEquals(20_000_000_000L, subject.balance());
         assertEquals("test", subject.memo());
         assertTrue(subject.isDeleted());
         assertTrue(subject.isSmartContract());
@@ -88,13 +89,13 @@ class AccountImplTest {
         assertEquals(20, subject.numAssociations());
         assertEquals(10, subject.numPositiveBalances());
         assertEquals(20, subject.ethereumNonce());
-        assertEquals(1000000L, subject.stakedToMe());
-        assertEquals(123456L, subject.stakePeriodStart());
+        assertEquals(1_000_000L, subject.stakedToMe());
+        assertEquals(123_456L, subject.stakePeriodStart());
         assertEquals(2, subject.stakedNum());
         assertFalse(subject.declineReward());
-        assertEquals(1000L, subject.stakeAtStartOfLastRewardedPeriod());
-        assertEquals(3000L, subject.autoRenewAccountNumber());
-        assertEquals(360000, subject.autoRenewSecs());
+        assertEquals(1_000L, subject.stakeAtStartOfLastRewardedPeriod());
+        assertEquals(3_000L, subject.autoRenewAccountNumber());
+        assertEquals(360_000, subject.autoRenewSecs());
         assertEquals(0, subject.shardNumber());
         assertEquals(0, subject.realmNumber());
         assertFalse(subject.isHollow());
@@ -110,8 +111,8 @@ class AccountImplTest {
                 2,
                 Optional.empty(),
                 Optional.of(key),
-                123456789L,
-                20000000000L,
+                12_3456_789L,
+                20_000_000_000L,
                 "test",
                 true,
                 true,
@@ -122,12 +123,12 @@ class AccountImplTest {
                 20,
                 10,
                 20,
-                1000000L,
-                123456L,
+                1_000_000L,
+                123_456L,
                 2,
                 false,
-                1000L,
-                3000L,
-                360000);
+                1_000L,
+                3_000L,
+                360_000);
     }
 }

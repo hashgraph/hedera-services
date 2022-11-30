@@ -1,4 +1,6 @@
 module com.hedera.node.app.service.mono {
+    exports com.hedera.node.app.service.mono;
+    exports com.hedera.node.app.service.mono.utils;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;

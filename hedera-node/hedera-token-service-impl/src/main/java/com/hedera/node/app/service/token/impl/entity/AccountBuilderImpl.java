@@ -22,6 +22,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
  * <strong>not</strong> exported from the module.
@@ -92,8 +94,8 @@ public class AccountBuilderImpl implements AccountBuilder {
     @Override
     @NonNull
     public AccountBuilder balance(long value) {
-        if (value < 0 || value > 50_000_000_000L) {
-            throw new IllegalArgumentException("Value cannot be < 0 or more than 50B");
+        if (value < 0 || value > (50_000_000_000L * HBARS_TO_TINYBARS)) {
+            throw new IllegalArgumentException("Value cannot be < 0 or more than 50B hbar");
         }
 
         this.balance = value;
