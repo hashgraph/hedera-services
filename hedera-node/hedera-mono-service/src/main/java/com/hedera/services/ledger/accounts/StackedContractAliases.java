@@ -17,7 +17,7 @@ package com.hedera.services.ledger.accounts;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.ledger.SigImpactHistorian;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
