@@ -189,7 +189,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(ERC_20());
+        return allOf(ERC_20(), ERC_721());
     }
 
     List<HapiApiSpec> ERC_20() {
