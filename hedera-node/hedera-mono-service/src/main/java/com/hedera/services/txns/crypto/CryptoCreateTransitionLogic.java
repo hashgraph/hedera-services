@@ -24,7 +24,6 @@ import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.keyA
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyAliasProvided;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyEvmAddressProvided;
 import static com.hedera.services.txns.crypto.validators.CryptoCreateChecks.onlyKeyProvided;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -51,6 +50,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -116,14 +116,16 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             if (!op.getAlias().isEmpty()) {
                 aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
-                if (op.getAlias().size() > EVM_ADDRESS_SIZE) {
-                    final var key = asPrimitiveKeyUnchecked(op.getAlias());
+
+                final var key = asPrimitiveKeyUnchecked(op.getAlias());
+                if (!key.getECDSASecp256K1().isEmpty()) {
                     final var jKey = asFcKeyUnchecked(key);
                     aliasManager.maybeLinkEvmAddress(jKey, EntityNum.fromAccountId(created));
                     txnCtx.setEvmAddress(
                             ByteStringUtils.wrapUnsafely(
-                                    recoverAddressFromPubKey(
-                                            key.getECDSASecp256K1().toByteArray())));
+                                    Objects.requireNonNull(
+                                            recoverAddressFromPubKey(
+                                                    key.getECDSASecp256K1().toByteArray()))));
                 }
             } else {
                 if (op.hasKey()
