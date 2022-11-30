@@ -24,8 +24,8 @@ import com.hedera.services.records.RecordCache;
 import com.hedera.services.stats.MiscSpeedometers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,9 +46,9 @@ public class SubmissionManager {
      * @param speedometers metrics related to submissions
      */
     public SubmissionManager(
-            @Nonnull final Platform platform,
-            @Nonnull final RecordCache recordCache,
-            @Nonnull final MiscSpeedometers speedometers) {
+            @NonNull final Platform platform,
+            @NonNull final RecordCache recordCache,
+            @NonNull final MiscSpeedometers speedometers) {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
         this.speedometers = requireNonNull(speedometers);
@@ -64,9 +64,9 @@ public class SubmissionManager {
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
-            @Nonnull final SessionContext ctx,
-            @Nonnull final TransactionBody txBody,
-            @Nonnull final ByteBuffer byteBuffer)
+            @NonNull final SessionContext ctx,
+            @NonNull final TransactionBody txBody,
+            @NonNull final ByteBuffer byteBuffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(txBody);

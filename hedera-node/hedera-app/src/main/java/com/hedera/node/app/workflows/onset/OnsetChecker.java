@@ -46,11 +46,11 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
 import org.apache.commons.codec.binary.StringUtils;
 import org.bouncycastle.util.Arrays;
 
@@ -78,10 +78,10 @@ public class OnsetChecker {
     public OnsetChecker(
             final int maxSignedTxnSize,
             final int maxProtoMessageDepth,
-            @Nonnull final RecordCache recordCache,
-            @Nonnull final AccountID nodeAccountID,
-            @Nonnull final GlobalDynamicProperties dynamicProperties,
-            @Nonnull final HapiOpCounters counters) {
+            @NonNull final RecordCache recordCache,
+            @NonNull final AccountID nodeAccountID,
+            @NonNull final GlobalDynamicProperties dynamicProperties,
+            @NonNull final HapiOpCounters counters) {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
         }
@@ -104,7 +104,7 @@ public class OnsetChecker {
      * @throws NullPointerException if {@code tx} is {@code null}
      */
     @SuppressWarnings("deprecation")
-    public void checkTransaction(@Nonnull final Transaction tx) throws PreCheckException {
+    public void checkTransaction(@NonNull final Transaction tx) throws PreCheckException {
         requireNonNull(tx);
 
         final var hasSignedTxnBytes = !tx.getSignedTransactionBytes().isEmpty();
@@ -148,7 +148,7 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    public void checkSignedTransaction(@Nonnull final SignedTransaction tx)
+    public void checkSignedTransaction(@NonNull final SignedTransaction tx)
             throws PreCheckException {
         requireNonNull(tx);
 
@@ -168,7 +168,7 @@ public class OnsetChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    public void checkTransactionBody(@Nonnull final TransactionBody txBody)
+    public void checkTransactionBody(@NonNull final TransactionBody txBody)
             throws PreCheckException {
         requireNonNull(txBody);
 

@@ -16,7 +16,7 @@
 package com.hedera.node.app.throttle;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class ThrottleAccumulator {
      * @throws NullPointerException if (@code functionality} is {@code null}
      * @throws IllegalArgumentException if no throttle exists for {@code functionality}
      */
-    public boolean shouldThrottle(@Nonnull final HederaFunctionality functionality) {
+    public boolean shouldThrottle(@NonNull final HederaFunctionality functionality) {
         // TODO: Implement (#4206)
         LOG.warn("ThrottleAccumulator.shouldThrottle() not implemented");
         return false;

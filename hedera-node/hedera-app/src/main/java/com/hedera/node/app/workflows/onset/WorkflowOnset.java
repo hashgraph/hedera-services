@@ -37,8 +37,8 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /**
  * This class does some pre-processing before each workflow. It parses the provided {@link
@@ -59,9 +59,9 @@ public class WorkflowOnset {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public WorkflowOnset(
-            @Nonnull final NodeInfo nodeInfo,
-            @Nonnull final CurrentPlatformStatus currentPlatformStatus,
-            @Nonnull final OnsetChecker checker) {
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final CurrentPlatformStatus currentPlatformStatus,
+            @NonNull final OnsetChecker checker) {
         this.nodeInfo = requireNonNull(nodeInfo);
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.checker = requireNonNull(checker);
@@ -77,7 +77,7 @@ public class WorkflowOnset {
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public OnsetResult parseAndCheck(
-            @Nonnull final SessionContext ctx, @Nonnull final ByteBuffer buffer)
+            @NonNull final SessionContext ctx, @NonNull final ByteBuffer buffer)
             throws PreCheckException {
         requireNonNull(ctx);
         requireNonNull(buffer);
@@ -127,7 +127,7 @@ public class WorkflowOnset {
     }
 
     private static Transaction parse(
-            @Nonnull final Parser<Transaction> parser, @Nonnull final ByteBuffer buffer)
+            @NonNull final Parser<Transaction> parser, @NonNull final ByteBuffer buffer)
             throws PreCheckException {
         try {
             return parser.parseFrom(buffer);
@@ -137,9 +137,9 @@ public class WorkflowOnset {
     }
 
     private static <T> T parse(
-            @Nonnull final Parser<T> parser,
-            @Nonnull final ByteString buffer,
-            @Nonnull final ResponseCodeEnum errorCode)
+            @NonNull final Parser<T> parser,
+            @NonNull final ByteString buffer,
+            @NonNull final ResponseCodeEnum errorCode)
             throws PreCheckException {
         try {
             return parser.parseFrom(buffer);

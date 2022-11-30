@@ -16,7 +16,7 @@
 package com.hedera.node.app.workflows.common;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the
@@ -34,7 +34,7 @@ public class InsufficientBalanceException extends PreCheckException {
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public InsufficientBalanceException(
-            @Nonnull final ResponseCodeEnum responseCode, final long estimatedFee) {
+            @NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
         super(responseCode);
         this.estimatedFee = estimatedFee;
     }

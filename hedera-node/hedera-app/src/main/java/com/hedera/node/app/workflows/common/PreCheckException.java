@@ -19,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -35,7 +35,7 @@ public class PreCheckException extends Exception {
      * @param responseCode the {@link ResponseCodeEnum responseCode}
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public PreCheckException(@Nonnull final ResponseCodeEnum responseCode) {
+    public PreCheckException(@NonNull final ResponseCodeEnum responseCode) {
         super();
         this.responseCode = requireNonNull(responseCode);
     }
@@ -45,7 +45,7 @@ public class PreCheckException extends Exception {
      *
      * @return the {@link ResponseCodeEnum responseCode}
      */
-    @Nonnull
+    @NonNull
     public ResponseCodeEnum responseCode() {
         return responseCode;
     }
