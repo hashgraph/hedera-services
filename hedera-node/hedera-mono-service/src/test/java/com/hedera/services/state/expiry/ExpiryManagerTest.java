@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
-import com.hedera.services.config.MockHederaNumbers;
+import com.hedera.node.app.service.mono.config.MockHederaNumbers;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.records.TxnIdRecentHistory;

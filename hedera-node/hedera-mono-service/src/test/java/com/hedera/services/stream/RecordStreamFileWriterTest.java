@@ -38,7 +38,7 @@ import com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUti
 import com.hedera.node.app.service.mono.stream.RecordStreamFileWriter;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.service.mono.stream.RecordStreamType;
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;

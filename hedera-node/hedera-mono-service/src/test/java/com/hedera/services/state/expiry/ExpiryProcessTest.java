@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.state.expiry.removal.FungibleTreasuryRet
 import com.hedera.node.app.service.mono.state.expiry.removal.NonFungibleTreasuryReturns;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalHelper;
 import com.hedera.node.app.service.mono.state.expiry.removal.RemovalWork;
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.fees.calculation.RenewAssessment;

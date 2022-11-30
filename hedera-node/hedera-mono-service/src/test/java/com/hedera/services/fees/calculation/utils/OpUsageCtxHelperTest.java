@@ -33,7 +33,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.fees.calculation.utils.OpUsageCtxHelper;
-import com.hedera.services.config.MockFileNumbers;
+import com.hedera.node.app.service.mono.config.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;

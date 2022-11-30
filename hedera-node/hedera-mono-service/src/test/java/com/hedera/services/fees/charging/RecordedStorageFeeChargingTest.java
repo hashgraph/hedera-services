@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.fees.charging.ContractStoragePriceTiers;
 import com.hedera.node.app.service.mono.fees.charging.FeeDistribution;
 import com.hedera.node.app.service.mono.fees.charging.NonHapiFeeCharging;
 import com.hedera.node.app.service.mono.fees.charging.RecordedStorageFeeCharging;
-import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;

@@ -21,7 +21,7 @@ import com.hedera.node.app.service.mono.throttling.DeterministicThrottling;
 import com.hedera.node.app.service.mono.throttling.HapiThrottling;
 import com.hedera.node.app.service.mono.throttling.ThrottlingModule;
 import com.hedera.node.app.service.mono.throttling.TxnAwareHandleThrottling;
-import com.hedera.services.config.MockGlobalDynamicProps;
+import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;

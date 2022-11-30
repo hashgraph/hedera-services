@@ -44,7 +44,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.txns.file.FileUpdateTransitionLogic;
-import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.node.app.service.mono.config.MockEntityNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;

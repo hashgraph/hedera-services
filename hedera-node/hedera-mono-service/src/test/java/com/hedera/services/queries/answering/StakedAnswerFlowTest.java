@@ -37,7 +37,7 @@ import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.queries.answering.QueryHeaderValidity;
 import com.hedera.node.app.service.mono.queries.answering.StakedAnswerFlow;
-import com.hedera.services.config.MockAccountNumbers;
+import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.domain.process.TxnValidityAndFeeReq;
 import com.hedera.node.app.service.mono.context.domain.security.HapiOpPermissions;
 import com.hedera.node.app.service.mono.context.primitives.StateView;

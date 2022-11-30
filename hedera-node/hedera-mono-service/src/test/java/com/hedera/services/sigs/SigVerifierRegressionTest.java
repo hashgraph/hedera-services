@@ -36,7 +36,7 @@ import static org.mockito.BDDMockito.mock;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.services.config.MockEntityNumbers;
+import com.hedera.node.app.service.mono.config.MockEntityNumbers;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.exception.InvalidAccountIDException;
