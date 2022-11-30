@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
@@ -17,40 +32,34 @@ import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmGetApprovedPrecompile {
 
-    Function ERC_GET_APPROVED_FUNCTION =
-      new Function("getApproved(uint256)", INT);
-   Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR =
-      Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
-    ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER =
-      TypeFactory.create(UINT256);
-   Function HAPI_GET_APPROVED_FUNCTION =
-      new Function("getApproved(address,uint256)", "(int,int)");
-    Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
-      Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
-   ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
-      TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+    Function ERC_GET_APPROVED_FUNCTION = new Function("getApproved(uint256)", INT);
+    Bytes ERC_GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(ERC_GET_APPROVED_FUNCTION.selector());
+    ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256);
+    Function HAPI_GET_APPROVED_FUNCTION = new Function("getApproved(address,uint256)", "(int,int)");
+    Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
+    ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
 
-  public static GetApprovedWrapper decodeGetApproved(
-      final Bytes input, final TokenID impliedTokenId) {
-    final var offset = impliedTokenId == null ? 1 : 0;
+    public static GetApprovedWrapper decodeGetApproved(
+            final Bytes input, final TokenID impliedTokenId) {
+        final var offset = impliedTokenId == null ? 1 : 0;
 
-    final Tuple decodedArguments =
-        decodeFunctionCall(
-            input,
-            offset == 0
-                ? ERC_GET_APPROVED_FUNCTION_SELECTOR
-                : HAPI_GET_APPROVED_FUNCTION_SELECTOR,
-            offset == 0
-                ? ERC_GET_APPROVED_FUNCTION_DECODER
-                : HAPI_GET_APPROVED_FUNCTION_DECODER);
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        offset == 0
+                                ? ERC_GET_APPROVED_FUNCTION_SELECTOR
+                                : HAPI_GET_APPROVED_FUNCTION_SELECTOR,
+                        offset == 0
+                                ? ERC_GET_APPROVED_FUNCTION_DECODER
+                                : HAPI_GET_APPROVED_FUNCTION_DECODER);
 
-    final var tId =
-        offset == 0
-            ? impliedTokenId
-            : convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
-    final var serialNo = (BigInteger) decodedArguments.get(offset);
-    return new GetApprovedWrapper(tId, serialNo.longValueExact());
-  }
-
+        final var serialNo = (BigInteger) decodedArguments.get(offset);
+        return new GetApprovedWrapper(tId, serialNo.longValueExact());
+    }
 }

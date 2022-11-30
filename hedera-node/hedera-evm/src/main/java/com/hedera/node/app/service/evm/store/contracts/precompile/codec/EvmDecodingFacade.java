@@ -47,8 +47,6 @@ public class EvmDecodingFacade {
         return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
     }
 
-
-
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias =
@@ -58,18 +56,18 @@ public class EvmDecodingFacade {
 
     public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
         final var address =
-            Address.wrap(
-                Bytes.wrap(addressBytes)
-                    .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+                Address.wrap(
+                        Bytes.wrap(addressBytes)
+                                .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
         return tokenIdFromEvmAddress(address.toArray());
     }
 
     public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
         return TokenID.newBuilder()
-            .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-            .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
-            .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-            .build();
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+                .build();
     }
 
     public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
