@@ -230,7 +230,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 }
             }
         } catch (final InvalidProtocolBufferException | DecoderException internal) {
-            // any parse error means it's not a evm address
+            // any parse error means it's not an evm address
         }
     }
 
