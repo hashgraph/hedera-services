@@ -15,11 +15,11 @@
  */
 package com.hedera.services.records;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SIGNATURE;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CALL;
 import static com.hedera.services.contracts.execution.traceability.CallOperationType.OP_CREATE2;
-import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SIGNATURE;
-import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
-import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -32,12 +32,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.context.TransactionContext;
 import com.hedera.services.contracts.execution.TransactionProcessingResult;
 import com.hedera.services.contracts.execution.traceability.CallOperationType;
 import com.hedera.services.contracts.execution.traceability.ContractActionType;
 import com.hedera.services.contracts.execution.traceability.SolidityAction;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.state.submerkle.EvmFnResult;
 import com.hedera.services.store.models.Id;

@@ -30,8 +30,8 @@ import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import javax.annotation.Nonnull;
 
 /** Default implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
@@ -53,11 +53,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      */
     public IngestWorkflowImpl(
-            @Nonnull final WorkflowOnset onset,
-            @Nonnull final IngestChecker checker,
-            @Nonnull final ThrottleAccumulator throttleAccumulator,
-            @Nonnull final SubmissionManager submissionManager,
-            @Nonnull final HapiOpCounters opCounters) {
+            @NonNull final WorkflowOnset onset,
+            @NonNull final IngestChecker checker,
+            @NonNull final ThrottleAccumulator throttleAccumulator,
+            @NonNull final SubmissionManager submissionManager,
+            @NonNull final HapiOpCounters opCounters) {
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
@@ -67,9 +67,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
     @Override
     public void handleTransaction(
-            @Nonnull final SessionContext ctx,
-            @Nonnull final ByteBuffer requestBuffer,
-            @Nonnull final ByteBuffer responseBuffer) {
+            @NonNull final SessionContext ctx,
+            @NonNull final ByteBuffer requestBuffer,
+            @NonNull final ByteBuffer responseBuffer) {
 
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;

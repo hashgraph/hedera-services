@@ -15,20 +15,21 @@
  */
 package com.hedera.node.app.grpc;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.MethodDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * An implementation of a gRPC marshaller which does nothing but pass through byte arrays. A single
  * implementation of this class is designed to be used by multiple threads, including by multiple
  * app instances within a single JVM!
+ *
+ * <p>FUTURE WORK: ThreadSafe annotation missing in spotbugs annotations but should be added to
+ * class
  */
-@ThreadSafe
 final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
     // NOTE: This needs to come from config, but because of the thread local, has to be
     //       static. See Issue #4294
@@ -44,14 +45,14 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
     NoopMarshaller() {}
 
     @Override
-    public InputStream stream(@Nonnull final ByteBuffer buffer) {
+    public InputStream stream(@NonNull final ByteBuffer buffer) {
         // KnownLengthStream is a simple wrapper over the byte buffer
         Objects.requireNonNull(buffer);
         return new KnownLengthStream(buffer);
     }
 
     @Override
-    public ByteBuffer parse(@Nonnull final InputStream stream) {
+    public ByteBuffer parse(@NonNull final InputStream stream) {
         Objects.requireNonNull(stream);
 
         try {
@@ -72,7 +73,7 @@ final class NoopMarshaller implements MethodDescriptor.Marshaller<ByteBuffer> {
             }
             buffer.flip(); // Prepare for reading
             return buffer;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             // This appears correct after looking at Google's implementation of this method
             // in protobuf-lite
             throw new RuntimeException(e);
