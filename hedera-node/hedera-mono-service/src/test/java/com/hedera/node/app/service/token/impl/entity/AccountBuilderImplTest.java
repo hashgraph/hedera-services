@@ -67,9 +67,9 @@ class AccountBuilderImplTest {
 
     @Test
     void checksBalance() {
-        assertThrows(IllegalArgumentException.class, () -> subject.balance(-1L).build());
+        assertThrows(IllegalArgumentException.class, () -> subject.balance(-1L));
         assertThrows(
-                IllegalArgumentException.class, () -> subject.balance(50_000_000_0000L).build());
+                IllegalArgumentException.class, () -> subject.balance(50_000_000_0000L));
     }
 
     @Test
