@@ -20,9 +20,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 /** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
 public final class ErrorTransactionMetadata implements TransactionMetadata {
@@ -39,8 +39,8 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public ErrorTransactionMetadata(
-            @Nonnull final ResponseCodeEnum responseCode,
-            @Nonnull final Throwable throwable,
+            @NonNull final ResponseCodeEnum responseCode,
+            @NonNull final Throwable throwable,
             @Nullable final TransactionBody txBody) {
         this.txBody = txBody;
         this.throwable = requireNonNull(throwable);
@@ -57,7 +57,7 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
         return throwable;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public ResponseCodeEnum status() {
         return responseCode;
@@ -69,7 +69,7 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
         return txBody;
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public List<HederaKey> getReqKeys() {
         return List.of();

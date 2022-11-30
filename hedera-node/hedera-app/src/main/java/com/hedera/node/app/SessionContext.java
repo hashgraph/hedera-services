@@ -22,7 +22,7 @@ import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * This record keeps a list of everything that is used per-thread
@@ -33,16 +33,16 @@ import javax.annotation.Nonnull;
  * @param txBodyParser a parser for {@link TransactionBody}
  */
 public record SessionContext(
-        @Nonnull Parser<Query> queryParser,
-        @Nonnull Parser<Transaction> txParser,
-        @Nonnull Parser<SignedTransaction> signedParser,
-        @Nonnull Parser<TransactionBody> txBodyParser) {
+        @NonNull Parser<Query> queryParser,
+        @NonNull Parser<Transaction> txParser,
+        @NonNull Parser<SignedTransaction> signedParser,
+        @NonNull Parser<TransactionBody> txBodyParser) {
 
     public SessionContext(
-            @Nonnull final Parser<Query> queryParser,
-            @Nonnull final Parser<Transaction> txParser,
-            @Nonnull final Parser<SignedTransaction> signedParser,
-            @Nonnull final Parser<TransactionBody> txBodyParser) {
+            @NonNull final Parser<Query> queryParser,
+            @NonNull final Parser<Transaction> txParser,
+            @NonNull final Parser<SignedTransaction> signedParser,
+            @NonNull final Parser<TransactionBody> txBodyParser) {
         this.queryParser = requireNonNull(queryParser);
         this.txParser = requireNonNull(txParser);
         this.signedParser = requireNonNull(signedParser);

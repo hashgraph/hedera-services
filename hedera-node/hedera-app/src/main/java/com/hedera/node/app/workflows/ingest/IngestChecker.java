@@ -20,8 +20,8 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
-import javax.annotation.Nonnull;
 
 /**
  * Encapsulates the workflow related to transaction ingestion. Given a Transaction, parses,
@@ -36,7 +36,7 @@ public interface IngestChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    void checkTransaction(@Nonnull Transaction tx) throws PreCheckException;
+    void checkTransaction(@NonNull Transaction tx) throws PreCheckException;
 
     /**
      * Validates a {@link SignedTransaction}
@@ -45,7 +45,7 @@ public interface IngestChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if {@code tx} is {@code null}
      */
-    void checkSignedTransaction(@Nonnull SignedTransaction tx) throws PreCheckException;
+    void checkSignedTransaction(@NonNull SignedTransaction tx) throws PreCheckException;
 
     /**
      * Validates a {@link TransactionBody} with the paying {@link Object}
@@ -55,7 +55,7 @@ public interface IngestChecker {
      * @throws PreCheckException if validation fails
      * @throws NullPointerException if any of the parameters is {@code null}
      */
-    void checkTransactionBody(@Nonnull TransactionBody txBody, @Nonnull Object account)
+    void checkTransactionBody(@NonNull TransactionBody txBody, @NonNull Object account)
             throws PreCheckException;
 
     /**
@@ -68,8 +68,8 @@ public interface IngestChecker {
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     void verifySignatures(
-            @Nonnull com.swirlds.common.system.transaction.Transaction platformTx,
-            @Nonnull SignatureMap signatureMap,
-            @Nonnull List<? extends HederaKey> reqKeys)
+            @NonNull com.swirlds.common.system.transaction.Transaction platformTx,
+            @NonNull SignatureMap signatureMap,
+            @NonNull List<? extends HederaKey> reqKeys)
             throws PreCheckException;
 }

@@ -26,7 +26,7 @@ import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code ServiceAccessor} is used to pass all services to components via a single parameter.
@@ -42,26 +42,26 @@ import javax.annotation.Nonnull;
  * @param utilService a {@link UtilService}
  */
 public record ServicesAccessor(
-        @Nonnull ConsensusService consensusService,
-        @Nonnull ContractService contractService,
-        @Nonnull CryptoService cryptoService,
-        @Nonnull FileService fileService,
-        @Nonnull FreezeService freezeService,
-        @Nonnull NetworkService networkService,
-        @Nonnull ScheduleService scheduleService,
-        @Nonnull TokenService tokenService,
-        @Nonnull UtilService utilService) {
+        @NonNull ConsensusService consensusService,
+        @NonNull ContractService contractService,
+        @NonNull CryptoService cryptoService,
+        @NonNull FileService fileService,
+        @NonNull FreezeService freezeService,
+        @NonNull NetworkService networkService,
+        @NonNull ScheduleService scheduleService,
+        @NonNull TokenService tokenService,
+        @NonNull UtilService utilService) {
 
     public ServicesAccessor(
-            @Nonnull final ConsensusService consensusService,
-            @Nonnull final ContractService contractService,
-            @Nonnull final CryptoService cryptoService,
-            @Nonnull final FileService fileService,
-            @Nonnull final FreezeService freezeService,
-            @Nonnull final NetworkService networkService,
-            @Nonnull final ScheduleService scheduleService,
-            @Nonnull final TokenService tokenService,
-            @Nonnull final UtilService utilService) {
+            @NonNull final ConsensusService consensusService,
+            @NonNull final ContractService contractService,
+            @NonNull final CryptoService cryptoService,
+            @NonNull final FileService fileService,
+            @NonNull final FreezeService freezeService,
+            @NonNull final NetworkService networkService,
+            @NonNull final ScheduleService scheduleService,
+            @NonNull final TokenService tokenService,
+            @NonNull final UtilService utilService) {
         this.consensusService = requireNonNull(consensusService);
         this.contractService = requireNonNull(contractService);
         this.cryptoService = requireNonNull(cryptoService);

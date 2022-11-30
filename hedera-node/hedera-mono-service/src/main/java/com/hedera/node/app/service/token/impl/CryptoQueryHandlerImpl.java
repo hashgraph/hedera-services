@@ -17,9 +17,9 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /** Default implementation of {@link CryptoQueryHandler} */
 public class CryptoQueryHandlerImpl implements CryptoQueryHandler {

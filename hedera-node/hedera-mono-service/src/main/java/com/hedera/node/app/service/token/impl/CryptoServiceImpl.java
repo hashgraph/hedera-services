@@ -35,9 +35,9 @@ public final class CryptoServiceImpl implements CryptoService {
         return new CryptoPreTransactionHandlerImpl(store, ctx);
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public CryptoQueryHandler createQueryHandler(@NotNull final States states) {
+    public CryptoQueryHandler createQueryHandler(@NonNull final States states) {
         Objects.requireNonNull(states);
         return new CryptoQueryHandlerImpl();
     }

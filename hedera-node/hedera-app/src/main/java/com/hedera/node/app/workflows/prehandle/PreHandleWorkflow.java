@@ -17,7 +17,7 @@ package com.hedera.node.app.workflows.prehandle;
 
 import com.hedera.node.app.state.HederaState;
 import com.swirlds.common.system.events.Event;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** A workflow to pre-handle transactions. */
 public interface PreHandleWorkflow {
@@ -29,5 +29,5 @@ public interface PreHandleWorkflow {
      * @param event the {@code Event} for which the workflow should be started
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    void start(@Nonnull HederaState state, @Nonnull Event event);
+    void start(@NonNull HederaState state, @NonNull Event event);
 }
