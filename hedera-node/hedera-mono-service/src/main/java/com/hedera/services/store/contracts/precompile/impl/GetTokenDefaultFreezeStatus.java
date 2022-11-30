@@ -15,20 +15,20 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile implements
-    EvmGetTokenDefaultFreezeStatus {
+public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
+        implements EvmGetTokenDefaultFreezeStatus {
 
     private GetTokenDefaultFreezeStatusWrapper defaultFreezeStatusWrapper;
 

@@ -15,24 +15,20 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
-
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile implements
-    EvmGetTokenDefaultKycStatus {
+public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
+        implements EvmGetTokenDefaultKycStatus {
 
     private GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper;
 

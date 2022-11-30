@@ -31,8 +31,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile implements
-    EvmFungibleTokenInfoPrecompile {
+public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
+        implements EvmFungibleTokenInfoPrecompile {
 
     public FungibleTokenInfoPrecompile(
             TokenID tokenId,
