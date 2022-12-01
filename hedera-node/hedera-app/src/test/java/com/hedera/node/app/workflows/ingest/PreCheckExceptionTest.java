@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.ingest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
@@ -25,23 +26,8 @@ class PreCheckExceptionTest {
 
     @Test
     void testConstructor() {
-        // given
-        final String msg = "Hello World";
-
         // when
-        final PreCheckException exception =
-                new PreCheckException(ResponseCodeEnum.UNAUTHORIZED, msg);
-
-        // then
-        assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
-        assertThat(exception.getMessage()).isEqualTo(msg);
-    }
-
-    @Test
-    void testConstructorWithNullMessage() {
-        // when
-        final PreCheckException exception =
-                new PreCheckException(ResponseCodeEnum.UNAUTHORIZED, null);
+        final PreCheckException exception = new PreCheckException(ResponseCodeEnum.UNAUTHORIZED);
 
         // then
         assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
@@ -51,7 +37,7 @@ class PreCheckExceptionTest {
     @SuppressWarnings("ThrowableNotThrown")
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreCheckException(null, "Hello World"))
+        assertThatThrownBy(() -> new PreCheckException(null))
                 .isInstanceOf(NullPointerException.class);
     }
 }

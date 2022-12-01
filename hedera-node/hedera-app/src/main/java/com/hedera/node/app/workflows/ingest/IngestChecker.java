@@ -16,6 +16,7 @@
 package com.hedera.node.app.workflows.ingest;
 
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;

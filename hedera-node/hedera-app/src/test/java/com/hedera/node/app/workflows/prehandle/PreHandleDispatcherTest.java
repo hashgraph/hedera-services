@@ -155,7 +155,7 @@ class PreHandleDispatcherTest {
 
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
-    void testCryptoCreateAccount(
+    void testDispatch(
             final TransactionBody txBody, final Consumer<PreHandleDispatcherTest> verification) {
         // when
         dispatcher.dispatch(txBody);

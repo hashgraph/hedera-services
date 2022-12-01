@@ -15,18 +15,16 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.ingest.IngestChecker;
-import com.hedera.node.app.workflows.ingest.PreCheckException;
+import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -56,12 +54,11 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
     private final ExecutorService exe;
     private final ServicesAccessor servicesAccessor;
+    private final WorkflowOnset onset;
     private final PreHandleContext context;
-    private final IngestChecker checker;
 
     private HederaState lastUsedState;
     private PreHandleDispatcher dispatcher;
-    private CryptoQueryHandler cryptoQueryHandler;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
@@ -69,18 +66,18 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * @param exe the {@link ExecutorService} to use when submitting new tasks
      * @param servicesAccessor the {@link ServicesAccessor} with references to all {@link
      *     com.hedera.node.app.spi.Service}-implementations
-     * @param ingestChecker an {@link IngestChecker} that contains all validators
+     * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
             @NonNull final ServicesAccessor servicesAccessor,
             @NonNull final PreHandleContext context,
-            @NonNull final IngestChecker ingestChecker) {
+            @NonNull final WorkflowOnset onset) {
         this.exe = requireNonNull(exe);
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.context = requireNonNull(context);
-        this.checker = requireNonNull(ingestChecker);
+        this.onset = requireNonNull(onset);
     }
 
     @Override
@@ -92,8 +89,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
             dispatcher = new PreHandleDispatcher(state, servicesAccessor, context);
-            final var cryptoState = state.createReadableStates(HederaState.CRYPTO_SERVICE);
-            cryptoQueryHandler = servicesAccessor.cryptoService().createQueryHandler(cryptoState);
             lastUsedState = state;
         }
 
@@ -104,48 +99,34 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var itr = event.transactionIterator();
         while (itr.hasNext()) {
             final var platformTx = itr.next();
-            final var future =
-                    exe.submit(() -> preHandle(dispatcher, cryptoQueryHandler, platformTx));
+            final var future = exe.submit(() -> preHandle(dispatcher, platformTx));
             platformTx.setMetadata(future);
         }
     }
 
     private TransactionMetadata preHandle(
             final PreHandleDispatcher dispatcher,
-            final CryptoQueryHandler query,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
 
-            // 1. Parse the transaction object from the txBytes (protobuf)
-            final var tx = ctx.txParser().parseFrom(txBytes);
-            checker.checkTransaction(tx);
+            // 1. Parse the Transaction and check the syntax
+            final var onsetResult = onset.parseAndCheck(ctx, txBytes);
+            txBody = onsetResult.txBody();
 
-            // 2. Parse and validate the signed transaction
-            final var signedTransaction =
-                    ctx.signedParser().parseFrom(tx.getSignedTransactionBytes());
-            checker.checkSignedTransaction(signedTransaction);
-
-            // 3. Parse and validate the TransactionBody.
-            txBody = ctx.txBodyParser().parseFrom(signedTransaction.getBodyBytes());
-            final var accountOpt = query.getAccountById(txBody.getTransactionID().getAccountID());
-            if (accountOpt.isEmpty()) {
-                // This is an error condition. No account!
-                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND, "Account missing");
-            }
-            final var account = accountOpt.get();
-            checker.checkTransactionBody(txBody, account);
-
-            // 4. Call PreTransactionHandler to do transaction-specific checks, get list of required
+            // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
             final var metadata = dispatcher.dispatch(txBody);
 
-            // 5. Check signatures
-            checker.verifySignatures(
-                    platformTx, signedTransaction.getSigMap(), metadata.getReqKeys());
+            // 3. Prepare signature-data
+            // TODO: Prepare signature-data once this functionality was implemented
 
+            // 4. Verify signatures
+            // TODO: Verify signature via the platform once this functionality was implemented
+
+            // 5. Return TransactionMetadata
             return metadata;
 
         } catch (PreCheckException preCheckException) {

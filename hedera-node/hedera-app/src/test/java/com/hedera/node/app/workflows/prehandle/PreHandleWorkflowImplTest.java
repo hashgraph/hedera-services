@@ -15,12 +15,15 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.service.admin.FreezeService;
+import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.file.FileService;
@@ -30,29 +33,46 @@ import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
+import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.ingest.IngestChecker;
+import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.workflows.onset.OnsetResult;
+import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hedera.services.config.AccountNumbers;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
-    @Mock private CryptoService cryptoService;
-    @Mock private IngestChecker ingestChecker;
+    @Mock private ConsensusService consensusService;
+    @Mock private WorkflowOnset onset;
+
+    @Mock private HederaState state;
+    @Mock private Event event;
 
     private ServicesAccessor servicesAccessor;
     private PreHandleContext context;
@@ -61,8 +81,8 @@ class PreHandleWorkflowImplTest {
 
     @BeforeEach
     void setup(
-            @Mock ConsensusService consensusService,
             @Mock ContractService contractService,
+            @Mock CryptoService cryptoService,
             @Mock FileService fileService,
             @Mock FreezeService freezeService,
             @Mock NetworkService networkService,
@@ -85,27 +105,19 @@ class PreHandleWorkflowImplTest {
 
         context = new PreHandleContext(accountNumbers, hederaFileNumbers);
 
-        workflow =
-                new PreHandleWorkflowImpl(
-                        executorService, servicesAccessor, context, ingestChecker);
+        workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        null, servicesAccessor, context, ingestChecker))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, context, onset))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, context, onset))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new PreHandleWorkflowImpl(
-                                        executorService, null, context, ingestChecker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, servicesAccessor, null, ingestChecker))
+                                        executorService, servicesAccessor, null, onset))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
@@ -116,10 +128,6 @@ class PreHandleWorkflowImplTest {
 
     @Test
     void testStartWithIllegalParameters() {
-        // given
-        final HederaState state = mock(HederaState.class);
-        final Event event = mock(Event.class);
-
         // then
         assertThatThrownBy(() -> workflow.start(null, event))
                 .isInstanceOf(NullPointerException.class);
@@ -130,8 +138,6 @@ class PreHandleWorkflowImplTest {
     @Test
     void testStartEventWithNoTransactions() {
         // given
-        final HederaState state = mock(HederaState.class);
-        final Event event = mock(Event.class);
         when(event.transactionIterator()).thenReturn(Collections.emptyIterator());
 
         // when
@@ -139,13 +145,11 @@ class PreHandleWorkflowImplTest {
     }
 
     @Test
-    void testStartEventWithTwoTransactions() {
+    void testStartEventWithTwoTransactions(
+            @Mock SwirldTransaction transaction1, @Mock SwirldTransaction transaction2) {
         // given
-        final HederaState state = mock(HederaState.class);
-        final Event event = mock(Event.class);
-        final Transaction transaction1 = mock(SwirldTransaction.class);
-        final Transaction transaction2 = mock(SwirldTransaction.class);
-        final Iterator<Transaction> iterator = List.of(transaction1, transaction2).iterator();
+        final Iterator<Transaction> iterator =
+                List.of(transaction1, (Transaction) transaction2).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
@@ -157,12 +161,9 @@ class PreHandleWorkflowImplTest {
     }
 
     @Test
-    void testUnchangedStateDoesNotRegenerateHandlers() {
+    void testUnchangedStateDoesNotRegenerateHandlers(@Mock SwirldTransaction transaction) {
         // given
-        var state = mock(HederaState.class);
-        final Event event = mock(Event.class);
-        final Transaction transaction = mock(SwirldTransaction.class);
-        final Iterator<Transaction> iterator = List.of(transaction).iterator();
+        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
@@ -170,24 +171,101 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(cryptoService, times(1)).createQueryHandler(any());
+        verify(consensusService, times(1)).createPreTransactionHandler(any(), any());
     }
 
     @Test
-    void testChangedStateDoesRegenerateHandlers() {
+    void testChangedStateDoesRegenerateHandlers(
+            @Mock HederaState state2, @Mock SwirldTransaction transaction) {
         // given
-        var state1 = mock(HederaState.class);
-        var state2 = mock(HederaState.class);
-        final Event event = mock(Event.class);
-        final Transaction transaction = mock(SwirldTransaction.class);
-        final Iterator<Transaction> iterator = List.of(transaction).iterator();
+        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         // when
-        workflow.start(state1, event);
+        workflow.start(state, event);
         workflow.start(state2, event);
 
         // then
-        verify(cryptoService, times(2)).createQueryHandler(any());
+        verify(consensusService, times(2)).createPreTransactionHandler(any(), any());
+    }
+
+    @Test
+    void testPreHandleSuccess(
+            @Mock ConsensusPreTransactionHandler preTransactionHandler,
+            @Mock TransactionMetadata metadata,
+            @Mock SwirldTransaction transaction)
+            throws PreCheckException {
+        // given
+        when(executorService.submit(any(Callable.class)))
+                .thenAnswer(
+                        (Answer<Future<TransactionMetadata>>)
+                                invocation ->
+                                        CompletableFuture.completedFuture(
+                                                (TransactionMetadata)
+                                                        invocation
+                                                                .getArgument(0, Callable.class)
+                                                                .call()));
+
+        final ConsensusCreateTopicTransactionBody content =
+                ConsensusCreateTopicTransactionBody.newBuilder().build();
+        final TransactionBody txBody =
+                TransactionBody.newBuilder().setConsensusCreateTopic(content).build();
+        final SignatureMap signatureMap = SignatureMap.newBuilder().build();
+        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
+        final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
+        when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
+
+        when(preTransactionHandler.preHandleCreateTopic(txBody)).thenReturn(metadata);
+        when(consensusService.createPreTransactionHandler(any(), eq(context)))
+                .thenReturn(preTransactionHandler);
+
+        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
+        when(event.transactionIterator()).thenReturn(iterator);
+
+        // when
+        workflow.start(state, event);
+
+        // then
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Future<TransactionMetadata>> captor =
+                ArgumentCaptor.forClass(Future.class);
+        verify(transaction).setMetadata(captor.capture());
+        assertThat(captor.getValue()).succeedsWithin(Duration.ofMillis(100)).isEqualTo(metadata);
+    }
+
+    @Test
+    void testPreHandleOnsetFails(
+            @Mock ConsensusPreTransactionHandler preTransactionHandler,
+            @Mock SwirldTransaction transaction)
+            throws PreCheckException {
+        // given
+        when(executorService.submit(any(Callable.class)))
+                .thenAnswer(
+                        (Answer<Future<TransactionMetadata>>)
+                                invocation ->
+                                        CompletableFuture.completedFuture(
+                                                (TransactionMetadata)
+                                                        invocation
+                                                                .getArgument(0, Callable.class)
+                                                                .call()));
+
+        when(onset.parseAndCheck(any(), any()))
+                .thenThrow(new PreCheckException(INVALID_TRANSACTION));
+
+        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
+        when(event.transactionIterator()).thenReturn(iterator);
+
+        // when
+        workflow.start(state, event);
+
+        // then
+        @SuppressWarnings("unchecked")
+        final ArgumentCaptor<Future<TransactionMetadata>> captor =
+                ArgumentCaptor.forClass(Future.class);
+        verify(transaction).setMetadata(captor.capture());
+        assertThat(captor.getValue())
+                .succeedsWithin(Duration.ofMillis(100))
+                .isInstanceOf(ErrorTransactionMetadata.class)
+                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
     }
 }

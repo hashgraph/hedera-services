@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.workflows.ingest;
+package com.hedera.node.app.workflows.common;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
@@ -32,12 +33,10 @@ public class PreCheckException extends Exception {
      * Constructor of {@code PreCheckException}
      *
      * @param responseCode the {@link ResponseCodeEnum responseCode}
-     * @param message an error message with further details
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public PreCheckException(
-            @NonNull final ResponseCodeEnum responseCode, @Nullable final String message) {
-        super(message);
+    public PreCheckException(@NonNull final ResponseCodeEnum responseCode) {
+        super();
         this.responseCode = requireNonNull(responseCode);
     }
 
@@ -49,5 +48,12 @@ public class PreCheckException extends Exception {
     @NonNull
     public ResponseCodeEnum responseCode() {
         return responseCode;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
+                .append("responseCode", responseCode)
+                .toString();
     }
 }

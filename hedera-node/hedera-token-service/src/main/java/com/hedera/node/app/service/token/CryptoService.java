@@ -48,16 +48,6 @@ public interface CryptoService extends Service {
             @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
-     * Creates the crypto service query-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding crypto service query-handler
-     */
-    @Override
-    @NonNull
-    CryptoQueryHandler createQueryHandler(@NonNull States states);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance
