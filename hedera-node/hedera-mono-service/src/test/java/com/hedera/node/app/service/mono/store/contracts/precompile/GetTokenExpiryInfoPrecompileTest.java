@@ -56,7 +56,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;

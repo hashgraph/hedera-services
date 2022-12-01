@@ -15,20 +15,11 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_UINT256_RAW_TYPE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -36,7 +27,6 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;

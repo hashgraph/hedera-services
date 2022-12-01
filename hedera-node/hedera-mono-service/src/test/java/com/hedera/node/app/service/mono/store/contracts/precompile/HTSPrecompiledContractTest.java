@@ -123,7 +123,6 @@ import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateU
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AssociatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BurnPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.DissociatePrecompile;
