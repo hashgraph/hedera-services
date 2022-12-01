@@ -32,7 +32,15 @@ configurations.all {
 }
 
 dependencies {
-    api(libs.hapi)
+
+    implementation("io.grpc:grpc-stub") {
+        version {
+            strictly("1.50.2")
+        }
+    }
+    api(libs.hapi) {
+        exclude("io.grpc", "grpc-stub")
+    }
     implementation(libs.helidon.io.grpc)
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)

@@ -29,9 +29,12 @@ configurations.all {
     exclude("io.grpc", "grpc-context")
     exclude("io.grpc", "grpc-api")
     exclude("io.grpc", "grpc-testing")
+    exclude("io.grpc", "grpc-stub")
 }
 
 dependencies {
+
+
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.swirlds.common)

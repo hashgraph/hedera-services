@@ -32,6 +32,7 @@ configurations.all {
 }
 
 dependencies {
+    
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
     implementation(project(":hedera-node:hedera-file-service-impl"))
@@ -45,7 +46,7 @@ dependencies {
     compileOnly(libs.spotbugs.annotations)
     implementation(libs.hapi)
     implementation(libs.bundles.helidon)
-    implementation(libs.grpc.stub)
+    //implementation(libs.grpc.stub)
     implementation(libs.helidon.grpc.server)
 
     itestImplementation(libs.hapi)
