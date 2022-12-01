@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenDeleteFactory.newSignedTokenDelete;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenDeleteScenarios implements TxnHandlingScenario {
     DELETE_WITH_KNOWN_TOKEN {

@@ -26,7 +26,7 @@ import static com.hedera.test.factories.txns.SignedTxnFactory.MASTER_PAYER_ID;
 import static com.hedera.test.factories.txns.SignedTxnFactory.TREASURY_PAYER_ID;
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 
 public enum ScheduleCreateScenarios implements TxnHandlingScenario {

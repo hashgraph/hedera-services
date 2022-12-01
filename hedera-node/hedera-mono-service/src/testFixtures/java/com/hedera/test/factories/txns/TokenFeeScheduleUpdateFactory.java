@@ -15,7 +15,7 @@
  */
 package com.hedera.test.factories.txns;
 
-import com.hedera.services.state.submerkle.FcCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;

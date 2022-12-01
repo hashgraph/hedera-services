@@ -30,7 +30,7 @@ import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoTransferScenarios implements TxnHandlingScenario {
     CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO {
