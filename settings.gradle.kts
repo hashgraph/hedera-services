@@ -88,6 +88,7 @@ dependencyResolutionManagement {
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
             version("spotbugs-version", "4.7.3")
+            version("helidon-grpc-version", "3.0.2")
 
             // List of bundles provided for us. When applicable, favor using these over individual libraries.
             // Use when you need to use Besu
@@ -97,7 +98,7 @@ dependencyResolutionManagement {
             // Use when you need to make use of dependency injection.
             bundle("di", listOf("javax-inject", "dagger-api"))
             // Use when you need a grpc server
-            bundle("helidon", listOf("helidon-server", "helidon-grpc", "helidon-io-grpc"))
+            bundle("helidon", listOf("helidon-server", "helidon-grpc-server", "helidon-io-grpc"))
             // Use when you need logging
             bundle("logging", listOf("log4j-api", "log4j-core", "log4j-slf4j", "slf4j-api"))
             // Use when you need to depend upon netty
@@ -148,13 +149,14 @@ dependencyResolutionManagement {
             library("dagger-api", "com.google.dagger", "dagger").versionRef("dagger-version")
             library("dagger-compiler", "com.google.dagger", "dagger-compiler").versionRef("dagger-version")
             library("eddsa", "net.i2p.crypto", "eddsa").versionRef("eddsa-version")
+            library("grpc-stub", "io.grpc", "grpc-stub").versionRef("grpc-version")
             library("grpc-protobuf", "io.grpc", "grpc-protobuf").versionRef("grpc-version")
             library("grpc-netty", "io.grpc", "grpc-netty").versionRef("grpc-version")
             library("guava", "com.google.guava", "guava").versionRef("guava-version")
             library("hapi", "com.hedera.hashgraph", "hedera-protobuf-java-api").versionRef("hapi-version")
             library("headlong", "com.esaulpaugh", "headlong").versionRef("headlong-version")
             library("helidon-server", "io.helidon.webserver", "helidon-webserver-http2").versionRef("helidon-version")
-            library("helidon-grpc", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
+            library("helidon-grpc-server", "io.helidon.grpc", "helidon-grpc-server").versionRef("helidon-version")
             library("helidon-io-grpc", "io.helidon.grpc", "io.grpc").versionRef("helidon-version")
             library("jackson", "com.fasterxml.jackson.core", "jackson-databind").versionRef("jackson-version")
             library(

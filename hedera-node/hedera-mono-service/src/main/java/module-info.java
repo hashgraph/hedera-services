@@ -29,6 +29,9 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.logging;
     requires org.bouncycastle.provider;
     requires tuweni.units;
-    requires grpc.stub;
     requires commons.collections4;
+    requires org.eclipse.collections.impl;
+    requires org.apache.commons.io;
+    requires io.grpc;
+    requires io.grpc.stub;
 }
