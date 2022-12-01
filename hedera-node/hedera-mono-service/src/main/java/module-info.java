@@ -1,4 +1,14 @@
 module com.hedera.node.app.service.mono {
+	exports com.hedera.node.app.service.mono.state.submerkle;
+	exports com.hedera.node.app.service.mono.exceptions;
+	exports com.hedera.node.app.service.mono.legacy.core.jproto;
+	exports com.hedera.node.app.service.mono.utils;
+	exports com.hedera.node.app.service.mono.ledger;
+	exports com.hedera.node.app.service.mono.store.models;
+	exports com.hedera.node.app.service.mono.state.merkle;
+	exports com.hedera.node.app.service.mono.utils.accessors;
+	exports com.hedera.node.app.service.mono.sigs.utils;
+	exports com.hedera.node.app.service.mono.sigs.verification;
 	requires com.hedera.hashgraph.protobuf.java.api;
 	requires com.swirlds.common;
 	requires dagger;

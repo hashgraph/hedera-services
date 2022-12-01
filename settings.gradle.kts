@@ -207,7 +207,6 @@ dependencyResolutionManagement {
             version("picocli-version", "4.6.3")
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
-            version("truth-java8-extension-version", "1.1.3")
             version("classgraph-version", "4.8.65")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
@@ -222,8 +221,7 @@ dependencyResolutionManagement {
                     "mockito-core",
                     "mockito-jupiter",
                     "hamcrest",
-                    "awaitility",
-                    "truth-java8-extension"
+                    "awaitility"
                 )
             )
 
@@ -246,11 +244,6 @@ dependencyResolutionManagement {
             library("snakeyaml", "org.yaml", "snakeyaml").versionRef("snakeyaml-version")
             library("testcontainers-core", "org.testcontainers", "testcontainers").versionRef("testcontainers-version")
             library("testcontainers-junit", "org.testcontainers", "junit-jupiter").versionRef("testcontainers-version")
-            library(
-                "truth-java8-extension",
-                "com.google.truth.extensions",
-                "truth-java8-extension"
-            ).versionRef("truth-java8-extension-version")
             library("classgraph", "io.github.classgraph", "classgraph").versionRef("classgraph-version")
         }
     }

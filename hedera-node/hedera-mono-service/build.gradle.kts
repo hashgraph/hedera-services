@@ -31,6 +31,8 @@ configurations.all {
     exclude("io.grpc", "grpc-context")
     exclude("io.grpc", "grpc-api")
     exclude("io.grpc", "grpc-testing")
+
+    exclude("org.hamcrest", "hamcrest-core")
 }
 
 dependencies {
