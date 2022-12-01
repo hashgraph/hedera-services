@@ -34,7 +34,7 @@ import static java.util.Collections.unmodifiableMap;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.StateChildren;
 import com.hedera.node.app.service.mono.contracts.sources.AddressKeyedMapFactory;

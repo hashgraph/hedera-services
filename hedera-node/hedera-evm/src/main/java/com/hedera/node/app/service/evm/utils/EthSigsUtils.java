@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.utils;
+package com.hedera.node.app.service.evm.utils;
 
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;

@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts;
 
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.ECDSA_KEY_ALIAS_PREFIX;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.context.primitives.StateView.WILDCARD_OWNER;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.ledger.TransactionalLedger.activeLedgerWrapping;
@@ -44,7 +46,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
