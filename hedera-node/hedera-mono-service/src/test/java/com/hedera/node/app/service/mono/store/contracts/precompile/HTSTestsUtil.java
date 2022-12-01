@@ -423,18 +423,10 @@ public class HTSTestsUtil {
                                     .build(),
                             payer),
                     /* Simulate an assessed fallback fee */
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(receiver)
-                                    .setAmount(-AMOUNT)
-                                    .build(),
-                            payer),
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(feeCollector)
-                                    .setAmount(+AMOUNT)
-                                    .build(),
-                            payer));
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT),
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
 
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(

@@ -151,6 +151,7 @@ public class CryptoTransferSuite extends HapiApiSuite {
     private static final String PAYER = "payer";
     private static final String SENDER = "sender";
     private static final String RECEIVER = "receiver";
+    private static final String TREASURY = "treasury";
     private static final String OTHER_RECEIVER = "otherReceiver";
     private static final String ANOTHER_RECEIVER = "anotherReceiver";
     private static final String FUNGIBLE_TOKEN = "fungible";
@@ -2162,7 +2163,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithAllowance() {
-        final var TREASURY = "treasury";
         final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
         final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
         final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
@@ -2350,8 +2350,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithAllowance() {
-        final var SPENDER = "spender";
-        final var TREASURY = "treasury";
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";

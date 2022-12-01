@@ -820,8 +820,6 @@ class TransferPrecompilesTest {
         verify(sigsVerifier)
                 .hasActiveKeyOrNoReceiverSigReq(
                         true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers);
-        verify(sigsVerifier)
-                .hasActiveKey(true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers);
         verify(sigsVerifier, never())
                 .hasActiveKeyOrNoReceiverSigReq(
                         true,

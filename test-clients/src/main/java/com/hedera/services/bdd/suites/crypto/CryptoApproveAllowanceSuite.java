@@ -137,7 +137,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                     serialsInAscendingOrder(),
                     feesAsExpected(),
                     cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
-                    approveForAllSetNFTSpender(),
+                    approveForAllDoesNotSetExplicitNFTSpender(),
                     canGrantNftAllowancesWithTreasuryOwner(),
                     canGrantFungibleAllowancesWithTreasuryOwner(),
                     approveForAllSpenderCanDelegateOnNFT(),
@@ -1864,7 +1864,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
-    private HapiApiSpec approveForAllSetNFTSpender() {
+    private HapiApiSpec approveForAllDoesNotSetExplicitNFTSpender() {
         return defaultHapiSpec("ApproveForAllSetNFTSpender")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1897,7 +1897,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .addNftAllowance(
                                         OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of())
                                 .signedBy(DEFAULT_PAYER, OWNER),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER).logged(),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(accountWith().nftApprovedForAllAllowancesCount(1)))
@@ -1906,9 +1906,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                         movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
                                                 .between(OWNER, RECEIVER))
                                 .payingWith(SPENDER),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged(),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1).between(RECEIVER, OWNER)));
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
     private HapiApiSpec scheduledCryptoApproveAllowanceWorks() {
