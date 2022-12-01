@@ -1578,6 +1578,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER)
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .key(RECEIVER_SIGNATURE),
