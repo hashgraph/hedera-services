@@ -9,6 +9,12 @@ module com.hedera.node.app.service.mono {
 	exports com.hedera.node.app.service.mono.utils.accessors;
 	exports com.hedera.node.app.service.mono.sigs.utils;
 	exports com.hedera.node.app.service.mono.sigs.verification;
+	exports com.hedera.node.app.service.mono.files;
+	exports com.hedera.node.app.service.mono.state.virtual.schedule;
+	exports com.hedera.node.app.service.mono.store.schedule;
+	exports com.hedera.node.app.service.mono.store.tokens;
+	exports com.hedera.node.app.service.mono.context;
+	exports com.hedera.node.app.service.mono.state.enums;
 	requires com.hedera.hashgraph.protobuf.java.api;
 	requires com.swirlds.common;
 	requires dagger;

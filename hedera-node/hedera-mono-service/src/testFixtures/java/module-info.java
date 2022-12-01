@@ -10,4 +10,5 @@ module com.hedera.node.app.service.mono.testFixtures {
 	requires com.swirlds.merkle;
 	requires net.i2p.crypto.eddsa;
 	requires org.bouncycastle.provider;
+	requires org.apache.commons.codec;
 }
