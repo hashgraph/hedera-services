@@ -101,6 +101,11 @@ extraJavaModuleInfo {
     automaticModule("org.hyperledger.besu:blake2bf", "org.hyperledger.besu.blake2bf")
     automaticModule("com.google.truth.extensions:truth-java8-extension", "com.google.truth.extensions.java8")
 
+    automaticModule("com.github.docker-java:docker-java-transport-zerodep", "com.github.docker.transport.zerodep")
+    automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
+    automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
+    automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
+
 
     // Test Related Modules
     automaticModule("com.github.docker-java:docker-java-transport", "com.github.docker.java.transport")
