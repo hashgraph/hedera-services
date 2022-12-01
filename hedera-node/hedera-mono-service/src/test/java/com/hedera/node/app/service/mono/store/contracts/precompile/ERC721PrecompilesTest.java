@@ -37,7 +37,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPre
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
