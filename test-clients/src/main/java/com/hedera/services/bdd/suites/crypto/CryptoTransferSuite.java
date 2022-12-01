@@ -1701,7 +1701,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
         final String tokenB = "tokenB";
         final String firstUser = "firstUser";
         final String secondUser = "secondUser";
-        final String treasury = "treasury";
         final String tokenAcreateTxn = "tokenACreate";
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
@@ -1709,38 +1708,38 @@ public class CryptoTransferSuite extends HapiApiSuite {
 
         return defaultHapiSpec("AutoAssociationRequiresOpenSlots")
                 .given(
-                        cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(firstUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(1),
                         cryptoCreate(secondUser).balance(ONE_HBAR).maxAutomaticTokenAssociations(2))
                 .when(
                         tokenCreate(tokenA)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
+                                .treasury(TREASURY)
                                 .via(tokenAcreateTxn),
                         getTxnRecord(tokenAcreateTxn)
-                                .hasNewTokenAssociation(tokenA, treasury)
+                                .hasNewTokenAssociation(tokenA, TREASURY)
                                 .logged(),
                         tokenCreate(tokenB)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
+                                .treasury(TREASURY)
                                 .via(tokenBcreateTxn),
                         getTxnRecord(tokenBcreateTxn)
-                                .hasNewTokenAssociation(tokenB, treasury)
+                                .hasNewTokenAssociation(tokenB, TREASURY)
                                 .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(treasury, firstUser))
+                        cryptoTransfer(moving(1, tokenA).between(TREASURY, firstUser))
                                 .via(transferToFU),
                         getTxnRecord(transferToFU)
                                 .hasNewTokenAssociation(tokenA, firstUser)
                                 .logged(),
-                        cryptoTransfer(moving(1, tokenB).between(treasury, secondUser))
+                        cryptoTransfer(moving(1, tokenB).between(TREASURY, secondUser))
                                 .via(transferToSU),
                         getTxnRecord(transferToSU)
                                 .hasNewTokenAssociation(tokenB, secondUser)
                                 .logged())
                 .then(
-                        cryptoTransfer(moving(1, tokenB).between(treasury, firstUser))
+                        cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser))
                                 .hasKnownStatus(NO_REMAINING_AUTOMATIC_ASSOCIATIONS)
                                 .via("failedTransfer"),
                         getAccountInfo(firstUser)
@@ -1751,14 +1750,14 @@ public class CryptoTransferSuite extends HapiApiSuite {
                                 .hasAlreadyUsedAutomaticAssociations(1)
                                 .hasMaxAutomaticAssociations(2)
                                 .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(treasury, secondUser)),
+                        cryptoTransfer(moving(1, tokenA).between(TREASURY, secondUser)),
                         getAccountInfo(secondUser)
                                 .hasAlreadyUsedAutomaticAssociations(2)
                                 .hasMaxAutomaticAssociations(2)
                                 .logged(),
-                        cryptoTransfer(moving(1, tokenA).between(firstUser, treasury)),
+                        cryptoTransfer(moving(1, tokenA).between(firstUser, TREASURY)),
                         tokenDissociate(firstUser, tokenA),
-                        cryptoTransfer(moving(1, tokenB).between(treasury, firstUser)));
+                        cryptoTransfer(moving(1, tokenB).between(TREASURY, firstUser)));
     }
 
     private HapiApiSpec baseCryptoTransferFeeChargedAsExpected() {

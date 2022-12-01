@@ -2387,8 +2387,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
         return defaultHapiSpec("HapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails")
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -2522,8 +2520,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
         return defaultHapiSpec(
                         "HapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .given(
