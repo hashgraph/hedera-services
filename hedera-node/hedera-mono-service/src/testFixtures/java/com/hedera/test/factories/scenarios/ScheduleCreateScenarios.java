@@ -17,7 +17,6 @@ package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.CryptoTransferFactory.newSignedCryptoTransfer;
 import static com.hedera.test.factories.txns.CryptoUpdateFactory.newSignedCryptoUpdate;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.ScheduleCreateFactory.newSignedScheduleCreate;
 import static com.hedera.test.factories.txns.ScheduleSignFactory.newSignedScheduleSign;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
@@ -33,26 +32,23 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
     SCHEDULE_CREATE_NESTED_SCHEDULE_SIGN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .missingAdmin()
                                     .creating(
                                             newSignedScheduleSign()
                                                     .signing(KNOWN_SCHEDULE_IMMUTABLE)
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_NONSENSE {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedScheduleCreate().schedulingNonsense().get()));
+            return PlatformTxnAccessor.from(newSignedScheduleCreate().schedulingNonsense().get());
         }
     },
     SCHEDULE_CREATE_XFER_NO_ADMIN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .missingAdmin()
                                     .creating(
@@ -64,13 +60,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_INVALID_XFER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .missingAdmin()
                                     .creating(
@@ -82,13 +77,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .creating(
                                             newSignedCryptoTransfer()
@@ -99,13 +93,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DILIGENT_SIGNING_PAYER)
                                     .creating(
@@ -117,13 +110,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DEFAULT_PAYER)
                                     .creating(
@@ -135,13 +127,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_CUSTOM_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(CUSTOM_PAYER_ACCOUNT)
                                     .creating(
@@ -153,13 +144,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_SELF {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DEFAULT_PAYER)
                                     .creating(
@@ -171,13 +161,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_SELF_AND_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DILIGENT_SIGNING_PAYER)
                                     .creating(
@@ -189,13 +178,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_CUSTOM_PAYER_AND_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DILIGENT_SIGNING_PAYER)
                                     .creating(
@@ -207,13 +195,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_CUSTOM_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(CUSTOM_PAYER_ACCOUNT)
                                     .creating(
@@ -225,13 +212,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_SELF_SENDER_AND_PAYER_AS_CUSTOM_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(CUSTOM_PAYER_ACCOUNT)
                                     .creating(
@@ -243,13 +229,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_ADMIN_CUSTOM_PAYER_SENDER_AND_PAYER_AS_SELF {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(DEFAULT_PAYER)
                                     .creating(
@@ -261,13 +246,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .missingAdmin()
                                     .designatingPayer(MISSING_ACCOUNT)
@@ -280,13 +264,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                                     RECEIVER_SIG_ID,
                                                                     1_000L))
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(IdUtils.asAccount(TREASURY_PAYER_ID))
                                     .creating(
@@ -294,13 +277,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                     .skipPayerSig()
                                                     .newAccountKt(NEW_ACCOUNT_KT)
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .designatingPayer(IdUtils.asAccount(MASTER_PAYER_ID))
                                     .creating(
@@ -308,13 +290,12 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                     .skipPayerSig()
                                                     .newAccountKt(NEW_ACCOUNT_KT)
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
     SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedScheduleCreate()
                                     .payer(MASTER_PAYER_ID)
                                     .designatingPayer(IdUtils.asAccount(MASTER_PAYER_ID))
@@ -323,7 +304,7 @@ public enum ScheduleCreateScenarios implements TxnHandlingScenario {
                                                     .skipPayerSig()
                                                     .newAccountKt(NEW_ACCOUNT_KT)
                                                     .get())
-                                    .get()));
+                                    .get());
         }
     },
 }

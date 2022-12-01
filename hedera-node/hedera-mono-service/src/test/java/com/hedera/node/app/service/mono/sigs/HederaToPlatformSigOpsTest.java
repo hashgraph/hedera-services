@@ -48,7 +48,6 @@ import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import java.util.ArrayList;
@@ -80,7 +79,7 @@ class HederaToPlatformSigOpsTest {
         allSigBytes = mock(PubKeyToSigBytes.class);
         keyOrdering = mock(SigRequirements.class);
         platformTxn =
-                PlatformTxnAccessor.from(PlatformTxnFactory.from(newSignedSystemDelete().get()));
+                PlatformTxnAccessor.from(newSignedSystemDelete().get());
     }
 
     @SuppressWarnings("unchecked")
@@ -123,7 +122,7 @@ class HederaToPlatformSigOpsTest {
 
         expandIn(platformTxn, keyOrdering, allSigBytes);
 
-        assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
         assertEquals(OK, platformTxn.getExpandedSigStatus());
     }
 
@@ -168,7 +167,7 @@ class HederaToPlatformSigOpsTest {
         assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
         assertEquals(
                 expectedSigsWithOtherPartiesCreationError(),
-                platformTxn.getPlatformTxn().getSignatures());
+                platformTxn.getCryptoSigs());
     }
 
     @Test
@@ -263,10 +262,7 @@ class HederaToPlatformSigOpsTest {
     void rationalizesOnlyMissingSigs() throws Exception {
         wellBehavedOrdersAndSigSources();
         platformTxn
-                .getPlatformTxn()
-                .addAll(
-                        asValid(expectedSigsWithOtherPartiesCreationError())
-                                .toArray(new TransactionSignature[0]));
+                .addAllCryptoSigs(asValid(expectedSigsWithOtherPartiesCreationError()));
         final SyncVerifier syncVerifier =
                 l -> {
                     if (l.equals(expectedSigsWithOtherPartiesCreationError())) {
@@ -296,12 +292,7 @@ class HederaToPlatformSigOpsTest {
     @Test
     void doesNothingToTxnIfAllSigsAreRational() throws Exception {
         wellBehavedOrdersAndSigSources();
-        platformTxn =
-                PlatformTxnAccessor.from(
-                        PlatformTxnFactory.withClearFlag(platformTxn.getPlatformTxn()));
-        platformTxn
-                .getPlatformTxn()
-                .addAll(asValid(expectedSigsWithNoErrors()).toArray(new TransactionSignature[0]));
+        platformTxn.addAllCryptoSigs(asValid(expectedSigsWithNoErrors()));
         final SyncVerifier syncVerifier =
                 l -> {
                     throw new AssertionError("All sigs were verified async!");
@@ -320,11 +311,10 @@ class HederaToPlatformSigOpsTest {
         verify(mockAccessor).setSigMeta(captor.capture());
         final var sigMeta = captor.getValue();
         platformTxn.setSigMeta(sigMeta);
-        assertEquals(expectedSigsWithNoErrors(), platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
         assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-        assertFalse(
-                ((PlatformTxnFactory.TransactionWithClearFlag) platformTxn.getPlatformTxn())
-                        .hasClearBeenCalled());
+        final var resultingSigs = platformTxn.getCryptoSigs();
+        assertFalse(resultingSigs.isEmpty());
     }
 
     private boolean allVerificationStatusesAre(final Predicate<VerificationStatus> statusPred) {
@@ -353,9 +343,9 @@ class HederaToPlatformSigOpsTest {
 
     private void givenMirrorMock(PlatformTxnAccessor mock, PlatformTxnAccessor real) {
         given(mock.getPkToSigsFn()).willReturn(allSigBytes);
-        given(mock.getPlatformTxn()).willReturn(real.getPlatformTxn());
         given(mock.getTxn()).willReturn(real.getTxn());
         given(mock.getPayer()).willReturn(real.getPayer());
         given(mock.getTxnBytes()).willReturn(real.getTxnBytes());
+        given(mock.getCryptoSigs()).willReturn(real.getCryptoSigs());
     }
 }

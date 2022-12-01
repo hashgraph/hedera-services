@@ -75,7 +75,7 @@ class PlatformTxnAccessorTest {
     void delegatesSettingSpanMap() {
         final var delegate = mock(TxnAccessor.class);
         given(delegate.getSigMap()).willReturn(SignatureMap.getDefaultInstance());
-        final var subject = new PlatformTxnAccessor(delegate, new SwirldTransaction());
+        final var subject = new PlatformTxnAccessor(delegate);
         final var newMap = Map.of("1", new Object());
         subject.setRationalizedSpanMap(newMap);
         verify(delegate).setRationalizedSpanMap(newMap);
@@ -85,7 +85,7 @@ class PlatformTxnAccessorTest {
     void delegatesGettingEthTxData() {
         final var txn = TxnUtils.buildTransactionFrom(TxnUtils.ethereumTransactionOp());
         final var delegate = SignedTxnAccessor.uncheckedFrom(txn);
-        final var subject = new PlatformTxnAccessor(delegate, new SwirldTransaction());
+        final var subject = new PlatformTxnAccessor(delegate);
         assertEquals(delegate.opEthTxData(), subject.opEthTxData());
         assertFalse(subject.hasConsequentialUnknownFields());
     }
@@ -93,14 +93,10 @@ class PlatformTxnAccessorTest {
     @Test
     void hasSpanMap() throws InvalidProtocolBufferException {
         // setup:
-        final Transaction signedTxnWithBody =
+        final var contents =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
-        // given:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(contents);
 
         // expect:
         assertThat(subject.getSpanMap(), instanceOf(HashMap.class));
@@ -109,14 +105,11 @@ class PlatformTxnAccessorTest {
     @Test
     void sigMetaGetterSetterCheck() throws InvalidProtocolBufferException {
         // setup:
-        final Transaction signedTxnWithBody =
+        final var signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // given:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
 
         // when:
         subject.setSigMeta(RationalizedSigMeta.noneAvailable());
@@ -167,23 +160,10 @@ class PlatformTxnAccessorTest {
 
     @Test
     void failsWithIllegalStateOnUncheckedConstruction() {
-        final var txn = new SwirldTransaction(NONSENSE);
         // expect:
         assertThrows(
                 InvalidProtocolBufferException.class,
-                () -> PlatformTxnAccessor.from(SignedTxnAccessor.from(txn.getContents()), txn));
-    }
-
-    @Test
-    void failsOnInvalidSignedTxn() {
-        final var platformTxn = new SwirldTransaction(NONSENSE);
-
-        // expect:
-        assertThrows(
-                InvalidProtocolBufferException.class,
-                () ->
-                        new PlatformTxnAccessor(
-                                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn));
+                () -> PlatformTxnAccessor.from(NONSENSE));
     }
 
     @Test
@@ -191,15 +171,12 @@ class PlatformTxnAccessorTest {
         // given:
         final Transaction signedNonsenseTxn =
                 Transaction.newBuilder().setBodyBytes(ByteString.copyFrom(NONSENSE)).build();
-        // and:
-        final var platformTxn = new SwirldTransaction(signedNonsenseTxn.toByteArray());
 
         // then:
         assertThrows(
                 InvalidProtocolBufferException.class,
                 () ->
-                        PlatformTxnAccessor.from(
-                                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn));
+                        PlatformTxnAccessor.from(signedNonsenseTxn.toByteArray()));
     }
 
     @Test
@@ -207,12 +184,9 @@ class PlatformTxnAccessorTest {
         // given:
         final Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
 
         // then:
         assertEquals(someTxn, subject.getTxn());
@@ -235,12 +209,9 @@ class PlatformTxnAccessorTest {
                                                                 ByteString.copyFrom(
                                                                         "FAKE".getBytes()))))
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
         final Transaction signedTxn4Log = subject.getSignedTxnWrapper();
         final Transaction asBodyBytes =
                 signedTxn4Log.toBuilder()
@@ -275,12 +246,8 @@ class PlatformTxnAccessorTest {
                         .setSignedTransactionBytes(signedTxn.toByteString())
                         .build();
 
-        final var platformTxn = new SwirldTransaction(txn.toByteArray());
-
         // when:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(txn);
         final Transaction signedTxn4Log = subject.getSignedTxnWrapper();
 
         final ByteString signedTxnBytes = signedTxn4Log.getSignedTransactionBytes();
@@ -296,17 +263,14 @@ class PlatformTxnAccessorTest {
     }
 
     @Test
-    void getsPayer() throws Exception {
+    void getsPayer() throws InvalidProtocolBufferException {
         // given:
         final AccountID payer = asAccount("0.0.2");
         final Transaction signedTxnWithBody =
                 Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
 
         // then:
         assertEquals(payer, subject.getPayer());
@@ -342,13 +306,11 @@ class PlatformTxnAccessorTest {
                         .setBodyBytes(someTxn.toByteString())
                         .setSigMap(onePairSigMap)
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
         final var aliasManager = mock(AliasManager.class);
         final var stateView = mock(StateView.class);
 
-        final var signedAccessor = SignedTxnAccessor.from(platformTxn.getContents());
         // when:
-        final PlatformTxnAccessor subject = new PlatformTxnAccessor(signedAccessor, platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
         final var delegate = subject.getDelegate();
 
         // then:
@@ -457,12 +419,9 @@ class PlatformTxnAccessorTest {
                         .setBodyBytes(someTxn.toByteString())
                         .setSigMap(onePairSigMap)
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        final PlatformTxnAccessor subject =
-                new PlatformTxnAccessor(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+        final PlatformTxnAccessor subject = PlatformTxnAccessor.from(signedTxnWithBody);
         final var expectedString =
                 "PlatformTxnAccessor{delegate=SignedTxnAccessor{sigMapSize=71, numSigPairs=1,"
                     + " numAutoCreations=-1, hash=[111, -123, -70, 79, 75, -80, -114, -49, 88, -76,"
@@ -515,13 +474,8 @@ class PlatformTxnAccessorTest {
                     + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
                     + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
                     + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null, view=null}, platformTxn=Transaction{contents=[26, 71,"
-                    + " 10, 69, 10, 1, 97, 26, 64, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49,"
-                    + " 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48,"
-                    + " 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,"
-                    + " 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 34, 20, 10, 4, 18,"
-                    + " 2, 24, 2, 24, 10, 50, 3, 72, 105, 33, -38, 1, 4, 10, 2, 24, 10],"
-                    + " signatures=null}, linkedRefs=null, expandedSigStatus=null,"
+                    + ", scheduleRef=null, view=null},"
+                    + " linkedRefs=null, expandedSigStatus=null,"
                     + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
                     + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
                     + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"

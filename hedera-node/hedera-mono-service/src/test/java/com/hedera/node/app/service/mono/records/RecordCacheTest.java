@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -250,12 +249,10 @@ class RecordCacheTest {
                                         .build()
                                         .toByteString())
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxn.toByteArray());
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
         final var accessor =
-                PlatformTxnAccessor.from(
-                        SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+                PlatformTxnAccessor.from(signedTxn.toByteArray());
 
         final var expirableTxnRecordBuilder =
                 ExpirableTxnRecord.newBuilder()

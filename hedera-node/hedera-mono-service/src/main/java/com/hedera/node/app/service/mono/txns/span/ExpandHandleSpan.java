@@ -79,6 +79,6 @@ public class ExpandHandleSpan {
             throws InvalidProtocolBufferException {
         final var accessor = factory.nonTriggeredTxn(transaction.getContents());
         spanMapManager.expandSpan(accessor);
-        return PlatformTxnAccessor.from(accessor, transaction);
+        return PlatformTxnAccessor.from(accessor);
     }
 }

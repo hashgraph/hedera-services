@@ -16,7 +16,6 @@
 package com.hedera.test.factories.scenarios;
 
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
@@ -24,7 +23,7 @@ public enum BadPayerScenarios implements TxnHandlingScenario {
     INVALID_PAYER_ID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedCryptoCreate().payer(MISSING_ACCOUNT_ID).get()));
+                    newSignedCryptoCreate().payer(MISSING_ACCOUNT_ID).get());
         }
     }
 }

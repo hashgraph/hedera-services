@@ -39,6 +39,10 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -52,36 +56,42 @@ import java.util.function.Function;
 public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     private final TxnAccessor delegate;
     private final PubKeyToSigBytes pubKeyToSigBytes;
-    private final com.swirlds.common.system.transaction.Transaction platformTxn;
+    private List<TransactionSignature> cryptoSigs = new ArrayList<>();
 
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
     private RationalizedSigMeta sigMeta = null;
 
-    protected PlatformTxnAccessor(
-            final TxnAccessor delegate,
-            final com.swirlds.common.system.transaction.Transaction platformTxn) {
-        this.platformTxn = platformTxn;
+    protected PlatformTxnAccessor(final TxnAccessor delegate) {
         this.delegate = delegate;
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
-    public static PlatformTxnAccessor from(
-            final TxnAccessor delegate,
-            final com.swirlds.common.system.transaction.Transaction platformTxn) {
-        return new PlatformTxnAccessor(delegate, platformTxn);
+    public static PlatformTxnAccessor from(final Transaction transaction) throws InvalidProtocolBufferException {
+        return from(transaction.toByteArray());
     }
 
-    public static PlatformTxnAccessor from(
-            final com.swirlds.common.system.transaction.Transaction platformTxn)
-            throws InvalidProtocolBufferException {
-        return new PlatformTxnAccessor(
-                SignedTxnAccessor.from(platformTxn.getContents()), platformTxn);
+    public static PlatformTxnAccessor from(final byte[] contents) throws InvalidProtocolBufferException {
+        return new PlatformTxnAccessor(SignedTxnAccessor.from(contents));
+    }
+
+    public static PlatformTxnAccessor from(final TxnAccessor accessor) {
+        return new PlatformTxnAccessor(accessor);
     }
 
     @Override
-    public com.swirlds.common.system.transaction.Transaction getPlatformTxn() {
-        return platformTxn;
+    public synchronized void addAllCryptoSigs(final List<TransactionSignature> signatures) {
+        cryptoSigs.addAll(signatures);
+    }
+
+    @Override
+    public synchronized void clearCryptoSigs() {
+        cryptoSigs.clear();
+    }
+
+    @Override
+    public synchronized List<TransactionSignature> getCryptoSigs() {
+        return cryptoSigs;
     }
 
     @Override
@@ -103,7 +113,6 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     public String toLoggableString() {
         return MoreObjects.toStringHelper(this)
                 .add("delegate", delegate.toLoggableString())
-                .add("platformTxn", platformTxn.toString())
                 .add("linkedRefs", linkedRefs)
                 .add("expandedSigStatus", expandedSigStatus)
                 .add("pubKeyToSigBytes", pubKeyToSigBytes.toString())

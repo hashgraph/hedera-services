@@ -17,7 +17,6 @@ package com.hedera.test.factories.scenarios;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.node.app.service.mono.state.submerkle.FcCustomFee.fixedFee;
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenFeeScheduleUpdateFactory.newSignedTokenFeeScheduleUpdate;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -28,22 +27,20 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(MISSING_TOKEN)
                                     .withCustom(fixedFee(1, null, MISSING_ENTITY_ID, false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_NO_SPECIAL_KEYS)
                                     .withCustom(fixedFee(1, null, MISSING_ENTITY_ID, false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ {
@@ -51,11 +48,10 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var feeCollectorSigReq = EntityId.fromGrpcAccountId(RECEIVER_SIG);
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
                                     .withCustom(fixedFee(1, null, feeCollectorSigReq, false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ {
@@ -63,11 +59,10 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var feeCollectorNoSigReq = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
                                     .withCustom(fixedFee(1, null, feeCollectorNoSigReq, false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ {
@@ -76,19 +71,17 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
             final var feeCollectorNoSigReq = EntityId.fromGrpcAccountId(NO_RECEIVER_SIG);
             final var feeCollectorWithSigReq = EntityId.fromGrpcAccountId(RECEIVER_SIG);
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
                                     .withCustom(fixedFee(1, null, feeCollectorNoSigReq, false))
                                     .withCustom(fixedFee(2, null, feeCollectorWithSigReq, false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .payer(RECEIVER_SIG_ID)
                                     .payerKt(RECEIVER_SIG_KT)
@@ -99,14 +92,13 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                                                     null,
                                                     EntityId.fromGrpcAccountId(RECEIVER_SIG),
                                                     false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .payer(NO_RECEIVER_SIG_ID)
                                     .payerKt(NO_RECEIVER_SIG_KT)
@@ -117,7 +109,7 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
                                                     null,
                                                     EntityId.fromGrpcAccountId(NO_RECEIVER_SIG),
                                                     false))
-                                    .get()));
+                                    .get());
         }
     },
     UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR {
@@ -125,11 +117,10 @@ public enum TokenFeeScheduleUpdateScenarios implements TxnHandlingScenario {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             final var missingFeeCollector = EntityId.fromGrpcAccountId(MISSING_ACCOUNT);
             return PlatformTxnAccessor.from(
-                    from(
                             newSignedTokenFeeScheduleUpdate()
                                     .updating(KNOWN_TOKEN_WITH_FEE_SCHEDULE_KEY)
                                     .withCustom(fixedFee(1, null, missingFeeCollector, false))
-                                    .get()));
+                                    .get());
         }
     },
 }

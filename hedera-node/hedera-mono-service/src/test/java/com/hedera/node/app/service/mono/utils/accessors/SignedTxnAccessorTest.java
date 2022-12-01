@@ -911,10 +911,9 @@ class SignedTxnAccessorTest {
                         .setBodyBytes(someTxn.toByteString())
                         .setSigMap(onePairSigMap)
                         .build();
-        final var platformTxn = new SwirldTransaction(signedTxnWithBody.toByteArray());
 
         // when:
-        final SignedTxnAccessor subject = SignedTxnAccessor.from(platformTxn.getContents());
+        final SignedTxnAccessor subject = SignedTxnAccessor.from(signedTxnWithBody.toByteArray());
 
         final var expectedString =
                 "SignedTxnAccessor{sigMapSize=71, numSigPairs=1, numAutoCreations=-1, hash=[111,"
