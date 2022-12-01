@@ -61,8 +61,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.function.Predicate;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class SigVerifierRegressionTest {
     private PrecheckKeyReqs precheckKeyReqs;
     private PrecheckVerifier precheckVerifier;
@@ -72,15 +74,15 @@ class SigVerifierRegressionTest {
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private AliasManager aliasManager;
 
-    private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-    private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-    private SignatureWaivers mockSignatureWaivers =
+    private final EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+    private final SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+    private final SignatureWaivers mockSignatureWaivers =
             new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
     @Test
     void rejectsInvalidTxn() throws Throwable {
         // given:
-        Transaction invalidSignedTxn =
+        final Transaction invalidSignedTxn =
                 Transaction.newBuilder()
                         .setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
                         .build();
@@ -167,16 +169,17 @@ class SigVerifierRegressionTest {
         assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
     }
 
-    private boolean sigVerifies(Transaction signedTxn) throws Exception {
+    private boolean sigVerifies(final Transaction signedTxn) throws Exception {
         try {
-            SignedTxnAccessor accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
+            final SignedTxnAccessor accessor =
+                    SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
             return precheckVerifier.hasNecessarySignatures(accessor);
-        } catch (InvalidProtocolBufferException ignore) {
+        } catch (final InvalidProtocolBufferException ignore) {
             return false;
         }
     }
 
-    private void setupFor(TxnHandlingScenario scenario) throws Throwable {
+    private void setupFor(final TxnHandlingScenario scenario) throws Throwable {
         accounts = scenario.accounts();
         platformTxn = scenario.platformTxn();
         aliasManager = mock(AliasManager.class);
@@ -193,7 +196,7 @@ class SigVerifierRegressionTest {
         final var nodeInfo = mock(NodeInfo.class);
         given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
         isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
-        SyncVerifier syncVerifier =
+        final SyncVerifier syncVerifier =
                 new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
                         ::verifySync;
         precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);

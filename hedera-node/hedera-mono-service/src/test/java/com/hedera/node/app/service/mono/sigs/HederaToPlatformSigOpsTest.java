@@ -56,9 +56,11 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+@Disabled
 class HederaToPlatformSigOpsTest {
     private static List<JKey> payerKey;
     private static List<JKey> otherKeys;

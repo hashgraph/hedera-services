@@ -81,42 +81,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 class SigOpsRegressionTest {
     private HederaFs hfs;
     private AliasManager aliasManager;
-    private FileNumbers fileNumbers = new MockFileNumbers();
+    private final FileNumbers fileNumbers = new MockFileNumbers();
     private List<TransactionSignature> expectedSigs;
     private ResponseCodeEnum expectedErrorStatus;
     private PlatformTxnAccessor platformTxn;
     private SigRequirements signingOrder;
     private MerkleMap<EntityNum, MerkleAccount> accounts;
 
-    private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-    private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-    private SignatureWaivers mockSignatureWaivers =
+    private final EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+    private final SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+    private final SignatureWaivers mockSignatureWaivers =
             new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
     static boolean otherPartySigsAreActive(
-            PlatformTxnAccessor accessor,
-            SigRequirements keyOrder,
-            SigningOrderResultFactory<ResponseCodeEnum> summaryFactory) {
+            final PlatformTxnAccessor accessor,
+            final SigRequirements keyOrder,
+            final SigningOrderResultFactory<ResponseCodeEnum> summaryFactory) {
         return otherPartySigsAreActive(
                 accessor, keyOrder, summaryFactory, DEFAULT_ACTIVATION_CHARACTERISTICS);
     }
 
     static boolean otherPartySigsAreActive(
-            PlatformTxnAccessor accessor,
-            SigRequirements keyOrder,
-            SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
-            KeyActivationCharacteristics characteristics) {
-        TransactionBody txn = accessor.getTxn();
-        Function<byte[], TransactionSignature> sigsFn =
+            final PlatformTxnAccessor accessor,
+            final SigRequirements keyOrder,
+            final SigningOrderResultFactory<ResponseCodeEnum> summaryFactory,
+            final KeyActivationCharacteristics characteristics) {
+        final TransactionBody txn = accessor.getTxn();
+        final Function<byte[], TransactionSignature> sigsFn =
                 HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
 
         final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
-        for (JKey otherKey : othersResult.getOrderedKeys()) {
+        for (final JKey otherKey : othersResult.getOrderedKeys()) {
             if (!HederaKeyActivation.isActive(
                     otherKey, sigsFn, HederaKeyActivation.ONLY_IF_SIG_IS_VALID, characteristics)) {
                 return false;
@@ -177,7 +179,7 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
         // and:
-        List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
+        final List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
 
         // when:
         final var ans = invokeRationalizationScenario();
@@ -195,7 +197,7 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
         // and:
-        List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
+        final List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
         platformTxn
                 .getPlatformTxn()
                 .addAll(asValid(expectedSigs).toArray(new TransactionSignature[0]));
@@ -216,7 +218,7 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
         // and:
-        List<TransactionSignature> unknownSigs =
+        final List<TransactionSignature> unknownSigs =
                 PlatformSigOps.createCryptoSigsFrom(
                                 List.of(
                                         COMPLEX_KEY_ACCOUNT_KT.asJKey(),
@@ -224,7 +226,7 @@ class SigOpsRegressionTest {
                                 platformTxn.getPkToSigsFn(),
                                 new ReusableBodySigningFactory(platformTxn))
                         .getPlatformSigs();
-        List<TransactionSignature> knownSigs =
+        final List<TransactionSignature> knownSigs =
                 asKind(
                         List.of(
                                 new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
@@ -246,7 +248,7 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO);
         // and:
-        List<TransactionSignature> unknownSigs =
+        final List<TransactionSignature> unknownSigs =
                 PlatformSigOps.createCryptoSigsFrom(
                                 List.of(
                                         COMPLEX_KEY_ACCOUNT_KT.asJKey(),
@@ -254,7 +256,7 @@ class SigOpsRegressionTest {
                                 platformTxn.getPkToSigsFn(),
                                 new ReusableBodySigningFactory(platformTxn))
                         .getPlatformSigs();
-        List<TransactionSignature> knownSigs =
+        final List<TransactionSignature> knownSigs =
                 asKind(
                         List.of(
                                 new AbstractMap.SimpleEntry<>(unknownSigs.get(0), INVALID),
@@ -276,13 +278,13 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
         // and:
-        List<TransactionSignature> unknownSigs =
+        final List<TransactionSignature> unknownSigs =
                 PlatformSigOps.createCryptoSigsFrom(
                                 List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
                                 platformTxn.getPkToSigsFn(),
                                 new ReusableBodySigningFactory(platformTxn))
                         .getPlatformSigs();
-        List<TransactionSignature> knownSigs =
+        final List<TransactionSignature> knownSigs =
                 asKind(
                         List.of(
                                 new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
@@ -305,13 +307,13 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO);
         // and:
-        List<TransactionSignature> unknownSigs =
+        final List<TransactionSignature> unknownSigs =
                 PlatformSigOps.createCryptoSigsFrom(
                                 List.of(DEFAULT_PAYER_KT.asJKey(), COMPLEX_KEY_ACCOUNT_KT.asJKey()),
                                 platformTxn.getPkToSigsFn(),
                                 new ReusableBodySigningFactory(platformTxn))
                         .getPlatformSigs();
-        List<TransactionSignature> knownSigs =
+        final List<TransactionSignature> knownSigs =
                 asKind(
                         List.of(
                                 new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
@@ -334,7 +336,7 @@ class SigOpsRegressionTest {
         // given:
         setupFor(CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO);
         // and:
-        List<TransactionSignature> unknownSigs =
+        final List<TransactionSignature> unknownSigs =
                 PlatformSigOps.createCryptoSigsFrom(
                                 List.of(
                                         DEFAULT_PAYER_KT.asJKey(),
@@ -343,7 +345,7 @@ class SigOpsRegressionTest {
                                 platformTxn.getPkToSigsFn(),
                                 new ReusableBodySigningFactory(platformTxn))
                         .getPlatformSigs();
-        List<TransactionSignature> knownSigs =
+        final List<TransactionSignature> knownSigs =
                 asKind(
                         List.of(
                                 new AbstractMap.SimpleEntry<>(unknownSigs.get(0), VALID),
@@ -374,18 +376,18 @@ class SigOpsRegressionTest {
                 .getPlatformSigs();
     }
 
-    private boolean allVerificationStatusesAre(Predicate<VerificationStatus> statusPred) {
+    private boolean allVerificationStatusesAre(final Predicate<VerificationStatus> statusPred) {
         return platformTxn.getSigMeta().verifiedSigs().stream()
                 .map(TransactionSignature::getSignatureStatus)
                 .allMatch(statusPred);
     }
 
-    private void statusMatches(ResponseCodeEnum expectedStatus) {
+    private void statusMatches(final ResponseCodeEnum expectedStatus) {
         assertEquals(expectedStatus, platformTxn.getExpandedSigStatus());
     }
 
-    private boolean invokePayerSigActivationScenario(List<TransactionSignature> knownSigs) {
-        SigRequirements keysOrder =
+    private boolean invokePayerSigActivationScenario(final List<TransactionSignature> knownSigs) {
+        final SigRequirements keysOrder =
                 new SigRequirements(
                         defaultLookupsFor(
                                 aliasManager,
@@ -405,11 +407,12 @@ class SigOpsRegressionTest {
         return payerSigIsActive(platformTxn, ONLY_IF_SIG_IS_VALID);
     }
 
-    private boolean invokeOtherPartySigActivationScenario(List<TransactionSignature> knownSigs) {
+    private boolean invokeOtherPartySigActivationScenario(
+            final List<TransactionSignature> knownSigs) {
         platformTxn.getPlatformTxn().clearSignatures();
         platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
-        SigRequirements keysOrder =
+        final SigRequirements keysOrder =
                 new SigRequirements(
                         defaultLookupsFor(
                                 aliasManager,
@@ -425,7 +428,7 @@ class SigOpsRegressionTest {
 
     private void invokeExpansionScenario() {
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
-        SigMetadataLookup sigMetaLookups =
+        final SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
@@ -433,7 +436,7 @@ class SigOpsRegressionTest {
                         () -> null,
                         ref -> null,
                         ref -> null);
-        SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
+        final SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
         final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
         expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -441,11 +444,11 @@ class SigOpsRegressionTest {
 
     private Rationalization invokeRationalizationScenario() {
         // setup:
-        SyncVerifier syncVerifier =
+        final SyncVerifier syncVerifier =
                 new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
                         ::verifySync;
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
-        SigMetadataLookup sigMetaLookups =
+        final SigMetadataLookup sigMetaLookups =
                 defaultLookupsFor(
                         aliasManager,
                         hfsSigMetaLookup,
@@ -453,7 +456,7 @@ class SigOpsRegressionTest {
                         () -> null,
                         ref -> null,
                         ref -> null);
-        SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
+        final SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
 
         // given:
         final var rationalization =
@@ -464,7 +467,7 @@ class SigOpsRegressionTest {
         return rationalization;
     }
 
-    private void setupFor(TxnHandlingScenario scenario) throws Throwable {
+    private void setupFor(final TxnHandlingScenario scenario) throws Throwable {
         hfs = scenario.hfs();
         aliasManager = mock(AliasManager.class);
         accounts = scenario.accounts();
@@ -489,19 +492,19 @@ class SigOpsRegressionTest {
         if (payerKeys.hasErrorReport()) {
             expectedErrorStatus = payerKeys.getErrorReport();
         } else {
-            PlatformSigsCreationResult payerResult =
+            final PlatformSigsCreationResult payerResult =
                     PlatformSigOps.createCryptoSigsFrom(
                             payerKeys.getOrderedKeys(),
                             new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
                             new ReusableBodySigningFactory(platformTxn));
             expectedSigs.addAll(payerResult.getPlatformSigs());
-            SigningOrderResult<ResponseCodeEnum> otherKeys =
+            final SigningOrderResult<ResponseCodeEnum> otherKeys =
                     signingOrder.keysForOtherParties(
                             platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
             if (otherKeys.hasErrorReport()) {
                 expectedErrorStatus = otherKeys.getErrorReport();
             } else {
-                PlatformSigsCreationResult otherResult =
+                final PlatformSigsCreationResult otherResult =
                         PlatformSigOps.createCryptoSigsFrom(
                                 otherKeys.getOrderedKeys(),
                                 new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap()),
