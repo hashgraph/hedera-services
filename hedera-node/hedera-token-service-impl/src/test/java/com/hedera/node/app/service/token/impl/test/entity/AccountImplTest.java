@@ -75,7 +75,7 @@ class AccountImplTest {
     void gettersWork() {
         assertEquals(2, subject.accountNumber());
         assertEquals(Optional.empty(), subject.alias());
-        assertEquals(key, subject.key().get());
+        assertEquals(key, subject.getKey().get());
         assertEquals(123_456_789L, subject.expiry());
         assertEquals(20_000_000_000L, subject.balance());
         assertEquals("test", subject.memo());
@@ -108,8 +108,8 @@ class AccountImplTest {
     private AccountImpl setUpAccount() {
         return new AccountImpl(
                 2,
-                Optional.empty(),
-                Optional.of(key),
+                new byte[0],
+                key,
                 12_3456_789L,
                 20_000_000_000L,
                 "test",

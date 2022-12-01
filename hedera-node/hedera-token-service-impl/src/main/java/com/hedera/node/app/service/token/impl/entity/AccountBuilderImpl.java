@@ -15,14 +15,15 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
-
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Objects;
-import java.util.Optional;
+
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
@@ -30,14 +31,12 @@ import java.util.Optional;
  * module
  */
 public class AccountBuilderImpl implements AccountBuilder {
-    private final Account copyOf;
+    private Account copyOf;
 
     // These fields are the ones that can be set in the builder
     // FUTURE: Replace the empty KeyList we use for 0.0.800 and hollow
-    // accounts with an empty Optional
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private Optional<HederaKey> key;
-
+    // accounts with null
+    private HederaKey key;
     private long expiry;
     private long balance;
     private String memo;
@@ -56,6 +55,9 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long stakeAtStartOfLastRewardedPeriod;
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
+    private long accountNumber;
+    private byte[] alias = new byte[0];
+    private boolean isSmartContract;
 
     /**
      * Create a builder for creating {@link Account}s, using the given copy as the basis for all
@@ -65,7 +67,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
         this.copyOf = Objects.requireNonNull(copyOf);
-        this.key = copyOf.key();
+        this.key = copyOf.getKey().isEmpty() ? null : copyOf.getKey().get();
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
         this.memo = copyOf.memo();
@@ -84,12 +86,19 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.stakeAtStartOfLastRewardedPeriod = copyOf.stakeAtStartOfLastRewardedPeriod();
         this.autoRenewAccountNumber = copyOf.autoRenewAccountNumber();
         this.autoRenewSecs = copyOf.autoRenewSecs();
+        this.accountNumber = copyOf.accountNumber();
+        this.alias = copyOf.getAlias().isEmpty() ? new byte[0] : copyOf.getAlias().get();
+        this.isSmartContract = copyOf.isSmartContract();
+    }
+
+    public AccountBuilderImpl() {
+        /* Default constructor for creating new Accounts */
     }
 
     @Override
     @NonNull
-    public AccountBuilder key(@NonNull HederaKey key) {
-        this.key = Optional.of(Objects.requireNonNull(key));
+    public AccountBuilder key(@Nullable HederaKey key) {
+        this.key = key;
         return this;
     }
 
@@ -218,23 +227,45 @@ public class AccountBuilderImpl implements AccountBuilder {
 
     @Override
     @NonNull
-    public AccountBuilder autoRenewSecs(long value) {
-        this.autoRenewSecs = value;
+    public AccountBuilder accountNumber(long value) {
+        this.accountNumber = value;
         return this;
     }
 
     @Override
     @NonNull
+    public AccountBuilder alias(byte[] value) {
+        this.alias = value;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public AccountBuilder isSmartContract(boolean value) {
+        this.isSmartContract = value;
+        return this;
+    }
+
+    @Override
+    @NonNull
+    public AccountBuilder autoRenewSecs(long value) {
+        this.autoRenewSecs = value;
+        return this;
+    }
+
+
+    @Override
+    @NonNull
     public Account build() {
         return new AccountImpl(
-                copyOf.accountNumber(),
-                copyOf.alias(),
-                key,
+                accountNumber,
+                alias, // 0 byte array if not set
+                key, // null if the user hasn't set it
                 expiry,
                 balance,
                 memo,
                 deleted,
-                copyOf.isSmartContract(),
+                isSmartContract,
                 receiverSigRequired,
                 numberOfOwnedNfts,
                 maxAutoAssociations,

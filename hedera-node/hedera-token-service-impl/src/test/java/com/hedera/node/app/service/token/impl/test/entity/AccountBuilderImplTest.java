@@ -53,8 +53,8 @@ class AccountBuilderImplTest {
         final var account = subject.build();
 
         assertEquals(2, account.accountNumber());
-        assertEquals(Optional.empty(), account.alias());
-        assertEquals(key, account.key().get());
+        assertEquals(Optional.empty(), account.getAlias());
+        assertEquals(key, account.getKey().get());
         assertEquals(123456789L, account.expiry());
         assertEquals(20_000_000_000L, account.balanceInTinyBar());
         assertEquals(20_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
@@ -108,17 +108,20 @@ class AccountBuilderImplTest {
         subject.stakeAtStartOfLastRewardedPeriod(10_000L);
         subject.autoRenewAccountNumber(30_000L);
         subject.autoRenewSecs(3_600_000);
+        subject.accountNumber(20L);
+        subject.alias(new byte[10]);
+        subject.isSmartContract(false);
 
         final var account = subject.build();
-        assertEquals(2, account.accountNumber());
-        assertEquals(Optional.empty(), account.alias());
-        assertEquals(newKey, account.key().get());
+        assertEquals(20L, account.accountNumber());
+        assertEquals(Optional.of(new byte[10]), account.getAlias());
+        assertEquals(newKey, account.getKey().get());
         assertEquals(1_234_567_890L, account.expiry());
         assertEquals(40_000_000_000L, account.balanceInTinyBar());
         assertEquals(40_000_000_000L / HBARS_TO_TINYBARS, account.balanceInHbar());
         assertEquals("test2", account.memo());
         assertFalse(account.isDeleted());
-        assertTrue(account.isSmartContract());
+        assertFalse(account.isSmartContract());
         assertFalse(account.isReceiverSigRequired());
         assertEquals(200, account.numberOfOwnedNfts());
         assertEquals(400, account.maxAutoAssociations());
@@ -138,8 +141,8 @@ class AccountBuilderImplTest {
     private AccountImpl setUpAccount() {
         return new AccountImpl(
                 2,
-                Optional.empty(),
-                Optional.of(key),
+                new byte[0],
+                key,
                 12_3456_789L,
                 20_000_000_000L,
                 "test",
