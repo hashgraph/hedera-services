@@ -75,7 +75,7 @@ public class ExpandHandleSpan {
         }
     }
 
-    public SwirldsTxnAccessor spanAccessorFor(final byte[] contents)
+    SwirldsTxnAccessor spanAccessorFor(final byte[] contents)
             throws InvalidProtocolBufferException {
         final var accessor = factory.nonTriggeredTxn(contents);
         spanMapManager.expandSpan(accessor);

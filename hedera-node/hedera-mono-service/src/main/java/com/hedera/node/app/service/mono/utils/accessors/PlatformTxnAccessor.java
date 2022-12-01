@@ -54,7 +54,7 @@ import java.util.function.Function;
 public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     private final TxnAccessor delegate;
     private final PubKeyToSigBytes pubKeyToSigBytes;
-    private List<TransactionSignature> cryptoSigs = new ArrayList<>();
+    private final List<TransactionSignature> cryptoSigs = new ArrayList<>();
 
     private LinkedRefs linkedRefs;
     private ResponseCodeEnum expandedSigStatus;
