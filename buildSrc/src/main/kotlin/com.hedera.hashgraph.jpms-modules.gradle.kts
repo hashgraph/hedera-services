@@ -106,6 +106,7 @@ extraJavaModuleInfo {
     automaticModule("org.rnorth.duct-tape:duct-tape", "org.rnorth.ducttape")
     automaticModule("io.opencensus:opencensus-api", "io.opencensus.api")
     automaticModule("org.hyperledger.besu.internal:util", "org.hyperledger.besu.internal.util")
+    automaticModule("org.testcontainers:junit-jupiter", "org.testcontainers.junit.jupiter")
 
 
     // Test Related Modules

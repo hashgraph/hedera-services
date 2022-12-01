@@ -22,6 +22,12 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+tasks.jar {
+    manifest {
+        attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient")
+    }
+}
+
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
     // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
