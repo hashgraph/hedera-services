@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_INITIA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVE_RECORD_THRESHOLD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SEND_RECORD_THRESHOLD;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -190,10 +191,10 @@ public class CryptoCreateChecks {
             return validateAliasAndEvmAddressProvidedCase(op);
         } else if (keyAndAliasAndEvmAddressProvided(op)) {
             return validateKeyAndAliasAndEVMAddressProvidedCase(op);
-        } else if (noKeyAndNoAliasAndNoEvmAddressProvided(op)) {
+        } else {
+            // This is the case when no key, no alias and no evm address are provided
             return KEY_REQUIRED;
         }
-        return OK;
     }
 
     public static boolean onlyKeyProvided(CryptoCreateTransactionBody op) {
@@ -210,10 +211,6 @@ public class CryptoCreateChecks {
 
     public static boolean keyAndEvmAddressProvided(CryptoCreateTransactionBody op) {
         return op.hasKey() && op.getAlias().isEmpty() && !op.getEvmAddress().isEmpty();
-    }
-
-    private static boolean noKeyAndNoAliasAndNoEvmAddressProvided(CryptoCreateTransactionBody op) {
-        return !op.hasKey() && op.getAlias().isEmpty() && op.getEvmAddress().isEmpty();
     }
 
     public static boolean onlyAliasProvided(CryptoCreateTransactionBody op) {
@@ -235,7 +232,7 @@ public class CryptoCreateChecks {
         }
 
         if (!op.getKey().getECDSASecp256K1().isEmpty()
-                && dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+                && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             var isKeyUsedAsAliasValidity = isUsedAsAliasCheck(op.getKey().getECDSASecp256K1());
 
             if (isKeyUsedAsAliasValidity != OK) {
@@ -249,7 +246,7 @@ public class CryptoCreateChecks {
     }
 
     private ResponseCodeEnum validateKeyAndAliasProvidedCase(final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
         final var keyValidity = validateKey(op);
@@ -285,11 +282,11 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateKeyAndEvmAddressProvidedCase(
             final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
         if (op.getEvmAddress().size() != EVM_ADDRESS_SIZE) {
-            return NOT_SUPPORTED;
+            return INVALID_SOLIDITY_ADDRESS;
         }
 
         final var keyValidity = validateKey(op);
@@ -307,7 +304,7 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateKeyAndAliasAndEVMAddressProvidedCase(
             final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
 
@@ -317,6 +314,10 @@ public class CryptoCreateChecks {
         }
         if (op.getEvmAddress().size() != EVM_ADDRESS_SIZE) {
             return NOT_SUPPORTED;
+        }
+
+        if (!isSerializedProtoKey(op.getAlias())) {
+            return INVALID_ALIAS_KEY;
         }
 
         var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
@@ -333,7 +334,7 @@ public class CryptoCreateChecks {
     }
 
     private ResponseCodeEnum validateOnlyAliasProvidedCase(final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
         if (!isSerializedProtoKey(op.getAlias())) {
@@ -356,12 +357,16 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateAliasAndEvmAddressProvidedCase(
             final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
 
         if (op.getEvmAddress().size() != EVM_ADDRESS_SIZE) {
             return NOT_SUPPORTED;
+        }
+
+        if (!isSerializedProtoKey(op.getAlias())) {
+            return INVALID_ALIAS_KEY;
         }
 
         var isEvmAddressUsedCheck = isUsedAsAliasCheck(op.getEvmAddress());
@@ -375,7 +380,7 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum validateOnlyEvmAddressProvidedCase(
             final CryptoCreateTransactionBody op) {
-        if (!dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+        if (!dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
             return NOT_SUPPORTED;
         }
         if (!dynamicProperties.isLazyCreationEnabled()) {

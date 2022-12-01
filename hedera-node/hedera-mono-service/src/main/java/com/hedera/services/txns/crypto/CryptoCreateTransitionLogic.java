@@ -40,7 +40,6 @@ import com.hedera.services.ledger.HederaLedger;
 import com.hedera.services.ledger.SigImpactHistorian;
 import com.hedera.services.ledger.accounts.AliasManager;
 import com.hedera.services.ledger.accounts.HederaAccountCustomizer;
-import com.hedera.services.ledger.properties.AccountProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.validation.UsageLimits;
 import com.hedera.services.txns.TransitionLogic;
@@ -116,6 +115,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
             if (!op.getAlias().isEmpty()) {
                 aliasManager.link(op.getAlias(), EntityNum.fromAccountId(created));
+                sigImpactHistorian.markAliasChanged(op.getAlias());
 
                 final var key = asPrimitiveKeyUnchecked(op.getAlias());
                 if (!key.getECDSASecp256K1().isEmpty()) {
@@ -128,20 +128,36 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                                                     key.getECDSASecp256K1().toByteArray()))));
                 }
             } else {
-                if (op.hasKey()
-                        && !op.getKey().getECDSASecp256K1().isEmpty()
-                        && dynamicProperties.isCryptoCreateWithAliasEnabled()) {
-                    aliasManager.link(
-                            (ByteString)
-                                    ledger.getAccountsLedger().get(created, AccountProperty.ALIAS),
-                            EntityNum.fromAccountId(created));
-                    txnCtx.setEvmAddress(
-                            (ByteString)
-                                    ledger.getAccountsLedger().get(created, AccountProperty.ALIAS));
-                }
-
                 if (!op.getEvmAddress().isEmpty()) {
                     aliasManager.link(op.getEvmAddress(), EntityNum.fromAccountId(created));
+                    sigImpactHistorian.markAliasChanged(op.getAlias());
+                } else {
+                    if (op.hasKey()
+                            && !op.getKey().getECDSASecp256K1().isEmpty()
+                            && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
+                        aliasManager.link(
+                                ByteStringUtils.wrapUnsafely(
+                                        Objects.requireNonNull(
+                                                recoverAddressFromPubKey(
+                                                        op.getKey()
+                                                                .getECDSASecp256K1()
+                                                                .toByteArray()))),
+                                EntityNum.fromAccountId(created));
+                        sigImpactHistorian.markAliasChanged(
+                                ByteStringUtils.wrapUnsafely(
+                                        Objects.requireNonNull(
+                                                recoverAddressFromPubKey(
+                                                        op.getKey()
+                                                                .getECDSASecp256K1()
+                                                                .toByteArray()))));
+                        txnCtx.setEvmAddress(
+                                ByteStringUtils.wrapUnsafely(
+                                        Objects.requireNonNull(
+                                                recoverAddressFromPubKey(
+                                                        op.getKey()
+                                                                .getECDSASecp256K1()
+                                                                .toByteArray()))));
+                    }
                 }
             }
         } catch (InsufficientFundsException ife) {
@@ -168,7 +184,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
         if (onlyKeyProvided(op)) {
             if (!op.getKey().getECDSASecp256K1().isEmpty()
-                    && dynamicProperties.isCryptoCreateWithAliasEnabled()) {
+                    && dynamicProperties.isCryptoCreateWithAliasAndEvmAddressEnabled()) {
 
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
@@ -193,7 +209,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         } else if (aliasAndEvmAddressProvided(op)) {
             final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
             final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
-            customizer.key(jKeyFromAlias).alias(op.getEvmAddress());
+            customizer.key(jKeyFromAlias).alias(op.getAlias());
         } else if (keyAndAliasAndEvmAddressProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         }

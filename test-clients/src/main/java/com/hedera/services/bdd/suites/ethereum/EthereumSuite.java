@@ -461,7 +461,8 @@ public class EthereumSuite extends HapiApiSuite {
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
+                        UtilVerbs.overriding(
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
@@ -473,7 +474,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 .nonce(0)
                                 .gasLimit(GAS_LIMIT)
                                 .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED));
     }
 
     HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
