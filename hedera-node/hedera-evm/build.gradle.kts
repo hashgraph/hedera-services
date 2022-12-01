@@ -34,7 +34,6 @@ configurations.all {
 
 dependencies {
 
-
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.swirlds.common)

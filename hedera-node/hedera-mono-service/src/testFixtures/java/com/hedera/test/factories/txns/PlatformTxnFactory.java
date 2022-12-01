@@ -18,14 +18,15 @@ package com.hedera.test.factories.txns;
 import com.swirlds.common.system.transaction.Transaction;
 
 public class PlatformTxnFactory {
-	public static Transaction from(final com.hederahashgraph.api.proto.java.Transaction signedTxn) {
-		//TODO: Not working anymore with modules (see https://github.com/swirlds/swirlds-platform/issues/6388)
-		return null;
-	}
+    public static Transaction from(final com.hederahashgraph.api.proto.java.Transaction signedTxn) {
+        // TODO: Not working anymore with modules (see
+        // https://github.com/swirlds/swirlds-platform/issues/6388)
+        return null;
+    }
 
-	public static Transaction withClearFlag(final Transaction txn) {
-		//TODO: Not working anymore with modules (see https://github.com/swirlds/swirlds-platform/issues/6388)
-		return null;
-	}
-
+    public static Transaction withClearFlag(final Transaction txn) {
+        // TODO: Not working anymore with modules (see
+        // https://github.com/swirlds/swirlds-platform/issues/6388)
+        return null;
+    }
 }

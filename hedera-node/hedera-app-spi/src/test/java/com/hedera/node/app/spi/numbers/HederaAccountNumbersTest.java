@@ -15,75 +15,75 @@
  */
 package com.hedera.node.app.spi.numbers;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class HederaAccountNumbersTest {
-	private HederaAccountNumbers subject;
+    private HederaAccountNumbers subject;
 
-	@BeforeEach
-	void setUp() {
-		subject =
-				new HederaAccountNumbers() {
-					@Override
-					public long treasury() {
-						return 2L;
-					}
+    @BeforeEach
+    void setUp() {
+        subject =
+                new HederaAccountNumbers() {
+                    @Override
+                    public long treasury() {
+                        return 2L;
+                    }
 
-					@Override
-					public long freezeAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long freezeAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long systemAdmin() {
-						return 50L;
-					}
+                    @Override
+                    public long systemAdmin() {
+                        return 50L;
+                    }
 
-					@Override
-					public long addressBookAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long addressBookAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long feeSchedulesAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long feeSchedulesAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long exchangeRatesAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long exchangeRatesAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long systemDeleteAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long systemDeleteAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long systemUndeleteAdmin() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long systemUndeleteAdmin() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long stakingRewardAccount() {
-						throw new IllegalCallerException("Should not be called here");
-					}
+                    @Override
+                    public long stakingRewardAccount() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
 
-					@Override
-					public long nodeRewardAccount() {
-						throw new IllegalCallerException("Should not be called here");
-					}
-				};
-	}
+                    @Override
+                    public long nodeRewardAccount() {
+                        throw new IllegalCallerException("Should not be called here");
+                    }
+                };
+    }
 
-	@Test
-	void checksIfNumIsSuperuser() {
-		assertTrue(subject.isSuperuser(2L));
-		assertTrue(subject.isSuperuser(50L));
-		assertFalse(subject.isSuperuser(51L));
-	}
+    @Test
+    void checksIfNumIsSuperuser() {
+        assertTrue(subject.isSuperuser(2L));
+        assertTrue(subject.isSuperuser(50L));
+        assertFalse(subject.isSuperuser(51L));
+    }
 }
