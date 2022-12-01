@@ -92,6 +92,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     }
 
     public AccountBuilderImpl() {
+        alias = Optional.of(new byte[0]);
         /* Default constructor for creating new Accounts */
     }
 
