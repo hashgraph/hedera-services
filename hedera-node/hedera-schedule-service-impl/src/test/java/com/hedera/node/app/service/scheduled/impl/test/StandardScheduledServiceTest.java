@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.scheduled.impl.test;
 
 import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.service.scheduled.impl.StandardScheduledService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
