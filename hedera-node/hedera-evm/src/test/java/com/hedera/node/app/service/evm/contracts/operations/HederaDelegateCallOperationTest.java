@@ -45,8 +45,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.function.BiPredicate;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;

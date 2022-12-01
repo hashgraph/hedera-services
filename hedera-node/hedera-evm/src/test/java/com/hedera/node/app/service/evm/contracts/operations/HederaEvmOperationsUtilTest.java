@@ -21,7 +21,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.hyperledger.besu.datatypes.Address;
