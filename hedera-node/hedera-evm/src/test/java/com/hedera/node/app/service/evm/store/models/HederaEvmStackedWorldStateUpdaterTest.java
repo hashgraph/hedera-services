@@ -15,58 +15,59 @@
  */
 package com.hedera.node.app.service.evm.store.models;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
-import java.util.Collections;
-import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 @ExtendWith(MockitoExtension.class)
 class HederaEvmStackedWorldStateUpdaterTest {
-    private final Address address =
-            Address.fromHexString("0x000000000000000000000000000000000000077e");
-    MockAccountAccessor accountAccessor = new MockAccountAccessor();
-    HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor);
+	private final Address address =
+			Address.fromHexString("0x000000000000000000000000000000000000077e");
+	MockAccountAccessor accountAccessor = new MockAccountAccessor();
+	HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
+			new HederaEvmStackedWorldStateUpdater(accountAccessor);
 
-    @Test
-    void accountTests() {
-        assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
-        assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
-        assertEquals(
-                Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
-        hederaEvmStackedWorldStateUpdater.commit();
-        assertEquals(
-                Collections.emptyList(),
-                hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
-    }
+	@Test
+	void accountTests() {
+		assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
+		assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
+		assertEquals(
+				Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
+		hederaEvmStackedWorldStateUpdater.commit();
+		assertEquals(
+				Collections.emptyList(),
+				hederaEvmStackedWorldStateUpdater.getDeletedAccountAddresses());
+	}
 
-    @Test
-    void getAccount() {
-        UpdatedHederaEvmAccount updatedHederaEvmAccount = new UpdatedHederaEvmAccount(address);
+	@Test
+	void getAccount() {
+		final UpdatedHederaEvmAccount updatedHederaEvmAccount = new UpdatedHederaEvmAccount(address);
 
-        assertEquals(
-                updatedHederaEvmAccount.getAddress(),
-                hederaEvmStackedWorldStateUpdater.get(address).getAddress());
-    }
+		assertEquals(
+				updatedHederaEvmAccount.getAddress(),
+				hederaEvmStackedWorldStateUpdater.get(address).getAddress());
+	}
 
-    @Test
-    void updaterTest() {
-        assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
-        assertEquals(
-                hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
-    }
+	@Test
+	void updaterTest() {
+		assertEquals(Optional.empty(), hederaEvmStackedWorldStateUpdater.parentUpdater());
+		assertEquals(
+				hederaEvmStackedWorldStateUpdater, hederaEvmStackedWorldStateUpdater.updater());
+	}
 
-    @Test
-    void namedelegatesTokenAccountTest() {
-        final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
-        assertFalse(hederaEvmStackedWorldStateUpdater.isTokenAddress(someAddress));
-    }
+	@Test
+	void namedelegatesTokenAccountTest() {
+		final var someAddress = Address.BLS12_MAP_FP2_TO_G2;
+		assertFalse(hederaEvmStackedWorldStateUpdater.isTokenAddress(someAddress));
+	}
 }

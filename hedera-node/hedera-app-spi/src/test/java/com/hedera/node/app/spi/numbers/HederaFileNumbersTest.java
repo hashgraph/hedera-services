@@ -15,72 +15,72 @@
  */
 package com.hedera.node.app.spi.numbers;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class HederaFileNumbersTest {
-    private HederaFileNumbers subject;
+	private HederaFileNumbers subject;
 
-    @BeforeEach
-    void setUp() {
-        subject =
-                new HederaFileNumbers() {
-                    @Override
-                    public long addressBook() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+	@BeforeEach
+	void setUp() {
+		subject =
+				new HederaFileNumbers() {
+					@Override
+					public long addressBook() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long nodeDetails() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+					@Override
+					public long nodeDetails() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long feeSchedules() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+					@Override
+					public long feeSchedules() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long exchangeRates() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+					@Override
+					public long exchangeRates() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long applicationProperties() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+					@Override
+					public long applicationProperties() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long apiPermissions() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
+					@Override
+					public long apiPermissions() {
+						throw new IllegalCallerException("Should not be called here");
+					}
 
-                    @Override
-                    public long firstSoftwareUpdateFile() {
-                        return 150L;
-                    }
+					@Override
+					public long firstSoftwareUpdateFile() {
+						return 150L;
+					}
 
-                    @Override
-                    public long lastSoftwareUpdateFile() {
-                        return 159L;
-                    }
+					@Override
+					public long lastSoftwareUpdateFile() {
+						return 159L;
+					}
 
-                    @Override
-                    public long throttleDefinitions() {
-                        throw new IllegalCallerException("Should not be called here");
-                    }
-                };
-    }
+					@Override
+					public long throttleDefinitions() {
+						throw new IllegalCallerException("Should not be called here");
+					}
+				};
+	}
 
-    @Test
-    void checksIfNumIsSuperuser() {
-        assertTrue(subject.isSoftwareUpdateFile(150L));
-        assertTrue(subject.isSoftwareUpdateFile(155L));
-        assertTrue(subject.isSoftwareUpdateFile(159L));
-        assertFalse(subject.isSoftwareUpdateFile(160L));
-        assertFalse(subject.isSoftwareUpdateFile(149L));
-    }
+	@Test
+	void checksIfNumIsSuperuser() {
+		assertTrue(subject.isSoftwareUpdateFile(150L));
+		assertTrue(subject.isSoftwareUpdateFile(155L));
+		assertTrue(subject.isSoftwareUpdateFile(159L));
+		assertFalse(subject.isSoftwareUpdateFile(160L));
+		assertFalse(subject.isSoftwareUpdateFile(149L));
+	}
 }

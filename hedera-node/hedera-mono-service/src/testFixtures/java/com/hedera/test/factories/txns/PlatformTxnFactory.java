@@ -16,32 +16,16 @@
 package com.hedera.test.factories.txns;
 
 import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 
 public class PlatformTxnFactory {
-    public static Transaction from(com.hederahashgraph.api.proto.java.Transaction signedTxn) {
-        return new SwirldTransaction(signedTxn.toByteArray());
-    }
+	public static Transaction from(final com.hederahashgraph.api.proto.java.Transaction signedTxn) {
+		//TODO: Not working anymore with modules (see https://github.com/swirlds/swirlds-platform/issues/6388)
+		return null;
+	}
 
-    public static TransactionWithClearFlag withClearFlag(Transaction txn) {
-        return new TransactionWithClearFlag(txn.getContents());
-    }
+	public static Transaction withClearFlag(final Transaction txn) {
+		//TODO: Not working anymore with modules (see https://github.com/swirlds/swirlds-platform/issues/6388)
+		return null;
+	}
 
-    public static class TransactionWithClearFlag extends SwirldTransaction {
-        private boolean hasClearBeenCalled = false;
-
-        public TransactionWithClearFlag(byte[] contents) {
-            super(contents);
-        }
-
-        @Override
-        public void clearSignatures() {
-            hasClearBeenCalled = true;
-            super.clearSignatures();
-        }
-
-        public boolean hasClearBeenCalled() {
-            return hasClearBeenCalled;
-        }
-    }
 }
