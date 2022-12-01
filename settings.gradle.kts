@@ -208,6 +208,7 @@ dependencyResolutionManagement {
             version("snakeyaml-version", "1.26")
             version("testcontainers-version", "1.17.2")
             version("classgraph-version", "4.8.65")
+            version("google-truth-version", "1.1.3")
 
             bundle("junit5", listOf("junit-jupiter-api", "junit-jupiter-params", "junit-jupiter"))
             bundle("mockito", listOf("mockito-core", "mockito-jupiter"))
@@ -221,10 +222,12 @@ dependencyResolutionManagement {
                     "mockito-core",
                     "mockito-jupiter",
                     "hamcrest",
-                    "awaitility"
+                    "awaitility",
+                    "google-truth"
                 )
             )
 
+            library("google-truth", "com.google.truth", "truth").versionRef("google-truth-version")
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
             library(
