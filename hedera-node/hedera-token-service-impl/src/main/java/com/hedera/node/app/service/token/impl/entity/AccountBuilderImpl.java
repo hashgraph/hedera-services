@@ -33,6 +33,8 @@ public class AccountBuilderImpl implements AccountBuilder {
     private final Account copyOf;
 
     // These fields are the ones that can be set in the builder
+    // FUTURE: Replace the empty KeyList we use for 0.0.800 and hollow
+    // accounts with an empty Optional
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private Optional<HederaKey> key;
 
