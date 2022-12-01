@@ -21,4 +21,6 @@ module com.hedera.node.app.service.evm {
     exports com.hedera.node.app.service.evm.accounts;
     exports com.hedera.node.app.service.evm.contracts.operations;
     exports com.hedera.node.app.service.evm.contracts.execution.traceability;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile.codec;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 }
