@@ -17,13 +17,10 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
@@ -33,7 +30,6 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -43,8 +39,8 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class AllowancePrecompile extends AbstractReadOnlyPrecompile implements
-    EvmAllowancePrecompile {
+public class AllowancePrecompile extends AbstractReadOnlyPrecompile
+        implements EvmAllowancePrecompile {
 
     private TokenAllowanceWrapper allowanceWrapper;
 
