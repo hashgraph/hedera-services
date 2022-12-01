@@ -29,6 +29,10 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class EvmDecodingFacade {
 
+    private EvmDecodingFacade() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
     private static final int WORD_LENGTH = 32;
     private static final int ADDRESS_BYTES_LENGTH = 20;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
