@@ -86,6 +86,12 @@ class AccountBuilderImplTest {
     }
 
     @Test
+    void defaultConstructorWorks() {
+        subject = new AccountBuilderImpl();
+        assertEquals(Optional.empty(), subject.build().alias());
+    }
+
+    @Test
     void settersWork() {
         final var newKey = asHederaKey(A_CONTRACT_KEY).get();
         subject.key(newKey);

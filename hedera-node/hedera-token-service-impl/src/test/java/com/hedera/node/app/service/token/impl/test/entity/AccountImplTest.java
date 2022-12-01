@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.token.impl.entity.AccountBuilderImpl;
 import com.hedera.node.app.service.token.impl.entity.AccountImpl;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.Key;
@@ -97,6 +98,12 @@ class AccountImplTest {
         assertEquals(0, subject.shardNumber());
         assertEquals(0, subject.realmNumber());
         assertFalse(subject.isHollow());
+    }
+
+    @Test
+    void gettersWorkForDefaultAccount() {
+        subject = (AccountImpl) new AccountBuilderImpl().build();
+        assertTrue(subject.isHollow());
     }
 
     @Test

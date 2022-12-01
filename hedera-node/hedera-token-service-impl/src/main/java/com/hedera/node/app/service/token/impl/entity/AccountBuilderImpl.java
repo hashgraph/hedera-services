@@ -31,8 +31,6 @@ import java.util.Optional;
  * module
  */
 public class AccountBuilderImpl implements AccountBuilder {
-    private Account copyOf;
-
     // These fields are the ones that can be set in the builder
     // FUTURE: Replace the empty KeyList we use for 0.0.800 and hollow
     // accounts with null
@@ -66,7 +64,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      * @param copyOf The instance to copy
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
-        this.copyOf = Objects.requireNonNull(copyOf);
+        Objects.requireNonNull(copyOf);
         this.key = copyOf.getKey().isEmpty() ? null : copyOf.getKey().get();
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
@@ -92,7 +90,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     }
 
     public AccountBuilderImpl() {
-        alias = Optional.of(new byte[0]);
+        alias = Optional.empty();
         /* Default constructor for creating new Accounts */
     }
 
