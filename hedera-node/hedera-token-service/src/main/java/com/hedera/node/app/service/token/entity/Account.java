@@ -17,8 +17,6 @@ package com.hedera.node.app.service.token.entity;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Optional;
 
 /** An Account entity represents a Hedera Account. */
@@ -60,8 +58,10 @@ public interface Account {
     boolean isHollow();
 
     /**
-     * The keys on the account. This may return a null {@link Optional} if the key on account is null.
-     * For e.g., for account 0.0.800 and Hollow accounts (as determined by {@link #isHollow()})
+     * The keys on the account. This may return a null {@link Optional} if the key on account is
+     * null. For e.g., for account 0.0.800 and Hollow accounts (as determined by {@link
+     * #isHollow()})
+     *
      * @return An optional key list
      */
     Optional<HederaKey> getKey();
