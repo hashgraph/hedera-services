@@ -55,7 +55,6 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

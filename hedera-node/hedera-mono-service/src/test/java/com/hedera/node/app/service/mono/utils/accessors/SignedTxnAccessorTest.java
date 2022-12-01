@@ -104,7 +104,6 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;

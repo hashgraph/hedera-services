@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.records.ConsensusTimeTracker;
 import com.hedera.node.app.service.mono.state.expiry.EntityAutoExpiry;
@@ -44,7 +43,9 @@ import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
 import com.hedera.test.extensions.LoggingTarget;
+
 import java.time.Instant;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -209,7 +210,7 @@ class StandardProcessLogicTest {
     void warnsOnNonGrpc() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(InvalidProtocolBufferException.class);
 
-        subject.incorporateConsensusTxn(null, consensusNow, member);
+        subject.incorporateConsensusTxn(null, member);
 
         assertThat(
                 logCaptor.warnLogs(),
@@ -220,7 +221,7 @@ class StandardProcessLogicTest {
     void logsAtErrorForUnhandledInternalProcessFailure() throws InvalidProtocolBufferException {
         given(expandHandleSpan.accessorFor(null)).willThrow(IllegalStateException.class);
 
-        subject.incorporateConsensusTxn(null, consensusNow, member);
+        subject.incorporateConsensusTxn(null, member);
 
         assertThat(
                 logCaptor.errorLogs(),

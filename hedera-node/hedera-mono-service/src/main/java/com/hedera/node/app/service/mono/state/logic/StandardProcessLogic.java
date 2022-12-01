@@ -30,6 +30,7 @@ import com.hedera.node.app.service.mono.txns.schedule.ScheduleProcessing;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.swirlds.common.system.transaction.ConsensusTransaction;
 import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 import javax.inject.Inject;
@@ -84,10 +85,10 @@ public class StandardProcessLogic implements ProcessLogic {
 
     @Override
     public void incorporateConsensusTxn(
-            Transaction platformTxn, Instant consensusTime, long submittingMember) {
+            ConsensusTransaction platformTxn, long submittingMember) {
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
-            incorporate(accessor, consensusTime, submittingMember);
+            incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Consensus platform txn was not gRPC!", e);
         } catch (Exception internal) {

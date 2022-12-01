@@ -13,25 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.txns;
+package com.hedera.node.app.service.mono.txns.span;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
-import com.hedera.node.app.service.mono.txns.span.SpanMapManager;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
-import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,10 +53,6 @@ class ExpandHandleSpanTest {
                                     .toByteString())
                     .build()
                     .toByteArray();
-    private final com.swirlds.common.system.transaction.Transaction validTxn =
-            new SwirldTransaction(validTxnBytes);
-    private final com.swirlds.common.system.transaction.Transaction invalidTxn =
-            new SwirldTransaction("NONSENSE".getBytes());
 
     private ExpandHandleSpan subject;
 
@@ -73,24 +62,8 @@ class ExpandHandleSpanTest {
     }
 
     @Test
-    void propagatesIpbe() {
-        // expect:
-        assertThrows(InvalidProtocolBufferException.class, () -> subject.track(invalidTxn));
-        assertThrows(InvalidProtocolBufferException.class, () -> subject.accessorFor(invalidTxn));
-    }
-
-    @Test
-    void expandsOnTracking() throws InvalidProtocolBufferException {
-        subject.track(validTxn);
-
-        final SwirldsTxnAccessor accessor = validTxn.getMetadata();
-        assertSame(accessor, subject.accessorFor(validTxn));
-        assertNull(validTxn.getMetadata());
-    }
-
-    @Test
     void reExpandsIfNotCached() throws InvalidProtocolBufferException {
-        final var endAccessor = subject.accessorFor(validTxn);
+        final var endAccessor = subject.spanAccessorFor(validTxnBytes);
 
         verify(handleSpanMap).expandSpan(endAccessor.getDelegate());
     }
