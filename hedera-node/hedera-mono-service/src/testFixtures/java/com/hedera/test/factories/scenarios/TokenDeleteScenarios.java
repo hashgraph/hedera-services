@@ -23,7 +23,8 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
     DELETE_WITH_KNOWN_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDelete().deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenDelete().deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }
     },
     DELETE_WITH_MISSING_TOKEN {
@@ -35,7 +36,8 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
     DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenDelete().deleting(KNOWN_TOKEN_IMMUTABLE).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenDelete().deleting(KNOWN_TOKEN_IMMUTABLE).get());
         }
     }
 }

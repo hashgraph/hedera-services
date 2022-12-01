@@ -30,23 +30,23 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
     FULL_PAYER_SIGS_VIA_MAP_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedSystemDelete()
-                                    .payer(DILIGENT_SIGNING_PAYER_ID)
-                                    .payerKt(DILIGENT_SIGNING_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get());
+                    newSignedSystemDelete()
+                            .payer(DILIGENT_SIGNING_PAYER_ID)
+                            .payerKt(DILIGENT_SIGNING_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedSystemDelete()
-                                    .payer(TOKEN_TREASURY_ID)
-                                    .payerKt(TOKEN_TREASURY_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get());
+                    newSignedSystemDelete()
+                            .payer(TOKEN_TREASURY_ID)
+                            .payerKt(TOKEN_TREASURY_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     INVALID_PAYER_SIGS_VIA_MAP_SCENARIO {
@@ -55,14 +55,14 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
             buggySigMapGen.setInvalidEntries(Set.of(1));
 
             return PlatformTxnAccessor.from(
-                            newSignedSystemDelete()
-                                    .fee(1_234L)
-                                    .sigMapGen(buggySigMapGen)
-                                    .payer(DILIGENT_SIGNING_PAYER_ID)
-                                    .payerKt(DILIGENT_SIGNING_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get());
+                    newSignedSystemDelete()
+                            .fee(1_234L)
+                            .sigMapGen(buggySigMapGen)
+                            .payer(DILIGENT_SIGNING_PAYER_ID)
+                            .payerKt(DILIGENT_SIGNING_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     AMBIGUOUS_SIG_MAP_SCENARIO {
@@ -70,15 +70,15 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
             SigMapGenerator ambigSigMapGen = SigMapGenerator.withAmbiguousPrefixes();
 
             return PlatformTxnAccessor.from(
-                            newSignedSystemDelete()
-                                    .fee(1_234L)
-                                    .keyFactory(overlapFactory)
-                                    .sigMapGen(ambigSigMapGen)
-                                    .payer(FROM_OVERLAP_PAYER_ID)
-                                    .payerKt(FROM_OVERLAP_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get());
+                    newSignedSystemDelete()
+                            .fee(1_234L)
+                            .keyFactory(overlapFactory)
+                            .sigMapGen(ambigSigMapGen)
+                            .payer(FROM_OVERLAP_PAYER_ID)
+                            .payerKt(FROM_OVERLAP_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     }
 }

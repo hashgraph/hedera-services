@@ -31,7 +31,6 @@ import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpan;
 import com.hedera.node.app.service.mono.utils.accessors.SwirldsTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -84,8 +83,7 @@ public class StandardProcessLogic implements ProcessLogic {
     }
 
     @Override
-    public void incorporateConsensusTxn(
-            ConsensusTransaction platformTxn, long submittingMember) {
+    public void incorporateConsensusTxn(ConsensusTransaction platformTxn, long submittingMember) {
         try {
             final var accessor = expandHandleSpan.accessorFor(platformTxn);
             incorporate(accessor, platformTxn.getConsensusTimestamp(), submittingMember);
@@ -97,9 +95,7 @@ public class StandardProcessLogic implements ProcessLogic {
     }
 
     void incorporate(
-            final SwirldsTxnAccessor accessor,
-            Instant consensusTime,
-            final long submittingMember) {
+            final SwirldsTxnAccessor accessor, Instant consensusTime, final long submittingMember) {
         // Deduct 1000 nanos from the consensusTime allotted by platform, to accommodate the
         // preceding,
         // following child records and any long term scheduled transactions triggered by the

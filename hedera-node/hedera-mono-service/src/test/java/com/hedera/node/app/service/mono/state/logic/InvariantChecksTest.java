@@ -25,7 +25,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.extensions.LogCaptor;
 import com.hedera.test.extensions.LogCaptureExtension;
 import com.hedera.test.extensions.LoggingSubject;
@@ -68,8 +67,7 @@ class InvariantChecksTest {
 
     @BeforeEach
     void setUp() throws InvalidProtocolBufferException {
-        accessor =
-                PlatformTxnAccessor.from(mockTxn.toByteArray());
+        accessor = PlatformTxnAccessor.from(mockTxn.toByteArray());
         subject = new InvariantChecks(nodeInfo, () -> networkCtx);
     }
 

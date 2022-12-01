@@ -49,10 +49,7 @@ class PrecheckUtilsTest {
 
     @Test
     void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-        final var txn =
-                PlatformTxnAccessor
-                        .from(newSignedCryptoUpdate("0.0.2").get())
-                        .getTxn();
+        final var txn = PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
 
         assertFalse(subject.test(txn));
     }
@@ -62,11 +59,9 @@ class PrecheckUtilsTest {
         given(nodeInfo.selfAccount()).willReturn(node);
         final var txn =
                 PlatformTxnAccessor.from(
-                                        newSignedCryptoTransfer()
-                                                .transfers(
-                                                        tinyBarsFromTo(
-                                                                "0.0.1024", "0.0.2048", 1_000L))
-                                                .get())
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
+                                        .get())
                         .getTxn();
 
         assertFalse(subject.test(txn));
@@ -77,10 +72,9 @@ class PrecheckUtilsTest {
         given(nodeInfo.selfAccount()).willReturn(node);
         final var txn =
                 PlatformTxnAccessor.from(
-                                        newSignedCryptoTransfer()
-                                                .transfers(
-                                                        tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
-                                                .get())
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
+                                        .get())
                         .getTxn();
 
         assertFalse(subject.test(txn));

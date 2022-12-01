@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,8 +251,7 @@ class RecordCacheTest {
                         .build();
         final var effectivePayer = IdUtils.asAccount("0.0.3");
         given(histories.computeIfAbsent(argThat(txnId::equals), any())).willReturn(recentHistory);
-        final var accessor =
-                PlatformTxnAccessor.from(signedTxn.toByteArray());
+        final var accessor = PlatformTxnAccessor.from(signedTxn.toByteArray());
 
         final var expirableTxnRecordBuilder =
                 ExpirableTxnRecord.newBuilder()

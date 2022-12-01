@@ -24,10 +24,10 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenBurn()
-                                    .burning(KNOWN_TOKEN_WITH_SUPPLY)
-                                    .nonPayerKts(TOKEN_SUPPLY_KT)
-                                    .get());
+                    newSignedTokenBurn()
+                            .burning(KNOWN_TOKEN_WITH_SUPPLY)
+                            .nonPayerKts(TOKEN_SUPPLY_KT)
+                            .get());
         }
     },
     BURN_WITH_MISSING_TOKEN {
@@ -39,7 +39,8 @@ public enum TokenBurnScenarios implements TxnHandlingScenario {
     BURN_FOR_TOKEN_WITHOUT_SUPPLY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenBurn().burning(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenBurn().burning(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }
     },
 }

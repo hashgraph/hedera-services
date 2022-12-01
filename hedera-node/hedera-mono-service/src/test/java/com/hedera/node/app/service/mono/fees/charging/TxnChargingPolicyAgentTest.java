@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,22 +58,21 @@ class TxnChargingPolicyAgentTest {
     private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
     private final PlatformTxnAccessor accessor =
             PlatformTxnAccessor.from(
-                            Transaction.newBuilder()
-                                    .setBodyBytes(
-                                            TransactionBody.newBuilder()
-                                                    .setTransactionID(
-                                                            TransactionID.newBuilder()
-                                                                    .setTransactionValidStart(
-                                                                            Timestamp.newBuilder()
-                                                                                    .setSeconds(
-                                                                                            1_234_567L)
-                                                                                    .build())
-                                                                    .setAccountID(
-                                                                            IdUtils.asAccount(
-                                                                                    "0.0.1234")))
-                                                    .build()
-                                                    .toByteString())
-                                    .build().toByteArray());
+                    Transaction.newBuilder()
+                            .setBodyBytes(
+                                    TransactionBody.newBuilder()
+                                            .setTransactionID(
+                                                    TransactionID.newBuilder()
+                                                            .setTransactionValidStart(
+                                                                    Timestamp.newBuilder()
+                                                                            .setSeconds(1_234_567L)
+                                                                            .build())
+                                                            .setAccountID(
+                                                                    IdUtils.asAccount("0.0.1234")))
+                                            .build()
+                                            .toByteString())
+                            .build()
+                            .toByteArray());
 
     @Mock private StateView currentView;
     @Mock private FeeCalculator fees;

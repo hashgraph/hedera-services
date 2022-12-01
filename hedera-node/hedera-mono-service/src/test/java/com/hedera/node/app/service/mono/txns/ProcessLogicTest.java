@@ -64,10 +64,7 @@ class ProcessLogicTest {
         subject.incorporateConsensus(round);
 
         for (int i = 0, n = roundMetadata.size(); i < n; i++) {
-            inOrder.verify(subject)
-                    .incorporateConsensusTxn(
-                            null,
-                            roundMetadata.get(i).getRight());
+            inOrder.verify(subject).incorporateConsensusTxn(null, roundMetadata.get(i).getRight());
         }
     }
 

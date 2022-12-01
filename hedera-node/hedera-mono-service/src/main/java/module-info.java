@@ -32,18 +32,31 @@ module com.hedera.node.app.service.mono {
     requires grpc.stub;
     requires commons.collections4;
 
-    exports com.hedera.node.app.service.mono to com.swirlds.platform;
-    exports com.hedera.node.app.service.mono.throttling to com.fasterxml.jackson.databind;
+    exports com.hedera.node.app.service.mono to
+            com.swirlds.platform;
+    exports com.hedera.node.app.service.mono.throttling to
+            com.fasterxml.jackson.databind;
 
-    opens com.hedera.node.app.service.mono to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.context.properties to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.legacy.core.jproto to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.merkle to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.merkle.internals to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.submerkle to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.entities to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.schedule to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.temporal to com.swirlds.common;
-    opens com.hedera.node.app.service.mono.stream to com.swirlds.common;
+    opens com.hedera.node.app.service.mono to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.context.properties to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.legacy.core.jproto to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.merkle to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.merkle.internals to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.submerkle to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.entities to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.schedule to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.temporal to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.stream to
+            com.swirlds.common;
 }

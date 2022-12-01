@@ -66,18 +66,15 @@ class AccessorFactoryTest {
     @Test
     void constructsCorrectly() throws InvalidProtocolBufferException {
         final var someContents =
-                        Transaction.newBuilder()
-                                .setBodyBytes(someTxn.toByteString())
-                                .build()
-                                .toByteArray();
+                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build().toByteArray();
         final var someAccessor = subject.nonTriggeredTxn(someContents);
         assertInstanceOf(SignedTxnAccessor.class, someAccessor);
 
         final var wipeContents =
-                        Transaction.newBuilder()
-                                .setBodyBytes(tokenWipeTxn.toByteString())
-                                .build()
-                                .toByteArray();
+                Transaction.newBuilder()
+                        .setBodyBytes(tokenWipeTxn.toByteString())
+                        .build()
+                        .toByteArray();
         final var wipeAccessor = subject.nonTriggeredTxn(wipeContents);
         assertInstanceOf(TokenWipeAccessor.class, wipeAccessor);
     }
@@ -87,8 +84,7 @@ class AccessorFactoryTest {
         final var grpcWipeTxn =
                 Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
 
-        var triggered = subject.triggeredTxn(
-                grpcWipeTxn, payerId, scheduleId, true, true);
+        var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
 
         assertTrue(triggered.congestionExempt());
         assertTrue(triggered.throttleExempt());

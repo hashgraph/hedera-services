@@ -32,16 +32,14 @@ public enum ContractCreateScenarios implements TxnHandlingScenario {
     },
     CONTRACT_CREATE_DEPRECATED_CID_ADMIN_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedContractCreate().useDeprecatedAdminKey(true).get());
+            return PlatformTxnAccessor.from(
+                    newSignedContractCreate().useDeprecatedAdminKey(true).get());
         }
     },
     CONTRACT_CREATE_WITH_AUTO_RENEW_ACCOUNT {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedContractCreate()
-                                    .useAdminKey(false)
-                                    .useAutoRenewAccount(true)
-                                    .get());
+                    newSignedContractCreate().useAdminKey(false).useAutoRenewAccount(true).get());
         }
     }
 }

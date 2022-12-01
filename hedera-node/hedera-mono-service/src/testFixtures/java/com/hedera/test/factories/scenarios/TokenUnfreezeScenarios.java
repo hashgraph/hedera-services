@@ -24,10 +24,10 @@ public enum TokenUnfreezeScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenUnfreeze()
-                                    .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
-                                    .nonPayerKts(TOKEN_FREEZE_KT)
-                                    .get());
+                    newSignedTokenUnfreeze()
+                            .unfreezing(KNOWN_TOKEN_WITH_FREEZE)
+                            .nonPayerKts(TOKEN_FREEZE_KT)
+                            .get());
         }
     },
 }

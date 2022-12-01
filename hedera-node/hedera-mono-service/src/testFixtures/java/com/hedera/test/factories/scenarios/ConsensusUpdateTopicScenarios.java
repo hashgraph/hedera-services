@@ -34,52 +34,53 @@ public enum ConsensusUpdateTopicScenarios implements TxnHandlingScenario {
     },
     CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from( newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .adminKey(UPDATE_TOPIC_ADMIN_KT)
-                                    .get());
+            return PlatformTxnAccessor.from(
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .adminKey(UPDATE_TOPIC_ADMIN_KT)
+                            .get());
         }
     },
     CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .adminKey(UPDATE_TOPIC_ADMIN_KT)
-                                    .autoRenewAccountId(MISC_ACCOUNT_ID)
-                                    .get());
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .adminKey(UPDATE_TOPIC_ADMIN_KT)
+                            .autoRenewAccountId(MISC_ACCOUNT_ID)
+                            .get());
         }
     },
     CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_PAYER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .adminKey(UPDATE_TOPIC_ADMIN_KT)
-                                    .autoRenewAccountId(DEFAULT_PAYER_ID)
-                                    .get());
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .adminKey(UPDATE_TOPIC_ADMIN_KT)
+                            .autoRenewAccountId(DEFAULT_PAYER_ID)
+                            .get());
         }
     },
     CONSENSUS_UPDATE_TOPIC_NEW_ADMIN_KEY_AND_AUTORENEW_ACCOUNT_AS_CUSTOM_PAYER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .adminKey(UPDATE_TOPIC_ADMIN_KT)
-                                    .autoRenewAccountId(CUSTOM_PAYER_ACCOUNT_ID)
-                                    .get());
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .adminKey(UPDATE_TOPIC_ADMIN_KT)
+                            .autoRenewAccountId(CUSTOM_PAYER_ACCOUNT_ID)
+                            .get());
         }
     },
     CONSENSUS_UPDATE_TOPIC_MISSING_AUTORENEW_ACCOUNT_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .autoRenewAccountId(MISSING_ACCOUNT_ID)
-                                    .get());
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .autoRenewAccountId(MISSING_ACCOUNT_ID)
+                            .get());
         }
     },
     CONSENSUS_UPDATE_TOPIC_EXPIRY_ONLY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
-                                    .expirationTime(Instant.ofEpochSecond(1578331832))
-                                    .get());
+                    newSignedConsensusUpdateTopic(EXISTING_TOPIC_ID)
+                            .expirationTime(Instant.ofEpochSecond(1578331832))
+                            .get());
         }
     }
 }

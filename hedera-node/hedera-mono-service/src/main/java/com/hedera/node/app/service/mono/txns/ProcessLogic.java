@@ -17,7 +17,6 @@ package com.hedera.node.app.service.mono.txns;
 
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.Transaction;
 
 /**
  * Defines a type that can delegate to the correct state transition, if any, implied by the given
@@ -35,8 +34,7 @@ public interface ProcessLogic {
      * @param round a round of consensus transactions
      */
     default void incorporateConsensus(final Round round) {
-        round.forEachEventTransaction(
-                (e, t) -> incorporateConsensusTxn(t, e.getCreatorId()));
+        round.forEachEventTransaction((e, t) -> incorporateConsensusTxn(t, e.getCreatorId()));
     }
 
     /**

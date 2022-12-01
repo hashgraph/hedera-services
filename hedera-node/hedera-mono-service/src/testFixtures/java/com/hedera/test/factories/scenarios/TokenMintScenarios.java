@@ -24,10 +24,10 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenMint()
-                                    .minting(KNOWN_TOKEN_WITH_SUPPLY)
-                                    .nonPayerKts(TOKEN_SUPPLY_KT)
-                                    .get());
+                    newSignedTokenMint()
+                            .minting(KNOWN_TOKEN_WITH_SUPPLY)
+                            .nonPayerKts(TOKEN_SUPPLY_KT)
+                            .get());
         }
     },
     MINT_WITH_MISSING_TOKEN {
@@ -39,7 +39,8 @@ public enum TokenMintScenarios implements TxnHandlingScenario {
     MINT_FOR_TOKEN_WITHOUT_SUPPLY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenMint().minting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }
     },
 }

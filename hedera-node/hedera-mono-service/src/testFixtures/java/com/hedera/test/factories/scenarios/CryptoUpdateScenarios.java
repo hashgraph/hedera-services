@@ -49,51 +49,47 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
             return PlatformTxnAccessor.from(newSignedCryptoUpdate(MISSING_ACCOUNT_ID).get());
         }
     },
-   CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO {
+    CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(COMPLEX_KEY_ACCOUNT_ID)
-                                    .nonPayerKts(COMPLEX_KEY_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(COMPLEX_KEY_ACCOUNT_ID)
+                            .nonPayerKts(COMPLEX_KEY_ACCOUNT_KT)
+                            .get());
         }
     },
     CRYPTO_UPDATE_COMPLEX_KEY_ACCOUNT_ADD_NEW_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(COMPLEX_KEY_ACCOUNT_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .nonPayerKts(COMPLEX_KEY_ACCOUNT_KT, NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(COMPLEX_KEY_ACCOUNT_ID)
+                            .newAccountKt(NEW_ACCOUNT_KT)
+                            .nonPayerKts(COMPLEX_KEY_ACCOUNT_KT, NEW_ACCOUNT_KT)
+                            .get());
         }
     },
     CRYPTO_UPDATE_WITH_NEW_KEY_SELF_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(DEFAULT_PAYER_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(DEFAULT_PAYER_ID).newAccountKt(NEW_ACCOUNT_KT).get());
         }
     },
     CRYPTO_UPDATE_WITH_NEW_KEY_CUSTOM_PAYER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(CUSTOM_PAYER_ACCOUNT_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(CUSTOM_PAYER_ACCOUNT_ID)
+                            .newAccountKt(NEW_ACCOUNT_KT)
+                            .get());
         }
     },
     CRYPTO_UPDATE_WITH_NEW_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(MISC_ACCOUNT_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(MISC_ACCOUNT_ID).newAccountKt(NEW_ACCOUNT_KT).get());
         }
     },
     CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NEW_KEY_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoUpdate(SYS_ACCOUNT_ID)
-                    .newAccountKt(NEW_ACCOUNT_KT).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoUpdate(SYS_ACCOUNT_ID).newAccountKt(NEW_ACCOUNT_KT).get());
         }
     },
     CRYPTO_UPDATE_SYS_ACCOUNT_WITH_NO_NEW_KEY_SCENARIO {
@@ -104,24 +100,25 @@ public enum CryptoUpdateScenarios implements TxnHandlingScenario {
     CRYPTO_UPDATE_SYS_ACCOUNT_WITH_PRIVILEGED_PAYER {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(SYS_ACCOUNT_ID)
-                                    .payer(MASTER_PAYER_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(SYS_ACCOUNT_ID)
+                            .payer(MASTER_PAYER_ID)
+                            .newAccountKt(NEW_ACCOUNT_KT)
+                            .get());
         }
     },
     CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NO_NEW_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoUpdate(TREASURY_PAYER_ID).payer(TREASURY_PAYER_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoUpdate(TREASURY_PAYER_ID).payer(TREASURY_PAYER_ID).get());
         }
     },
     CRYPTO_UPDATE_TREASURY_ACCOUNT_WITH_TREASURY_AND_NEW_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedCryptoUpdate(TREASURY_PAYER_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newAccountKt(NEW_ACCOUNT_KT)
-                                    .get());
+                    newSignedCryptoUpdate(TREASURY_PAYER_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newAccountKt(NEW_ACCOUNT_KT)
+                            .get());
         }
     },
 }

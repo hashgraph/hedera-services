@@ -22,12 +22,14 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 public enum ConsensusSubmitMessageScenarios implements TxnHandlingScenario {
     CONSENSUS_SUBMIT_MESSAGE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedConsensusSubmitMessage(EXISTING_TOPIC_ID).get());
         }
     },
     CONSENSUS_SUBMIT_MESSAGE_MISSING_TOPIC_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedConsensusSubmitMessage(MISSING_TOPIC_ID).get());
         }
     }
 }

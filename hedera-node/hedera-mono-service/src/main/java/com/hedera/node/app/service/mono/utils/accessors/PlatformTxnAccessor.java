@@ -39,8 +39,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.common.crypto.TransactionSignature;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,11 +65,13 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
         pubKeyToSigBytes = new PojoSigMapPubKeyToSigBytes(delegate.getSigMap());
     }
 
-    public static PlatformTxnAccessor from(final Transaction transaction) throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final Transaction transaction)
+            throws InvalidProtocolBufferException {
         return from(transaction.toByteArray());
     }
 
-    public static PlatformTxnAccessor from(final byte[] contents) throws InvalidProtocolBufferException {
+    public static PlatformTxnAccessor from(final byte[] contents)
+            throws InvalidProtocolBufferException {
         return new PlatformTxnAccessor(SignedTxnAccessor.from(contents));
     }
 

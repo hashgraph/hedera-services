@@ -23,19 +23,22 @@ public enum ScheduleDeleteScenarios implements TxnHandlingScenario {
     SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_WITH_ADMIN).get());
+            return PlatformTxnAccessor.from(
+                    newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_WITH_ADMIN).get());
         }
     },
     SCHEDULE_DELETE_WITH_MISSING_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedScheduleDelete().deleting(UNKNOWN_SCHEDULE).get());
+            return PlatformTxnAccessor.from(
+                    newSignedScheduleDelete().deleting(UNKNOWN_SCHEDULE).get());
         }
     },
     SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_IMMUTABLE).get());
+            return PlatformTxnAccessor.from(
+                    newSignedScheduleDelete().deleting(KNOWN_SCHEDULE_IMMUTABLE).get());
         }
     }
 }

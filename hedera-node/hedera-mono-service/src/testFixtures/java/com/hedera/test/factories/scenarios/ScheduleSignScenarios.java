@@ -29,13 +29,15 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
     SCHEDULE_SIGN_MISSING_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get());
+            return PlatformTxnAccessor.from(
+                    newSignedScheduleSign().signing(UNKNOWN_SCHEDULE).get());
         }
     },
     SCHEDULE_SIGN_KNOWN_SCHEDULE {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_ADMIN).get());
+            return PlatformTxnAccessor.from(
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_ADMIN).get());
         }
 
         @Override
@@ -60,9 +62,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER)
-                                    .get());
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER).get());
         }
 
         @Override
@@ -87,9 +87,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF)
-                                    .get());
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_EXPLICIT_PAYER_SELF).get());
         }
 
         @Override
@@ -114,9 +112,7 @@ public enum ScheduleSignScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedScheduleSign()
-                                    .signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER)
-                                    .get());
+                    newSignedScheduleSign().signing(KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER).get());
         }
     }
 }

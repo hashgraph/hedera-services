@@ -20,8 +20,6 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.Transaction;
-
 import java.util.List;
 import java.util.function.Function;
 
@@ -34,7 +32,9 @@ public interface SwirldsTxnAccessor extends TxnAccessor {
     PubKeyToSigBytes getPkToSigsFn();
 
     List<TransactionSignature> getCryptoSigs();
+
     void clearCryptoSigs();
+
     void addAllCryptoSigs(List<TransactionSignature> signatures);
 
     /* --- Used to track entities with keys linked to a transaction --- */

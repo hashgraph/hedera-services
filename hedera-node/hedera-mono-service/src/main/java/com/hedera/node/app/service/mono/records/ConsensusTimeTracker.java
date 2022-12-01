@@ -21,12 +21,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -160,9 +159,9 @@ public class ConsensusTimeTracker {
     }
 
     /**
-     * The first transaction in a {@link ProcessLogic#incorporateConsensusTxn} call can have
-     * more "preceding" transactions than normal, this method returns the first consensus time. If
-     * it has already been used, and exception is thrown. See {@link #isFirstUsed()}.
+     * The first transaction in a {@link ProcessLogic#incorporateConsensusTxn} call can have more
+     * "preceding" transactions than normal, this method returns the first consensus time. If it has
+     * already been used, and exception is thrown. See {@link #isFirstUsed()}.
      *
      * @return the consensus time to use for the first transaction in a {@link
      *     ProcessLogic#incorporateConsensusTxn} call.

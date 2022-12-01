@@ -30,24 +30,25 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
     TREASURY_SYS_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedFileUpdate(SYS_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get());
+                    newSignedFileUpdate(SYS_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     TREASURY_SYS_FILE_UPDATE_SCENARIO_NO_NEW_KEY {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedFileUpdate(SYS_FILE_ID).payer(TREASURY_PAYER_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedFileUpdate(SYS_FILE_ID).payer(TREASURY_PAYER_ID).get());
         }
     },
     MASTER_SYS_FILE_UPDATE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedFileUpdate(SYS_FILE_ID)
-                                    .payer(MASTER_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get());
+                    newSignedFileUpdate(SYS_FILE_ID)
+                            .payer(MASTER_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     IMMUTABLE_FILE_UPDATE_SCENARIO {
@@ -58,19 +59,19 @@ public enum FileUpdateScenarios implements TxnHandlingScenario {
     FILE_UPDATE_NEW_WACL_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedFileUpdate(MISC_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get());
+                    newSignedFileUpdate(MISC_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     },
     FILE_UPDATE_MISSING_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedFileUpdate(MISSING_FILE_ID)
-                                    .payer(TREASURY_PAYER_ID)
-                                    .newWaclKt(SIMPLE_NEW_WACL_KT)
-                                    .get());
+                    newSignedFileUpdate(MISSING_FILE_ID)
+                            .payer(TREASURY_PAYER_ID)
+                            .newWaclKt(SIMPLE_NEW_WACL_KT)
+                            .get());
         }
     }
 }

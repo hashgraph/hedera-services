@@ -24,10 +24,10 @@ public enum TokenPauseScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenPause()
-                                    .pausing(KNOWN_TOKEN_WITH_PAUSE)
-                                    .nonPayerKts(TOKEN_PAUSE_KT)
-                                    .get());
+                    newSignedTokenPause()
+                            .pausing(KNOWN_TOKEN_WITH_PAUSE)
+                            .nonPayerKts(TOKEN_PAUSE_KT)
+                            .get());
         }
     },
 }

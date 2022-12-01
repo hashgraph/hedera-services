@@ -24,26 +24,27 @@ public enum TokenWipeScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenWipe()
-                                    .wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_WIPE_KT)
-                                    .get());
+                    newSignedTokenWipe()
+                            .wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_WIPE_KT)
+                            .get());
         }
     },
     WIPE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedTokenWipe().wiping(MISSING_TOKEN, MISC_ACCOUNT).get());
+            return PlatformTxnAccessor.from(
+                    newSignedTokenWipe().wiping(MISSING_TOKEN, MISC_ACCOUNT).get());
         }
     },
     WIPE_FOR_TOKEN_WITHOUT_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenWipe()
-                                    .wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get());
+                    newSignedTokenWipe()
+                            .wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
 }

@@ -23,47 +23,56 @@ import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 public enum CryptoDeleteScenarios implements TxnHandlingScenario {
     CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(DEFAULT_PAYER_ID, NO_RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_NO_TARGET_RECEIVER_SIG_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISC_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(MISC_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_TARGET_RECEIVER_SIG_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISC_ACCOUNT_ID, RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(MISC_ACCOUNT_ID, RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_TARGET_RECEIVER_SIG_RECEIVER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISC_ACCOUNT_ID, DEFAULT_PAYER_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(MISC_ACCOUNT_ID, DEFAULT_PAYER_ID).get());
         }
     },
     CRYPTO_DELETE_TARGET_RECEIVER_SIG_SELF_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(DEFAULT_PAYER_ID, RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(DEFAULT_PAYER_ID, RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_TARGET_RECEIVER_SIG_CUSTOM_PAYER_PAID_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(CUSTOM_PAYER_ACCOUNT_ID, RECEIVER_SIG_ID).get());
         }
     },
     CRYPTO_DELETE_MISSING_RECEIVER_SIG_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISC_ACCOUNT_ID, MISSING_ACCOUNT_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(MISC_ACCOUNT_ID, MISSING_ACCOUNT_ID).get());
         }
     },
     CRYPTO_DELETE_MISSING_TARGET {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(newSignedCryptoDelete(MISSING_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
+            return PlatformTxnAccessor.from(
+                    newSignedCryptoDelete(MISSING_ACCOUNT_ID, NO_RECEIVER_SIG_ID).get());
         }
     },
 }

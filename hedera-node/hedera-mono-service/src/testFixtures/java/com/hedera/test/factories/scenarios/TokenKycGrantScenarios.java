@@ -24,10 +24,10 @@ public enum TokenKycGrantScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                            newSignedTokenGrantKyc()
-                                    .granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get());
+                    newSignedTokenGrantKyc()
+                            .granting(KNOWN_TOKEN_WITH_KYC, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
 }

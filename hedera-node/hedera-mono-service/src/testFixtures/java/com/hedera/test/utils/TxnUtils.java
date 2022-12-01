@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
@@ -42,15 +41,14 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.*;
-import org.mockito.BDDMockito;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
 public class TxnUtils {
-    public static com.swirlds.common.system.transaction.Transaction mockTransaction(final byte[] contents) {
+    public static com.swirlds.common.system.transaction.Transaction mockTransaction(
+            final byte[] contents) {
         throw new AssertionError("Not implemented");
     }
 

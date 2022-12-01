@@ -92,8 +92,7 @@ class PlatformTxnAccessorTest {
     @Test
     void hasSpanMap() throws InvalidProtocolBufferException {
         // setup:
-        final var contents =
-                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
+        final var contents = Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build();
 
         final PlatformTxnAccessor subject = PlatformTxnAccessor.from(contents);
 
@@ -161,8 +160,7 @@ class PlatformTxnAccessorTest {
     void failsWithIllegalStateOnUncheckedConstruction() {
         // expect:
         assertThrows(
-                InvalidProtocolBufferException.class,
-                () -> PlatformTxnAccessor.from(NONSENSE));
+                InvalidProtocolBufferException.class, () -> PlatformTxnAccessor.from(NONSENSE));
     }
 
     @Test
@@ -174,8 +172,7 @@ class PlatformTxnAccessorTest {
         // then:
         assertThrows(
                 InvalidProtocolBufferException.class,
-                () ->
-                        PlatformTxnAccessor.from(signedNonsenseTxn.toByteArray()));
+                () -> PlatformTxnAccessor.from(signedNonsenseTxn.toByteArray()));
     }
 
     @Test
@@ -473,8 +470,7 @@ class PlatformTxnAccessorTest {
                     + " 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50,"
                     + " 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51]]]}, used=[false]},"
                     + " payer=accountNum: 2\n"
-                    + ", scheduleRef=null, view=null},"
-                    + " linkedRefs=null, expandedSigStatus=null,"
+                    + ", scheduleRef=null, view=null}, linkedRefs=null, expandedSigStatus=null,"
                     + " pubKeyToSigBytes=PojoSigMapPubKeyToSigBytes{pojoSigMap=PojoSigMap{keyTypes=[ED25519],"
                     + " rawMap=[[[97], [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52,"
                     + " 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51,"

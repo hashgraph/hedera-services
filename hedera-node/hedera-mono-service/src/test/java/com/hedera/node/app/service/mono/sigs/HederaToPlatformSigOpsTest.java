@@ -78,8 +78,7 @@ class HederaToPlatformSigOpsTest {
     void setup() throws Throwable {
         allSigBytes = mock(PubKeyToSigBytes.class);
         keyOrdering = mock(SigRequirements.class);
-        platformTxn =
-                PlatformTxnAccessor.from(newSignedSystemDelete().get());
+        platformTxn = PlatformTxnAccessor.from(newSignedSystemDelete().get());
     }
 
     @SuppressWarnings("unchecked")
@@ -165,9 +164,7 @@ class HederaToPlatformSigOpsTest {
         expandIn(platformTxn, keyOrdering, allSigBytes);
 
         assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
-        assertEquals(
-                expectedSigsWithOtherPartiesCreationError(),
-                platformTxn.getCryptoSigs());
+        assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getCryptoSigs());
     }
 
     @Test
@@ -261,8 +258,7 @@ class HederaToPlatformSigOpsTest {
     @Test
     void rationalizesOnlyMissingSigs() throws Exception {
         wellBehavedOrdersAndSigSources();
-        platformTxn
-                .addAllCryptoSigs(asValid(expectedSigsWithOtherPartiesCreationError()));
+        platformTxn.addAllCryptoSigs(asValid(expectedSigsWithOtherPartiesCreationError()));
         final SyncVerifier syncVerifier =
                 l -> {
                     if (l.equals(expectedSigsWithOtherPartiesCreationError())) {
