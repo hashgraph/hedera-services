@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
-
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import java.util.Optional;
 
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
@@ -56,7 +56,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
     private long accountNumber;
-    private byte[] alias = new byte[0];
+    private Optional<byte[]> alias;
     private boolean isSmartContract;
 
     /**
@@ -87,7 +87,7 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.autoRenewAccountNumber = copyOf.autoRenewAccountNumber();
         this.autoRenewSecs = copyOf.autoRenewSecs();
         this.accountNumber = copyOf.accountNumber();
-        this.alias = copyOf.getAlias().isEmpty() ? new byte[0] : copyOf.getAlias().get();
+        this.alias = copyOf.alias();
         this.isSmartContract = copyOf.isSmartContract();
     }
 
@@ -235,7 +235,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     @Override
     @NonNull
     public AccountBuilder alias(byte[] value) {
-        this.alias = value;
+        this.alias = Optional.of(value);
         return this;
     }
 
@@ -252,7 +252,6 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.autoRenewSecs = value;
         return this;
     }
-
 
     @Override
     @NonNull

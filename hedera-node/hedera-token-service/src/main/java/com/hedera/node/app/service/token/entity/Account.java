@@ -46,7 +46,7 @@ public interface Account {
      *
      * @return alias if exists
      */
-    Optional<byte[]> getAlias();
+    Optional<byte[]> alias();
 
     /**
      * Gets whether this is a "hollow" account. A hollow account is an account that was created
