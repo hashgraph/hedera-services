@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenMintFactory.newSignedTokenMint;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenMintScenarios implements TxnHandlingScenario {
     MINT_WITH_SUPPLY_KEYED_TOKEN {

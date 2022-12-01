@@ -15,10 +15,11 @@
  */
 plugins {
     id("com.hedera.hashgraph.conventions")
+    id("com.hedera.hashgraph.maven-publish")
 }
 
 group = "com.hedera.evm"
-description = "Hedera EVM - Implementation"
+description = "Hedera EVM - API"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
@@ -26,6 +27,16 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-evm-api"))
+    api(libs.besu.evm)
+    api(libs.besu.datatypes)
+    api(libs.swirlds.common)
+    implementation(libs.caffeine)
+    implementation(libs.guava)
+    implementation(libs.hapi) {
+        exclude("com.google.guava", "guava") // this is an android version, not a jre version
+    }
+    implementation(libs.javax.inject)
     compileOnly(libs.spotbugs.annotations)
+
+    testImplementation(testLibs.mockito.jupiter)
 }
