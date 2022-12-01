@@ -19,7 +19,7 @@ import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT
 import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum CryptoCreateScenarios implements TxnHandlingScenario {
     CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO {

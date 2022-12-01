@@ -20,7 +20,7 @@ import static com.hedera.test.factories.txns.ConsensusCreateTopicFactory.newSign
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_ID;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ConsensusCreateTopicScenarios implements TxnHandlingScenario {
     CONSENSUS_CREATE_TOPIC_NO_ADDITIONAL_KEYS_SCENARIO {

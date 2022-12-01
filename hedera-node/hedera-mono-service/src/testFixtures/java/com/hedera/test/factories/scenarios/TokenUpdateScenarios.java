@@ -19,7 +19,7 @@ import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER;
 import static com.hedera.test.factories.txns.TokenUpdateFactory.newSignedTokenUpdate;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenUpdateScenarios implements TxnHandlingScenario {
     UPDATE_WITH_NO_KEYS_AFFECTED {

@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.ConsensusSubmitMessageFactory.newSignedConsensusSubmitMessage;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ConsensusSubmitMessageScenarios implements TxnHandlingScenario {
     CONSENSUS_SUBMIT_MESSAGE_SCENARIO {

@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.ContractCreateFactory.newSignedContractCreate;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum ContractCreateScenarios implements TxnHandlingScenario {
     CONTRACT_CREATE_WITH_ADMIN_KEY {
