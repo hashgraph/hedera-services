@@ -15,11 +15,15 @@
  */
 package com.hedera.node.app.service.token;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
+import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Optional;
 import java.util.ServiceLoader;
 
 /**
@@ -57,4 +61,12 @@ public interface CryptoService extends Service {
         return ServiceFactory.loadService(
                 CryptoService.class, ServiceLoader.load(CryptoService.class));
     }
+
+    /**
+     * Returns an implementation of {@link AccountKeyLookup} for other modules to use.
+     *
+     * @return key lookup factory to use for different modules
+     */
+    @NonNull
+    AccountKeyLookup createAccountKeyLookupFor(States states);
 }

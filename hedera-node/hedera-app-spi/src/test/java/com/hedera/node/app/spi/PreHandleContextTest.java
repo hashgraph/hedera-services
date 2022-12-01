@@ -29,16 +29,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PreHandleContextTest {
     @Mock private HederaAccountNumbers accountNumbers;
     @Mock private HederaFileNumbers fileNumbers;
+    @Mock private AccountKeyLookup accountKeyLookup;
 
     @Test
     void checksNullParams() {
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, null));
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountNumbers, null));
-        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, fileNumbers));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, null, null));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountNumbers, null, accountKeyLookup));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, fileNumbers, accountKeyLookup));
     }
 
     @Test
     void passesWIthNonNullParams() {
-        assertDoesNotThrow(() -> new PreHandleContext(accountNumbers, fileNumbers));
+        assertDoesNotThrow(() -> new PreHandleContext(accountNumbers, fileNumbers, accountKeyLookup));
     }
 }

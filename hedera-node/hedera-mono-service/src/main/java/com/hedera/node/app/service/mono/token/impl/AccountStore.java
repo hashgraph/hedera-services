@@ -16,19 +16,21 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
-import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
-import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason.withKey;
 import static com.hedera.node.app.service.mono.token.util.AliasUtils.MISSING_NUM;
 import static com.hedera.node.app.service.mono.token.util.AliasUtils.fromMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_REQUIRED;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,7 +43,7 @@ import java.util.Optional;
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public final class AccountStore {
+public final class AccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
     private final State<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
@@ -65,6 +67,7 @@ public final class AccountStore {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
+    @Override
     public KeyOrLookupFailureReason getKey(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
@@ -85,6 +88,7 @@ public final class AccountStore {
      * @param idOrAlias account id whose key should be fetched
      * @return key if successfully fetched or failureReason for failure
      */
+    @Override
     public KeyOrLookupFailureReason getKeyIfReceiverSigRequired(final AccountID idOrAlias) {
         final var account = getAccountLeaf(idOrAlias);
         if (account.isEmpty()) {
