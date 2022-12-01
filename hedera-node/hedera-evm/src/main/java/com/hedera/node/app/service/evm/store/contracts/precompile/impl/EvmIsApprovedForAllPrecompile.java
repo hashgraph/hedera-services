@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
@@ -19,47 +34,41 @@ import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmIsApprovedForAllPrecompile {
 
-   Function ERC_IS_APPROVED_FOR_ALL =
-      new Function("isApprovedForAll(address,address)", BOOL);
-   Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR =
-      Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
-   ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER =
-      TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
-  Function HAPI_IS_APPROVED_FOR_ALL =
-      new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
-   Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
-      Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
-   ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
-      TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
+    Function ERC_IS_APPROVED_FOR_ALL = new Function("isApprovedForAll(address,address)", BOOL);
+    Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
+    ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
+    Function HAPI_IS_APPROVED_FOR_ALL =
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
+    Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
+    ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
-  static IsApproveForAllWrapper decodeIsApprovedForAll(
-      final Bytes input,
-      final TokenID impliedTokenId,
-      final UnaryOperator<byte[]> aliasResolver) {
-    final var offset = impliedTokenId == null ? 1 : 0;
+    static IsApproveForAllWrapper decodeIsApprovedForAll(
+            final Bytes input,
+            final TokenID impliedTokenId,
+            final UnaryOperator<byte[]> aliasResolver) {
+        final var offset = impliedTokenId == null ? 1 : 0;
 
-    final Tuple decodedArguments =
-        decodeFunctionCall(
-            input,
-            offset == 0
-                ? ERC_IS_APPROVED_FOR_ALL_SELECTOR
-                : HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
-            offset == 0
-                ? ERC_IS_APPROVED_FOR_ALL_DECODER
-                : HAPI_IS_APPROVED_FOR_ALL_DECODER);
+        final Tuple decodedArguments =
+                decodeFunctionCall(
+                        input,
+                        offset == 0
+                                ? ERC_IS_APPROVED_FOR_ALL_SELECTOR
+                                : HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
+                        offset == 0
+                                ? ERC_IS_APPROVED_FOR_ALL_DECODER
+                                : HAPI_IS_APPROVED_FOR_ALL_DECODER);
 
-    final var tId =
-        offset == 0
-            ? impliedTokenId
-            : convertAddressBytesToTokenID(decodedArguments.get(0));
+        final var tId =
+                offset == 0
+                        ? impliedTokenId
+                        : convertAddressBytesToTokenID(decodedArguments.get(0));
 
-    final var owner =
-        convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
-    final var operator =
-        convertLeftPaddedAddressToAccountId(
-            decodedArguments.get(offset + 1), aliasResolver);
+        final var owner =
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
+        final var operator =
+                convertLeftPaddedAddressToAccountId(
+                        decodedArguments.get(offset + 1), aliasResolver);
 
-    return new IsApproveForAllWrapper(tId, owner, operator);
-  }
-
+        return new IsApproveForAllWrapper(tId, owner, operator);
+    }
 }

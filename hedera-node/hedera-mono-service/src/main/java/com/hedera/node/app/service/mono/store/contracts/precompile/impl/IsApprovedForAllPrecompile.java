@@ -33,8 +33,8 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile implements
-    EvmIsApprovedForAllPrecompile {
+public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
+        implements EvmIsApprovedForAllPrecompile {
 
     private IsApproveForAllWrapper isApproveForAllWrapper;
 
@@ -93,7 +93,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile imple
             final Bytes input,
             final TokenID impliedTokenId,
             final UnaryOperator<byte[]> aliasResolver) {
-        return EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input, impliedTokenId,
-            aliasResolver);
+        return EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(
+                input, impliedTokenId, aliasResolver);
     }
 }
