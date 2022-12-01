@@ -17,6 +17,8 @@ package com.hedera.node.app.service.token.entity;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.Optional;
 
 /** An Account entity represents a Hedera Account. */
@@ -46,7 +48,7 @@ public interface Account {
      *
      * @return alias if exists
      */
-    Optional<byte[]> alias();
+    Optional<byte[]> getAlias();
 
     /**
      * Gets whether this is a "hollow" account. A hollow account is an account that was created
@@ -58,13 +60,11 @@ public interface Account {
     boolean isHollow();
 
     /**
-     * The keys on the account. This may return an empty {@link Optional} if the account is a
-     * "hollow" account (as determined by {@link #isHollow()}).
-     *
-     * @return An optional key list. This will always be set unless the account is hollow.
+     * The keys on the account. This may return a null {@link Optional} if the key on account is null.
+     * For e.g., for account 0.0.800 and Hollow accounts (as determined by {@link #isHollow()})
+     * @return An optional key list
      */
-    @NonNull
-    Optional<HederaKey> key();
+    Optional<HederaKey> getKey();
 
     /**
      * Gets the expiration time of the account, in millis from the epoch.

@@ -20,6 +20,8 @@ import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -27,8 +29,8 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 /** An implementation of {@link Account}. FUTURE: Should be moved to token-service-impl module */
 public record AccountImpl(
         long accountNumber,
-        Optional<byte[]> alias,
-        Optional<HederaKey> key,
+        byte[] alias,
+        @Nullable HederaKey key,
         long expiry,
         long balance,
         String memo,
@@ -64,7 +66,17 @@ public record AccountImpl(
 
     @Override
     public boolean isHollow() {
-        return key.isEmpty();
+        return key == null;
+    }
+
+    @Override
+    public Optional<HederaKey> getKey() {
+        return Optional.ofNullable(key);
+    }
+
+    @Override
+    public Optional<byte[]> getAlias() {
+        return alias.length == 0 ? Optional.empty() : Optional.of(alias);
     }
 
     @Override

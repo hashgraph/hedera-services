@@ -194,6 +194,29 @@ public interface AccountBuilder {
     AccountBuilder autoRenewSecs(long value);
 
     /**
+     * Sets the accountNumber for the account
+     * @param value account's number
+     * @return builder object
+     */
+    @NonNull
+    AccountBuilder accountNumber(long value);
+    /**
+     * Sets the alias for the account
+     * @param value account's alias
+     * @return builder object
+     */
+    @NonNull
+    AccountBuilder alias(byte[] value);
+    /**
+     * Sets if the account is smart contract
+     * @param value true if the account is smart contract, false otherwise
+     * @return builder object
+     */
+    @NonNull
+    AccountBuilder isSmartContract(boolean value);
+
+
+    /**
      * Builds and returns an account with the state specified in the builder
      *
      * @return A non-null reference to a **new** account. Two calls to this method return different
