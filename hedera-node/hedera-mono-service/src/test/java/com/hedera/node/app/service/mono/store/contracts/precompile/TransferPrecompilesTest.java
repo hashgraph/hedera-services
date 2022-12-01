@@ -44,6 +44,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarAndTokenChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarOnlyChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChangesWithCustomFeesThatAreAlsoApproved;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
@@ -732,7 +733,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferNftHappyPathWorks() throws InvalidProtocolBufferException {
+    void transferNftHappyPathWorkForCustomFeesWithApproval() throws InvalidProtocolBufferException {
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
@@ -793,7 +794,8 @@ class TransferPrecompilesTest {
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
                                 anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(nftTransferChangesWithCustomFeesThatAreAlsoApproved);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
         given(aliases.resolveForEvm(any()))
@@ -811,7 +813,7 @@ class TransferPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(transferLogic).doZeroSum(nftTransferChanges);
+        verify(transferLogic).doZeroSum(nftTransferChangesWithCustomFeesThatAreAlsoApproved);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);

@@ -428,6 +428,33 @@ public class HTSTestsUtil {
                     BalanceChange.tokenAdjust(
                             Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
 
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesThatAreAlsoApproved =
+            List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(1L)
+                                    .build(),
+                            payer),
+                    /* Simulate an assessed fallback fee */
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(receiver),
+                            Id.fromGrpcToken(token),
+                            -AMOUNT,
+                            payer,
+                            true,
+                            true),
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(feeCollector),
+                            Id.fromGrpcToken(token),
+                            +AMOUNT,
+                            payer,
+                            true,
+                            true));
+
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(
                     BalanceChange.changingNftOwnership(

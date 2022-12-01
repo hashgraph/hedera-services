@@ -72,6 +72,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -110,7 +111,26 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
     private static final String OWNER = "Owner";
-    private static final String TREASURY = "treasury";
+    private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
+    private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";
+    private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
+    private static final ByteString META1 = ByteStringUtils.wrapUnsafely("meta1".getBytes());
+    private static final ByteString META2 = ByteStringUtils.wrapUnsafely("meta2".getBytes());
+    private static final ByteString META3 = ByteStringUtils.wrapUnsafely("meta3".getBytes());
+    private static final ByteString META4 = ByteStringUtils.wrapUnsafely("meta4".getBytes());
+    private static final ByteString META5 = ByteStringUtils.wrapUnsafely("meta5".getBytes());
+    private static final ByteString META6 = ByteStringUtils.wrapUnsafely("meta6".getBytes());
+    private static final ByteString META7 = ByteStringUtils.wrapUnsafely("meta7".getBytes());
+    private static final ByteString META8 = ByteStringUtils.wrapUnsafely("meta8".getBytes());
+    private static final String NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
+    private static final String NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
+    private static final String NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
+            "nftTokenWithRoyaltyFeeWithHbarFallback";
+    private static final String NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
+            "nftTokenWithRoyaltyFeeWithTokenFallback";
+    private static final String FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
+    private static final String RECEIVER_SIGNATURE = "receiverSignature";
+    private static final String APPROVE_TXN = "approveTxn";
 
     public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
@@ -151,7 +171,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var successfulTransferFromTxn2 = "txn2";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var revertingTransferFromTxn2 = "revertingTxn";
-        final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("hapiTransferFromForFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -196,7 +215,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // revert
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -218,7 +237,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer allowance/2 amount
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -240,7 +259,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer the rest of the allowance
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -265,7 +284,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // no allowance left, should fail
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -425,7 +444,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var theSpender = "spender";
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("hapiTransferFromForNFT")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -441,11 +459,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        mintToken(
-                                NFT_TOKEN,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(
@@ -465,7 +479,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // trying to transfer NFT that is not approved
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -487,7 +501,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer allowed NFT
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -616,7 +630,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -715,7 +729,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -798,7 +812,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -887,7 +901,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -980,7 +994,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1094,7 +1108,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -1223,7 +1237,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -1364,7 +1378,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             spec,
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1394,7 +1408,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1425,7 +1439,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1451,7 +1465,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1555,20 +1569,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
-        final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
-        final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithHbarFallback";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithTokenFallback";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithoutApproveFails")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .maxAutomaticTokenAssociations(5)
@@ -1585,7 +1590,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .withCustom(fixedHbarFee(1, OWNER)),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -1636,16 +1641,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
                                 List.of(
@@ -1670,8 +1667,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         .between(OWNER, SENDER)),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)))
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)))
                 .when(
                         withOpContext(
                                 (spec, opLog) ->
@@ -1679,7 +1678,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -1700,7 +1699,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -1721,7 +1720,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -1743,7 +1742,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -1767,14 +1766,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
-        final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
-        final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithHbarFallback";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithTokenFallback";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
         final var SPENDER_SIGNATURE = "spenderSignature";
         return defaultHapiSpec("TransferFromForNFTWithCustomFeesWithApproveForAll")
                 .given(
@@ -1783,7 +1774,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         newKeyNamed(SPENDER_SIGNATURE),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .maxAutomaticTokenAssociations(5)
@@ -1801,7 +1792,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .withCustom(fixedHbarFee(1, OWNER)),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(CONTRACT, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -1852,26 +1843,14 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta5".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
+                                List.of(META5, META6)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta7".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
+                                List.of(META7, META8)),
                         cryptoTransfer(
                                 movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
                                         .between(OWNER, CONTRACT)),
@@ -1884,8 +1863,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         cryptoTransfer(
                                 movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
                                         .between(OWNER, CONTRACT)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, CONTRACT)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, CONTRACT)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
                         cryptoTransfer(TokenMovement.movingHbar(100L).between(OWNER, CONTRACT)))
                 .when(
                         withOpContext(
@@ -1894,7 +1875,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 CONTRACT,
-                                                                "transferMultipleTokens",
+                                                                TRANSFER_MULTIPLE_TOKENS,
                                                                 tokenTransferLists()
                                                                         .withTokenTransferList(
                                                                                 tokenTransferList()
@@ -1965,20 +1946,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
-        final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
-        final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithHbarFallback";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithTokenFallback";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithApproveForAll")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .maxAutomaticTokenAssociations(5)
@@ -1996,7 +1968,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .withCustom(fixedHbarFee(1, OWNER)),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -2047,26 +2019,14 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta5".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
+                                List.of(META5, META6)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta7".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
+                                List.of(META7, META8)),
                         cryptoTransfer(
                                 movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
                                         .between(OWNER, SENDER)),
@@ -2081,8 +2041,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         .between(OWNER, SENDER)),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(
@@ -2109,7 +2071,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         HTS_TRANSFER_FROM_CONTRACT,
                                         true,
                                         List.of())
-                                .via("approveTxn")
+                                .via(APPROVE_TXN)
                                 .signedBy(DEFAULT_PAYER, SENDER))
                 .when(
                         withOpContext(
@@ -2118,7 +2080,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2138,7 +2100,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2158,7 +2120,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2179,7 +2141,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .signingWith(RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2203,21 +2165,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec
             hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
-        final var NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
-        final var NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithHbarFallback";
-        final var NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
-                "nftTokenWithRoyaltyFeeWithTokenFallback";
-        final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
-        final var RECEIVER_SIGNATURE = "receiverSignature";
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_MILLION_HBARS)
                                 .maxAutomaticTokenAssociations(5)
@@ -2235,7 +2188,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .withCustom(fixedHbarFee(1, OWNER)),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -2286,26 +2239,14 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
                                         NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_HBAR_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                        mintToken(
-                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta5".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
+                                List.of(META5, META6)),
                         mintToken(
                                 NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta7".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
+                                List.of(META7, META8)),
                         cryptoTransfer(
                                 movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
                                         .between(OWNER, SENDER)),
@@ -2320,8 +2261,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         .between(OWNER, SENDER)),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, RECEIVER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(
@@ -2348,7 +2291,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         HTS_TRANSFER_FROM_CONTRACT,
                                         true,
                                         List.of(1L))
-                                .via("approveTxn")
+                                .via(APPROVE_TXN)
                                 .signedBy(DEFAULT_PAYER, SENDER))
                 .when(
                         withOpContext(
@@ -2357,7 +2300,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2377,7 +2320,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2397,7 +2340,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2418,7 +2361,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .signingWith(RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2446,11 +2389,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
-        final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("HapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails")
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER)
@@ -2458,7 +2400,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .key(RECEIVER_SIGNATURE),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -2490,7 +2432,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
                                         FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
                         cryptoTransfer(
                                 moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
                                         .between(OWNER, SENDER)),
@@ -2509,7 +2452,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2530,7 +2473,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2551,7 +2494,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2581,12 +2524,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
         final var FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
         final var RECEIVER_SIGNATURE = "receiverSignature";
-        final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec(
                         "HapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
-                        cryptoCreate(TREASURY),
+                        cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
                         cryptoCreate(RECEIVER)
@@ -2594,7 +2536,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .key(RECEIVER_SIGNATURE),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TREASURY)
+                                .treasury(TOKEN_TREASURY)
                                 .initialSupply(1000L),
                         tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
@@ -2626,7 +2568,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
                                         FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
                                         FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
-                        cryptoTransfer(moving(1L, FUNGIBLE_TOKEN_FEE).between(TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
                         cryptoTransfer(
                                 moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
                                         .between(OWNER, SENDER)),
@@ -2655,7 +2598,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                         FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE,
                                         HTS_TRANSFER_FROM_CONTRACT,
                                         2L)
-                                .via("approveTxn")
+                                .via(APPROVE_TXN)
                                 .signedBy(DEFAULT_PAYER, SENDER))
                 .when(
                         withOpContext(
@@ -2664,7 +2607,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2684,7 +2627,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -2704,7 +2647,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .payingWith(GENESIS),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
