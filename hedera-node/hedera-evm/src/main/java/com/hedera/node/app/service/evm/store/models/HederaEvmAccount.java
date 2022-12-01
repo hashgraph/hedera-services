@@ -75,6 +75,7 @@ public class HederaEvmAccount {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(HederaEvmAccount.class)
+            .add("address", address.toHexString())
                 .add("alias", getAlias().toStringUtf8())
                 .toString();
     }
