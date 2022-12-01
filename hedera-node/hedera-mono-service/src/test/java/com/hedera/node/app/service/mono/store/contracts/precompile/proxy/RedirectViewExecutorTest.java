@@ -45,7 +45,7 @@ import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;

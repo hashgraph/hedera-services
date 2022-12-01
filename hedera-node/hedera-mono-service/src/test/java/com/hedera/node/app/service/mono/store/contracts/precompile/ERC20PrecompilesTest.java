@@ -117,7 +117,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.ApproveWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;

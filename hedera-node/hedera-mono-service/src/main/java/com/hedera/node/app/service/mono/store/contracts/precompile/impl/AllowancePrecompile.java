@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ADDRESS_TRIO_RAW_TYPE;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
@@ -26,10 +23,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
@@ -38,7 +33,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -48,19 +43,9 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function ERC_ALLOWANCE_FUNCTION =
-            new Function("allowance(address,address)", INT);
-    private static final Bytes ERC_ALLOWANCE_SELECTOR =
-            Bytes.wrap(ERC_ALLOWANCE_FUNCTION.selector());
-    private static final ABIType<Tuple> ERC_ALLOWANCE_DECODER =
-            TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
-    private static final Function HAPI_ALLOWANCE_FUNCTION =
-            new Function("allowance(address,address,address)", "(int,int)");
-    private static final Bytes HAPI_ALLOWANCE_SELECTOR =
-            Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
-    private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
-            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
+public class AllowancePrecompile extends AbstractReadOnlyPrecompile implements
+    EvmAllowancePrecompile {
+
     private TokenAllowanceWrapper allowanceWrapper;
 
     public AllowancePrecompile(
@@ -114,24 +99,6 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
             final Bytes input,
             final TokenID impliedTokenId,
             final UnaryOperator<byte[]> aliasResolver) {
-        final var offset = impliedTokenId == null ? 1 : 0;
-
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        offset == 0 ? ERC_ALLOWANCE_SELECTOR : HAPI_ALLOWANCE_SELECTOR,
-                        offset == 0 ? ERC_ALLOWANCE_DECODER : HAPI_ALLOWANCE_DECODER);
-
-        final var tokenId =
-                offset == 0
-                        ? impliedTokenId
-                        : convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var owner =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
-        final var spender =
-                convertLeftPaddedAddressToAccountId(
-                        decodedArguments.get(offset + 1), aliasResolver);
-
-        return new TokenAllowanceWrapper(tokenId, owner, spender);
+        return EvmAllowancePrecompile.decodeTokenAllowance(input, impliedTokenId, aliasResolver);
     }
 }
