@@ -35,48 +35,48 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PrecheckUtilsTest {
-	private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
-	private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
+    private static final String nodeId = SignedTxnFactory.DEFAULT_NODE_ID;
+    private static final AccountID node = SignedTxnFactory.DEFAULT_NODE;
 
-	@Mock private NodeInfo nodeInfo;
+    @Mock private NodeInfo nodeInfo;
 
-	private Predicate<TransactionBody> subject;
+    private Predicate<TransactionBody> subject;
 
-	@BeforeEach
-	void setUp() {
-		subject = PrecheckUtils.queryPaymentTestFor(nodeInfo);
-	}
+    @BeforeEach
+    void setUp() {
+        subject = PrecheckUtils.queryPaymentTestFor(nodeInfo);
+    }
 
-	@Test
-	void queryPaymentsMustBeCryptoTransfers() throws Throwable {
-		final var txn = PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
+    @Test
+    void queryPaymentsMustBeCryptoTransfers() throws Throwable {
+        final var txn = PlatformTxnAccessor.from(newSignedCryptoUpdate("0.0.2").get()).getTxn();
 
-		assertFalse(subject.test(txn));
-	}
+        assertFalse(subject.test(txn));
+    }
 
-	@Test
-	void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
-		given(nodeInfo.selfAccount()).willReturn(node);
-		final var txn =
-				PlatformTxnAccessor.from(
-								newSignedCryptoTransfer()
-										.transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
-										.get())
-						.getTxn();
+    @Test
+    void transferWithoutTargetNodeIsNotQueryPayment() throws Throwable {
+        given(nodeInfo.selfAccount()).willReturn(node);
+        final var txn =
+                PlatformTxnAccessor.from(
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo("0.0.1024", "0.0.2048", 1_000L))
+                                        .get())
+                        .getTxn();
 
-		assertFalse(subject.test(txn));
-	}
+        assertFalse(subject.test(txn));
+    }
 
-	@Test
-	void queryPaymentTransfersToTargetNode() throws Throwable {
-		given(nodeInfo.selfAccount()).willReturn(node);
-		final var txn =
-				PlatformTxnAccessor.from(
-								newSignedCryptoTransfer()
-										.transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
-										.get())
-						.getTxn();
+    @Test
+    void queryPaymentTransfersToTargetNode() throws Throwable {
+        given(nodeInfo.selfAccount()).willReturn(node);
+        final var txn =
+                PlatformTxnAccessor.from(
+                                newSignedCryptoTransfer()
+                                        .transfers(tinyBarsFromTo(nodeId, "0.0.2048", 1_000L))
+                                        .get())
+                        .getTxn();
 
-		assertFalse(subject.test(txn));
-	}
+        assertFalse(subject.test(txn));
+    }
 }

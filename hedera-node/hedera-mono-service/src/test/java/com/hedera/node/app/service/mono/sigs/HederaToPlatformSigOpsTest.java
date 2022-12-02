@@ -59,289 +59,289 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class HederaToPlatformSigOpsTest {
-	private static List<JKey> payerKey;
-	private static List<JKey> otherKeys;
-	private static List<JKey> fullPrefixKeys;
-	private PubKeyToSigBytes allSigBytes;
-	private PlatformTxnAccessor platformTxn;
-	private SigRequirements keyOrdering;
+    private static List<JKey> payerKey;
+    private static List<JKey> otherKeys;
+    private static List<JKey> fullPrefixKeys;
+    private PubKeyToSigBytes allSigBytes;
+    private PlatformTxnAccessor platformTxn;
+    private SigRequirements keyOrdering;
 
-	@BeforeAll
-	static void setupAll() throws Throwable {
-		payerKey = List.of(KeyTree.withRoot(ed25519()).asJKey());
-		otherKeys =
-				List.of(KeyTree.withRoot(ed25519()).asJKey(), KeyTree.withRoot(ed25519()).asJKey());
-		fullPrefixKeys = List.of(KeyTree.withRoot(ed25519()).asJKey());
-	}
+    @BeforeAll
+    static void setupAll() throws Throwable {
+        payerKey = List.of(KeyTree.withRoot(ed25519()).asJKey());
+        otherKeys =
+                List.of(KeyTree.withRoot(ed25519()).asJKey(), KeyTree.withRoot(ed25519()).asJKey());
+        fullPrefixKeys = List.of(KeyTree.withRoot(ed25519()).asJKey());
+    }
 
-	@BeforeEach
-	void setup() throws Throwable {
-		allSigBytes = mock(PubKeyToSigBytes.class);
-		keyOrdering = mock(SigRequirements.class);
-		platformTxn = PlatformTxnAccessor.from(newSignedSystemDelete().get());
-	}
+    @BeforeEach
+    void setup() throws Throwable {
+        allSigBytes = mock(PubKeyToSigBytes.class);
+        keyOrdering = mock(SigRequirements.class);
+        platformTxn = PlatformTxnAccessor.from(newSignedSystemDelete().get());
+    }
 
-	@SuppressWarnings("unchecked")
-	private void wellBehavedOrdersAndSigSources() throws Exception {
-		given(
-				keyOrdering.keysForPayer(
-						eq(platformTxn.getTxn()),
-						eq(CODE_ORDER_RESULT_FACTORY),
-						any(),
-						eq(DEFAULT_PAYER)))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(
-				keyOrdering.keysForOtherParties(
-						eq(platformTxn.getTxn()),
-						eq(CODE_ORDER_RESULT_FACTORY),
-						any(),
-						eq(DEFAULT_PAYER)))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willReturn("3".getBytes());
-		given(allSigBytes.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
-		willAnswer(
-				inv -> {
-					final var obs = (SigObserver) inv.getArgument(0);
-					obs.accept(
-							KeyType.ED25519,
-							fullPrefixKeys.get(0).getEd25519(),
-							"4".getBytes());
-					return null;
-				})
-				.given(allSigBytes)
-				.forEachUnusedSigWithFullPrefix(any());
-	}
+    @SuppressWarnings("unchecked")
+    private void wellBehavedOrdersAndSigSources() throws Exception {
+        given(
+                        keyOrdering.keysForPayer(
+                                eq(platformTxn.getTxn()),
+                                eq(CODE_ORDER_RESULT_FACTORY),
+                                any(),
+                                eq(DEFAULT_PAYER)))
+                .willReturn(new SigningOrderResult<>(payerKey));
+        given(
+                        keyOrdering.keysForOtherParties(
+                                eq(platformTxn.getTxn()),
+                                eq(CODE_ORDER_RESULT_FACTORY),
+                                any(),
+                                eq(DEFAULT_PAYER)))
+                .willReturn(new SigningOrderResult<>(otherKeys));
+        given(allSigBytes.sigBytesFor(any()))
+                .willReturn("1".getBytes())
+                .willReturn("2".getBytes())
+                .willReturn("3".getBytes());
+        given(allSigBytes.hasAtLeastOneUnusedSigWithFullPrefix()).willReturn(true);
+        willAnswer(
+                        inv -> {
+                            final var obs = (SigObserver) inv.getArgument(0);
+                            obs.accept(
+                                    KeyType.ED25519,
+                                    fullPrefixKeys.get(0).getEd25519(),
+                                    "4".getBytes());
+                            return null;
+                        })
+                .given(allSigBytes)
+                .forEachUnusedSigWithFullPrefix(any());
+    }
 
-	@Test
-	void includesSuccessfulExpansions() throws Exception {
-		wellBehavedOrdersAndSigSources();
+    @Test
+    void includesSuccessfulExpansions() throws Exception {
+        wellBehavedOrdersAndSigSources();
 
-		expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
-		assertEquals(OK, platformTxn.getExpandedSigStatus());
-	}
+        assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
+        assertEquals(OK, platformTxn.getExpandedSigStatus());
+    }
 
-	@Test
-	void returnsImmediatelyOnPayerKeyOrderFailure() {
-		given(
-				keyOrdering.keysForPayer(
-						eq(platformTxn.getTxn()),
-						eq(CODE_ORDER_RESULT_FACTORY),
-						any(),
-						eq(DEFAULT_PAYER)))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+    @Test
+    void returnsImmediatelyOnPayerKeyOrderFailure() {
+        given(
+                        keyOrdering.keysForPayer(
+                                eq(platformTxn.getTxn()),
+                                eq(CODE_ORDER_RESULT_FACTORY),
+                                any(),
+                                eq(DEFAULT_PAYER)))
+                .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
 
-		expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
-	}
+        assertEquals(INVALID_ACCOUNT_ID, platformTxn.getExpandedSigStatus());
+    }
 
-	@Test
-	void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
-		given(
-				keyOrdering.keysForPayer(
-						eq(platformTxn.getTxn()),
-						eq(CODE_ORDER_RESULT_FACTORY),
-						any(),
-						eq(DEFAULT_PAYER)))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(
-				keyOrdering.keysForOtherParties(
-						eq(platformTxn.getTxn()),
-						eq(CODE_ORDER_RESULT_FACTORY),
-						any(),
-						eq(DEFAULT_PAYER)))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willThrow(KeyPrefixMismatchException.class);
+    @Test
+    void doesntAddSigsIfCreationResultIsNotSuccess() throws Exception {
+        given(
+                        keyOrdering.keysForPayer(
+                                eq(platformTxn.getTxn()),
+                                eq(CODE_ORDER_RESULT_FACTORY),
+                                any(),
+                                eq(DEFAULT_PAYER)))
+                .willReturn(new SigningOrderResult<>(payerKey));
+        given(
+                        keyOrdering.keysForOtherParties(
+                                eq(platformTxn.getTxn()),
+                                eq(CODE_ORDER_RESULT_FACTORY),
+                                any(),
+                                eq(DEFAULT_PAYER)))
+                .willReturn(new SigningOrderResult<>(otherKeys));
+        given(allSigBytes.sigBytesFor(any()))
+                .willReturn("1".getBytes())
+                .willReturn("2".getBytes())
+                .willThrow(KeyPrefixMismatchException.class);
 
-		expandIn(platformTxn, keyOrdering, allSigBytes);
+        expandIn(platformTxn, keyOrdering, allSigBytes);
 
-		assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
-		assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getCryptoSigs());
-	}
+        assertEquals(KEY_PREFIX_MISMATCH, platformTxn.getExpandedSigStatus());
+        assertEquals(expectedSigsWithOtherPartiesCreationError(), platformTxn.getCryptoSigs());
+    }
 
-	@Test
-	void rationalizesMissingSigs() throws Exception {
-		final var rationalization =
-				new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
-		final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
-		final var mockAccessor = mock(PlatformTxnAccessor.class);
+    @Test
+    void rationalizesMissingSigs() throws Exception {
+        final var rationalization =
+                new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
+        final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
+        final var mockAccessor = mock(PlatformTxnAccessor.class);
 
-		wellBehavedOrdersAndSigSources();
-		givenMirrorMock(mockAccessor, platformTxn);
+        wellBehavedOrdersAndSigSources();
+        givenMirrorMock(mockAccessor, platformTxn);
 
-		rationalization.performFor(mockAccessor);
+        rationalization.performFor(mockAccessor);
 
-		assertEquals(OK, rationalization.finalStatus());
-		assertTrue(rationalization.usedSyncVerification());
+        assertEquals(OK, rationalization.finalStatus());
+        assertTrue(rationalization.usedSyncVerification());
 
-		verify(mockAccessor).setSigMeta(captor.capture());
-		final var sigMeta = captor.getValue();
-		assertEquals(expectedSigsWithNoErrors(), sigMeta.verifiedSigs());
+        verify(mockAccessor).setSigMeta(captor.capture());
+        final var sigMeta = captor.getValue();
+        assertEquals(expectedSigsWithNoErrors(), sigMeta.verifiedSigs());
 
-		platformTxn.setSigMeta(sigMeta);
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-	}
+        platformTxn.setSigMeta(sigMeta);
+        assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+    }
 
-	@Test
-	void stopImmediatelyOnPayerKeyOrderFailure() {
-		given(
-				keyOrdering.keysForPayer(
-						platformTxn.getTxn(),
-						CODE_ORDER_RESULT_FACTORY,
-						null,
-						DEFAULT_PAYER))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
-		final var rationalization =
-				new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
+    @Test
+    void stopImmediatelyOnPayerKeyOrderFailure() {
+        given(
+                        keyOrdering.keysForPayer(
+                                platformTxn.getTxn(),
+                                CODE_ORDER_RESULT_FACTORY,
+                                null,
+                                DEFAULT_PAYER))
+                .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+        final var rationalization =
+                new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(platformTxn);
+        rationalization.performFor(platformTxn);
 
-		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
-	}
+        assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
+    }
 
-	@Test
-	void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
-		wellBehavedOrdersAndSigSources();
-		given(
-				keyOrdering.keysForOtherParties(
-						platformTxn.getTxn(),
-						CODE_ORDER_RESULT_FACTORY,
-						null,
-						DEFAULT_PAYER))
-				.willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
-		final var rationalization =
-				new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
+    @Test
+    void stopImmediatelyOnOtherPartiesKeyOrderFailure() throws Exception {
+        wellBehavedOrdersAndSigSources();
+        given(
+                        keyOrdering.keysForOtherParties(
+                                platformTxn.getTxn(),
+                                CODE_ORDER_RESULT_FACTORY,
+                                null,
+                                DEFAULT_PAYER))
+                .willReturn(new SigningOrderResult<>(INVALID_ACCOUNT_ID));
+        final var rationalization =
+                new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(platformTxn);
+        rationalization.performFor(platformTxn);
 
-		assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
-	}
+        assertEquals(INVALID_ACCOUNT_ID, rationalization.finalStatus());
+    }
 
-	@Test
-	void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
-		final var mockAccessor = mock(PlatformTxnAccessor.class);
-		given(
-				keyOrdering.keysForPayer(
-						platformTxn.getTxn(),
-						CODE_ORDER_RESULT_FACTORY,
-						null,
-						DEFAULT_PAYER))
-				.willReturn(new SigningOrderResult<>(payerKey));
-		given(
-				keyOrdering.keysForOtherParties(
-						platformTxn.getTxn(),
-						CODE_ORDER_RESULT_FACTORY,
-						null,
-						DEFAULT_PAYER))
-				.willReturn(new SigningOrderResult<>(otherKeys));
-		given(allSigBytes.sigBytesFor(any()))
-				.willReturn("1".getBytes())
-				.willReturn("2".getBytes())
-				.willThrow(KeyPrefixMismatchException.class);
-		givenMirrorMock(mockAccessor, platformTxn);
-		final var rationalization =
-				new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
+    @Test
+    void stopImmediatelyOnOtherPartiesSigCreationFailure() throws Exception {
+        final var mockAccessor = mock(PlatformTxnAccessor.class);
+        given(
+                        keyOrdering.keysForPayer(
+                                platformTxn.getTxn(),
+                                CODE_ORDER_RESULT_FACTORY,
+                                null,
+                                DEFAULT_PAYER))
+                .willReturn(new SigningOrderResult<>(payerKey));
+        given(
+                        keyOrdering.keysForOtherParties(
+                                platformTxn.getTxn(),
+                                CODE_ORDER_RESULT_FACTORY,
+                                null,
+                                DEFAULT_PAYER))
+                .willReturn(new SigningOrderResult<>(otherKeys));
+        given(allSigBytes.sigBytesFor(any()))
+                .willReturn("1".getBytes())
+                .willReturn("2".getBytes())
+                .willThrow(KeyPrefixMismatchException.class);
+        givenMirrorMock(mockAccessor, platformTxn);
+        final var rationalization =
+                new Rationalization(ALWAYS_VALID, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(mockAccessor);
+        rationalization.performFor(mockAccessor);
 
-		assertEquals(KEY_PREFIX_MISMATCH, rationalization.finalStatus());
-	}
+        assertEquals(KEY_PREFIX_MISMATCH, rationalization.finalStatus());
+    }
 
-	@Test
-	void rationalizesOnlyMissingSigs() throws Exception {
-		wellBehavedOrdersAndSigSources();
-		platformTxn.addAllCryptoSigs(asValid(expectedSigsWithOtherPartiesCreationError()));
-		final SyncVerifier syncVerifier =
-				l -> {
-					if (l.equals(expectedSigsWithOtherPartiesCreationError())) {
-						throw new AssertionError("Payer sigs were verified async!");
-					} else {
-						ALWAYS_VALID.verifySync(l);
-					}
-				};
-		final var mockAccessor = mock(PlatformTxnAccessor.class);
-		final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
-		givenMirrorMock(mockAccessor, platformTxn);
-		final var rationalization =
-				new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
+    @Test
+    void rationalizesOnlyMissingSigs() throws Exception {
+        wellBehavedOrdersAndSigSources();
+        platformTxn.addAllCryptoSigs(asValid(expectedSigsWithOtherPartiesCreationError()));
+        final SyncVerifier syncVerifier =
+                l -> {
+                    if (l.equals(expectedSigsWithOtherPartiesCreationError())) {
+                        throw new AssertionError("Payer sigs were verified async!");
+                    } else {
+                        ALWAYS_VALID.verifySync(l);
+                    }
+                };
+        final var mockAccessor = mock(PlatformTxnAccessor.class);
+        final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
+        givenMirrorMock(mockAccessor, platformTxn);
+        final var rationalization =
+                new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(mockAccessor);
+        rationalization.performFor(mockAccessor);
 
-		assertTrue(rationalization.usedSyncVerification());
-		assertEquals(OK, rationalization.finalStatus());
+        assertTrue(rationalization.usedSyncVerification());
+        assertEquals(OK, rationalization.finalStatus());
 
-		verify(mockAccessor).setSigMeta(captor.capture());
-		final var sigMeta = captor.getValue();
-		platformTxn.setSigMeta(sigMeta);
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-	}
+        verify(mockAccessor).setSigMeta(captor.capture());
+        final var sigMeta = captor.getValue();
+        platformTxn.setSigMeta(sigMeta);
+        assertEquals(expectedSigsWithNoErrors(), platformTxn.getSigMeta().verifiedSigs());
+        assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+    }
 
-	@Test
-	void doesNothingToTxnIfAllSigsAreRational() throws Exception {
-		wellBehavedOrdersAndSigSources();
-		platformTxn.addAllCryptoSigs(asValid(expectedSigsWithNoErrors()));
-		final SyncVerifier syncVerifier =
-				l -> {
-					throw new AssertionError("All sigs were verified async!");
-				};
-		final var mockAccessor = mock(PlatformTxnAccessor.class);
-		final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
-		givenMirrorMock(mockAccessor, platformTxn);
+    @Test
+    void doesNothingToTxnIfAllSigsAreRational() throws Exception {
+        wellBehavedOrdersAndSigSources();
+        platformTxn.addAllCryptoSigs(asValid(expectedSigsWithNoErrors()));
+        final SyncVerifier syncVerifier =
+                l -> {
+                    throw new AssertionError("All sigs were verified async!");
+                };
+        final var mockAccessor = mock(PlatformTxnAccessor.class);
+        final var captor = ArgumentCaptor.forClass(RationalizedSigMeta.class);
+        givenMirrorMock(mockAccessor, platformTxn);
 
-		final var rationalization =
-				new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
+        final var rationalization =
+                new Rationalization(syncVerifier, keyOrdering, new ReusableBodySigningFactory());
 
-		rationalization.performFor(mockAccessor);
+        rationalization.performFor(mockAccessor);
 
-		assertFalse(rationalization.usedSyncVerification());
-		assertEquals(OK, rationalization.finalStatus());
-		verify(mockAccessor).setSigMeta(captor.capture());
-		final var sigMeta = captor.getValue();
-		platformTxn.setSigMeta(sigMeta);
-		assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
-		assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
-		final var resultingSigs = platformTxn.getCryptoSigs();
-		assertFalse(resultingSigs.isEmpty());
-	}
+        assertFalse(rationalization.usedSyncVerification());
+        assertEquals(OK, rationalization.finalStatus());
+        verify(mockAccessor).setSigMeta(captor.capture());
+        final var sigMeta = captor.getValue();
+        platformTxn.setSigMeta(sigMeta);
+        assertEquals(expectedSigsWithNoErrors(), platformTxn.getCryptoSigs());
+        assertTrue(allVerificationStatusesAre(VerificationStatus.VALID::equals));
+        final var resultingSigs = platformTxn.getCryptoSigs();
+        assertFalse(resultingSigs.isEmpty());
+    }
 
-	private boolean allVerificationStatusesAre(final Predicate<VerificationStatus> statusPred) {
-		return platformTxn.getSigMeta().verifiedSigs().stream()
-				.map(TransactionSignature::getSignatureStatus)
-				.allMatch(statusPred);
-	}
+    private boolean allVerificationStatusesAre(final Predicate<VerificationStatus> statusPred) {
+        return platformTxn.getSigMeta().verifiedSigs().stream()
+                .map(TransactionSignature::getSignatureStatus)
+                .allMatch(statusPred);
+    }
 
-	private List<TransactionSignature> expectedSigsWithNoErrors() {
-		return new ArrayList<>(
-				List.of(
-						dummyFor(payerKey.get(0), "1"),
-						dummyFor(otherKeys.get(0), "2"),
-						dummyFor(otherKeys.get(1), "3"),
-						dummyFor(fullPrefixKeys.get(0), "4")));
-	}
+    private List<TransactionSignature> expectedSigsWithNoErrors() {
+        return new ArrayList<>(
+                List.of(
+                        dummyFor(payerKey.get(0), "1"),
+                        dummyFor(otherKeys.get(0), "2"),
+                        dummyFor(otherKeys.get(1), "3"),
+                        dummyFor(fullPrefixKeys.get(0), "4")));
+    }
 
-	private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
-		return expectedSigsWithNoErrors().subList(0, 1);
-	}
+    private List<TransactionSignature> expectedSigsWithOtherPartiesCreationError() {
+        return expectedSigsWithNoErrors().subList(0, 1);
+    }
 
-	private TransactionSignature dummyFor(final JKey key, final String sig) {
-		return PlatformSigFactory.ed25519Sig(
-				key.getEd25519(), sig.getBytes(), platformTxn.getTxnBytes());
-	}
+    private TransactionSignature dummyFor(final JKey key, final String sig) {
+        return PlatformSigFactory.ed25519Sig(
+                key.getEd25519(), sig.getBytes(), platformTxn.getTxnBytes());
+    }
 
-	private void givenMirrorMock(PlatformTxnAccessor mock, PlatformTxnAccessor real) {
-		given(mock.getPkToSigsFn()).willReturn(allSigBytes);
-		given(mock.getTxn()).willReturn(real.getTxn());
-		given(mock.getPayer()).willReturn(real.getPayer());
-		given(mock.getTxnBytes()).willReturn(real.getTxnBytes());
-		given(mock.getCryptoSigs()).willReturn(real.getCryptoSigs());
-	}
+    private void givenMirrorMock(PlatformTxnAccessor mock, PlatformTxnAccessor real) {
+        given(mock.getPkToSigsFn()).willReturn(allSigBytes);
+        given(mock.getTxn()).willReturn(real.getTxn());
+        given(mock.getPayer()).willReturn(real.getPayer());
+        given(mock.getTxnBytes()).willReturn(real.getTxnBytes());
+        given(mock.getCryptoSigs()).willReturn(real.getCryptoSigs());
+    }
 }

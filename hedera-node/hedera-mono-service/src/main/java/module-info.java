@@ -1,6 +1,5 @@
 module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono;
-
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.exceptions to

@@ -64,139 +64,139 @@ import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 
 class SigVerifierRegressionTest {
-	private PrecheckKeyReqs precheckKeyReqs;
-	private PrecheckVerifier precheckVerifier;
-	private SigRequirements keyOrder;
-	private Predicate<TransactionBody> isQueryPayment;
-	private PlatformTxnAccessor platformTxn;
-	private MerkleMap<EntityNum, MerkleAccount> accounts;
-	private AliasManager aliasManager;
+    private PrecheckKeyReqs precheckKeyReqs;
+    private PrecheckVerifier precheckVerifier;
+    private SigRequirements keyOrder;
+    private Predicate<TransactionBody> isQueryPayment;
+    private PlatformTxnAccessor platformTxn;
+    private MerkleMap<EntityNum, MerkleAccount> accounts;
+    private AliasManager aliasManager;
 
-	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-	private SignatureWaivers mockSignatureWaivers =
-			new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+    private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+    private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+    private SignatureWaivers mockSignatureWaivers =
+            new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
-	@Test
-	void rejectsInvalidTxn() throws Throwable {
-		// given:
-		Transaction invalidSignedTxn =
-				Transaction.newBuilder()
-						.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
-						.build();
+    @Test
+    void rejectsInvalidTxn() throws Throwable {
+        // given:
+        Transaction invalidSignedTxn =
+                Transaction.newBuilder()
+                        .setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
+                        .build();
 
-		// expect:
-		assertFalse(sigVerifies(invalidSignedTxn));
-	}
+        // expect:
+        assertFalse(sigVerifies(invalidSignedTxn));
+    }
 
-	@Test
-	void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
-		setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
+    @Test
+    void acceptsValidNonCryptoTransferPayerSig() throws Throwable {
+        setupFor(FULL_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-		// expect:
-		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
-		setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
+    @Test
+    void rejectsIncompleteNonCryptoTransferPayerSig() throws Throwable {
+        setupFor(MISSING_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-		// expect:
-		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void rejectsInvalidNonCryptoTransferPayerSig() throws Throwable {
-		setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
+    @Test
+    void rejectsInvalidNonCryptoTransferPayerSig() throws Throwable {
+        setupFor(INVALID_PAYER_SIGS_VIA_MAP_SCENARIO);
 
-		// expect:
-		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void acceptsNonQueryPaymentTransfer() throws Throwable {
-		setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
+    @Test
+    void acceptsNonQueryPaymentTransfer() throws Throwable {
+        setupFor(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO);
 
-		// expect:
-		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void acceptsQueryPaymentTransfer() throws Throwable {
-		setupFor(VALID_QUERY_PAYMENT_SCENARIO);
+    @Test
+    void acceptsQueryPaymentTransfer() throws Throwable {
+        setupFor(VALID_QUERY_PAYMENT_SCENARIO);
 
-		// expect:
-		assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertTrue(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void rejectsInvalidPayerAccount() throws Throwable {
-		setupFor(INVALID_PAYER_ID_SCENARIO);
+    @Test
+    void rejectsInvalidPayerAccount() throws Throwable {
+        setupFor(INVALID_PAYER_ID_SCENARIO);
 
-		// expect:
-		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void throwsOnInvalidSenderAccount() throws Throwable {
-		// given:
-		setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
+    @Test
+    void throwsOnInvalidSenderAccount() throws Throwable {
+        // given:
+        setupFor(QUERY_PAYMENT_INVALID_SENDER_SCENARIO);
 
-		// expect:
-		assertThrows(
-				InvalidAccountIDException.class,
-				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertThrows(
+                InvalidAccountIDException.class,
+                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void throwsOnInvalidSigMap() throws Throwable {
-		// given:
-		setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
+    @Test
+    void throwsOnInvalidSigMap() throws Throwable {
+        // given:
+        setupFor(AMBIGUOUS_SIG_MAP_SCENARIO);
 
-		// expect:
-		assertThrows(
-				KeyPrefixMismatchException.class,
-				() -> sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertThrows(
+                KeyPrefixMismatchException.class,
+                () -> sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	@Test
-	void rejectsQueryPaymentTransferWithMissingSigs() throws Throwable {
-		setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
+    @Test
+    void rejectsQueryPaymentTransferWithMissingSigs() throws Throwable {
+        setupFor(QUERY_PAYMENT_MISSING_SIGS_SCENARIO);
 
-		// expect:
-		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
-	}
+        // expect:
+        assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
+    }
 
-	private boolean sigVerifies(Transaction signedTxn) throws Exception {
-		try {
-			SignedTxnAccessor accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
-			return precheckVerifier.hasNecessarySignatures(accessor);
-		} catch (InvalidProtocolBufferException ignore) {
-			return false;
-		}
-	}
+    private boolean sigVerifies(Transaction signedTxn) throws Exception {
+        try {
+            SignedTxnAccessor accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
+            return precheckVerifier.hasNecessarySignatures(accessor);
+        } catch (InvalidProtocolBufferException ignore) {
+            return false;
+        }
+    }
 
-	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
-		accounts = scenario.accounts();
-		platformTxn = scenario.platformTxn();
-		aliasManager = mock(AliasManager.class);
-		keyOrder =
-				new SigRequirements(
-						defaultLookupsFor(
-								aliasManager,
-								null,
-								() -> AccountStorageAdapter.fromInMemory(accounts),
-								() -> null,
-								ref -> null,
-								ref -> null),
-						mockSignatureWaivers);
-		final var nodeInfo = mock(NodeInfo.class);
-		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
-		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
-		SyncVerifier syncVerifier =
-				new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
-						::verifySync;
-		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
-		precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
-	}
+    private void setupFor(TxnHandlingScenario scenario) throws Throwable {
+        accounts = scenario.accounts();
+        platformTxn = scenario.platformTxn();
+        aliasManager = mock(AliasManager.class);
+        keyOrder =
+                new SigRequirements(
+                        defaultLookupsFor(
+                                aliasManager,
+                                null,
+                                () -> AccountStorageAdapter.fromInMemory(accounts),
+                                () -> null,
+                                ref -> null,
+                                ref -> null),
+                        mockSignatureWaivers);
+        final var nodeInfo = mock(NodeInfo.class);
+        given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
+        isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
+        SyncVerifier syncVerifier =
+                new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
+                        ::verifySync;
+        precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);
+        precheckVerifier = new PrecheckVerifier(syncVerifier, precheckKeyReqs);
+    }
 }
