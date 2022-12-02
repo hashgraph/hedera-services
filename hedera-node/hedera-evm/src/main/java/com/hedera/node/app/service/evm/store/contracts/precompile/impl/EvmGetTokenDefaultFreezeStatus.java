@@ -34,7 +34,7 @@ public interface EvmGetTokenDefaultFreezeStatus {
             Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
     ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER = TypeFactory.create(BYTES32);
 
-    public static GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(
+    public static GetTokenDefaultFreezeStatusWrapper<byte[]> decodeTokenDefaultFreezeStatus(
             final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
@@ -42,8 +42,6 @@ public interface EvmGetTokenDefaultFreezeStatus {
                         GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
                         GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-
-        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+        return new GetTokenDefaultFreezeStatusWrapper<>(decodedArguments.get(0));
     }
 }

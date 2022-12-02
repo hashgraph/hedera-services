@@ -15,6 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public record GetTokenDefaultFreezeStatusWrapper(TokenID tokenID) {}
+public record GetTokenDefaultFreezeStatusWrapper<T>(T tokenID) {}
