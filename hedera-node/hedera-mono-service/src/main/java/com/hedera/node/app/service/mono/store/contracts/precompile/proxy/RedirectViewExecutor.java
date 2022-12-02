@@ -131,7 +131,7 @@ public class RedirectViewExecutor {
         } else if (selector == ABI_ID_ERC_BALANCE_OF_TOKEN) {
             final var wrapper =
                     BalanceOfPrecompile.decodeBalanceOf(input.slice(24), updater::unaliased);
-            final var balance = ledgers.balanceOf(wrapper.accountId(), tokenId);
+            final var balance = ledgers.balanceOf(wrapper.account(), tokenId);
             return encoder.encodeBalance(balance);
         } else if (selector == ABI_ID_ERC_OWNER_OF_NFT) {
             validateFalse(isFungibleToken, INVALID_TOKEN_ID);

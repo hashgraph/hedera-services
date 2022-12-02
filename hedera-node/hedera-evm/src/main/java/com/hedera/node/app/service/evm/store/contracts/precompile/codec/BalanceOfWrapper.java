@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record BalanceOfWrapper<T>(T accountId) {}
+public record BalanceOfWrapper<T>(T account) {}

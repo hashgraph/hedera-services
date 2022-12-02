@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
@@ -58,14 +58,14 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
         Objects.requireNonNull(
                 balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
-        final var balance = ledgers.balanceOf(balanceWrapper.accountId(), tokenId);
+        final var balance = ledgers.balanceOf(balanceWrapper.account(), tokenId);
         return encoder.encodeBalance(balance);
     }
 
     public static BalanceOfWrapper<AccountID> decodeBalanceOf(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        var rawBalanceWrapper =  EvmBalanceOfPrecompile.decodeBalanceOf(input, aliasResolver);
+        final var rawBalanceOfWrapper = EvmBalanceOfPrecompile.decodeBalanceOf(input);
         return new BalanceOfWrapper<>(
-            convertLeftPaddedAddressToAccountId(rawBalanceWrapper.accountId(), aliasResolver));
+                convertLeftPaddedAddressToAccountId(rawBalanceOfWrapper.account(), aliasResolver));
     }
 }

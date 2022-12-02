@@ -254,7 +254,7 @@ class RedirectViewExecutorTest {
         balanceOfPrecompile
                 .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedInput), any()))
                 .thenReturn(balanceOfWrapper);
-        given(balanceOfWrapper.accountId()).willReturn(account);
+        given(balanceOfWrapper.account()).willReturn(account);
         given(worldLedgers.balanceOf(account, fungible)).willReturn(result);
         given(encodingFacade.encodeBalance(result)).willReturn(answer);
 

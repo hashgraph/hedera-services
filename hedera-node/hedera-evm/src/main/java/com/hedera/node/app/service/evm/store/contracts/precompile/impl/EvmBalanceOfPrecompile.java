@@ -24,7 +24,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmBalanceOfPrecompile {
@@ -33,8 +32,7 @@ public interface EvmBalanceOfPrecompile {
     Bytes BALANCE_OF_TOKEN_SELECTOR = Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
     ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
-    static BalanceOfWrapper<byte[]> decodeBalanceOf(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    static BalanceOfWrapper<byte[]> decodeBalanceOf(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
 
