@@ -107,7 +107,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 throw new PreCheckException(BUSY);
             }
 
-            // 8. Submit to platform
+            // 7. Submit to platform
             submissionManager.submit(ctx, txBody, requestBuffer);
 
             opCounters.countSubmitted(functionality);

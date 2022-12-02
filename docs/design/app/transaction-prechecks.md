@@ -32,8 +32,8 @@ may be broken into five stages, as follows:
   expected to handle the given `TransactionBody` if it does reach 
   consensus---that is, if the requested HAPI function is enabled 
   on the network, the payer 
-  [has the required privileges](./privileged-transactions.md) to use it, 
-  and its [throttle bucket(s)](./throttle-design.md) has capacity.
+  [has the required privileges](../../privileged-transactions.md) to use it, 
+  and its [throttle bucket(s)](../../throttle-design.md) has capacity.
 
 The node only performs later checks if the earlier checks pass; and 
 it performs no checks at all if the Platform is in maintenance mode, 
@@ -146,12 +146,12 @@ precheck performed on the query's enclosed `CryptoTransfer`.
   * The requested HAPI function was either not enabled, or is reserved
     for privileged system accounts.
 - `AUTHORIZATION_FAILED`
-  * The payer used for the transaction did not [have the required privileges](./privileged-transactions.md)
+  * The payer used for the transaction did not [have the required privileges](../../privileged-transactions.md)
     to perform the HAPI function against the referenced entity; for
     example, a non-privileged payer cannot update a system file.
 - `ENTITY_NOT_ALLOWED_TO_DELETE`
   * The requested HAPI operation tried to delete a system entity.
 - `BUSY`
   * The network does not have available capacity in one or 
-    more of the [throttle bucket(s)](./throttle-design.md) to 
+    more of the [throttle bucket(s)](../../throttle-design.md) to 
     which the requested function is assigned.
