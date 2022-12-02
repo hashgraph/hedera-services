@@ -25,19 +25,19 @@ configurations.all {
 }
 
 dependencies {
-    annotationProcessor(libs.dagger.compiler)
-
+    implementation("com.hedera.pbj:pbj-runtime:0.1.0-SNAPSHOT")
     implementation(libs.bundles.di)
-    implementation(project(":hedera-node:hapi-utils"))
     testImplementation(testLibs.bundles.testing)
+    // we depend on the protoc compiled hapi during test as we test our pbj generated code against it to make sure it is compatible
+    testImplementation(libs.hapi)
 }
 
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 sourceSets {
     main {
         pbj {
-            srcDir(buildDir.resolve("hedera-protobufs/hapi/services"))
-            srcDir(buildDir.resolve("hedera-protobufs/hapi/streams"))
+            srcDir("hedera-protobufs/services")
+            srcDir("hedera-protobufs/streams")
         }
     }
 }
