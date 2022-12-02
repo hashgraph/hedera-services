@@ -59,7 +59,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // Definition of version numbers for all libraries
-            version("besu-version", "22.10.0")
+            version("besu-version", "22.10.1")
             version("besu-native-version", "0.6.1")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
