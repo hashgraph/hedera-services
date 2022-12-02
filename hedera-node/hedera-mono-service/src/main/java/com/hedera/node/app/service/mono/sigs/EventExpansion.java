@@ -59,7 +59,7 @@ public class EventExpansion {
                         // synchronous signature expansion
                         prefetchProcessor.submit(accessor);
                         sigReqsManager.expandSigs(sourceState, accessor);
-                        engine.verifyAsync(txn.getSignatures());
+                        engine.verifyAsync(accessor.getCryptoSigs());
                     } catch (final InvalidProtocolBufferException e) {
                         log.warn("Event contained a non-GRPC transaction", e);
                     } catch (final Exception race) {
