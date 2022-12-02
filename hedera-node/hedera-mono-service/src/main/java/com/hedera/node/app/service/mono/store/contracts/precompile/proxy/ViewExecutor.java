@@ -222,8 +222,7 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_EXPIRY_INFO -> {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);

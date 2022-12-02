@@ -75,8 +75,9 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
     }
 
     public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {
-        final var rawGetTokenExpityInfoWrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+        final var rawGetTokenExpityInfoWrapper =
+                EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
         return new GetTokenExpiryInfoWrapper<>(
-            convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
+                convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
     }
 }
