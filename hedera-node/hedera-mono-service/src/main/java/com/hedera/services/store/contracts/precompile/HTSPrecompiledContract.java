@@ -32,6 +32,7 @@ import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.services.exceptions.InvalidTransactionException;
+import com.hedera.services.exceptions.ResourceLimitException;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.records.RecordsHistorian;
 import com.hedera.services.state.EntityCreator;
@@ -862,7 +863,11 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             precompile.getCustomFees(), sideEffectsTracker, EMPTY_MEMO);
             result = precompile.getSuccessResultFor(childRecord);
             addContractCallResultToRecord(childRecord, result, Optional.empty(), frame);
+        } catch (ResourceLimitException e) {
+            // we want to propagate ResourceLimitException up, not handle it here
+            throw e;
         } catch (final InvalidTransactionException e) {
+            // TODO: this may change
             final var status = e.getResponseCode();
             childRecord = creator.createUnsuccessfulSyntheticRecord(status);
             result = precompile.getFailureResultFor(status);
