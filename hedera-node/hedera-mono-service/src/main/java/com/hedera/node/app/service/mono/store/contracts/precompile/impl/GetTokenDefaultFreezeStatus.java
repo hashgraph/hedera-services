@@ -57,13 +57,13 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
                 "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultFreezeStatus =
-                ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.tokenID());
+                ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
         return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(
             final Bytes input) {
         final var rawGetTokenDefaultFreezeStatusWrapper = EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
-        return new GetTokenDefaultFreezeStatusWrapper<>(convertAddressBytesToTokenID(rawGetTokenDefaultFreezeStatusWrapper.tokenID()));
+        return new GetTokenDefaultFreezeStatusWrapper<>(convertAddressBytesToTokenID(rawGetTokenDefaultFreezeStatusWrapper.token()));
     }
 }

@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record GetTokenDefaultFreezeStatusWrapper<T>(T tokenID) {}
+public record GetTokenDefaultFreezeStatusWrapper<T>(T token) {}

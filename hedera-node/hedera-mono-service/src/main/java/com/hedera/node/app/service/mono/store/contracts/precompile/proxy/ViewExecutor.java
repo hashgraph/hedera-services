@@ -162,10 +162,10 @@ public class ViewExecutor {
                         GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.tokenID());
+                final var defaultFreezeStatus = ledgers.defaultFreezeStatus(wrapper.token());
                 return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
             }
             case ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> {
