@@ -15,18 +15,6 @@
  */
 package com.hedera.node.app.service.mono.fees.charging;
 
-import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -42,131 +30,150 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@Disabled
+import java.time.Instant;
+import java.util.Map;
+
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class TxnChargingPolicyAgentTest {
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
-    private final long submittingNode = 1L;
-    private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
-    private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
-    private final PlatformTxnAccessor accessor =
-            PlatformTxnAccessor.from(
-                    Transaction.newBuilder()
-                            .setBodyBytes(
-                                    TransactionBody.newBuilder()
-                                            .setTransactionID(
-                                                    TransactionID.newBuilder()
-                                                            .setTransactionValidStart(
-                                                                    Timestamp.newBuilder()
-                                                                            .setSeconds(1_234_567L)
-                                                                            .build())
-                                                            .setAccountID(
-                                                                    IdUtils.asAccount("0.0.1234")))
-                                            .build()
-                                            .toByteString())
-                            .build()
-                            .toByteArray());
+	private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L, 890);
+	private final long submittingNode = 1L;
+	private final JKey payerKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKeyUnchecked();
+	private final FeeObject mockFees = new FeeObject(1L, 2L, 3L);
+	private final PlatformTxnAccessor accessor =
+			PlatformTxnAccessor.from(
+					Transaction.newBuilder()
+							.setBodyBytes(
+									TransactionBody.newBuilder()
+											.setTransactionID(
+													TransactionID.newBuilder()
+															.setTransactionValidStart(
+																	Timestamp.newBuilder()
+																			.setSeconds(1_234_567L)
+																			.build())
+															.setAccountID(
+																	IdUtils.asAccount("0.0.1234")))
+											.build()
+											.toByteString())
+							.build()
+							.toByteArray());
 
-    @Mock private StateView currentView;
-    @Mock private FeeCalculator fees;
-    @Mock private TxnIdRecentHistory recentHistory;
-    @Mock private FeeChargingPolicy chargingPolicy;
-    @Mock private TransactionContext txnCtx;
-    @Mock private AwareNodeDiligenceScreen nodeDiligenceScreen;
-    @Mock private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	@Mock
+	private StateView currentView;
+	@Mock
+	private FeeCalculator fees;
+	@Mock
+	private TxnIdRecentHistory recentHistory;
+	@Mock
+	private FeeChargingPolicy chargingPolicy;
+	@Mock
+	private TransactionContext txnCtx;
+	@Mock
+	private AwareNodeDiligenceScreen nodeDiligenceScreen;
+	@Mock
+	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
-    private TxnChargingPolicyAgent subject;
+	private TxnChargingPolicyAgent subject;
 
-    TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {}
+	TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {
+	}
 
-    @BeforeEach
-    void setUp() {
-        subject =
-                new TxnChargingPolicyAgent(
-                        fees,
-                        chargingPolicy,
-                        txnCtx,
-                        () -> currentView,
-                        nodeDiligenceScreen,
-                        txnHistories);
-    }
+	@BeforeEach
+	void setUp() {
+		subject =
+				new TxnChargingPolicyAgent(
+						fees,
+						chargingPolicy,
+						txnCtx,
+						() -> currentView,
+						nodeDiligenceScreen,
+						txnHistories);
+	}
 
-    @Test
-    void delegatesRefund() {
-        subject.refundPayerServiceFee();
+	@Test
+	void delegatesRefund() {
+		subject.refundPayerServiceFee();
 
-        verify(chargingPolicy).refundPayerServiceFee();
-    }
+		verify(chargingPolicy).refundPayerServiceFee();
+	}
 
-    @Test
-    void appliesForLackOfNodeDueDiligence() {
-        givenBaseCtx();
-        given(nodeDiligenceScreen.nodeIgnoredDueDiligence(BELIEVED_UNIQUE)).willReturn(true);
+	@Test
+	void appliesForLackOfNodeDueDiligence() {
+		givenBaseCtx();
+		given(nodeDiligenceScreen.nodeIgnoredDueDiligence(BELIEVED_UNIQUE)).willReturn(true);
 
-        // when:
-        final var shouldContinue = subject.applyPolicyFor(accessor);
+		// when:
+		final var shouldContinue = subject.applyPolicyFor(accessor);
 
-        // then:
-        assertFalse(shouldContinue);
-        verify(chargingPolicy).applyForIgnoredDueDiligence(mockFees);
-    }
+		// then:
+		assertFalse(shouldContinue);
+		verify(chargingPolicy).applyForIgnoredDueDiligence(mockFees);
+	}
 
-    @Test
-    void appliesForPayerDuplicate() {
-        givenBaseCtx();
-        given(txnCtx.submittingSwirldsMember()).willReturn(submittingNode);
-        given(txnHistories.get(accessor.getTxnId())).willReturn(recentHistory);
-        given(recentHistory.currentDuplicityFor(submittingNode)).willReturn(DUPLICATE);
+	@Test
+	void appliesForPayerDuplicate() {
+		givenBaseCtx();
+		given(txnCtx.submittingSwirldsMember()).willReturn(submittingNode);
+		given(txnHistories.get(accessor.getTxnId())).willReturn(recentHistory);
+		given(recentHistory.currentDuplicityFor(submittingNode)).willReturn(DUPLICATE);
 
-        // when:
-        final var shouldContinue = subject.applyPolicyFor(accessor);
+		// when:
+		final var shouldContinue = subject.applyPolicyFor(accessor);
 
-        // then:
-        assertFalse(shouldContinue);
-        verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
-        verify(chargingPolicy).applyForDuplicate(mockFees);
-    }
+		// then:
+		assertFalse(shouldContinue);
+		verify(txnCtx).setStatus(DUPLICATE_TRANSACTION);
+		verify(chargingPolicy).applyForDuplicate(mockFees);
+	}
 
-    @Test
-    void appliesForNonOkOutcome() {
-        givenBaseCtx();
-        given(chargingPolicy.apply(mockFees)).willReturn(INSUFFICIENT_PAYER_BALANCE);
+	@Test
+	void appliesForNonOkOutcome() {
+		givenBaseCtx();
+		given(chargingPolicy.apply(mockFees)).willReturn(INSUFFICIENT_PAYER_BALANCE);
 
-        // when:
-        final var shouldContinue = subject.applyPolicyFor(accessor);
+		// when:
+		final var shouldContinue = subject.applyPolicyFor(accessor);
 
-        // then:
-        assertFalse(shouldContinue);
-        verify(txnCtx).setStatus(INSUFFICIENT_PAYER_BALANCE);
-        verify(chargingPolicy).apply(mockFees);
-    }
+		// then:
+		assertFalse(shouldContinue);
+		verify(txnCtx).setStatus(INSUFFICIENT_PAYER_BALANCE);
+		verify(chargingPolicy).apply(mockFees);
+	}
 
-    @Test
-    void appliesForOkOutcome() {
-        givenBaseCtx();
-        given(chargingPolicy.apply(mockFees)).willReturn(OK);
+	@Test
+	void appliesForOkOutcome() {
+		givenBaseCtx();
+		given(chargingPolicy.apply(mockFees)).willReturn(OK);
 
-        // when:
-        final var shouldContinue = subject.applyPolicyFor(accessor);
+		// when:
+		final var shouldContinue = subject.applyPolicyFor(accessor);
 
-        // then:
-        assertTrue(shouldContinue);
-        verify(txnCtx, never()).setStatus(any());
-        verify(chargingPolicy).apply(mockFees);
-    }
+		// then:
+		assertTrue(shouldContinue);
+		verify(txnCtx, never()).setStatus(any());
+		verify(chargingPolicy).apply(mockFees);
+	}
 
-    private void givenBaseCtx() {
-        given(txnCtx.activePayerKey()).willReturn(payerKey);
-        given(txnCtx.consensusTime()).willReturn(consensusNow);
-        given(fees.computeFee(accessor, payerKey, currentView, consensusNow)).willReturn(mockFees);
-    }
+	private void givenBaseCtx() {
+		given(txnCtx.activePayerKey()).willReturn(payerKey);
+		given(txnCtx.consensusTime()).willReturn(consensusNow);
+		given(fees.computeFee(accessor, payerKey, currentView, consensusNow)).willReturn(mockFees);
+	}
 }
