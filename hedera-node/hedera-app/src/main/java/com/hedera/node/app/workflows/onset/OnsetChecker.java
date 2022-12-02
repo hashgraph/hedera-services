@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hedera.services.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
+import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
@@ -35,11 +35,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TO
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.records.RecordCache;
-import com.hedera.services.stats.HapiOpCounters;
-import com.hedera.services.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -47,12 +47,11 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.codec.binary.StringUtils;
-import org.bouncycastle.util.Arrays;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
@@ -249,12 +248,14 @@ public class OnsetChecker {
     }
 
     private void checkMemo(final String memo) throws PreCheckException {
-        final var buffer = StringUtils.getBytesUtf8(memo);
+        final var buffer = memo == null ? new byte[0] : memo.getBytes(StandardCharsets.UTF_8);
         if (buffer.length > dynamicProperties.maxMemoUtf8Bytes()) {
             throw new PreCheckException(MEMO_TOO_LONG);
         }
-        if (Arrays.contains(buffer, (byte) 0)) {
-            throw new PreCheckException(INVALID_ZERO_BYTE_IN_STRING);
+        for (final byte b : buffer) {
+            if (b == 0) {
+                throw new PreCheckException(INVALID_ZERO_BYTE_IN_STRING);
+            }
         }
     }
 

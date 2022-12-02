@@ -59,4 +59,14 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
     opens com.hedera.node.app.service.mono.stream to
             com.swirlds.common;
+
+    exports com.hedera.node.app.service.mono.context;
+    exports com.hedera.node.app.service.mono.context.properties;
+    exports com.hedera.node.app.service.mono.exceptions;
+    exports com.hedera.node.app.service.mono.records;
+    exports com.hedera.node.app.service.mono.state.submerkle;
+    exports com.hedera.node.app.service.mono.stats;
+    exports com.hedera.node.app.service.mono.txns;
+    exports com.hedera.node.app.service.mono.utils;
+    exports com.hedera.node.app.service.mono.utils.accessors;
 }

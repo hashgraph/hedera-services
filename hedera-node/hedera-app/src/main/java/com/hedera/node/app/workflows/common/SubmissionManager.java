@@ -20,19 +20,19 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.SessionContext;
-import com.hedera.services.records.RecordCache;
-import com.hedera.services.stats.MiscSpeedometers;
+import com.hedera.node.app.service.mono.records.RecordCache;
+import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.Platform;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** The {@code SubmissionManager} provides functionality to submit transactions to the platform. */
 public class SubmissionManager {
 
-    private static final Logger LOG = LogManager.getLogger(SubmissionManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SubmissionManager.class);
 
     private final Platform platform;
     private final RecordCache recordCache;

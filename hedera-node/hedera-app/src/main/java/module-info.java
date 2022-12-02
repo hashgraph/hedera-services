@@ -4,4 +4,5 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.slf4j;
+    requires com.hedera.node.app.service.mono;
 }

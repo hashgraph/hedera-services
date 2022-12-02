@@ -20,13 +20,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hedera.node.app.workflows.common.SubmissionManager;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.stats.HapiOpCounters;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
@@ -95,7 +94,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             //                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
             //            }
             //            final var payer = payerOpt.get();
-            final HederaAccount payer = null;
+            final Object /* Account */ payer = null;
 
             // 4. Check payer's signature
             checker.checkPayerSignature(txBody, signatureMap, payer);

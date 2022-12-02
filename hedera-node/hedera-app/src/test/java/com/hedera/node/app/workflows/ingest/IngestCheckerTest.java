@@ -23,10 +23,10 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.txns.TransitionLogic;
+import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.txns.TransitionLogic;
-import com.hedera.services.txns.TransitionLogicLookup;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;

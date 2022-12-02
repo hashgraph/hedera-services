@@ -20,12 +20,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
+import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.txns.TransitionLogicLookup;
-import com.hedera.services.utils.accessors.TokenWipeAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -93,7 +92,7 @@ public class IngestChecker {
      *
      * @param txBody the {@link TransactionBody}
      * @param signatureMap the {@link SignatureMap} contained in the transaction
-     * @param payer the {@link HederaAccount} of the payer
+     * @param payer the {@code Account} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if an error is found while checking the signature. The contained
      *     {@code responseCode} provides the error reason.
@@ -101,7 +100,7 @@ public class IngestChecker {
     public void checkPayerSignature(
             @NonNull final TransactionBody txBody,
             @NonNull final SignatureMap signatureMap,
-            @NonNull final HederaAccount payer)
+            @NonNull final Object /* Account */ payer)
             throws PreCheckException {
         LOG.warn("IngestChecker.checkPayerSignature() has not been implemented yet");
         // TODO: Implement once signature check is implemented
@@ -112,14 +111,14 @@ public class IngestChecker {
      *
      * @param txBody the {@link TransactionBody}
      * @param functionality the {@link HederaFunctionality} of the transaction
-     * @param payer the {@link HederaAccount} of the payer
+     * @param payer the {@code Account} of the payer
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws InsufficientBalanceException if the balance is sufficient
      */
     public void checkSolvency(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final HederaAccount payer)
+            @NonNull final Object /* Account */ payer)
             throws InsufficientBalanceException {
         LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
         // TODO: Implement once fee calculation is implemented
