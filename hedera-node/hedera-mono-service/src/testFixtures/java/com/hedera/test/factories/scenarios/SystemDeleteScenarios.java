@@ -18,7 +18,7 @@ package com.hedera.test.factories.scenarios;
 import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 import java.util.Set;
 
