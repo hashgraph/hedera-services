@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -22,6 +24,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -30,7 +33,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
         implements EvmGetTokenDefaultKycStatus {
 
-    private GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper;
+    private GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper;
 
     public GetTokenDefaultKycStatus(
             final SyntheticTxnFactory syntheticTxnFactory,
@@ -57,7 +60,8 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
-    public static GetTokenDefaultKycStatusWrapper decodeTokenDefaultKycStatus(final Bytes input) {
-        return EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
+    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(final Bytes input) {
+        final var rawGetTokenDefaultKycStatusWrapper = EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
+        return new GetTokenDefaultKycStatusWrapper<>(convertAddressBytesToTokenID(rawGetTokenDefaultKycStatusWrapper.tokenID()));
     }
 }

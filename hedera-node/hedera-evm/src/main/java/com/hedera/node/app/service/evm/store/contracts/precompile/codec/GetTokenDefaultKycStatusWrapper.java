@@ -15,6 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public record GetTokenDefaultKycStatusWrapper(TokenID tokenID) {}
+public record GetTokenDefaultKycStatusWrapper<T>(T tokenID) {}
