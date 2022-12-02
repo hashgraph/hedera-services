@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BYTES32;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
@@ -34,14 +33,11 @@ public interface EvmBalanceOfPrecompile {
     Bytes BALANCE_OF_TOKEN_SELECTOR = Bytes.wrap(BALANCE_OF_TOKEN_FUNCTION.selector());
     ABIType<Tuple> BALANCE_OF_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
-    static BalanceOfWrapper decodeBalanceOf(
+    static BalanceOfWrapper<byte[]> decodeBalanceOf(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, BALANCE_OF_TOKEN_SELECTOR, BALANCE_OF_TOKEN_DECODER);
 
-        final var account =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(0), aliasResolver);
-
-        return new BalanceOfWrapper(account);
+        return new BalanceOfWrapper<>(decodedArguments.get(0));
     }
 }

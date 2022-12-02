@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmBalanceOfPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -22,6 +24,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -31,7 +34,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
         implements EvmBalanceOfPrecompile {
 
-    private BalanceOfWrapper balanceWrapper;
+    private BalanceOfWrapper<AccountID> balanceWrapper;
 
     public BalanceOfPrecompile(
             final TokenID tokenId,
@@ -59,8 +62,10 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
         return encoder.encodeBalance(balance);
     }
 
-    public static BalanceOfWrapper decodeBalanceOf(
+    public static BalanceOfWrapper<AccountID> decodeBalanceOf(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return EvmBalanceOfPrecompile.decodeBalanceOf(input, aliasResolver);
+        var rawBalanceWrapper =  EvmBalanceOfPrecompile.decodeBalanceOf(input, aliasResolver);
+        return new BalanceOfWrapper<>(
+            convertLeftPaddedAddressToAccountId(rawBalanceWrapper.accountId(), aliasResolver));
     }
 }
