@@ -1,4 +1,6 @@
 module com.hedera.node.app.service.mono {
+    exports com.hedera.node.app.service.mono;
+
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.exceptions to
@@ -31,8 +33,6 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.testFixtures;
-    exports com.hedera.node.app.service.mono to
-            com.swirlds.platform;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;
 
