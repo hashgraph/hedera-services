@@ -46,14 +46,10 @@ public record SessionContext(
      * @param signedParser the {@link SignedTransaction}-parser
      * @param txBodyParser the {@link TransactionBody}-parser
      */
-    public SessionContext(
-            @NonNull final Parser<Query> queryParser,
-            @NonNull final Parser<Transaction> txParser,
-            @NonNull final Parser<SignedTransaction> signedParser,
-            @NonNull final Parser<TransactionBody> txBodyParser) {
-        this.queryParser = requireNonNull(queryParser);
-        this.txParser = requireNonNull(txParser);
-        this.signedParser = requireNonNull(signedParser);
-        this.txBodyParser = requireNonNull(txBodyParser);
+    public SessionContext {
+        requireNonNull(queryParser);
+        requireNonNull(txParser);
+        requireNonNull(signedParser);
+        requireNonNull(txBodyParser);
     }
 }

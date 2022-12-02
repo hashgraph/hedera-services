@@ -42,12 +42,9 @@ public record OnsetResult(
      * @param functionality the {@link HederaFunctionality} of the transaction
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public OnsetResult(
-            @NonNull final TransactionBody txBody,
-            @NonNull final SignatureMap signatureMap,
-            @NonNull final HederaFunctionality functionality) {
-        this.txBody = requireNonNull(txBody);
-        this.signatureMap = requireNonNull(signatureMap);
-        this.functionality = requireNonNull(functionality);
+    public OnsetResult {
+        requireNonNull(txBody);
+        requireNonNull(signatureMap);
+        requireNonNull(functionality);
     }
 }
