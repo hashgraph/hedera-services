@@ -23,7 +23,7 @@ import static com.hedera.node.app.service.mono.token.util.AliasUtils.MISSING_NUM
 import static com.hedera.node.app.service.mono.token.util.AliasUtils.fromMirror;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
@@ -138,8 +138,7 @@ public final class AccountStore {
             throw new IllegalArgumentException("Provided Key is null");
         }
         if (key.isEmpty()) {
-            // FUTURE : need new response code ACCOUNT_IS_IMMUTABLE
-            return withFailureReason(ALIAS_IS_IMMUTABLE);
+            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
         }
         return withKey(key);
     }

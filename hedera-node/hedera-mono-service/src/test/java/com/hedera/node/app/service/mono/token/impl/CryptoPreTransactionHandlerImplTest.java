@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.token.impl;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.KeyUtils.A_COMPLEX_KEY;
 import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
@@ -33,11 +34,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JRSA_3072Key;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -64,6 +68,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,6 +81,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerImplTest {
     private final Key key = A_COMPLEX_KEY;
+    private final HederaKey emptyKey = new JRSA_3072Key(null);
     private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey ownerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey updateAccountKey = asHederaKey(A_COMPLEX_KEY).get();
@@ -91,6 +97,8 @@ class CryptoPreTransactionHandlerImplTest {
     private final AccountID nftSenderAccountId = asAccount("0.0.11");
     private final AccountID nftReceiverAccountId = asAccount("0.0.22");
     private final AccountID cryptoTransferSenderAccountId = asAccount("0.0.33");
+    private final AccountID randomAccountId = asAccount("0.0.44");
+    private final AccountID aliasedAccountId = asAliasAccount(ByteString.copyFromUtf8("test"));
     private final AccountID owner = asAccount("0.0.123456");
     private final TokenID token = asToken("0.0.6789");
     private final TokenID nft = asToken("0.0.56789");
@@ -139,6 +147,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private MerkleAccount nftSenderAccount;
     @Mock private MerkleAccount nftReceiverAccount;
     @Mock private MerkleAccount cryptoTransferSenderAccount;
+    @Mock private MerkleAccount randomAccount;
     @Mock private HederaAccountNumbers accountNumbers;
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private CryptoSignatureWaiversImpl waivers;
@@ -413,7 +422,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void preHandleCryptoTransferVanilla() {
+    void cryptoTransferVanilla() {
         final var basicCryptoTransfer =
                 List.of(
                         AccountAmount.newBuilder()
@@ -426,7 +435,8 @@ class CryptoPreTransactionHandlerImplTest {
                                 .setSenderAccountID(nftSenderAccountId)
                                 .setReceiverAccountID(nftReceiverAccountId)
                                 .build());
-        final var txn = cryptoTransferTransaction(payer, basicCryptoTransfer, basicNftTransfer);
+        final var txn =
+                cryptoTransferTransaction(payer, basicCryptoTransfer, basicNftTransfer, null);
 
         given(accounts.get(nftSenderAccountId.getAccountNum()))
                 .willReturn(Optional.of(nftSenderAccount));
@@ -434,7 +444,7 @@ class CryptoPreTransactionHandlerImplTest {
                 .willReturn(Optional.of(nftReceiverAccount));
         given(accounts.get(cryptoTransferSenderAccountId.getAccountNum()))
                 .willReturn(Optional.of(cryptoTransferSenderAccount));
-        given(nftSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(nftSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
         given(cryptoTransferSenderAccount.isReceiverSigRequired()).willReturn(true);
         given(tokenStore.getTokenMeta(any()))
@@ -449,11 +459,246 @@ class CryptoPreTransactionHandlerImplTest {
         assertEquals(txn, meta.getTxn());
         basicMetadataAssertions(meta, 3, false, OK);
         assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(ownerKey));
+        assertTrue(meta.getReqKeys().contains(randomKey));
     }
 
     @Test
-    void preHandleCryptoTransferFailsIfNoPayer() {
-        final var txn = cryptoTransferTransaction(owner, null, null);
+    void cryptoTransferUnapprovedDebitShouldAddKey() {
+        final var unapprovedDebit =
+                AccountAmount.newBuilder()
+                        .setAccountID(cryptoTransferSenderAccountId)
+                        .setAmount(-54)
+                        .build();
+        final var approvedDebit =
+                AccountAmount.newBuilder()
+                        .setAccountID(randomAccountId)
+                        .setAmount(-54)
+                        .setIsApproval(true)
+                        .build();
+        final var txn =
+                cryptoTransferTransaction(
+                        payer, List.of(unapprovedDebit, approvedDebit), null, null);
+
+        given(accounts.get(cryptoTransferSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(cryptoTransferSenderAccount));
+        given(accounts.get(randomAccountId.getAccountNum())).willReturn(Optional.of(randomAccount));
+        given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
+        given(randomAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, false, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 2, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(ownerKey));
+        assertFalse(meta.getReqKeys().contains(randomKey));
+    }
+
+    @Test
+    void cryptoTransferMissingAliasedAccountStatusOk() {
+        final var basicTransfer =
+                AccountAmount.newBuilder().setAccountID(aliasedAccountId).setAmount(343).build();
+        final var basicNftTransfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(nftSenderAccountId)
+                        .setReceiverAccountID(aliasedAccountId)
+                        .build();
+        final var txn =
+                cryptoTransferTransaction(
+                        payer, List.of(basicTransfer), List.of(basicNftTransfer), null);
+
+        given(accounts.get(nftSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftSenderAccount));
+        given(nftSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, false, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 2, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(randomKey));
+    }
+
+    @Test
+    void cryptoTransferMissingAccountFails() {
+        final var basicTransfer =
+                AccountAmount.newBuilder().setAccountID(randomAccountId).setAmount(343).build();
+        final var basicNftTransfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(nftSenderAccountId)
+                        .setReceiverAccountID(nftReceiverAccountId)
+                        .build();
+        final var txn =
+                cryptoTransferTransaction(
+                        payer, List.of(basicTransfer), List.of(basicNftTransfer), null);
+
+        given(accounts.get(randomAccountId.getAccountNum())).willReturn(Optional.of(randomAccount));
+        given(accounts.get(nftSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftSenderAccount));
+        given(randomAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(nftSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, false, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 2, true, INVALID_ACCOUNT_ID);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(ownerKey));
+    }
+
+    @Test
+    void cryptoTransferAddsKeyIfValidTreasury() {
+        final var treasury = EntityId.fromGrpcAccountId(randomAccountId);
+        final var basicNftTransfer =
+                NftTransfer.newBuilder()
+                        .setSenderAccountID(nftSenderAccountId)
+                        .setReceiverAccountID(nftReceiverAccountId)
+                        .build();
+        final var txn = cryptoTransferTransaction(payer, null, List.of(basicNftTransfer), null);
+
+        given(accounts.get(nftSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftSenderAccount));
+        given(accounts.get(nftReceiverAccountId.getAccountNum()))
+                .willReturn(Optional.of(nftReceiverAccount));
+        given(nftSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
+        given(nftReceiverAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(nftReceiverAccount.isReceiverSigRequired()).willReturn(false);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, treasury),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 3, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(ownerKey));
+        assertTrue(meta.getReqKeys().contains(randomKey));
+    }
+
+    @Test
+    void cryptoTransferAddsKeyIfUnapprovedDebit() {
+        final var unapprovedDebit =
+                AccountAmount.newBuilder()
+                        .setAccountID(cryptoTransferSenderAccountId)
+                        .setAmount(-54)
+                        .build();
+        final var approvedDebit =
+                AccountAmount.newBuilder()
+                        .setAccountID(randomAccountId)
+                        .setAmount(-54)
+                        .setIsApproval(true)
+                        .build();
+        final var txn =
+                cryptoTransferTransaction(
+                        payer, null, null, List.of(unapprovedDebit, approvedDebit));
+
+        given(accounts.get(cryptoTransferSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(cryptoTransferSenderAccount));
+        given(accounts.get(randomAccountId.getAccountNum())).willReturn(Optional.of(randomAccount));
+        given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
+        given(randomAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(randomAccount.isReceiverSigRequired()).willReturn(false);
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 2, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+        assertTrue(meta.getReqKeys().contains(ownerKey));
+        assertFalse(meta.getReqKeys().contains(randomKey));
+    }
+
+    @Test
+    void cryptoTransferMissingAliasedAndImmutableAccStatusOk() {
+        final var immutableAccount =
+                AccountAmount.newBuilder()
+                        .setAccountID(cryptoTransferSenderAccountId)
+                        .setAmount(54)
+                        .build();
+        final var missingAliasedAccount =
+                AccountAmount.newBuilder().setAccountID(aliasedAccountId).setAmount(54).build();
+        final var txn =
+                cryptoTransferTransaction(
+                        payer, null, null, List.of(immutableAccount, missingAliasedAccount));
+
+        given(accounts.get(cryptoTransferSenderAccountId.getAccountNum()))
+                .willReturn(Optional.of(cryptoTransferSenderAccount));
+        given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) emptyKey);
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 1, false, OK);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+    }
+
+    @Test
+    void cryptoTransferTransfersMissingAccountFails() {
+        final var missingAliasedAccount =
+                AccountAmount.newBuilder().setAccountID(randomAccountId).setAmount(54).build();
+        final var txn =
+                cryptoTransferTransaction(payer, null, null, List.of(missingAliasedAccount));
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, null),
+                                null));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
+        assertTrue(meta.getReqKeys().contains(payerKey));
+    }
+
+    @Test
+    void cryptoTransferFailsIfNoPayer() {
+        final var txn = cryptoTransferTransaction(owner, null, null, null);
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, null),
+                                null));
 
         final var meta = subject.preHandleCryptoTransfer(txn);
 
@@ -657,9 +902,12 @@ class CryptoPreTransactionHandlerImplTest {
     private TransactionBody cryptoTransferTransaction(
             final AccountID id,
             List<AccountAmount> cryptoTransfers,
-            List<NftTransfer> nftTransfers) {
+            List<NftTransfer> nftTransfers,
+            List<AccountAmount> transfers) {
         cryptoTransfers = cryptoTransfers == null ? new ArrayList<>() : cryptoTransfers;
         nftTransfers = nftTransfers == null ? new ArrayList<>() : nftTransfers;
+        transfers = transfers == null ? new ArrayList<>() : transfers;
+
         if (id.equals(payer)) {
             setUpPayer();
         }
@@ -669,6 +917,8 @@ class CryptoPreTransactionHandlerImplTest {
                         .setTransactionValidStart(consensusTimestamp);
         final var transferTxnBody =
                 CryptoTransferTransactionBody.newBuilder()
+                        .setTransfers(
+                                TransferList.newBuilder().addAllAccountAmounts(transfers).build())
                         .addTokenTransfers(
                                 TokenTransferList.newBuilder()
                                         .addAllTransfers(cryptoTransfers)
