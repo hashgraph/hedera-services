@@ -85,7 +85,7 @@ public class BalanceChange {
         return tokenChange;
     }
 
-    public static BalanceChange hbarAdjust(final Id id, final long amount) {
+    public static BalanceChange hbarCustomFeeAdjust(final Id id, final long amount) {
         return new BalanceChange(
                 id,
                 amount,
@@ -116,7 +116,8 @@ public class BalanceChange {
         return nftChange;
     }
 
-    public static BalanceChange tokenAdjust(final Id account, final Id token, final long amount) {
+    public static BalanceChange tokenCustomFeeAdjust(
+            final Id account, final Id token, final long amount) {
         return tokenAdjust(account, token, amount, DEFAULT_PAYER, DEFAULT_ALLOWANCE_APPROVAL, true);
     }
 

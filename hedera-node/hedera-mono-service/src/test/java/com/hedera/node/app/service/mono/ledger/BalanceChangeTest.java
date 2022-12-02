@@ -99,7 +99,7 @@ class BalanceChangeTest {
 
     @Test
     void hbarAdjust() {
-        final var hbarAdjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+        final var hbarAdjust = BalanceChange.hbarCustomFeeAdjust(Id.DEFAULT, 10);
         assertEquals(Id.DEFAULT, hbarAdjust.getAccount());
         assertTrue(hbarAdjust.isForHbar());
         assertFalse(hbarAdjust.isForToken());
@@ -113,7 +113,7 @@ class BalanceChangeTest {
 
     @Test
     void objectContractWorks() {
-        final var adjust = BalanceChange.hbarAdjust(Id.DEFAULT, 10);
+        final var adjust = BalanceChange.hbarCustomFeeAdjust(Id.DEFAULT, 10);
         adjust.setCodeForInsufficientBalance(INSUFFICIENT_PAYER_BALANCE);
         assertEquals(INSUFFICIENT_PAYER_BALANCE, adjust.codeForInsufficientBalance());
         adjust.setExemptFromCustomFees(false);

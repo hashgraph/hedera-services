@@ -1575,13 +1575,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
-                                .balance(100 * ONE_MILLION_HBARS)
+                                .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
-                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(OWNER)
@@ -1777,13 +1775,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         contractCreate(CONTRACT),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
-                                .balance(100 * ONE_MILLION_HBARS)
+                                .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(OWNER)
@@ -1953,13 +1949,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
-                                .balance(100 * ONE_MILLION_HBARS)
+                                .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(OWNER)
@@ -2173,13 +2167,11 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(OWNER)
-                                .balance(100 * ONE_MILLION_HBARS)
+                                .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(OWNER)
@@ -2392,11 +2384,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)
@@ -2526,11 +2516,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                 .given(
                         newKeyNamed(RECEIVER_SIGNATURE),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TOKEN_TREASURY)

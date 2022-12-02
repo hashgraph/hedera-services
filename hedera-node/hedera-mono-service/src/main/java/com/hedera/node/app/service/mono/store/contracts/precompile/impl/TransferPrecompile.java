@@ -206,8 +206,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity);
         }
 
-        /* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
-        final var numExplicitChanges = explicitChanges.size();
         final var assessmentStatus = impliedTransfers.getMeta().code();
         validateTrue(assessmentStatus == OK, assessmentStatus);
         final var changes = impliedTransfers.getAllBalanceChanges();
@@ -240,7 +238,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 updater.aliases());
                 validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
-            if (i < numExplicitChanges) {
+            if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
                 NFT exchanges) */
                 var hasReceiverSigIfReq = true;

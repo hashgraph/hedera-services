@@ -2178,16 +2178,12 @@ public class CryptoTransferSuite extends HapiApiSuite {
                         newKeyNamed(SPENDER_SIGNATURE),
                         cryptoCreate(TREASURY),
                         cryptoCreate(OWNER)
-                                .balance(100 * ONE_MILLION_HBARS)
+                                .balance(ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(5)
                                 .key(MULTI_KEY),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
-                        cryptoCreate(SPENDER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(SPENDER_SIGNATURE),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS).key(SPENDER_SIGNATURE),
                         tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(OWNER)
@@ -2360,14 +2356,10 @@ public class CryptoTransferSuite extends HapiApiSuite {
                         newKeyNamed(RECEIVER_SIGNATURE),
                         newKeyNamed(SPENDER_SIGNATURE),
                         cryptoCreate(TREASURY),
-                        cryptoCreate(OWNER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(SENDER).balance(100 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECEIVER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(RECEIVER_SIGNATURE),
-                        cryptoCreate(SPENDER)
-                                .balance(100 * ONE_MILLION_HBARS)
-                                .key(SPENDER_SIGNATURE),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS).key(SPENDER_SIGNATURE),
                         tokenCreate(FUNGIBLE_TOKEN_FEE)
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(TREASURY)

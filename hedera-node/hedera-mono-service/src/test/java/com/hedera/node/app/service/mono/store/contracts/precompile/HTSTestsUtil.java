@@ -423,9 +423,9 @@ public class HTSTestsUtil {
                                     .build(),
                             payer),
                     /* Simulate an assessed fallback fee */
-                    BalanceChange.tokenAdjust(
+                    BalanceChange.tokenCustomFeeAdjust(
                             Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT),
-                    BalanceChange.tokenAdjust(
+                    BalanceChange.tokenCustomFeeAdjust(
                             Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
 
     public static final List<BalanceChange> nftTransferChangesWithCustomFeesThatAreAlsoApproved =

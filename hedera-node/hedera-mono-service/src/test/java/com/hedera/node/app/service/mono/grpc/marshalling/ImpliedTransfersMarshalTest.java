@@ -616,9 +616,9 @@ class ImpliedTransfersMarshalTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
     private final BalanceChange aTrigger =
-            BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
+            BalanceChange.tokenCustomFeeAdjust(aAccount, Id.fromGrpcToken(anId), -1);
     private final BalanceChange bTrigger =
-            BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
+            BalanceChange.tokenCustomFeeAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
 
     private final List<CustomFeeMeta> mockFinalMeta =
             List.of(new CustomFeeMeta(aAccount, aAccount, Collections.emptyList()));
