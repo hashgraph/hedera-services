@@ -71,7 +71,7 @@ public abstract class HapiApiSuite {
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";
     public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
-    public static final Integer CHAIN_ID = 298;
+    public static final Integer CHAIN_ID = 295;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
 
