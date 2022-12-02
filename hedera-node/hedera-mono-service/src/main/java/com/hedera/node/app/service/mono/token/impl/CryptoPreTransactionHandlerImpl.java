@@ -170,7 +170,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                 handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op);
             }
         }
-        handleTransfers(op, meta);
+        handleHbarTransfers(op, meta);
 
         return meta;
     }
@@ -245,11 +245,14 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                         meta.setStatus(receiverKeyOrFailure.failureReason());
                     }
                 }
+            } else {
+                meta.setStatus(INVALID_ACCOUNT_ID);
             }
         }
     }
 
-    private void handleTransfers(CryptoTransferTransactionBody op, SigTransactionMetadata meta) {
+    private void handleHbarTransfers(
+            CryptoTransferTransactionBody op, SigTransactionMetadata meta) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
 

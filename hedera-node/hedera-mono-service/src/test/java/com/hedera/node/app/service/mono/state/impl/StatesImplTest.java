@@ -126,6 +126,21 @@ class StatesImplTest {
     }
 
     @Test
+    void returnsTokensFromChildren() {
+        final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
+        givenStateWithMockChildren();
+        given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
+        given(state.isInitialized()).willReturn(true);
+
+        subject.updateChildren(state);
+
+        final var state = subject.get(TOKENS);
+
+        assertEquals(lastHandledTime, state.getLastModifiedTime());
+        assertTrue(state instanceof InMemoryStateImpl);
+    }
+
+    @Test
     void returnsOnDiskAccountsWhenAppropriate() {
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
