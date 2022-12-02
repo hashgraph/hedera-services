@@ -168,6 +168,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             if (!tokenMeta.failed()) {
                 handleTokenTransfers(transfers.getTransfersList(), meta);
                 handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op);
+            } else {
+                meta.setStatus(tokenMeta.failureReason());
             }
         }
         handleHbarTransfers(op, meta);

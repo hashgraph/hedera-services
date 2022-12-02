@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -448,6 +449,8 @@ class CryptoPreTransactionHandlerImplTest {
                 .willReturn(Optional.of(cryptoTransferSenderAccount));
         given(nftSenderAccount.getAccountKey()).willReturn((JKey) ownerKey);
         given(cryptoTransferSenderAccount.getAccountKey()).willReturn((JKey) randomKey);
+        given(nftReceiverAccount.getAccountKey()).willReturn((JKey) genericKey);
+        given(nftReceiverAccount.isReceiverSigRequired()).willReturn(true);
         given(cryptoTransferSenderAccount.isReceiverSigRequired()).willReturn(true);
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
@@ -459,7 +462,7 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoTransfer(txn);
 
         assertEquals(txn, meta.getTxn());
-        basicMetadataAssertions(meta, 3, false, OK);
+        basicMetadataAssertions(meta, 4, false, OK);
         assertTrue(meta.getReqKeys().contains(payerKey));
         assertTrue(meta.getReqKeys().contains(ownerKey));
         assertTrue(meta.getReqKeys().contains(randomKey));
@@ -841,6 +844,29 @@ class CryptoPreTransactionHandlerImplTest {
         assertEquals(txn, meta.getTxn());
         basicMetadataAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertFalse(meta.getReqKeys().contains(payerKey));
+    }
+
+    @Test
+    void cryptoTransferFailsIfNoTokenMeta() {
+        final var cryptoTransfer =
+                AccountAmount.newBuilder()
+                        .setAccountID(nftReceiverAccountId)
+                        .setAmount(134)
+                        .build();
+        final var txn = cryptoTransferTransaction(payer, List.of(cryptoTransfer), null, null);
+
+        given(tokenStore.getTokenMeta(any()))
+                .willReturn(
+                        new TokenStore.TokenMetaOrLookupFailureReason(
+                                new TokenStore.TokenMetadata(
+                                        null, null, null, null, null, null, null, true, null),
+                                INVALID_TOKEN_ID));
+
+        final var meta = subject.preHandleCryptoTransfer(txn);
+
+        assertEquals(txn, meta.getTxn());
+        basicMetadataAssertions(meta, 1, true, INVALID_TOKEN_ID);
+        assertTrue(meta.getReqKeys().contains(payerKey));
     }
 
     @Test
