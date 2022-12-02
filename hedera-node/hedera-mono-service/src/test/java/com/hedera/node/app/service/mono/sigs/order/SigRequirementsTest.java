@@ -15,46 +15,6 @@
  */
 package com.hedera.node.app.service.mono.sigs.order;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.EntityNumbers;
-import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
-import com.hedera.node.app.service.mono.files.HederaFs;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
-import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
-import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
-import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
-import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.PRETEND_SIGNING_TIME;
 import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
@@ -349,7 +309,46 @@ import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class SiRequirementsTest {
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.config.EntityNumbers;
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.service.mono.config.MockEntityNumbers;
+import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.node.app.service.mono.files.HederaFs;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.metadata.AccountSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.ContractSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.SafeLookupResult;
+import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.TopicSigningMetadata;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.AccountSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.ContractSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.FileSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.metadata.lookups.TopicSigMetaLookup;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
+import com.hedera.node.app.service.mono.store.tokens.TokenStore;
+import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TopicID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import org.junit.jupiter.api.Test;
+
+class SigRequirementsTest {
 	private static class TopicAdapter {
 		public static TopicSigMetaLookup throwingUoe() {
 			return id -> {
@@ -358,7 +357,7 @@ class SiRequirementsTest {
 		}
 
 		public static TopicSigMetaLookup withSafe(
-				final Function<TopicID, SafeLookupResult<TopicSigningMetadata>> fn) {
+				Function<TopicID, SafeLookupResult<TopicSigningMetadata>> fn) {
 			return fn::apply;
 		}
 	}
@@ -373,16 +372,16 @@ class SiRequirementsTest {
 
 	private static class AccountAdapter {
 		public static AccountSigMetaLookup withSafe(
-				final Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn) {
+				Function<AccountID, SafeLookupResult<AccountSigningMetadata>> fn) {
 			return new AccountSigMetaLookup() {
 				@Override
-				public SafeLookupResult<AccountSigningMetadata> safeLookup(final AccountID id) {
+				public SafeLookupResult<AccountSigningMetadata> safeLookup(AccountID id) {
 					return fn.apply(id);
 				}
 
 				@Override
 				public SafeLookupResult<AccountSigningMetadata> aliasableSafeLookup(
-						final AccountID idOrAlias) {
+						AccountID idOrAlias) {
 					return fn.apply(idOrAlias);
 				}
 			};
@@ -391,7 +390,7 @@ class SiRequirementsTest {
 
 	private static class ContractAdapter {
 		public static ContractSigMetaLookup withSafe(
-				final Function<ContractID, SafeLookupResult<ContractSigningMetadata>> fn) {
+				Function<ContractID, SafeLookupResult<ContractSigningMetadata>> fn) {
 			return fn::apply;
 		}
 	}
@@ -437,17 +436,17 @@ class SiRequirementsTest {
 	private HederaFs hfs;
 	private TokenStore tokenStore;
 	private AliasManager aliasManager;
-	private final FileNumbers fileNumbers = new MockFileNumbers();
+	private FileNumbers fileNumbers = new MockFileNumbers();
 	private ScheduleStore scheduleStore;
 	private TransactionBody txn;
 	private SigRequirements subject;
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private MerkleMap<EntityNum, MerkleTopic> topics;
-	private final CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
+	private CodeOrderResultFactory summaryFactory = CODE_ORDER_RESULT_FACTORY;
 	private SigningOrderResultFactory<ResponseCodeEnum> mockSummaryFactory;
-	private final EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private final SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-	private final SignatureWaivers mockSignatureWaivers =
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers =
 			new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
@@ -1176,7 +1175,7 @@ class SiRequirementsTest {
 	void reportsMissingCryptoTransferReceiver() throws Throwable {
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
 		mockSummaryFactory();
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
@@ -1189,7 +1188,7 @@ class SiRequirementsTest {
 	void reportsMissingCryptoTransferReceiverWithCustomPayer() throws Throwable {
 		setupFor(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO);
 		mockSummaryFactory();
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
@@ -1313,7 +1312,7 @@ class SiRequirementsTest {
 						id -> null));
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forGeneralError()).willReturn(result);
 
@@ -1342,7 +1341,7 @@ class SiRequirementsTest {
 						id -> null));
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forGeneralError()).willReturn(result);
 
@@ -1971,7 +1970,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
@@ -1988,7 +1987,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingAccount()).willReturn(result);
 
@@ -2541,7 +2540,7 @@ class SiRequirementsTest {
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingFile()).willReturn(result);
 
@@ -2558,7 +2557,7 @@ class SiRequirementsTest {
 		setupFor(FILE_APPEND_MISSING_TARGET_SCENARIO);
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingFile()).willReturn(result);
 
@@ -3045,7 +3044,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidContract()).willReturn(result);
 
@@ -3064,12 +3063,12 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidContract()).willReturn(result);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, mockSummaryFactory);
+		var summary = subject.keysForOtherParties(txn, mockSummaryFactory);
 
 		// then:
 		verify(mockSummaryFactory).forInvalidContract();
@@ -3316,7 +3315,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
 
@@ -3334,7 +3333,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
 
@@ -3380,7 +3379,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
@@ -3425,7 +3424,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
@@ -3528,7 +3527,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
@@ -3546,7 +3545,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forMissingTopic()).willReturn(result);
 
@@ -3566,7 +3565,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
 
@@ -3586,7 +3585,7 @@ class SiRequirementsTest {
 		// and:
 		mockSummaryFactory();
 		// and:
-		final SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
+		SigningOrderResult<ResponseCodeEnum> result = mock(SigningOrderResult.class);
 
 		given(mockSummaryFactory.forInvalidAutoRenewAccount()).willReturn(result);
 
@@ -3753,7 +3752,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3768,8 +3767,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ADMIN_ONLY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3784,7 +3782,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -3797,8 +3795,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_TREASURY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -3811,7 +3808,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -3823,8 +3820,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_TREASURY_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -3837,7 +3833,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -3852,8 +3848,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_TREASURY_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -3865,7 +3860,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -3878,8 +3873,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_MISSING_AUTO_RENEW_ACCOUNT);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -3892,7 +3886,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3907,8 +3901,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ADMIN_AND_FREEZE);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3923,7 +3916,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -3936,8 +3929,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -3950,7 +3942,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3966,8 +3958,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_NO_COLLECTOR_SIG_REQ_BUT_USING_WILDCARD_DENOM);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3982,7 +3973,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -3997,8 +3988,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4013,7 +4003,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4028,8 +4018,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FIXED_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4043,7 +4032,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4057,8 +4046,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_NO_SIG_REQ_NO_FALLBACK);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4071,7 +4059,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4086,8 +4074,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_SIG_REQ_NO_FALLBACK);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4102,7 +4089,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4118,8 +4105,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_NO_WILDCARD_BUT_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4134,7 +4120,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4149,8 +4135,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_ROYALTY_FEE_COLLECTOR_FALLBACK_WILDCARD_AND_NO_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4165,7 +4150,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4180,8 +4165,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_FRACTIONAL_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4196,7 +4180,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4209,8 +4193,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_COLLECTOR);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4223,7 +4206,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_MISSING_ADMIN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4236,8 +4219,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_MISSING_ADMIN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4250,7 +4232,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4265,8 +4247,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_EXTANT_SENDERS);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4281,7 +4262,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4296,8 +4277,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4312,7 +4292,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4326,8 +4306,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4341,7 +4320,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4353,8 +4332,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_MISSING_SENDERS);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4366,7 +4344,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -4384,8 +4362,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -4403,7 +4380,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4416,8 +4393,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4428,7 +4404,7 @@ class SiRequirementsTest {
 	void getsAssociateWithImmutableTarget() throws Throwable {
 		setupFor(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -4438,8 +4414,7 @@ class SiRequirementsTest {
 	void getsAssociateWithImmutableTargetWithCustomPayer() throws Throwable {
 		setupFor(TOKEN_ASSOCIATE_WITH_IMMUTABLE_TARGET);
 
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -4449,7 +4424,7 @@ class SiRequirementsTest {
 	void getsCryptoUpdateWithImmutableTarget() throws Throwable {
 		setupFor(CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO);
 
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -4459,8 +4434,7 @@ class SiRequirementsTest {
 	void getsCryptoUpdateWithImmutableTargetWithCustomPayer() throws Throwable {
 		setupFor(CRYPTO_UPDATE_IMMUTABLE_ACCOUNT_SCENARIO);
 
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		assertTrue(summary.hasErrorReport());
 		assertEquals(INVALID_ACCOUNT_ID, summary.getErrorReport());
@@ -4472,7 +4446,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -4484,8 +4458,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4498,7 +4471,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4514,8 +4487,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -4527,7 +4499,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4539,8 +4511,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_ASSOCIATE_WITH_MISSING_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4552,7 +4523,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4565,8 +4536,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4579,7 +4549,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -4591,8 +4561,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_SELF_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4605,7 +4574,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4621,8 +4590,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_CUSTOM_PAYER_PAID_KNOWN_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -4634,7 +4602,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4646,8 +4614,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_DISSOCIATE_WITH_MISSING_TARGET);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4679,7 +4646,7 @@ class SiRequirementsTest {
 		setupFor(VALID_FREEZE_WITH_EXTANT_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4692,7 +4659,7 @@ class SiRequirementsTest {
 		setupFor(VALID_UNFREEZE_WITH_EXTANT_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4705,7 +4672,7 @@ class SiRequirementsTest {
 		setupFor(VALID_GRANT_WITH_EXTANT_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4718,7 +4685,7 @@ class SiRequirementsTest {
 		setupFor(VALID_REVOKE_WITH_EXTANT_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4731,7 +4698,7 @@ class SiRequirementsTest {
 		setupFor(REVOKE_WITH_MISSING_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4744,7 +4711,7 @@ class SiRequirementsTest {
 		setupFor(REVOKE_FOR_TOKEN_WITHOUT_KYC);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4756,7 +4723,7 @@ class SiRequirementsTest {
 		setupFor(MINT_WITH_SUPPLY_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4769,7 +4736,7 @@ class SiRequirementsTest {
 		setupFor(BURN_WITH_SUPPLY_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4782,7 +4749,7 @@ class SiRequirementsTest {
 		setupFor(DELETE_WITH_KNOWN_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4795,7 +4762,7 @@ class SiRequirementsTest {
 		setupFor(DELETE_WITH_MISSING_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4808,7 +4775,7 @@ class SiRequirementsTest {
 		setupFor(DELETE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4820,7 +4787,7 @@ class SiRequirementsTest {
 		setupFor(VALID_WIPE_WITH_EXTANT_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4833,7 +4800,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4846,8 +4813,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_NO_KEYS_AFFECTED);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4860,7 +4826,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4873,8 +4839,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_WIPE_KEYED_TOKEN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4887,7 +4852,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4900,8 +4865,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_SUPPLY_KEYED_TOKEN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4914,7 +4878,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4927,8 +4891,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_KYC_KEYED_TOKEN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -4941,7 +4904,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_WITH_MISSING_TREASURY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4954,8 +4917,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_WITH_MISSING_TREASURY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -4968,7 +4930,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4983,8 +4945,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -4999,7 +4960,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5012,8 +4973,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5028,7 +4988,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5043,8 +5003,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_TREASURY_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5057,7 +5016,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5070,8 +5029,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_FREEZE_KEYED_TOKEN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5084,7 +5042,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_ADMIN_KEY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5099,8 +5057,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_REPLACING_ADMIN_KEY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5115,7 +5072,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_MISSING_TOKEN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5128,8 +5085,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_MISSING_TOKEN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5142,7 +5098,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5154,8 +5110,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_WITH_MISSING_TOKEN_ADMIN_KEY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5167,7 +5122,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5182,8 +5137,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5198,7 +5152,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5211,8 +5165,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5227,7 +5180,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5242,8 +5195,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_AUTO_RENEW_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5256,7 +5208,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5270,8 +5222,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5285,7 +5236,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5300,8 +5251,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5316,7 +5266,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5329,8 +5279,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5345,7 +5294,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5360,8 +5309,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_UPDATE_WITH_NEW_AUTO_RENEW_ACCOUNT_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5374,7 +5322,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -5386,8 +5334,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_NO_FEE_SCHEDULE_KEY);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(sanityRestored(summary.getOrderedKeys()).isEmpty());
@@ -5399,7 +5346,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5412,8 +5359,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_FEE_SCHEDULE_BUT_TOKEN_DOESNT_EXIST);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5426,7 +5372,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5440,8 +5386,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_MISSING_FEE_COLLECTOR);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5455,7 +5400,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5472,8 +5417,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5490,7 +5434,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory, null, RECEIVER_SIG);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, RECEIVER_SIG);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5505,7 +5449,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5521,8 +5465,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5538,7 +5481,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory, null, NO_RECEIVER_SIG);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, NO_RECEIVER_SIG);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5553,7 +5496,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5570,8 +5513,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5587,7 +5529,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5602,8 +5544,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5618,7 +5559,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5633,8 +5574,7 @@ class SiRequirementsTest {
 		setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_NO_SIG_REQ_AND_AS_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
@@ -5648,7 +5588,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5662,8 +5602,7 @@ class SiRequirementsTest {
 		setupFor(TOKEN_CREATE_WITH_MISSING_AUTO_RENEW);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5677,7 +5616,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_INVALID_XFER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5690,8 +5629,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_INVALID_XFER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5705,7 +5643,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -5723,8 +5661,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_NO_ADMIN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5738,7 +5675,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -5759,8 +5696,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5774,7 +5710,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5787,8 +5723,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_MISSING_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5801,7 +5736,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_NONSENSE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.hasErrorReport());
@@ -5814,8 +5749,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_NONSENSE);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5829,7 +5763,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -5853,8 +5787,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5868,7 +5801,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -5892,8 +5825,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5907,7 +5839,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -5930,8 +5862,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5945,7 +5876,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_SELF_AND_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -5969,8 +5900,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_SELF_AND_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -5984,7 +5914,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_CUSTOM_PAYER_AND_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -6008,8 +5938,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AS_CUSTOM_PAYER_AND_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6023,7 +5952,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -6047,8 +5976,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6062,7 +5990,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -6085,8 +6013,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6100,7 +6027,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SELF_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -6125,8 +6052,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_SELF_SENDER_AND_PAYER_AS_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6140,7 +6066,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_CUSTOM_PAYER_SENDER_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(4));
@@ -6165,8 +6091,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_XFER_WITH_ADMIN_CUSTOM_PAYER_SENDER_AND_PAYER_AS_SELF);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6180,7 +6105,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -6203,8 +6128,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6219,7 +6143,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_TREASURY_UPDATE_WITH_TREASURY_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
+		var summary =
 				subject.keysForOtherParties(
 						txn, summaryFactory, null, asAccount(TREASURY_PAYER_ID));
 
@@ -6235,7 +6159,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -6254,8 +6178,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6270,7 +6193,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER);
 
 		// when:
-		final var summary =
+		var summary =
 				subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
 		// then:
@@ -6286,7 +6209,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -6305,8 +6228,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
 		// when:
-		final var summary =
-				subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
+		var summary = subject.keysForOtherParties(txn, summaryFactory, null, CUSTOM_PAYER_ACCOUNT);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6322,7 +6244,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
 		// when:
-		final var summary =
+		var summary =
 				subject.keysForOtherParties(txn, summaryFactory, null, asAccount(MASTER_PAYER_ID));
 
 		// then:
@@ -6341,7 +6263,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -6363,7 +6285,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_PAYER_SELF);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(3));
@@ -6385,7 +6307,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE_WITH_NOW_INVALID_PAYER);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6398,7 +6320,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_SIGN_KNOWN_SCHEDULE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(2));
@@ -6416,7 +6338,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_SIGN_MISSING_SCHEDULE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6429,7 +6351,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6442,7 +6364,7 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_DELETE_WITH_MISSING_SCHEDULE_ADMIN_KEY);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 
 		// then:
 		assertTrue(summary.getOrderedKeys().isEmpty());
@@ -6454,19 +6376,18 @@ class SiRequirementsTest {
 		setupFor(SCHEDULE_DELETE_WITH_KNOWN_SCHEDULE);
 
 		// when:
-		final var summary = subject.keysForOtherParties(txn, summaryFactory);
+		var summary = subject.keysForOtherParties(txn, summaryFactory);
 		// then:
 		assertThat(summary.getOrderedKeys(), iterableWithSize(1));
 		assertThat(sanityRestored(summary.getOrderedKeys()), contains(SCHEDULE_ADMIN_KT.asKey()));
 	}
 
-	private void setupFor(final TxnHandlingScenario scenario) throws Throwable {
+	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		setupFor(scenario, Optional.empty(), mockSignatureWaivers);
 	}
 
 	private void setupForNonStdLookup(
-			final TxnHandlingScenario scenario, final SigMetadataLookup sigMetadataLookup)
-			throws Throwable {
+			TxnHandlingScenario scenario, SigMetadataLookup sigMetadataLookup) throws Throwable {
 		setupFor(scenario, Optional.of(sigMetadataLookup), mockSignatureWaivers);
 	}
 
@@ -6514,7 +6435,7 @@ class SiRequirementsTest {
 				(SigningOrderResultFactory<ResponseCodeEnum>) mock(SigningOrderResultFactory.class);
 	}
 
-	private SigMetadataLookup hcsMetadataLookup(final JKey adminKey, final JKey submitKey) {
+	private SigMetadataLookup hcsMetadataLookup(JKey adminKey, JKey submitKey) {
 		return new DelegatingSigMetadataLookup(
 				FileAdapter.throwingUoe(),
 				AccountAdapter.withSafe(
@@ -6524,7 +6445,7 @@ class SiRequirementsTest {
 									return new SafeLookupResult<>(
 											new AccountSigningMetadata(
 													MISC_ACCOUNT_KT.asJKey(), false));
-								} catch (final Exception e) {
+								} catch (Exception e) {
 									throw new IllegalArgumentException(e);
 								}
 							} else {
@@ -6546,13 +6467,13 @@ class SiRequirementsTest {
 				id -> null);
 	}
 
-	static List<Key> sanityRestored(final List<JKey> jKeys) {
+	static List<Key> sanityRestored(List<JKey> jKeys) {
 		return jKeys.stream()
 				.map(
 						jKey -> {
 							try {
 								return JKey.mapJKey(jKey);
-							} catch (final Exception ignore) {
+							} catch (Exception ignore) {
 							}
 							throw new AssertionError("All keys should be mappable!");
 						})
