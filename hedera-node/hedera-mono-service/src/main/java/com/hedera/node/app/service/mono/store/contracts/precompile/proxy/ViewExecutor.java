@@ -172,10 +172,10 @@ public class ViewExecutor {
                 final var wrapper = GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
 
                 validateTrueOrRevert(
-                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.tokenID())),
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress(wrapper.token())),
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
-                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.tokenID());
+                final var defaultKycStatus = ledgers.defaultKycStatus(wrapper.token());
                 return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
             }
             case ABI_ID_IS_KYC -> {

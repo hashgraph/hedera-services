@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record GetTokenDefaultKycStatusWrapper<T>(T tokenID) {}
+public record GetTokenDefaultKycStatusWrapper<T>(T token) {}
