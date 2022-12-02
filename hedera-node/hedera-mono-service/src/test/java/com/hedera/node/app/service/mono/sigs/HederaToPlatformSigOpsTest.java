@@ -15,30 +15,6 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
-import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
-import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
-import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
-import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
-import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
-import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.node.app.service.mono.sigs.sourcing.SigObserver;
-import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
-import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
-import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.test.factories.keys.KeyTree;
-import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.crypto.VerificationStatus;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Predicate;
-
 import static com.hedera.node.app.service.mono.sigs.HederaToPlatformSigOps.expandIn;
 import static com.hedera.node.app.service.mono.sigs.order.CodeOrderResultFactory.CODE_ORDER_RESULT_FACTORY;
 import static com.hedera.test.factories.keys.NodeFactory.ed25519;
@@ -58,6 +34,29 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.verify;
+
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
+import com.hedera.node.app.service.mono.sigs.factories.PlatformSigFactory;
+import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
+import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
+import com.hedera.node.app.service.mono.sigs.order.SigningOrderResult;
+import com.hedera.node.app.service.mono.sigs.sourcing.KeyType;
+import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
+import com.hedera.node.app.service.mono.sigs.sourcing.SigObserver;
+import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
+import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
+import com.hedera.test.factories.keys.KeyTree;
+import com.swirlds.common.crypto.TransactionSignature;
+import com.swirlds.common.crypto.VerificationStatus;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class HederaToPlatformSigOpsTest {
 	private static List<JKey> payerKey;
@@ -338,7 +337,7 @@ class HederaToPlatformSigOpsTest {
 				key.getEd25519(), sig.getBytes(), platformTxn.getTxnBytes());
 	}
 
-	private void givenMirrorMock(final PlatformTxnAccessor mock, final PlatformTxnAccessor real) {
+	private void givenMirrorMock(PlatformTxnAccessor mock, PlatformTxnAccessor real) {
 		given(mock.getPkToSigsFn()).willReturn(allSigBytes);
 		given(mock.getTxn()).willReturn(real.getTxn());
 		given(mock.getPayer()).willReturn(real.getPayer());

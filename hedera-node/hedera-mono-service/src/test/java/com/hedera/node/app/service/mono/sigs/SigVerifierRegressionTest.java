@@ -15,6 +15,24 @@
  */
 package com.hedera.node.app.service.mono.sigs;
 
+import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
+import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_MISSING_SIGS_SCENARIO;
+import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.VALID_QUERY_PAYMENT_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.AMBIGUOUS_SIG_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
+import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
+import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
@@ -42,27 +60,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.engine.CryptoEngine;
 import com.swirlds.merkle.map.MerkleMap;
-import org.junit.jupiter.api.Test;
-
 import java.util.function.Predicate;
-
-import static com.hedera.node.app.service.mono.sigs.metadata.DelegatingSigMetadataLookup.defaultLookupsFor;
-import static com.hedera.test.factories.scenarios.BadPayerScenarios.INVALID_PAYER_ID_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_INVALID_SENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.QUERY_PAYMENT_MISSING_SIGS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.VALID_QUERY_PAYMENT_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.AMBIGUOUS_SIG_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.FULL_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.INVALID_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.scenarios.SystemDeleteScenarios.MISSING_PAYER_SIGS_VIA_MAP_SCENARIO;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_NODE;
-import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import org.junit.jupiter.api.Test;
 
 class SigVerifierRegressionTest {
 	private PrecheckKeyReqs precheckKeyReqs;
@@ -73,15 +72,15 @@ class SigVerifierRegressionTest {
 	private MerkleMap<EntityNum, MerkleAccount> accounts;
 	private AliasManager aliasManager;
 
-	private final EntityNumbers mockEntityNumbers = new MockEntityNumbers();
-	private final SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
-	private final SignatureWaivers mockSignatureWaivers =
+	private EntityNumbers mockEntityNumbers = new MockEntityNumbers();
+	private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
+	private SignatureWaivers mockSignatureWaivers =
 			new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
 
 	@Test
 	void rejectsInvalidTxn() throws Throwable {
 		// given:
-		final Transaction invalidSignedTxn =
+		Transaction invalidSignedTxn =
 				Transaction.newBuilder()
 						.setBodyBytes(ByteString.copyFrom("NONSENSE".getBytes()))
 						.build();
@@ -168,17 +167,16 @@ class SigVerifierRegressionTest {
 		assertFalse(sigVerifies(platformTxn.getSignedTxnWrapper()));
 	}
 
-	private boolean sigVerifies(final Transaction signedTxn) throws Exception {
+	private boolean sigVerifies(Transaction signedTxn) throws Exception {
 		try {
-			final SignedTxnAccessor accessor =
-					SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
+			SignedTxnAccessor accessor = SignedTxnAccessor.from(signedTxn.toByteArray(), signedTxn);
 			return precheckVerifier.hasNecessarySignatures(accessor);
-		} catch (final InvalidProtocolBufferException ignore) {
+		} catch (InvalidProtocolBufferException ignore) {
 			return false;
 		}
 	}
 
-	private void setupFor(final TxnHandlingScenario scenario) throws Throwable {
+	private void setupFor(TxnHandlingScenario scenario) throws Throwable {
 		accounts = scenario.accounts();
 		platformTxn = scenario.platformTxn();
 		aliasManager = mock(AliasManager.class);
@@ -195,7 +193,7 @@ class SigVerifierRegressionTest {
 		final var nodeInfo = mock(NodeInfo.class);
 		given(nodeInfo.selfAccount()).willReturn(DEFAULT_NODE);
 		isQueryPayment = PrecheckUtils.queryPaymentTestFor(nodeInfo);
-		final SyncVerifier syncVerifier =
+		SyncVerifier syncVerifier =
 				new CryptoEngine(getStaticThreadManager(), CryptoConfigUtils.MINIMAL_CRYPTO_CONFIG)
 						::verifySync;
 		precheckKeyReqs = new PrecheckKeyReqs(keyOrder, isQueryPayment);

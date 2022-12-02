@@ -15,6 +15,18 @@
  */
 package com.hedera.node.app.service.mono.fees.charging;
 
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
+import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -30,26 +42,13 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Map;
-
-import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.BELIEVED_UNIQUE;
-import static com.hedera.node.app.service.mono.txns.diligence.DuplicateClassification.DUPLICATE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TxnChargingPolicyAgentTest {
@@ -75,25 +74,17 @@ class TxnChargingPolicyAgentTest {
 							.build()
 							.toByteArray());
 
-	@Mock
-	private StateView currentView;
-	@Mock
-	private FeeCalculator fees;
-	@Mock
-	private TxnIdRecentHistory recentHistory;
-	@Mock
-	private FeeChargingPolicy chargingPolicy;
-	@Mock
-	private TransactionContext txnCtx;
-	@Mock
-	private AwareNodeDiligenceScreen nodeDiligenceScreen;
-	@Mock
-	private Map<TransactionID, TxnIdRecentHistory> txnHistories;
+	@Mock private StateView currentView;
+	@Mock private FeeCalculator fees;
+	@Mock private TxnIdRecentHistory recentHistory;
+	@Mock private FeeChargingPolicy chargingPolicy;
+	@Mock private TransactionContext txnCtx;
+	@Mock private AwareNodeDiligenceScreen nodeDiligenceScreen;
+	@Mock private Map<TransactionID, TxnIdRecentHistory> txnHistories;
 
 	private TxnChargingPolicyAgent subject;
 
-	TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {
-	}
+	TxnChargingPolicyAgentTest() throws InvalidProtocolBufferException {}
 
 	@BeforeEach
 	void setUp() {
