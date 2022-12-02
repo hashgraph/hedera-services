@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BYTES32;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
@@ -34,13 +33,13 @@ public interface EvmGetTokenDefaultKycStatus {
             Bytes.wrap(GET_TOKEN_DEFAULT_KYC_STATUS_FUNCTION.selector());
     ABIType<Tuple> GET_TOKEN_DEFAULT_KYC_STATUS_DECODER = TypeFactory.create(BYTES32);
 
-    public static GetTokenDefaultKycStatusWrapper<byte[]> decodeTokenDefaultKycStatus(final Bytes input) {
+    public static GetTokenDefaultKycStatusWrapper<byte[]> decodeTokenDefaultKycStatus(
+            final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
                         GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR,
                         GET_TOKEN_DEFAULT_KYC_STATUS_DECODER);
-
 
         return new GetTokenDefaultKycStatusWrapper<>(decodedArguments.get(0));
     }

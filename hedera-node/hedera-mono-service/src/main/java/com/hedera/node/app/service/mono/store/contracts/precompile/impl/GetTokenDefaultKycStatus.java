@@ -60,8 +60,11 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile
         return encoder.encodeGetTokenDefaultKycStatus(defaultKycStatus);
     }
 
-    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(final Bytes input) {
-        final var rawGetTokenDefaultKycStatusWrapper = EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
-        return new GetTokenDefaultKycStatusWrapper<>(convertAddressBytesToTokenID(rawGetTokenDefaultKycStatusWrapper.token()));
+    public static GetTokenDefaultKycStatusWrapper<TokenID> decodeTokenDefaultKycStatus(
+            final Bytes input) {
+        final var rawGetTokenDefaultKycStatusWrapper =
+                EvmGetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input);
+        return new GetTokenDefaultKycStatusWrapper<>(
+                convertAddressBytesToTokenID(rawGetTokenDefaultKycStatusWrapper.token()));
     }
 }
