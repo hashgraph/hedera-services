@@ -121,7 +121,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
-    private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
 
@@ -286,7 +285,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             return;
         }
-        explicitChanges = constructBalanceChanges();
+        final var explicitChanges = constructBalanceChanges();
         final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
         impliedTransfers =
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
