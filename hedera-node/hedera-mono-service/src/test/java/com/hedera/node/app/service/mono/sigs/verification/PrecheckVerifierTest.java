@@ -36,7 +36,6 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.test.factories.keys.KeyTree;
-import com.hedera.test.factories.txns.PlatformTxnFactory;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -84,9 +83,7 @@ class PrecheckVerifierTest {
     @BeforeAll
     static void setupAll() throws Throwable {
         aliasManager = mock(AliasManager.class);
-        realAccessor =
-                PlatformTxnAccessor.from(
-                        SignedTxnAccessor.from(txn.toByteArray()), PlatformTxnFactory.from(txn));
+        realAccessor = PlatformTxnAccessor.from(txn.toByteArray());
         reqKeys =
                 List.of(
                         KeyTree.withRoot(list(ed25519(), list(ed25519(), ed25519()))).asJKey(),

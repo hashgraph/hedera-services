@@ -81,10 +81,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled
 class SigOpsRegressionTest {
     private HederaFs hfs;
     private AliasManager aliasManager;
@@ -115,7 +113,7 @@ class SigOpsRegressionTest {
             final KeyActivationCharacteristics characteristics) {
         final TransactionBody txn = accessor.getTxn();
         final Function<byte[], TransactionSignature> sigsFn =
-                HederaKeyActivation.pkToSigMapFrom(accessor.getPlatformTxn().getSignatures());
+                HederaKeyActivation.pkToSigMapFrom(accessor.getCryptoSigs());
 
         final var othersResult = keyOrder.keysForOtherParties(txn, summaryFactory);
         for (final JKey otherKey : othersResult.getOrderedKeys()) {
@@ -137,7 +135,7 @@ class SigOpsRegressionTest {
 
         // then:
         assertEquals(OK, platformTxn.getExpandedSigStatus());
-        assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigs, platformTxn.getCryptoSigs());
         final var sigMeta = platformTxn.getSigMeta();
         assertTrue(sigMeta.couldRationalizePayer());
         assertTrue(sigMeta.couldRationalizeOthers());
@@ -158,7 +156,7 @@ class SigOpsRegressionTest {
 
         // then:
         statusMatches(expectedErrorStatus);
-        assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigs, platformTxn.getCryptoSigs());
         assertFalse(platformTxn.getSigMeta().couldRationalizePayer());
     }
 
@@ -169,7 +167,7 @@ class SigOpsRegressionTest {
         invokeExpansionScenario();
 
         statusMatches(expectedErrorStatus);
-        assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigs, platformTxn.getCryptoSigs());
         assertTrue(platformTxn.getSigMeta().couldRationalizePayer());
         assertFalse(platformTxn.getSigMeta().couldRationalizeOthers());
     }
@@ -198,9 +196,7 @@ class SigOpsRegressionTest {
         setupFor(CRYPTO_CREATE_RECEIVER_SIG_SCENARIO);
         // and:
         final List<TransactionSignature> expectedSigs = expectedCryptoCreateScenarioSigs();
-        platformTxn
-                .getPlatformTxn()
-                .addAll(asValid(expectedSigs).toArray(new TransactionSignature[0]));
+        platformTxn.addAllCryptoSigs(asValid(expectedSigs));
 
         // when:
         final var ans = invokeRationalizationScenario();
@@ -208,7 +204,7 @@ class SigOpsRegressionTest {
         // then:
         assertFalse(ans.usedSyncVerification());
         assertEquals(OK, ans.finalStatus());
-        assertEquals(expectedSigs, platformTxn.getPlatformTxn().getSignatures());
+        assertEquals(expectedSigs, platformTxn.getCryptoSigs());
         // and:
         allVerificationStatusesAre(vs -> VerificationStatus.VALID.equals(vs));
     }
@@ -409,8 +405,8 @@ class SigOpsRegressionTest {
 
     private boolean invokeOtherPartySigActivationScenario(
             final List<TransactionSignature> knownSigs) {
-        platformTxn.getPlatformTxn().clearSignatures();
-        platformTxn.getPlatformTxn().addAll(knownSigs.toArray(new TransactionSignature[0]));
+        platformTxn.clearCryptoSigs();
+        platformTxn.addAllCryptoSigs(knownSigs);
         final var hfsSigMetaLookup = new HfsSigMetaLookup(hfs, fileNumbers);
         final SigRequirements keysOrder =
                 new SigRequirements(

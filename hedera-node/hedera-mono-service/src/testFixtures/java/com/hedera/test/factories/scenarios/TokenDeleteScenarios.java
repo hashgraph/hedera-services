@@ -15,7 +15,6 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenDeleteFactory.newSignedTokenDelete;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -25,21 +24,20 @@ public enum TokenDeleteScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedTokenDelete().deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get()));
+                    newSignedTokenDelete().deleting(KNOWN_TOKEN_NO_SPECIAL_KEYS).get());
         }
     },
     DELETE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    from(newSignedTokenDelete().deleting(MISSING_TOKEN).get()));
+            return PlatformTxnAccessor.from(newSignedTokenDelete().deleting(MISSING_TOKEN).get());
         }
     },
     DELETE_WITH_MISSING_TOKEN_ADMIN_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedTokenDelete().deleting(KNOWN_TOKEN_IMMUTABLE).get()));
+                    newSignedTokenDelete().deleting(KNOWN_TOKEN_IMMUTABLE).get());
         }
     }
 }
