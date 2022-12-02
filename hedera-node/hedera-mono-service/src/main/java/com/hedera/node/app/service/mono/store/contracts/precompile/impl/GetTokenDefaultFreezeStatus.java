@@ -63,7 +63,9 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
 
     public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(
             final Bytes input) {
-        final var rawGetTokenDefaultFreezeStatusWrapper = EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
-        return new GetTokenDefaultFreezeStatusWrapper<>(convertAddressBytesToTokenID(rawGetTokenDefaultFreezeStatusWrapper.token()));
+        final var rawGetTokenDefaultFreezeStatusWrapper =
+                EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
+        return new GetTokenDefaultFreezeStatusWrapper<>(
+                convertAddressBytesToTokenID(rawGetTokenDefaultFreezeStatusWrapper.token()));
     }
 }
