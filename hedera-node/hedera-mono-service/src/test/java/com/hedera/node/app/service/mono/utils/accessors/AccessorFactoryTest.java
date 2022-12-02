@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,7 +31,6 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,39 +65,26 @@ class AccessorFactoryTest {
 
     @Test
     void constructsCorrectly() throws InvalidProtocolBufferException {
-        SwirldTransaction platformTxn =
-                new SwirldTransaction(
-                        Transaction.newBuilder()
-                                .setBodyBytes(someTxn.toByteString())
-                                .build()
-                                .toByteArray());
-        assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
+        final var someContents =
+                Transaction.newBuilder().setBodyBytes(someTxn.toByteString()).build().toByteArray();
+        final var someAccessor = subject.nonTriggeredTxn(someContents);
+        assertInstanceOf(SignedTxnAccessor.class, someAccessor);
 
-        SwirldTransaction wipeTxn =
-                new SwirldTransaction(
-                        Transaction.newBuilder()
-                                .setBodyBytes(tokenWipeTxn.toByteString())
-                                .build()
-                                .toByteArray());
-        assertTrue(subject.nonTriggeredTxn(wipeTxn.getContents()) instanceof SignedTxnAccessor);
+        final var wipeContents =
+                Transaction.newBuilder()
+                        .setBodyBytes(tokenWipeTxn.toByteString())
+                        .build()
+                        .toByteArray();
+        final var wipeAccessor = subject.nonTriggeredTxn(wipeContents);
+        assertInstanceOf(TokenWipeAccessor.class, wipeAccessor);
     }
 
     @Test
     void constructsTriggeredCorrectly() throws InvalidProtocolBufferException {
-        SwirldTransaction platformTxn =
-                new SwirldTransaction(
-                        Transaction.newBuilder()
-                                .setBodyBytes(someTxn.toByteString())
-                                .build()
-                                .toByteArray());
-        assertTrue(subject.nonTriggeredTxn(platformTxn.getContents()) instanceof SignedTxnAccessor);
-
         final var grpcWipeTxn =
                 Transaction.newBuilder().setBodyBytes(tokenWipeTxn.toByteString()).build();
 
         var triggered = subject.triggeredTxn(grpcWipeTxn, payerId, scheduleId, true, true);
-
-        assertTrue(triggered instanceof SignedTxnAccessor);
 
         assertTrue(triggered.congestionExempt());
         assertTrue(triggered.throttleExempt());

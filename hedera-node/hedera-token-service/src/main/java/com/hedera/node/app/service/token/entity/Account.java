@@ -17,7 +17,6 @@ package com.hedera.node.app.service.token.entity;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -48,7 +47,7 @@ public interface Account {
      *
      * @return alias if exists
      */
-    Optional<byte[]> getAlias();
+    Optional<byte[]> alias();
 
     /**
      * Gets whether this is a "hollow" account. A hollow account is an account that was created
@@ -60,8 +59,10 @@ public interface Account {
     boolean isHollow();
 
     /**
-     * The keys on the account. This may return a null {@link Optional} if the key on account is null.
-     * For e.g., for account 0.0.800 and Hollow accounts (as determined by {@link #isHollow()})
+     * The keys on the account. This may return a null {@link Optional} if the key on account is
+     * null. For e.g., for account 0.0.800 and Hollow accounts (as determined by {@link
+     * #isHollow()})
+     *
      * @return An optional key list
      */
     Optional<HederaKey> getKey();

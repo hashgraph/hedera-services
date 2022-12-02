@@ -93,7 +93,7 @@ class Expansion {
 
     private void finalizeForExpansionUpTo(
             final Role lastExpandSuccess, final ResponseCodeEnum finalStatus) {
-        txnAccessor.getPlatformTxn().addAll(expandedSigs.toArray(new TransactionSignature[0]));
+        txnAccessor.addAllCryptoSigs(expandedSigs);
         if (lastExpandSuccess == Role.PAYER) {
             txnAccessor.setSigMeta(forPayerOnly(payerKey, expandedSigs, txnAccessor));
         } else {

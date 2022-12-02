@@ -47,6 +47,11 @@ import java.util.Random;
 import java.util.UUID;
 
 public class TxnUtils {
+    public static com.swirlds.common.system.transaction.Transaction mockTransaction(
+            final byte[] contents) {
+        throw new AssertionError("Not implemented");
+    }
+
     public static TransferList withAdjustments(
             AccountID a, long A, AccountID b, long B, AccountID c, long C) {
         return TransferList.newBuilder()

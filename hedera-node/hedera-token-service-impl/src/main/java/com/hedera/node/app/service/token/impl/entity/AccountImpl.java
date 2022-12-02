@@ -20,13 +20,15 @@ import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Optional;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /** An implementation of {@link Account}. FUTURE: Should be moved to token-service-impl module */
 public record AccountImpl(
         long accountNumber,
-        byte[] alias,
+        Optional<byte[]> alias,
         @Nullable HederaKey key,
         long expiry,
         long balance,
@@ -72,11 +74,6 @@ public record AccountImpl(
     }
 
     @Override
-    public Optional<byte[]> getAlias() {
-        return alias.length == 0 ? Optional.empty() : Optional.of(alias);
-    }
-
-    @Override
     public long balanceInTinyBar() {
         return balance;
     }
@@ -85,5 +82,90 @@ public record AccountImpl(
     @NonNull
     public AccountBuilder copy() {
         return new AccountBuilderImpl(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AccountImpl account = (AccountImpl) o;
+        return accountNumber == account.accountNumber
+                && expiry == account.expiry
+                && balance == account.balance
+                && isDeleted == account.isDeleted
+                && isSmartContract == account.isSmartContract
+                && isReceiverSigRequired == account.isReceiverSigRequired
+                && numberOfOwnedNfts == account.numberOfOwnedNfts
+                && maxAutoAssociations == account.maxAutoAssociations
+                && usedAutoAssociations == account.usedAutoAssociations
+                && numAssociations == account.numAssociations
+                && numPositiveBalances == account.numPositiveBalances
+                && ethereumNonce == account.ethereumNonce
+                && stakedToMe == account.stakedToMe
+                && stakePeriodStart == account.stakePeriodStart
+                && stakedNum == account.stakedNum
+                && declineReward == account.declineReward
+                && stakeAtStartOfLastRewardedPeriod == account.stakeAtStartOfLastRewardedPeriod
+                && autoRenewAccountNumber == account.autoRenewAccountNumber
+                && alias.equals(account.alias)
+                && key.equals(account.key)
+                && memo.equals(account.memo)
+                && autoRenewSecs == account.autoRenewSecs;
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(accountNumber)
+                .append(alias)
+                .append(key)
+                .append(expiry)
+                .append(balance)
+                .append(memo)
+                .append(isDeleted)
+                .append(isSmartContract)
+                .append(isReceiverSigRequired)
+                .append(numberOfOwnedNfts)
+                .append(maxAutoAssociations)
+                .append(usedAutoAssociations)
+                .append(numAssociations)
+                .append(numPositiveBalances)
+                .append(ethereumNonce)
+                .append(stakedToMe)
+                .append(stakePeriodStart)
+                .append(stakedNum)
+                .append(declineReward)
+                .append(stakeAtStartOfLastRewardedPeriod)
+                .append(autoRenewAccountNumber)
+                .append(autoRenewSecs)
+                .hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+                .append("accountNumber", accountNumber)
+                .append("alias", alias)
+                .append("key", key)
+                .append("expiry", expiry)
+                .append("balance", balance)
+                .append("memo", memo)
+                .append("isDeleted", isDeleted)
+                .append("isSmartContract", isSmartContract)
+                .append("isReceiverSigRequired", isReceiverSigRequired)
+                .append("numberOfOwnedNfts", numberOfOwnedNfts)
+                .append("maxAutoAssociations", maxAutoAssociations)
+                .append("usedAutoAssociations", usedAutoAssociations)
+                .append("numAssociations", numAssociations)
+                .append("numPositiveBalances", numPositiveBalances)
+                .append("ethereumNonce", ethereumNonce)
+                .append("stakedToMe", stakedToMe)
+                .append("stakePeriodStart", stakePeriodStart)
+                .append("stakedNum", stakedNum)
+                .append("declineReward", declineReward)
+                .append("stakeAtStartOfLastRewardedPeriod", stakeAtStartOfLastRewardedPeriod)
+                .append("autoRenewAccountNumber", autoRenewAccountNumber)
+                .append("autoRenewSecs", autoRenewSecs)
+                .build();
     }
 }

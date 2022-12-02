@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.events.ConsensusEvent;
 import com.swirlds.common.system.transaction.ConsensusTransaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,11 +64,7 @@ class ProcessLogicTest {
         subject.incorporateConsensus(round);
 
         for (int i = 0, n = roundMetadata.size(); i < n; i++) {
-            inOrder.verify(subject)
-                    .incorporateConsensusTxn(
-                            mockTxns.get(i),
-                            roundMetadata.get(i).getLeft(),
-                            roundMetadata.get(i).getRight());
+            inOrder.verify(subject).incorporateConsensusTxn(null, roundMetadata.get(i).getRight());
         }
     }
 
@@ -84,10 +79,7 @@ class ProcessLogicTest {
                             for (int i = 0; i < metadata.length; i++) {
                                 final var event = mock(ConsensusEvent.class);
                                 given(event.getCreatorId()).willReturn(metadata[i].getRight());
-                                final var txn = new SwirldTransaction();
-                                txn.setConsensusTimestamp(metadata[i].getLeft());
-                                mockTxns.add(txn);
-                                observer.accept(event, txn);
+                                observer.accept(event, null);
                             }
                             return null;
                         })
