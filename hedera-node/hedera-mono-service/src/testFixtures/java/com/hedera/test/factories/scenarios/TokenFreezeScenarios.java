@@ -15,7 +15,6 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenFreezeFactory.newSignedTokenFreeze;
 
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
@@ -25,11 +24,10 @@ public enum TokenFreezeScenarios implements TxnHandlingScenario {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenFreeze()
-                                    .freezing(KNOWN_TOKEN_WITH_FREEZE)
-                                    .nonPayerKts(TOKEN_FREEZE_KT)
-                                    .get()));
+                    newSignedTokenFreeze()
+                            .freezing(KNOWN_TOKEN_WITH_FREEZE)
+                            .nonPayerKts(TOKEN_FREEZE_KT)
+                            .get());
         }
     },
 }
