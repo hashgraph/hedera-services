@@ -223,7 +223,7 @@ public class ViewExecutor {
                 final var wrapper = GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
                 final var tokenInfo =
                         ledgers.infoForToken(
-                                        wrapper.tokenID(), stateView.getNetworkInfo().ledgerId())
+                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);

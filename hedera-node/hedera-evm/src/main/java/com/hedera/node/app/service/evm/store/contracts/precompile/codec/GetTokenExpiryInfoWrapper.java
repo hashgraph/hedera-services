@@ -15,6 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public record GetTokenExpiryInfoWrapper(TokenID tokenID) {}
+public record GetTokenExpiryInfoWrapper<T>(T token) {}

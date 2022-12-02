@@ -249,7 +249,7 @@ class GetTokenExpiryInfoPrecompileTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenExpiryInfo(GET_EXPIRY_INFO_FOR_TOKEN_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     private void givenMinimalFrameContext() {

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
@@ -52,7 +53,7 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var getTokenExpiryInfoWrapper = decodeGetTokenExpiryInfo(input);
-        tokenId = getTokenExpiryInfoWrapper.tokenID();
+        tokenId = getTokenExpiryInfoWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -73,7 +74,9 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
         return encoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
 
-    public static GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {
-        return EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+    public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {
+        final var rawGetTokenExpityInfoWrapper = EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+        return new GetTokenExpiryInfoWrapper<>(
+            convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
     }
 }

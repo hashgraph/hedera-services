@@ -31,12 +31,11 @@ public interface EvmGetTokenExpiryInfoPrecompile {
     Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR = Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());
     ABIType<Tuple> GET_TOKEN_EXPIRY_INFO_DECODER = TypeFactory.create(BYTES32);
 
-    public static GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {
+    public static GetTokenExpiryInfoWrapper<byte[]> decodeGetTokenExpiryInfo(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return new GetTokenExpiryInfoWrapper(tokenID);
+        return new GetTokenExpiryInfoWrapper<>(decodedArguments.get(0));
     }
 }
