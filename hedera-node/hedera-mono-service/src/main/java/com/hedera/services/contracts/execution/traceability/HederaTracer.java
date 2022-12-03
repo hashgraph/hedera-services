@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.State;
@@ -112,7 +112,7 @@ public class HederaTracer implements HederaOperationTracer {
         final var recipient =
                 EntityId.fromAddress(
                         asMirrorAddress(messageFrame.getContractAddress(), messageFrame));
-        if (Code.EMPTY.equals(messageFrame.getCode())) {
+        if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
             // code can be empty when calling precompiles too, but we handle
             // that in tracePrecompileCall, after precompile execution is completed
             action.setRecipientAccount(recipient);

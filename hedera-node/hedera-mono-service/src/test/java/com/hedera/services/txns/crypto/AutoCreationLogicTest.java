@@ -67,6 +67,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -156,6 +157,8 @@ class AutoCreationLogicTest {
         givenCollaborators();
         given(syntheticTxnFactory.createAccount(aPrimitiveKey, 0L, 0))
                 .willReturn(mockSyntheticCreation);
+        final var pretendAddress = Address.BLS12_G2MUL.toArray();
+        given(aliasManager.keyAliasToEVMAddress(alias)).willReturn(pretendAddress);
 
         final var input = wellKnownChange();
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -169,6 +172,7 @@ class AutoCreationLogicTest {
         verify(aliasManager).link(alias, createdNum);
         verify(sigImpactHistorian).markAliasChanged(alias);
         verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
+        verify(sigImpactHistorian).markAliasChanged(ByteString.copyFrom(pretendAddress));
         verify(accountsLedger)
                 .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
         verify(accountsLedger, never())

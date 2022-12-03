@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,14 +67,14 @@ class AbstractCodeCacheTest {
         given(entityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         Code code = codeCache.getIfPresent(Address.fromHexString("0xabc"));
 
-        assertTrue(code.getBytes().isEmpty());
+        assertTrue(code.getContainerBytes().isEmpty());
     }
 
     @Test
     void returnsCachedValue() {
         Address demoAddress = Address.fromHexString("0xabc");
         BytesKey key = new BytesKey(demoAddress.toArray());
-        Code code = Code.EMPTY;
+        Code code = CodeV0.EMPTY_CODE;
 
         codeCache.cacheValue(key, code);
         Code codeResult = codeCache.getIfPresent(demoAddress);
@@ -86,7 +87,7 @@ class AbstractCodeCacheTest {
     void cacheSize() {
         Address demoAddress = Address.fromHexString("0xabc");
         BytesKey key = new BytesKey(demoAddress.toArray());
-        Code code = Code.EMPTY;
+        Code code = CodeV0.EMPTY_CODE;
 
         codeCache.cacheValue(key, code);
         assertEquals(1, codeCache.size());
@@ -98,7 +99,7 @@ class AbstractCodeCacheTest {
 
         assertEquals(
                 HederaEvmWorldStateTokenAccount.proxyBytecodeFor(Address.fromHexString("0xabc")),
-                codeCache.getIfPresent(Address.fromHexString("0xabc")).getBytes());
+                codeCache.getIfPresent(Address.fromHexString("0xabc")).getContainerBytes());
     }
 
     @Test

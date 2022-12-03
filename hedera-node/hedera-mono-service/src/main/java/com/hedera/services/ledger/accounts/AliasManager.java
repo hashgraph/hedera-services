@@ -235,6 +235,28 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     /**
+     * Convenience method to allow {@link com.hedera.services.txns.crypto.AutoCreationLogic} to
+     * easily compute the EVM address corresponding to auto-creation from a serialized proto key (if
+     * any).
+     *
+     * @param alias an alias derived from a protobuf key
+     * @return the implied EVM address, if the key was an ECDSA alias
+     */
+    @Nullable
+    public byte[] keyAliasToEVMAddress(final ByteString alias) {
+        try {
+            final Key key = Key.parseFrom(alias);
+            final JKey jKey = JKey.mapKey(key);
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+        } catch (InvalidProtocolBufferException
+                | DecoderException
+                | IllegalArgumentException ignore) {
+            // any expected exception means no eth mapping
+            return null;
+        }
+    }
+
+    /**
      * Returns the entityNum for the given alias
      *
      * @param alias alias of the accountId

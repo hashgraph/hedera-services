@@ -51,6 +51,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -106,7 +107,12 @@ class CreateEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 =
+                new EVM(
+                        operationRegistry,
+                        gasCalculator,
+                        EvmConfiguration.DEFAULT,
+                        EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         EVM_VERSION_0_30,

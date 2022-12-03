@@ -60,7 +60,7 @@ dependencyResolutionManagement {
         // distribution. These libs can be depended on during compilation, or bundled as part of runtime.
         create("libs") {
             // Definition of version numbers for all libraries
-            version("besu-version", "22.10.0")
+            version("besu-version", "22.10.1")
             version("besu-native-version", "0.6.1")
             version("bouncycastle-version", "1.70")
             version("caffeine-version", "3.0.6")
@@ -84,7 +84,7 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.33.0-alpha.3")
+            version("swirlds-version", "0.33.0-alpha.4")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
