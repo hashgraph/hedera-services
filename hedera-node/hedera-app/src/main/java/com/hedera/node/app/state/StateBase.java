@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.state.impl;
+package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.WritableState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
 
 /**
@@ -26,7 +27,7 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-abstract class StateBase<K, V> implements ReadableState<K, V> {
+public abstract class StateBase<K, V> implements ReadableState<K, V> {
     /** The state key, which cannot be null */
     private final String stateKey;
 
@@ -63,13 +64,11 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
         // We need to cache the item because somebody may perform business logic basic on this
         // contains call, even if they never need the value itself!
         Objects.requireNonNull(key);
-        if (readCache.containsKey(key)) {
-            return Optional.ofNullable(readCache.get(key));
-        } else {
+        if (!hasBeenRead(key)) {
             final var value = readFromDataSource(key);
-            readCache.put(key, value);
-            return Optional.ofNullable(readCache.get(key));
+            markRead(key, value);
         }
+        return Optional.ofNullable(readCache.get(key));
     }
 
     /**
@@ -83,6 +82,7 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
     }
 
     /** Clears all cached data, including the set of all read keys. */
+    /*@OverrideMustCallSuper*/
     public void reset() {
         readCache.clear();
     }
@@ -95,4 +95,26 @@ abstract class StateBase<K, V> implements ReadableState<K, V> {
      * @return The value read from the underlying data source. May be null.
      */
     protected abstract V readFromDataSource(@NonNull K key);
+
+    /**
+     * Records the given key and associated value were read. {@link MutableStateBase} will call this
+     * method in some cases when a key is read as part of a modification (for example, with {@link
+     * MutableStateBase#getForModify(Object)}).
+     *
+     * @param key The key
+     * @param value The value, which may be null.
+     */
+    protected final void markRead(@NonNull K key, @Nullable V value) {
+        readCache.put(key, value);
+    }
+
+    /**
+     * Gets whether this key has been read at some point by this {@link StateBase}.
+     *
+     * @param key The key.
+     * @return Whether it has been read
+     */
+    protected final boolean hasBeenRead(@NonNull K key) {
+        return readCache.containsKey(key);
+    }
 }

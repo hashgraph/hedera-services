@@ -32,8 +32,8 @@ import java.util.Objects;
 public final class ServiceStateNode extends PartialNaryMerkleInternal implements MerkleInternal {
     // For serialization
     private static final long CLASS_ID = 2202034923L;
-    private static final int VERSION_0 = 0;
-    private static final int CURRENT_VERSION = VERSION_0;
+    private static final int VERSION_1 = 1;
+    private static final int CURRENT_VERSION = VERSION_1;
 
     /**
      * Standardized child index at which to find the "serviceName" of the service for which this
@@ -41,11 +41,8 @@ public final class ServiceStateNode extends PartialNaryMerkleInternal implements
      */
     private static final int NAME_CHILD_INDEX = 0;
 
-    /**
-     * @deprecated DO NOT CALL THIS CONSTRUCTOR. It exists only for deserialization.
-     */
-    @Deprecated(since = "1.0")
-    ServiceStateNode() {}
+    /** DO NOT CALL THIS CONSTRUCTOR. It exists only for deserialization. */
+    public ServiceStateNode() {}
 
     /**
      * Create a new ServiceStateNode.
@@ -101,7 +98,7 @@ public final class ServiceStateNode extends PartialNaryMerkleInternal implements
      *     Otherwise, null.
      */
     @Nullable
-    public MerkleNode find(@NonNull final String stateKey) {
+    public <T extends MerkleNode> T find(@NonNull final String stateKey) {
         Objects.requireNonNull(stateKey);
         final int indexOfNode = indexOf(stateKey);
         return indexOfNode == -1 ? null : getChild(indexOfNode);
@@ -116,7 +113,7 @@ public final class ServiceStateNode extends PartialNaryMerkleInternal implements
      * @param merkle The merkle node to set. Cannot be null.
      */
     public void put(@NonNull final String stateKey, @NonNull final MerkleNode merkle) {
-        validateStateKey(stateKey);
+        StateUtils.validateStateKey(stateKey);
         final int existingIndex = indexOf(stateKey);
         final int index = existingIndex == -1 ? getNumberOfChildren() : existingIndex;
         setChild(index, new StringLeaf(stateKey));
@@ -178,25 +175,5 @@ public final class ServiceStateNode extends PartialNaryMerkleInternal implements
         }
 
         return -1;
-    }
-
-    /**
-     * Verifies the state key meets all the validation requirements.
-     *
-     * @param stateKey The state key
-     * @throws NullPointerException if the state key is null
-     * @throws IllegalArgumentException if any other validation criteria fails
-     */
-    private void validateStateKey(@NonNull final String stateKey) {
-        if (Objects.requireNonNull(stateKey).isEmpty()) {
-            throw new IllegalArgumentException("The state key must have characters");
-        }
-
-        for (int i = 0; i < stateKey.length(); i++) {
-            final var c = stateKey.charAt(i);
-            if (!Character.isSpaceChar(c) && !Character.isAlphabetic(c) && !Character.isDigit(c)) {
-                throw new IllegalArgumentException("Illegal character at position " + i);
-            }
-        }
     }
 }

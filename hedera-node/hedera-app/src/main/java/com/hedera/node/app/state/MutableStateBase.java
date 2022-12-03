@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.state.impl;
+package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.state.WritableState;
-import com.swirlds.common.merkle.MerkleNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * A base class for implementations of {@link WritableState}.
@@ -26,15 +29,10 @@ import java.util.*;
  * @param <K> The key type
  * @param <V> The value type
  */
-abstract class MutableStateBase<K, V> extends StateBase<K, V> implements WritableState<K, V> {
+public abstract class MutableStateBase<K, V> extends StateBase<K, V>
+        implements WritableState<K, V> {
     /** A map of all modified values buffered in this mutable state */
-    private final Map<K, V> modified = new HashMap<>();
-
-    /** A set of all keys (and their implicit values) removed by this mutable state */
-    private final Set<K> removed = new HashSet<>();
-
-    /** A set of all keys (and their implicit values) PUT by this mutable state */
-    private final Set<K> put = new HashSet<>();
+    private final Map<K, Modification<V>> modifications = new HashMap<>();
 
     /**
      * Create a new StateBase.
@@ -47,12 +45,14 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
 
     /** Flushes all changes into the underlying data store. */
     public final void commit() {
-        for (final K key : removed) {
-            removeFromDataSource(key);
-        }
-
-        for (final K key : put) {
-            putIntoDataSource(key, modified.get(key));
+        for (final var entry : modifications.entrySet()) {
+            final var key = entry.getKey();
+            final var mod = entry.getValue();
+            if (mod.removed) {
+                removeFromDataSource(key);
+            } else if (mod.value != null) {
+                putIntoDataSource(key, mod.value);
+            }
         }
     }
 
@@ -65,51 +65,51 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     @Override
     public final void reset() {
         super.reset();
-        modified.clear();
-        removed.clear();
-        put.clear();
+        modifications.clear();
     }
 
     /** {@inheritDoc} */
     @NonNull
     @Override
     public final Optional<V> getForModify(@NonNull final K key) {
-        // Check whether the key has been removed!
-        if (removed.contains(key)) {
-            return Optional.empty();
+        // If there is a modification, then we've already done a "put" or "remove"
+        // and should return based on the modification
+        final var mod = modifications.get(key);
+        if (mod != null) {
+            return mod.removed ? Optional.empty() : Optional.ofNullable(mod.value);
         }
 
-        // Either get the value from the cache, if we've already seen this key, or get the key
-        // from the underlying data source and store it into the map
-        // QUESTION: Should we store data source lookup misses as well, so we never go back? Use a
-        // sentinel?
-        final var value = modified.computeIfAbsent(key, ignore -> getForModifyFromDataSource(key));
-        return Optional.ofNullable(value);
+        // If the modifications map does not contain an answer, but the read cache of the
+        // super class does, then it means we've looked this up before but never modified it.
+        // So we can just delegate to the super class.
+        if (hasBeenRead(key)) {
+            return super.get(key);
+        }
+
+        // We have not queried this key before, so let's look it up and store that we have
+        // read this key. And then return the value.
+        final var val = getForModifyFromDataSource(key);
+        markRead(key, val);
+        return Optional.ofNullable(val);
     }
 
     /** {@inheritDoc} */
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
-        modified.put(key, value);
-        put.add(key);
-        removed.remove(key);
+        modifications.put(key, new Modification<>(false, value));
     }
 
     /** {@inheritDoc} */
     @Override
     public final void remove(@NonNull final K key) {
-        modified.remove(key);
-        put.remove(key);
-        removed.add(key);
+        modifications.put(key, new Modification<>(true, null));
     }
 
     /** {@inheritDoc} */
     @NonNull
     @Override
     public final Set<K> modifiedKeys() {
-        final var combinedKeys = modified.keySet();
-        combinedKeys.addAll(removed);
-        return combinedKeys;
+        return modifications.keySet();
     }
 
     /**
@@ -137,11 +137,15 @@ abstract class MutableStateBase<K, V> extends StateBase<K, V> implements Writabl
     protected abstract void removeFromDataSource(@NonNull K key);
 
     /**
-     * Gets the underlying merkle node.
+     * The record of a modification that was made OR ATTEMPTED TO BE MADE by this {@link
+     * MutableStateBase}. If a key is put, removed, or "getForModify", then a record of that work
+     * will be made in the {@link MutableStateBase#modifications} map. Even if a "getForModify" is
+     * made on a key that doesn't exist in the backing storage, we will create a {@link
+     * Modification} and store it, so we don't go looking up that value again later.
      *
-     * @return The merkle node
-     * @param <T> The type of merkle node
+     * @param removed Whether this modification represents a removal operation
+     * @param value The value, which may be null
+     * @param <V> The type of value
      */
-    @NonNull
-    protected abstract <T extends MerkleNode> T merkleNode();
+    private record Modification<V>(boolean removed, @Nullable V value) {}
 }

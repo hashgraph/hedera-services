@@ -17,60 +17,54 @@ package com.hedera.node.app.state;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.node.app.spi.state.WritableState;
-import com.hedera.node.app.state.impl.InMemoryState;
-import com.hedera.node.app.state.impl.StateRegistryImpl;
-import com.hedera.node.app.state.merkle.HederaStateImpl;
-import com.hedera.node.app.state.merkle.ServiceStateNode;
-import com.hedera.services.state.merkle.MerkleTopic;
-import com.hedera.services.utils.EntityNum;
-import com.swirlds.common.system.BasicSoftwareVersion;
-import com.swirlds.common.system.SoftwareVersion;
 import org.junit.jupiter.api.Test;
 
 /** Tests a more complete and elaborate usage of the various state classes. */
 class StateTest {
     @Test
     void foo() {
-        // Create the merkle state tree
-        var state = new HederaStateImpl();
-
-        // Create a fake "consensus service" and add it to the merkle tree
-        var consensusService = new ServiceStateNode("Consensus Service");
-        state.addServiceStateNode(consensusService);
-
-        // Now, pretend we're going to create a StateRegistry to pass to the ConsensusService
-        // in its constructor, and let it create the "topics" merkle map. This is the genesis
-        // use case, where there is no existing data or version.
-        var currentVersion = new BasicSoftwareVersion(1);
-        var previousVersion = SoftwareVersion.NO_VERSION;
-        var registry = new StateRegistryImpl(consensusService, currentVersion, previousVersion);
-
-        // Initially there should not be a "TOPICS" state because this is genesis
-        WritableState<EntityNum, MerkleTopic> topicsState = registry.getState("TOPICS");
-        assertNull(topicsState);
-
-        // Create a new state
-        topicsState = registry.defineNewState("TOPICS").inMemory().define();
-        assertNotNull(topicsState);
-
-        // Populate the state with some initial values
-        final var topic1 = new MerkleTopic("Memo 1", null, null, 86400, null, null);
-        topicsState.put(new EntityNum(1001), topic1);
-
-        // None of these values are yet in the underlying merkle tree. So commit them.
-        ((InMemoryState<EntityNum, MerkleTopic>) topicsState).commit();
-
-        // We can now throw away the topicsState, and get a new one. But first lets
-        // make a fast copy of the state, and get a new topicsState, and put some
-        // more stuff in it.
-        state = state.copy();
-        var states = state.createWritableStates("Consensus Service");
-        topicsState = states.get("TOPICS");
-        var opt = topicsState.get(new EntityNum(1001));
-        assertTrue(opt.isPresent());
-        assertEquals(topic1, opt.get());
-        final var topic2 = new MerkleTopic("Memo 2", null, null, 86400, null, null);
-        topicsState.put(new EntityNum(1002), topic2);
+        //        // Create the merkle state tree
+        //        var state = new HederaStateImpl();
+        //
+        //        // Create a fake "consensus service" and add it to the merkle tree
+        //        var consensusService = new ServiceStateNode("Consensus Service");
+        //        state.addServiceStateNode(consensusService);
+        //
+        //        // Now, pretend we're going to create a StateRegistry to pass to the
+        // ConsensusService
+        //        // in its constructor, and let it create the "topics" merkle map. This is the
+        // genesis
+        //        // use case, where there is no existing data or version.
+        //        var currentVersion = new BasicSoftwareVersion(1);
+        //        var previousVersion = SoftwareVersion.NO_VERSION;
+        //        var registry = new StateRegistryImpl(ConstructableRegistry.getInstance(),
+        // consensusService, currentVersion, previousVersion);
+        //
+        //        // Initially there should not be a "TOPICS" state because this is genesis
+        //        WritableState<EntityNum, MerkleTopic> topicsState = registry.getState("TOPICS");
+        //        assertNull(topicsState);
+        //
+        //        // Create a new state
+        //        topicsState = registry.defineNewState("TOPICS").inMemory();
+        //        assertNotNull(topicsState);
+        //
+        //        // Populate the state with some initial values
+        //        final var topic1 = new MerkleTopic("Memo 1", null, null, 86400, null, null);
+        //        topicsState.put(new EntityNum(1001), topic1);
+        //
+        //        // None of these values are yet in the underlying merkle tree. So commit them.
+        //        ((InMemoryState<EntityNum, MerkleTopic>) topicsState).commit();
+        //
+        //        // We can now throw away the topicsState, and get a new one. But first lets
+        //        // make a fast copy of the state, and get a new topicsState, and put some
+        //        // more stuff in it.
+        //        state = state.copy();
+        //        var states = state.createWritableStates("Consensus Service");
+        //        topicsState = states.get("TOPICS");
+        //        var opt = topicsState.get(new EntityNum(1001));
+        //        assertTrue(opt.isPresent());
+        //        assertEquals(topic1, opt.get());
+        //        final var topic2 = new MerkleTopic("Memo 2", null, null, 86400, null, null);
+        //        topicsState.put(new EntityNum(1002), topic2);
     }
 }

@@ -15,21 +15,16 @@
  */
 package com.hedera.node.app.state.merkle;
 
-import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.state.WritableState;
 import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.state.impl.InMemoryState;
-import com.hedera.node.app.state.impl.OnDiskState;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.system.Round;
 import com.swirlds.common.system.SwirldDualState;
 import com.swirlds.common.system.SwirldState2;
 import com.swirlds.common.system.address.AddressBook;
-import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -42,8 +37,8 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
 
     // For serialization
     private static final long CLASS_ID = 29399209029302L;
-    private static final int VERSION_0 = 0;
-    private static final int CURRENT_VERSION = VERSION_0;
+    private static final int VERSION_1 = 1;
+    private static final int CURRENT_VERSION = VERSION_1;
 
     private BiConsumer<Round, SwirldDualState> onHandleConsensusRound;
 
@@ -77,28 +72,31 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
 
     @Override
     public ReadableStates createReadableStates(@NonNull final String serviceName) {
-        final var opt = getServiceStateNode(serviceName);
-        if (opt.isEmpty()) {
-            return null; // Null, or optional??
-        }
+        //        final var opt = getServiceStateNode(serviceName);
+        //        if (opt.isEmpty()) {
+        //            return null; // Null, or optional??
+        //        }
+        //
+        //        return new ReadableStates() {
+        //            @NonNull
+        //            @Override
+        //            public <K, V, S extends ReadableState<K, V>> S get(@NonNull String stateKey) {
+        //                final var service = opt.get();
+        //                final var merkleNode = service.find(stateKey);
+        //                if (merkleNode instanceof MerkleMap) {
+        //                    //noinspection unchecked,rawtypes
+        //                    return (S) new InMemoryState(stateKey, (MerkleMap) merkleNode);
+        //                } else if (merkleNode instanceof VirtualMap) {
+        //                    //noinspection unchecked,rawtypes
+        //                    return (S) new OnDiskState<>(stateKey, (VirtualMap) merkleNode);
+        //                } else {
+        //                    throw new IllegalArgumentException("Cannot find state for '" +
+        // stateKey + "'");
+        //                }
+        //            }
+        //        };
 
-        return new ReadableStates() {
-            @NonNull
-            @Override
-            public <K, V, S extends ReadableState<K, V>> S get(@NonNull String stateKey) {
-                final var service = opt.get();
-                final var merkleNode = service.find(stateKey);
-                if (merkleNode instanceof MerkleMap) {
-                    //noinspection unchecked,rawtypes
-                    return (S) new InMemoryState(stateKey, (MerkleMap) merkleNode);
-                } else if (merkleNode instanceof VirtualMap) {
-                    //noinspection unchecked,rawtypes
-                    return (S) new OnDiskState<>(stateKey, (VirtualMap) merkleNode);
-                } else {
-                    throw new IllegalArgumentException("Cannot find state for '" + stateKey + "'");
-                }
-            }
-        };
+        return null; // TODO
     }
 
     @Override
@@ -113,17 +111,19 @@ public class HederaStateImpl extends PartialNaryMerkleInternal
             @NonNull
             @Override
             public <K, V> WritableState<K, V> get(@NonNull String stateKey) {
-                final var service = opt.get();
-                final var merkleNode = service.find(stateKey);
-                if (merkleNode instanceof MerkleMap) {
-                    //noinspection unchecked,rawtypes
-                    return new InMemoryState(stateKey, (MerkleMap) merkleNode);
-                } else if (merkleNode instanceof VirtualMap) {
-                    //noinspection unchecked,rawtypes
-                    return new OnDiskState<>(stateKey, (VirtualMap) merkleNode);
-                } else {
-                    throw new IllegalArgumentException("Cannot find state for '" + stateKey + "'");
-                }
+                //                final var service = opt.get();
+                //                final var merkleNode = service.find(stateKey);
+                //                if (merkleNode instanceof MerkleMap) {
+                //                    //noinspection unchecked,rawtypes
+                //                    return new InMemoryState(stateKey, (MerkleMap) merkleNode);
+                //                } else if (merkleNode instanceof VirtualMap) {
+                //                    //noinspection unchecked,rawtypes
+                //                    return new OnDiskState<>(stateKey, (VirtualMap) merkleNode);
+                //                } else {
+                //                    throw new IllegalArgumentException("Cannot find state for '" +
+                // stateKey + "'");
+                //                }
+                return null; // TODO
             }
         };
     }

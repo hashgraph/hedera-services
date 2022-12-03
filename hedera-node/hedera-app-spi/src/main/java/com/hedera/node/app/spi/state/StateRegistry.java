@@ -19,7 +19,40 @@ import com.swirlds.common.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
-/** Defines a registry of states for services. */
+/**
+ * Defines a registry of states for a service module. When a new service instance is created, the
+ * application will provide an instance of the {@link StateRegistry} to the service. The service
+ * instance may inspect existing state, create new state, migrate state, or delete state.
+ *
+ * <p>State keys must have at least one character. All characters in a state key may only be:
+ *
+ * <ul>
+ *   <li>{@link Character#isAlphabetic(int)}
+ *   <li>{@link Character#isSpaceChar(int)}
+ *   <li>{@link Character#isDigit(int)}
+ * </ul>
+ *
+ * <pre>
+ *     public MyConstructor(StateRegistry r) {
+ *         final var oldFoo = r.readableState("OLD_FOO", OldFooKeyParser::new, OldFooParser::new);
+ *
+ *         // Every state you want, must be registered
+ *         r.register("FOO")
+ *              .inMemory()
+ *              .keyWriter(FooKey::write)
+ *              .valueWriter(Foo::write)
+ *              .keyParser(FooKeyParser::new)
+ *              .valueParser(FooParser::new)
+ *              .onMigrate(OldFooKeyParser::new, OldFooParser::new, (state) -> {
+ *
+ *              })
+ *              .onMigrate(newState -> {
+ *                  ... do migration, using oldFoo, or whatever I want
+ *              })
+ *              .complete();
+ *     }
+ * </pre>
+ */
 public interface StateRegistry {
 
     /**
@@ -44,36 +77,25 @@ public interface StateRegistry {
     SoftwareVersion getExistingVersion();
 
     /**
-     * Gets an existing state from the {@link StateRegistry}, identified by {@code stateKey}.
-     *
-     * @param stateKey The key of the state to get.
-     * @return the {@link WritableState} associated with the key, if there is one. This state should
-     *     <b>NOT</b> be held but should only be used during construction of the service. It refers
-     *     to a mutable state, which will not be mutable once the service is up and running! The
-     *     returned value may be null if there is no such state.
-     * @param <K> The key for the state.
-     * @param <V> The value for the state.
-     */
-    @Nullable
-    <K, V> WritableState<K, V> getState(@NonNull String stateKey);
-
-    /**
-     * Replaces any existing state associated with {@code stateKey} with a new, empty state as
-     * defined by {@link StateDefinition}. Or, create a new state that didn't exist before.
-     *
-     * <p>If you need to migrate data from an old state, please use {@link #getState(String)} first
-     * to get the old state, then replace the state with this method, and then call {@link
-     * #getState(String)} again to get the new state. Then migrate data from old to new.
+     * Register every state the service supports. If the state file being loaded by the system
+     * includes old states that are to be ignored, or migrated, they must be part of the
+     * registration process, otherwise the state file will fail to load and the application will
+     * fail to start.
      *
      * @param stateKey The state key. Cannot be null and must be a valid state key.
-     * @return A {@link StateDefinition} to be used to define the state.
+     * @return A {@link StateRegistrationBuilder} for specifying the registration details.
      */
-    StateDefinition defineNewState(@NonNull String stateKey);
+    StateRegistrationBuilder register(@NonNull String stateKey);
 
     /**
      * Removes the specified state from the registry.
      *
      * @param stateKey The key of the state to remove
      */
-    void removeState(@NonNull String stateKey);
+    <K, V> void remove(
+            @NonNull String stateKey,
+            @NonNull Parser<K> keyParser,
+            @NonNull Parser<V> valueParser,
+            @NonNull Writer<K> keyWriter,
+            @NonNull Writer<V> valueWriter);
 }

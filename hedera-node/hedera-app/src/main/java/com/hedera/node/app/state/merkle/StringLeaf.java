@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.state.merkle;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -28,11 +29,11 @@ import java.util.Objects;
  * A {@link MerkleLeaf} containing a single String value. This is an immutable leaf -- once set, the
  * leaf value can never change. The maximum size for the leaf value is 128 bytes.
  */
-final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
+public final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf, SelfSerializable {
     // For serialization
     private static final long CLASS_ID = 99992323882382L;
-    private static final int VERSION_0 = 0;
-    private static final int CURRENT_VERSION = VERSION_0;
+    private static final int VERSION_1 = 1;
+    private static final int CURRENT_VERSION = VERSION_1;
 
     /** The maximum length we permit for the string's value. This is in bytes, not in chars. */
     private static final int MAX_LENGTH = 128;
@@ -104,7 +105,7 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
     public void deserialize(@NonNull final SerializableDataInputStream in, int ver)
             throws IOException {
         // We cannot parse streams from future versions.
-        if (ver > VERSION_0) {
+        if (ver > VERSION_1) {
             throw new IllegalArgumentException("The version number of the stream is too new.");
         }
 
@@ -137,7 +138,7 @@ final class StringLeaf extends PartialMerkleLeaf implements MerkleLeaf {
             @NonNull final SerializableDataInputStream in, int ver) throws IOException {
 
         // We cannot parse streams from future versions.
-        if (ver > VERSION_0) {
+        if (ver > VERSION_1) {
             throw new IllegalArgumentException("The version number of the stream is too new.");
         }
 
