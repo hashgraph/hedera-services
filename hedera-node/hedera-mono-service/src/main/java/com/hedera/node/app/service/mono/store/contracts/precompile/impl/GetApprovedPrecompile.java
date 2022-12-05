@@ -15,11 +15,19 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -31,6 +39,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -38,7 +47,12 @@ import org.apache.tuweni.bytes.Bytes;
 public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         implements EvmGetApprovedPrecompile {
 
-    GetApprovedWrapper getApprovedWrapper;
+    private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
+        TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+    private static final Function HAPI_GET_APPROVED_FUNCTION = new Function("getApproved(address,uint256)", "(int,int)");
+    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
+
+    GetApprovedWrapper<TokenID> getApprovedWrapper;
 
     public GetApprovedPrecompile(
             final TokenID tokenId,
@@ -81,8 +95,17 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
                 : encoder.encodeGetApproved(canonicalSpender);
     }
 
-    public static GetApprovedWrapper decodeGetApproved(
+    public static GetApprovedWrapper<TokenID> decodeGetApproved(
             final Bytes input, final TokenID impliedTokenId) {
-        return EvmGetApprovedPrecompile.decodeGetApproved(input, impliedTokenId);
+        final var offset = impliedTokenId == null ? 1 : 0;
+        if (offset == 1) {
+            final Tuple decodedArguments = decodeFunctionCall(input,
+                HAPI_GET_APPROVED_FUNCTION_SELECTOR, HAPI_GET_APPROVED_FUNCTION_DECODER);
+            final var serialNo = (BigInteger) decodedArguments.get(offset);
+            return new GetApprovedWrapper<>(convertAddressBytesToTokenID(decodedArguments.get(0)), serialNo.longValueExact());
+        } else {
+            final var rawGetApprovedWrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
+            return new GetApprovedWrapper<>(convertAddressBytesToTokenID(rawGetApprovedWrapper.tokenId()), rawGetApprovedWrapper.serialNo());
+        }
     }
 }
