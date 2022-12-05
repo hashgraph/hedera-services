@@ -29,6 +29,10 @@ tasks.test {
     exclude("**/*")
 }
 
+configurations {
+    evaluationDependsOn(":hedera-node:hapi-fees")
+}
+
 sourceSets {
     // Needed because "resource" directory is misnamed. See https://github.com/hashgraph/hedera-services/issues/3361
     main {
@@ -120,6 +124,8 @@ tasks.eet {
 }
 
 tasks.shadowJar {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
     archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
@@ -135,6 +141,8 @@ tasks.shadowJar {
 }
 
 val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
     group = "shadow"
     from(sourceSets.main.get().output)
     configurations = listOf(project.configurations["runtimeClasspath"])
