@@ -17,7 +17,6 @@ package com.hedera.node.app.service.token.entity;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Optional;
 
 /** An Account entity represents a Hedera Account. */

@@ -34,6 +34,7 @@ public record PreHandleContext(
         @NonNull HederaAccountNumbers accountNumbers,
         @NonNull HederaFileNumbers fileNumbers,
         @NonNull AccountKeyLookup keyLookup) {
+    // Do we need keyLookup anymore ? Can it be replaced with CallContext ?
     public PreHandleContext {
         Objects.requireNonNull(accountNumbers);
         Objects.requireNonNull(fileNumbers);

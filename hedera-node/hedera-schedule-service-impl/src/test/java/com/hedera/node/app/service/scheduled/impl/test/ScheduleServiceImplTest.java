@@ -15,22 +15,47 @@
  */
 package com.hedera.node.app.service.scheduled.impl.test;
 
+import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.scheduled.impl.ScheduleServiceImpl;
+import com.hedera.node.app.spi.CallContext;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.BDDMockito.given;
+
+@ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
+    private ScheduleServiceImpl subject;
+    @Mock private InMemoryStateImpl schedules;
+    @Mock private States states;
+    @Mock private CallContext callContext;
+    @Mock private PreHandleContext preHandleCtx;
 
     @Test
-    void testSpi() {
-        // when
+    void testsSpi() {
         final ScheduleService service = ScheduleService.getInstance();
-
-        // then
         Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(
-                ScheduleService.class,
-                service.getClass(),
-                "We must always receive an instance of type StandardScheduledService");
+        Assertions.assertEquals(ScheduleService.class, service.getClass(),
+                "We must always receive an instance of type StandardScheduleService");
+    }
+
+    @Test
+    void createsNewInstance() {
+        subject = new ScheduleServiceImpl(callContext);
+
+        given(states.get("SCHEDULES-BY-ID")).willReturn(schedules);
+        given(states.get("SCHEDULES-BY-EQUALITY")).willReturn(schedules);
+        given(states.get("SCHEDULES-BY-EXPIRY")).willReturn(schedules);
+
+        final var serviceImpl = subject.createPreTransactionHandler(states, preHandleCtx);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, preHandleCtx);
+        assertNotEquals(serviceImpl1, serviceImpl);
     }
 }

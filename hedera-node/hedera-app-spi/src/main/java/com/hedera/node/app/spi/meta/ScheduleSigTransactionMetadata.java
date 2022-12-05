@@ -28,20 +28,24 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * because doing so would cause service modules to have a circular dependency on the app module.
  * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class ScheduleSigTransactionMetadata extends SigTransactionMetadata implements ScheduleTransactionMetadata{
+public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
+        implements ScheduleTransactionMetadata {
     private TransactionMetadata innerTransactionMetadata;
+
     public ScheduleSigTransactionMetadata(
             final AccountKeyLookup keyLookup,
             final TransactionBody topLevelTxn,
             final AccountID payer) {
         super(keyLookup, topLevelTxn, payer);
     }
+
     @Override
     public TransactionMetadata getInnerMeta() {
         return innerTransactionMetadata;
     }
+
     @Override
-    public void setInnerMeta(TransactionMetadata metadata){
+    public void setInnerMeta(TransactionMetadata metadata) {
         this.innerTransactionMetadata = metadata;
     }
 }

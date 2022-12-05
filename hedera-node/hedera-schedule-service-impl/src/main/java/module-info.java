@@ -7,4 +7,6 @@ module com.hedera.node.app.service.scheduled.impl {
 
     exports com.hedera.node.app.service.scheduled.impl to
             com.hedera.node.app.service.scheduled.impl.test;
+    provides com.hedera.node.app.service.scheduled.ScheduleService with
+            com.hedera.node.app.service.scheduled.impl.ScheduleServiceImpl;
 }

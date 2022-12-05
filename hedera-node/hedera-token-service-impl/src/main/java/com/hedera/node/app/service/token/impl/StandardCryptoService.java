@@ -34,6 +34,6 @@ public final class StandardCryptoService implements CryptoService {
     @NonNull
     @Override
     public AccountKeyLookup createAccountKeyLookupFor(States states) {
-        return null;
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 }

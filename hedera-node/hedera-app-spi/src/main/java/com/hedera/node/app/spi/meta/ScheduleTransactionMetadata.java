@@ -16,11 +16,11 @@
 package com.hedera.node.app.spi.meta;
 
 /**
- * Metadata collected when schedule transactions are handled as part of "pre-handle". This happens with
- * multiple background threads. Any state read or computed as part of this pre-handle, including any
- * errors, are captured in the {@link TransactionMetadata}. This is then made available to the transaction
- * during the "handle" phase as part of the HandleContext.
- * This contains an inner {@link TransactionMetadata} for scheduled transaction.
+ * Metadata collected when schedule transactions are handled as part of "pre-handle". This happens
+ * with multiple background threads. Any state read or computed as part of this pre-handle,
+ * including any errors, are captured in the {@link TransactionMetadata}. This is then made
+ * available to the transaction during the "handle" phase as part of the HandleContext. This
+ * contains an inner {@link TransactionMetadata} for scheduled transaction.
  */
 public interface ScheduleTransactionMetadata extends TransactionMetadata {
     TransactionMetadata getInnerMeta();
