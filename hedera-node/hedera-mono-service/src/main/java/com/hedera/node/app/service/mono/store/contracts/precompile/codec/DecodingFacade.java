@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.ObjectUtils.Null;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -205,7 +204,7 @@ public class DecodingFacade {
             final TokenID tokenType,
             @NonNull final Tuple[] abiExchanges,
             final UnaryOperator<byte[]> aliasResolver,
-        final Predicate<AccountID> exists) {
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.NftExchange> nftExchanges = new ArrayList<>();
         for (final var exchange : abiExchanges) {
             final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
@@ -225,7 +224,7 @@ public class DecodingFacade {
 
     public static List<SyntheticTxnFactory.FungibleTokenTransfer> bindFungibleTransfersFrom(
             final TokenID tokenType,
-        @NonNull final Tuple[] abiTransfers,
+            @NonNull final Tuple[] abiTransfers,
             final UnaryOperator<byte[]> aliasResolver,
             final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
@@ -252,8 +251,9 @@ public class DecodingFacade {
     }
 
     public static List<SyntheticTxnFactory.HbarTransfer> bindHBarTransfersFrom(
-        @NonNull final Tuple[] abiTransfers, final UnaryOperator<byte[]> aliasResolver,
-        final Predicate<AccountID> exists) {
+            @NonNull final Tuple[] abiTransfers,
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<AccountID> exists) {
         final List<SyntheticTxnFactory.HbarTransfer> hbarTransfers = new ArrayList<>();
         for (final var transfer : abiTransfers) {
             final long amount = transfer.get(1);

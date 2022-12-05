@@ -24,8 +24,7 @@ public interface HederaAliasManager {
 
     void link(final ByteString alias, final EntityNum num);
 
-    boolean maybeLinkEvmAddress(
-            @Nullable final JKey key, final EntityNum num);
+    boolean maybeLinkEvmAddress(@Nullable final JKey key, final EntityNum num);
 
     void unlink(final ByteString alias);
 

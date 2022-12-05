@@ -478,7 +478,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     public static void decodeTokenTransfer(
             final UnaryOperator<byte[]> aliasResolver,
-        final Predicate<AccountID> exists,
+            final Predicate<AccountID> exists,
             final List<TokenTransferWrapper> tokenTransferWrappers,
             final Tuple[] tokenTransferTuples) {
         for (final var tupleNested : tokenTransferTuples) {
@@ -524,7 +524,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             }
 
             DecodingFacade.addSignedAdjustment(
-                fungibleTransfers, tokenType, accountID, amount, false);
+                    fungibleTransfers, tokenType, accountID, amount, false);
         }
 
         final var tokenTransferWrappers =
