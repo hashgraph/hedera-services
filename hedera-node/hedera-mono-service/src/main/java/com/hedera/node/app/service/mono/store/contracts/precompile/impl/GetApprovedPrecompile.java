@@ -76,8 +76,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = tokenId == null ? input : input.slice(24);
-        getApprovedWrapper = decodeGetApproved(nestedInput, tokenId);
+        getApprovedWrapper = decodeGetApproved(input, tokenId);
         return super.body(input, aliasResolver);
     }
 
@@ -113,7 +112,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         } else {
             final var rawGetApprovedWrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             return new GetApprovedWrapper<>(
-                 tokenIdFromEvmAddress(rawGetApprovedWrapper.tokenId()),
+                    tokenIdFromEvmAddress(rawGetApprovedWrapper.tokenId()),
                     rawGetApprovedWrapper.serialNo());
         }
     }

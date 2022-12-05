@@ -34,12 +34,13 @@ public interface EvmGetApprovedPrecompile {
     ABIType<Tuple> ERC_GET_APPROVED_FUNCTION_DECODER = TypeFactory.create(UINT256);
 
     static GetApprovedWrapper<byte[]> decodeGetApproved(final Bytes input) {
+        final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
+        final var nestedInput = input.slice(24);
         final Tuple decodedArguments =
                 decodeFunctionCall(
-                        input,
+                        nestedInput,
                         ERC_GET_APPROVED_FUNCTION_SELECTOR,
                         ERC_GET_APPROVED_FUNCTION_DECODER);
-        final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var serialNo = (BigInteger) decodedArguments.get(0);
 
         return new GetApprovedWrapper<>(tokenAddress, serialNo.longValueExact());
