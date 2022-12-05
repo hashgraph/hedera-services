@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-
 import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -25,8 +23,11 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
 import java.util.Optional;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
 /**
  * A {@code TokenPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -50,8 +51,8 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         final var createAccountId = op.getTreasury();
         final var autoRenewalAccountId = op.getAutoRenewAccount();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        meta.addNonPayerKey(createAccountId);
-        meta.addNonPayerKeyIfReceiverSigRequired(autoRenewalAccountId, INVALID_AUTORENEW_ACCOUNT);
+        meta.addNonPayerKey(createAccountId, INVALID_ALLOWANCE_OWNER_ID);
+        meta.addNonPayerKeyIfReceiverSigRequired(autoRenewalAccountId, INVALID_ALLOWANCE_OWNER_ID);
         return meta;
     }
 
