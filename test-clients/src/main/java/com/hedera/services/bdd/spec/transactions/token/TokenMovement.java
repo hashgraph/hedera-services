@@ -62,6 +62,7 @@ public class TokenMovement {
         this.receiver = receiver;
         this.receivers = receivers;
 
+        evmAddressReceiver = Optional.empty();
         senderFn = Optional.empty();
         receiverFn = Optional.empty();
         expectedDecimals = -1;
@@ -96,6 +97,7 @@ public class TokenMovement {
         this.amount = amount;
         this.receiverFn = Optional.of(receiverFn);
 
+        evmAddressReceiver = Optional.empty();
         sender = Optional.empty();
         receiver = Optional.empty();
         receivers = Optional.empty();
@@ -118,6 +120,7 @@ public class TokenMovement {
         this.receivers = receivers;
         this.isApproval = isApproval;
 
+        evmAddressReceiver = Optional.empty();
         senderFn = Optional.empty();
         receiverFn = Optional.empty();
         expectedDecimals = -1;
@@ -139,6 +142,7 @@ public class TokenMovement {
         this.expectedDecimals = expectedDecimals;
         this.isApproval = isApproval;
 
+        evmAddressReceiver = Optional.empty();
         senderFn = Optional.empty();
         receiverFn = Optional.empty();
     }
