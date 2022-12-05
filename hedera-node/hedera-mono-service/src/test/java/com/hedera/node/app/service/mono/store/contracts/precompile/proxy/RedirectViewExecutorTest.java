@@ -155,12 +155,12 @@ class RedirectViewExecutorTest {
     void computeAllowanceOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
                 .when(
                         () ->
                                 AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedInput), eq(fungible), any()))
+                                        any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
         given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
@@ -206,12 +206,12 @@ class RedirectViewExecutorTest {
     void revertsFrameAndReturnsNullOnRevertingException() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
                 .when(
                         () ->
                                 AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedInput), eq(fungible), any()))
+                                        any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible))
                 .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));

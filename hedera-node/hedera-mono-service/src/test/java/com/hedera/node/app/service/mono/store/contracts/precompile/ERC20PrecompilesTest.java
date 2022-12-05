@@ -768,7 +768,7 @@ class ERC20PrecompilesTest {
                 .when(
                         () ->
                                 AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedPretendArguments), any(), any()))
+                                        any(), any(), any()))
                 .thenReturn(ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeAllowance(10L)).willReturn(successResult);
