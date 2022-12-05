@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.mocks;
 
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -135,6 +136,11 @@ public class MockTransactionContext implements TransactionContext {
 
     @Override
     public void setCreated(final AccountID id) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setEvmAddress(ByteString evmAddress) {
         throw new UnsupportedOperationException();
     }
 

@@ -108,7 +108,7 @@ class GlobalDynamicPropertiesTest {
         assertFalse(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertTrue(subject.shouldDoTraceabilityExport());
         assertTrue(subject.isLazyCreationEnabled());
-        assertFalse(subject.isCryptoCreateWithAliasEnabled());
+        assertFalse(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.isAtomicCryptoTransferEnabled());
     }
 
@@ -267,7 +267,7 @@ class GlobalDynamicPropertiesTest {
         assertTrue(subject.dynamicEvmVersion());
         assertTrue(subject.shouldCompressAccountBalanceFilesOnCreation());
         assertFalse(subject.isLazyCreationEnabled());
-        assertTrue(subject.isCryptoCreateWithAliasEnabled());
+        assertTrue(subject.isCryptoCreateWithAliasAndEvmAddressEnabled());
         assertFalse(subject.shouldEnforceAccountCreationThrottleForContracts());
     }
 
@@ -538,7 +538,7 @@ class GlobalDynamicPropertiesTest {
         given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
                 .willReturn(i + 88L);
         given(properties.getBooleanProperty(LAZY_CREATION_ENABLED)).willReturn((i + 89) % 2 == 0);
-        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_ENABLED))
+        given(properties.getBooleanProperty(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED))
                 .willReturn((i + 90) % 2 == 0);
         given(properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS))
                 .willReturn(entityScaleFactors);
