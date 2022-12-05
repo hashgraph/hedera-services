@@ -46,16 +46,11 @@ import static org.mockito.BDDMockito.given;
 class TokenPreTransactionHandlerImplTest {
 
     private static final String ACCOUNTS = "ACCOUNTS";
-    @Mock
-    private InMemoryStateImpl accounts;
-    @Mock
-    private States states;
-    @Mock
-    private HederaAccountNumbers accountNumbers;
-    @Mock
-    private MerkleAccount payerAccount;
-    @Mock
-    private HederaFileNumbers fileNumbers;
+    @Mock private InMemoryStateImpl accounts;
+    @Mock private States states;
+    @Mock private HederaAccountNumbers accountNumbers;
+    @Mock private MerkleAccount payerAccount;
+    @Mock private HederaFileNumbers fileNumbers;
     private PreHandleContext context;
     private AccountStore store;
     private TokenPreTransactionHandlerImpl subject;
@@ -74,7 +69,6 @@ class TokenPreTransactionHandlerImplTest {
         context = new PreHandleContext(accountNumbers, fileNumbers);
 
         subject = new TokenPreTransactionHandlerImpl(store, context);
-
     }
 
     @Test
