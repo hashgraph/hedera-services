@@ -15,39 +15,36 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.TokenWipeFactory.newSignedTokenWipe;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
 public enum TokenWipeScenarios implements TxnHandlingScenario {
     VALID_WIPE_WITH_EXTANT_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenWipe()
-                                    .wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_WIPE_KT)
-                                    .get()));
+                    newSignedTokenWipe()
+                            .wiping(KNOWN_TOKEN_WITH_WIPE, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_WIPE_KT)
+                            .get());
         }
     },
     WIPE_WITH_MISSING_TOKEN {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(newSignedTokenWipe().wiping(MISSING_TOKEN, MISC_ACCOUNT).get()));
+                    newSignedTokenWipe().wiping(MISSING_TOKEN, MISC_ACCOUNT).get());
         }
     },
     WIPE_FOR_TOKEN_WITHOUT_KEY {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedTokenWipe()
-                                    .wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
-                                    .nonPayerKts(TOKEN_KYC_KT)
-                                    .get()));
+                    newSignedTokenWipe()
+                            .wiping(KNOWN_TOKEN_NO_SPECIAL_KEYS, MISC_ACCOUNT)
+                            .nonPayerKts(TOKEN_KYC_KT)
+                            .get());
         }
     },
 }
