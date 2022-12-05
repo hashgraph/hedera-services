@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+
 import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -23,11 +25,8 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 
 /**
  * A {@code TokenPreTransactionHandler} implementation that pre-computes the required signing keys
