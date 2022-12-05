@@ -14,6 +14,7 @@ contract ERC20Contract {
             IERC20Metadata(token).name();
         }
     }
+
     function symbol(address token) public view {
         IERC20Metadata(token).symbol();
     }

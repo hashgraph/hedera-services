@@ -136,7 +136,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                     contractCreation,
                     isStatic,
                     mirrorReceiver);
-        } catch (ResourceLimitException e) {
+        } catch (final ResourceLimitException e) {
             handleResourceLimitExceeded(
                     sender,
                     gasPrice,
