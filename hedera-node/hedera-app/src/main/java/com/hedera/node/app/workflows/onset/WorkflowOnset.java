@@ -104,7 +104,8 @@ public class WorkflowOnset {
     }
 
     private OnsetResult doParseAndCheck(
-            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier) throws PreCheckException {
+            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier)
+            throws PreCheckException {
 
         // Do some general pre-checks
         if (nodeInfo.isSelfZeroStake()) {

@@ -21,12 +21,12 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hedera.node.app.workflows.common.SubmissionManager;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,6 +37,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
     private final WorkflowOnset onset;
     private final IngestChecker checker;
+    private final CryptoService cryptoService;
     private final ThrottleAccumulator throttleAccumulator;
     private final SubmissionManager submissionManager;
     private final HapiOpCounters opCounters;
@@ -54,11 +55,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     public IngestWorkflowImpl(
             @NonNull final WorkflowOnset onset,
             @NonNull final IngestChecker checker,
+            @NonNull final CryptoService cryptoService,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final HapiOpCounters opCounters) {
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
+        this.cryptoService = requireNonNull(cryptoService);
         this.throttleAccumulator = requireNonNull(throttleAccumulator);
         this.submissionManager = requireNonNull(submissionManager);
         this.opCounters = requireNonNull(opCounters);
@@ -85,15 +88,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             checker.checkTransactionSemantics(txBody, functionality);
 
             // 3. Get payer account
-            final AccountID payerID = txBody.getTransactionID().getAccountID();
             // TODO: Get payer account
-            //            final var payerOpt =
-            // query.getAccountById(txBody.getTransactionID().getAccountID());
-            //            if (payerOpt.isEmpty()) {
-            //                // This is an error condition. No account!
-            //                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
-            //            }
-            //            final var payer = payerOpt.get();
+            // final AccountID payerID = txBody.getTransactionID().getAccountID();
+            // final States states =
+            //         getLatestImmutableState().createReadableStates("CryptoService");
+            // final var payer =
+            //         cryptoService.createQueryHandler(states).getAccountById(payerID)
+            //                 .orElseThrow(() -> new
+            //                         PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
             final Object /* Account */ payer = null;
 
             // 4. Check payer's signature

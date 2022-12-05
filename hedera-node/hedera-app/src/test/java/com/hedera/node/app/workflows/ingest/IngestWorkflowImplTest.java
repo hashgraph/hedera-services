@@ -35,6 +35,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
@@ -64,6 +65,7 @@ class IngestWorkflowImplTest {
 
     @Mock private WorkflowOnset onset;
     @Mock private IngestChecker checker;
+    @Mock private CryptoService cryptoService;
     @Mock private ThrottleAccumulator throttleAccumulator;
     @Mock private SubmissionManager submissionManager;
     @Mock private HapiOpCounters opCounters;
@@ -83,7 +85,12 @@ class IngestWorkflowImplTest {
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         workflow =
                 new IngestWorkflowImpl(
-                        onset, checker, throttleAccumulator, submissionManager, opCounters);
+                        onset,
+                        checker,
+                        cryptoService,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters);
     }
 
     @Test
@@ -93,6 +100,7 @@ class IngestWorkflowImplTest {
                                 new IngestWorkflowImpl(
                                         null,
                                         checker,
+                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -102,6 +110,7 @@ class IngestWorkflowImplTest {
                                 new IngestWorkflowImpl(
                                         onset,
                                         null,
+                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -109,18 +118,39 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
-                                        onset, checker, null, submissionManager, opCounters))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new IngestWorkflowImpl(
-                                        onset, checker, throttleAccumulator, null, opCounters))
+                                        onset,
+                                        checker,
+                                        null,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
                                         onset,
                                         checker,
+                                        cryptoService,
+                                        null,
+                                        submissionManager,
+                                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset,
+                                        checker,
+                                        cryptoService,
+                                        throttleAccumulator,
+                                        null,
+                                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        onset,
+                                        checker,
+                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         null))
@@ -131,24 +161,6 @@ class IngestWorkflowImplTest {
     void testSuccessWithByteBuffer() throws PreCheckException, InvalidProtocolBufferException {
         // given
         when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
-        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
-
-        // when
-        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
-
-        // then
-        final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
-        assertThat(response.getCost()).isZero();
-        verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(ctx, TRANSACTION_BODY, requestBuffer);
-        verify(opCounters).countSubmitted(ConsensusCreateTopic);
-    }
-
-    @Test
-    void testSuccessWithByteArray() throws PreCheckException, InvalidProtocolBufferException {
-        // given
-        when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(ONSET_RESULT);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
