@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -206,6 +207,18 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 });
         return this;
     }
+
+  public ContractFnResultAsserts exposeCreatedTokenAddress(final Consumer<ByteString> observer) {
+    registerProvider(
+        (spec, o) -> {
+          ContractFunctionResult result = (ContractFunctionResult) o;
+          final var logInfo = result.getLogInfo(0);
+          observer.accept(logInfo.getData());
+          final var a = 5;
+//          Assertions.assertEquals(gas, result.getGas(), "Wrong amount of initial Gas!");
+        });
+    return this;
+  }
 
     public ContractFnResultAsserts amount(long amount) {
         registerProvider(
