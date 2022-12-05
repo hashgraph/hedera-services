@@ -7,6 +7,13 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.serdes;
     exports com.hedera.node.app.hapi.utils.sysfiles.domain.throttling;
     exports com.hedera.node.app.hapi.utils;
+    exports com.hedera.node.app.hapi.utils.throttles;
+    exports com.hedera.node.app.hapi.utils.builder;
+    exports com.hedera.node.app.hapi.utils.sysfiles.domain;
+    exports com.hedera.node.app.hapi.utils.sysfiles;
+    exports com.hedera.node.app.hapi.utils.exports;
+    exports com.hedera.node.app.hapi.utils.exception;
+    exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;
@@ -24,4 +31,5 @@ module com.hedera.node.app.hapi.utils {
     requires org.apache.commons.lang3;
     requires net.i2p.crypto.eddsa;
     requires javax.inject;
+    requires com.hedera.node.app.service.evm;
 }

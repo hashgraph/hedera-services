@@ -24,12 +24,15 @@ configurations.all {
 }
 
 dependencies {
+    api(project(":hedera-node:hedera-evm"))
+    annotationProcessor(libs.dagger.compiler)
+
+    implementation(libs.bundles.di)
     implementation(libs.hapi)
     implementation(libs.bundles.logging)
     implementation(libs.protobuf.java)
     implementation(libs.jackson)
     implementation(libs.swirlds.common)
-    implementation(libs.javax.inject)
     implementation(libs.bundles.bouncycastle)
     implementation(libs.headlong)
     implementation(libs.besu.secp256k1)
