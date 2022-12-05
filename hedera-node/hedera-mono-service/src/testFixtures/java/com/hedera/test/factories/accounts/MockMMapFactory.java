@@ -20,8 +20,8 @@ import static com.hedera.test.utils.IdUtils.asContract;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import com.hedera.services.state.merkle.MerkleAccount;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 
 public class MockMMapFactory {
