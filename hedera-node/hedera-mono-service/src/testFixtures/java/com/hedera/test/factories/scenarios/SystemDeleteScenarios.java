@@ -15,41 +15,38 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import static com.hedera.test.factories.txns.PlatformTxnFactory.from;
 import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 
-import com.hedera.services.utils.accessors.PlatformTxnAccessor;
+import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.factories.sigs.SigMapGenerator;
 import java.util.Set;
 
 public enum SystemDeleteScenarios implements TxnHandlingScenario {
     SYSTEM_DELETE_FILE_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(from(newSignedSystemDelete().file(MISC_FILE_ID).get()));
+            return PlatformTxnAccessor.from(newSignedSystemDelete().file(MISC_FILE_ID).get());
         }
     },
     FULL_PAYER_SIGS_VIA_MAP_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedSystemDelete()
-                                    .payer(DILIGENT_SIGNING_PAYER_ID)
-                                    .payerKt(DILIGENT_SIGNING_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get()));
+                    newSignedSystemDelete()
+                            .payer(DILIGENT_SIGNING_PAYER_ID)
+                            .payerKt(DILIGENT_SIGNING_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     MISSING_PAYER_SIGS_VIA_MAP_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedSystemDelete()
-                                    .payer(TOKEN_TREASURY_ID)
-                                    .payerKt(TOKEN_TREASURY_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get()));
+                    newSignedSystemDelete()
+                            .payer(TOKEN_TREASURY_ID)
+                            .payerKt(TOKEN_TREASURY_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     INVALID_PAYER_SIGS_VIA_MAP_SCENARIO {
@@ -58,15 +55,14 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
             buggySigMapGen.setInvalidEntries(Set.of(1));
 
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedSystemDelete()
-                                    .fee(1_234L)
-                                    .sigMapGen(buggySigMapGen)
-                                    .payer(DILIGENT_SIGNING_PAYER_ID)
-                                    .payerKt(DILIGENT_SIGNING_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get()));
+                    newSignedSystemDelete()
+                            .fee(1_234L)
+                            .sigMapGen(buggySigMapGen)
+                            .payer(DILIGENT_SIGNING_PAYER_ID)
+                            .payerKt(DILIGENT_SIGNING_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     },
     AMBIGUOUS_SIG_MAP_SCENARIO {
@@ -74,16 +70,15 @@ public enum SystemDeleteScenarios implements TxnHandlingScenario {
             SigMapGenerator ambigSigMapGen = SigMapGenerator.withAmbiguousPrefixes();
 
             return PlatformTxnAccessor.from(
-                    from(
-                            newSignedSystemDelete()
-                                    .fee(1_234L)
-                                    .keyFactory(overlapFactory)
-                                    .sigMapGen(ambigSigMapGen)
-                                    .payer(FROM_OVERLAP_PAYER_ID)
-                                    .payerKt(FROM_OVERLAP_PAYER_KT)
-                                    .nonPayerKts(MISC_FILE_WACL_KT)
-                                    .file(MISC_FILE_ID)
-                                    .get()));
+                    newSignedSystemDelete()
+                            .fee(1_234L)
+                            .keyFactory(overlapFactory)
+                            .sigMapGen(ambigSigMapGen)
+                            .payer(FROM_OVERLAP_PAYER_ID)
+                            .payerKt(FROM_OVERLAP_PAYER_KT)
+                            .nonPayerKts(MISC_FILE_WACL_KT)
+                            .file(MISC_FILE_ID)
+                            .get());
         }
     }
 }
