@@ -17,6 +17,7 @@ package com.hedera.node.app.service.token;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,7 +35,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody}
      * @return the metadata for the account creation
      */
-    TransactionMetadata preHandleCryptoCreate(final TransactionBody txn);
+    TransactionMetadata preHandleCryptoCreate(final TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoUpdate}
@@ -45,7 +46,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody}
      * @return the metadata for the account update
      */
-    TransactionMetadata preHandleUpdateAccount(TransactionBody txn);
+    TransactionMetadata preHandleUpdateAccount(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoTransfer}
@@ -56,7 +57,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody}
      * @return the metadata for the crypto transfer
      */
-    TransactionMetadata preHandleCryptoTransfer(TransactionBody txn);
+    TransactionMetadata preHandleCryptoTransfer(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#CryptoDelete}
@@ -67,7 +68,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody}
      * @return the metadata for the account deletion
      */
-    TransactionMetadata preHandleCryptoDelete(TransactionBody txn);
+    TransactionMetadata preHandleCryptoDelete(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -79,7 +80,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody}
      * @return the metadata for the allowance approvals
      */
-    TransactionMetadata preHandleApproveAllowances(TransactionBody txn);
+    TransactionMetadata preHandleApproveAllowances(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -91,7 +92,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody}
      * @return the metadata for the allowance revocations
      */
-    TransactionMetadata preHandleDeleteAllowances(TransactionBody txn);
+    TransactionMetadata preHandleDeleteAllowances(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -103,7 +104,7 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody}
      * @return the metadata for the live hash addition
      */
-    TransactionMetadata preHandleAddLiveHash(TransactionBody txn);
+    TransactionMetadata preHandleAddLiveHash(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link
@@ -115,5 +116,5 @@ public interface CryptoPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody}
      * @return the metadata for the live hash deletion
      */
-    TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn);
+    TransactionMetadata preHandleDeleteLiveHash(TransactionBody txn, AccountID payer);
 }

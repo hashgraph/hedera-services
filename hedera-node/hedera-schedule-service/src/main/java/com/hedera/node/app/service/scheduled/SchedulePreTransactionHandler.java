@@ -17,6 +17,7 @@ package com.hedera.node.app.service.scheduled;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,7 +35,7 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody}
      * @return the metadata for the schedule creation
      */
-    TransactionMetadata preHandleCreateSchedule(TransactionBody txn);
+    TransactionMetadata preHandleCreateSchedule(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
@@ -45,7 +46,7 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody}
      * @return the metadata for the schedule signing
      */
-    TransactionMetadata preHandleSignSchedule(TransactionBody txn);
+    TransactionMetadata preHandleSignSchedule(TransactionBody txn, AccountID payer);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete}
@@ -56,5 +57,5 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody}
      * @return the metadata for the schedule deletion
      */
-    TransactionMetadata preHandleDeleteSchedule(TransactionBody txn);
+    TransactionMetadata preHandleDeleteSchedule(TransactionBody txn, AccountID payer);
 }

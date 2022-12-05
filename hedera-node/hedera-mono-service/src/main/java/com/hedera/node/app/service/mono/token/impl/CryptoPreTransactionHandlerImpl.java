@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
@@ -23,10 +24,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSF
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.SigTransactionMetadata;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -51,19 +53,17 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx) {
+    public TransactionMetadata preHandleCryptoCreate(final TransactionBody tx, AccountID payer) {
         final var op = tx.getCryptoCreateAccount();
         final var key = asHederaKey(op.getKey());
         final var receiverSigReq = op.getReceiverSigRequired();
-        final var payer = tx.getTransactionID().getAccountID();
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDelete();
-        final var payer = txn.getTransactionID().getAccountID();
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
@@ -74,9 +74,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn) {
+    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoApproveAllowance();
-        final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
@@ -108,9 +107,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDeleteAllowance();
-        final var payer = txn.getTransactionID().getAccountID();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.getNftAllowancesList()) {
@@ -121,9 +119,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleUpdateAccount(final TransactionBody txn) {
+    public TransactionMetadata preHandleUpdateAccount(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoUpdateAccount();
-        final var payer = txn.getTransactionID().getAccountID();
         final var updateAccountId = op.getAccountIDToUpdate();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
 
@@ -141,19 +138,19 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleCryptoTransfer(final TransactionBody txn) {
+    public TransactionMetadata preHandleCryptoTransfer(final TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleAddLiveHash(final TransactionBody txn) {
+    public TransactionMetadata preHandleAddLiveHash(final TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteLiveHash(final TransactionBody txn) {
+    public TransactionMetadata preHandleDeleteLiveHash(final TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
@@ -191,5 +188,23 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     @VisibleForTesting
     void setWaivers(final CryptoSignatureWaiversImpl waivers) {
         this.waivers = waivers;
+    }
+
+    @Override
+    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer, HederaFunctionality function) {
+       if(function == CryptoCreate){
+           return preHandleCryptoCreate(tx, payer);
+       } else if(function == CryptoTransfer){
+           return preHandleCryptoTransfer(tx, payer);
+       } else if(function == CryptoDelete){
+           return preHandleCryptoDelete(tx, payer);
+       } else if(function == CryptoUpdate){
+           return preHandleUpdateAccount(tx, payer);
+       } else if(function == CryptoApproveAllowance){
+           return preHandleApproveAllowances(tx, payer);
+       } else if(function == CryptoDeleteAllowance){
+           return preHandleDeleteAllowances(tx, payer);
+       }
+       throw new IllegalArgumentException(function +" is not a valid functionality");
     }
 }
