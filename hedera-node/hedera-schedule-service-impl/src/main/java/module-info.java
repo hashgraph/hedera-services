@@ -5,9 +5,6 @@ module com.hedera.node.app.service.scheduled.impl {
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.service.mono;
 
-    provides com.hedera.node.app.service.scheduled.ScheduleService with
-            com.hedera.node.app.service.scheduled.impl.ScheduleServiceImpl;
-
     exports com.hedera.node.app.service.scheduled.impl to
             com.hedera.node.app.service.scheduled.impl.test;
 }

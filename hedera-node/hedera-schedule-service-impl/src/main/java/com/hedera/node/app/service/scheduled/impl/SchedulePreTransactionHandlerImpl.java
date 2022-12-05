@@ -21,10 +21,12 @@ import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.CallContext;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
+import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
@@ -48,7 +50,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     }
 
     @Override
-    public TransactionMetadata preHandleCreateSchedule(final TransactionBody txn, final AccountID payer) {
+    public ScheduleTransactionMetadata preHandleCreateSchedule(final TransactionBody txn, final AccountID payer) {
        final var op = txn.getScheduleCreate();
        final var scheduledTxn = asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
 
@@ -59,52 +61,55 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         would not execute the transaction without and extra signature from the custom payer.*/
        final var payerForNested = op.hasPayerAccountID() ? op.getPayerAccountID() : txn.getTransactionID().getAccountID();
 
-       final var meta = new ScheduleSigTransactionMetadata(keyLookup, txn , payer, scheduledTxn, payerForNested);
+       final var meta = new ScheduleSigTransactionMetadata(keyLookup, txn , payer);
 
        if (op.hasAdminKey()) {
            final var key = asHederaKey(op.getAdminKey());
            key.ifPresent(meta::addToReqKeys);
        }
+        // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here to see
+        // if provided payer is same as payer in the inner transaction.
 
-       preHandleInnerTxn(scheduledTxn, payerForNested);
+       final var innerMeta = preHandleInnerTxn(scheduledTxn, payerForNested);
+       meta.setInnerMeta(innerMeta);
        return meta;
     }
 
     private TransactionMetadata preHandleInnerTxn(final TransactionBody scheduledTxn, final AccountID payerForNested) {
-        final var innerMeta = new SigTransactionMetadata(keyLookup, scheduledTxn, payerForNested);
+        TransactionMetadata meta;
 
         final HederaFunctionality scheduledFunction;
-        try{
-          scheduledFunction = functionOf(scheduledTxn);
-        }catch(UnknownHederaFunctionality ex){
-            innerMeta.setStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-            return innerMeta;
+        try {
+           scheduledFunction = functionOf(scheduledTxn);
+        } catch (UnknownHederaFunctionality ex) {
+            return failedMeta(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, scheduledTxn, payerForNested);
         }
+
         if (!isSchedulable(scheduledFunction)) {
-            innerMeta.setStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-            return innerMeta;
+            return failedMeta(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, scheduledTxn, payerForNested);
         }
 
         final var innerTxnPreTxnHandler = callContext.getPreTxnHandler(scheduledFunction);
-        final var meta = innerTxnPreTxnHandler.preHandle(scheduledTxn, payerForNested);
+        meta = innerTxnPreTxnHandler.preHandle(scheduledTxn, payerForNested);
         if (meta.failed()) {
             meta.setStatus(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
+
         return meta;
     }
 
     @Override
-    public TransactionMetadata preHandleSignSchedule(TransactionBody txn, AccountID payer) {
+    public ScheduleTransactionMetadata preHandleSignSchedule(TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandleDeleteSchedule(TransactionBody txn, AccountID payer) {
+    public ScheduleTransactionMetadata preHandleDeleteSchedule(TransactionBody txn, AccountID payer) {
         throw new NotImplementedException();
     }
 
     @Override
-    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer) {
+    public ScheduleTransactionMetadata preHandle(TransactionBody tx, AccountID payer) {
         final var function = tx.getDataCase();
         if(function == SCHEDULECREATE){
             return preHandleCreateSchedule(tx, payer);
@@ -113,6 +118,12 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         } else if(function == SCHEDULESIGN){
             return preHandleSignSchedule(tx, payer);
         }
-        throw new IllegalArgumentException(function +" is not a valid functionality");
+        throw new IllegalArgumentException(function + " is not a valid functionality");
+    }
+
+    private TransactionMetadata failedMeta(final ResponseCodeEnum response, final TransactionBody txn , final AccountID payer){
+        final var meta = new SigTransactionMetadata(keyLookup, txn, payer);
+        meta.setStatus(response);
+        return meta;
     }
 }

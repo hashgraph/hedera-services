@@ -16,12 +16,8 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -32,48 +28,20 @@ import java.util.List;
  * because doing so would cause service modules to have a circular dependency on the app module.
  * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class ScheduleSigTransactionMetadata extends SigTransactionMetadata {
-    private SigTransactionMetadata innerTransactionMetadata;
-    private TransactionBody innerTxn;
-
+public class ScheduleSigTransactionMetadata extends SigTransactionMetadata implements ScheduleTransactionMetadata{
+    private TransactionMetadata innerTransactionMetadata;
     public ScheduleSigTransactionMetadata(
             final AccountKeyLookup keyLookup,
             final TransactionBody topLevelTxn,
-            final AccountID payer,
-            final List<HederaKey> otherKeys,
-            final TransactionBody innerTxn,
-            final AccountID innerTxnPayer) {
-        super(keyLookup, topLevelTxn, payer, otherKeys);
-        this.innerTxn = innerTxn;
-        innerTransactionMetadata = new SigTransactionMetadata(keyLookup, innerTxn, innerTxnPayer);
+            final AccountID payer) {
+        super(keyLookup, topLevelTxn, payer);
     }
-
-    public ScheduleSigTransactionMetadata(
-            final AccountKeyLookup keyLookup,
-            final TransactionBody topLevelTxn,
-            final AccountID payer,
-            final TransactionBody innerTxn,
-            final AccountID innerTxnPayer) {
-        this(keyLookup, topLevelTxn, payer, Collections.emptyList(), innerTxn, innerTxnPayer);
-    }
-
-    public TransactionBody getTopLevelTxn() {
-        return txn;
-    }
-
-    public TransactionBody getInnerTxn() {
-        return innerTxn;
-    }
-
-    public SigTransactionMetadata getInnerMeta() {
+    @Override
+    public TransactionMetadata getInnerMeta() {
         return innerTransactionMetadata;
     }
-
-    public void addToInnerTxnRequiredKeys(final HederaKey key) {
-        innerTransactionMetadata.getReqKeys().add(key);
-    }
-
-    public void addInnerTxnStatus(final ResponseCodeEnum status) {
-        innerTransactionMetadata.setStatus(status);
+    @Override
+    public void setInnerMeta(TransactionMetadata metadata){
+        this.innerTransactionMetadata = metadata;
     }
 }
