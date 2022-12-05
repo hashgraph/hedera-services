@@ -35,15 +35,11 @@ public interface EvmIsFrozenPrecompile {
     Bytes IS_FROZEN_TOKEN_FUNCTION_SELECTOR = Bytes.wrap(IS_FROZEN_TOKEN_FUNCTION.selector());
     ABIType<Tuple> IS_FROZEN_TOKEN_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    static TokenFreezeUnfreezeWrapper decodeIsFrozen(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    static TokenFreezeUnfreezeWrapper<byte[], byte[]> decodeIsFrozen(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-        return TokenFreezeUnfreezeWrapper.forIsFrozen(tokenID, accountID);
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

@@ -34,7 +34,9 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -83,7 +85,7 @@ public class FreezeTokenPrecompile extends AbstractFreezeUnfreezePrecompile {
         return pricingUtils.getMinimumPriceInTinybars(FREEZE, consensusTime);
     }
 
-    public static TokenFreezeUnfreezeWrapper decodeFreeze(
+    public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeFreeze(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(

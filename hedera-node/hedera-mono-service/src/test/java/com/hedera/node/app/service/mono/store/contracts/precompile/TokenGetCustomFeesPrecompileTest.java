@@ -241,7 +241,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenGetCustomFees(GET_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     @Test
@@ -258,7 +258,7 @@ class TokenGetCustomFeesPrecompileTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenGetCustomFees(GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     private void givenMinimalFrameContext() {

@@ -375,7 +375,7 @@ class HTSPrecompiledContractTest {
         tokenInfoPrecompile
                 .when(() -> TokenInfoPrecompile.decodeGetTokenInfo(input))
                 .thenReturn(tokenInfoWrapper);
-        given(tokenInfoWrapper.tokenID()).willReturn(fungible);
+        given(tokenInfoWrapper.token()).willReturn(fungible);
         given(messageFrame.isStatic()).willReturn(true);
         given(messageFrame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.isInTransaction()).willReturn(false);

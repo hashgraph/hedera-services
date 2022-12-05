@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -56,8 +60,10 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
         return encoder.encodeIsKyc(isKyc);
     }
 
-    public static GrantRevokeKycWrapper decodeIsKyc(
+    public static GrantRevokeKycWrapper<TokenID, AccountID> decodeIsKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        return EvmIsKycPrecompile.decodeIsKyc(input, aliasResolver);
+        final var rawGrantRevokeKycWrapper = EvmIsKycPrecompile.decodeIsKyc(input);
+        return new GrantRevokeKycWrapper<>(convertAddressBytesToTokenID(rawGrantRevokeKycWrapper.token()),
+            convertLeftPaddedAddressToAccountId(rawGrantRevokeKycWrapper.account(), aliasResolver));
     }
 }

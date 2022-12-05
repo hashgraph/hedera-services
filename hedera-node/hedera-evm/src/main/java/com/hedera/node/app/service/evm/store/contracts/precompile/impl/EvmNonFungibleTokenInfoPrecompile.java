@@ -33,15 +33,13 @@ public interface EvmNonFungibleTokenInfoPrecompile {
             Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
     ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create("(bytes32,int64)");
 
-    public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
+    public static TokenInfoWrapper<byte[]> decodeGetNonFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input,
                         GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
                         GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var serialNum = (long) decodedArguments.get(1);
-        return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNum);
+        return TokenInfoWrapper.forNonFungibleToken(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

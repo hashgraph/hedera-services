@@ -35,16 +35,11 @@ public interface EvmIsKycPrecompile {
     Bytes IS_KYC_TOKEN_FUNCTION_SELECTOR = Bytes.wrap(IS_KYC_TOKEN_FUNCTION.selector());
     ABIType<Tuple> IS_KYC_TOKEN_FUNCTION_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    public static GrantRevokeKycWrapper decodeIsKyc(
-            final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
+    public static GrantRevokeKycWrapper<byte[], byte[]> decodeIsKyc(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, IS_KYC_TOKEN_FUNCTION_SELECTOR, IS_KYC_TOKEN_FUNCTION_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var accountID =
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
-
-        return new GrantRevokeKycWrapper(tokenID, accountID);
+        return new GrantRevokeKycWrapper<>(decodedArguments.get(0), decodedArguments.get(1));
     }
 }

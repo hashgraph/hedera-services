@@ -32,12 +32,11 @@ public interface EvmTokenGetCustomFeesPrecompile {
     Bytes TOKEN_GET_CUSTOM_FEES_SELECTOR = Bytes.wrap(TOKEN_GET_CUSTOM_FEES_FUNCTION.selector());
     ABIType<Tuple> TOKEN_GET_CUSTOM_FEES_DECODER = TypeFactory.create(BYTES32);
 
-    public static TokenGetCustomFeesWrapper decodeTokenGetCustomFees(final Bytes input) {
+    public static TokenGetCustomFeesWrapper<byte[]> decodeTokenGetCustomFees(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, TOKEN_GET_CUSTOM_FEES_SELECTOR, TOKEN_GET_CUSTOM_FEES_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return new TokenGetCustomFeesWrapper(tokenID);
+        return new TokenGetCustomFeesWrapper<>(decodedArguments.get(0));
     }
 }

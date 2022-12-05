@@ -30,13 +30,15 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractGrantRevokeKycPrecompile extends AbstractWritePrecompile {
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
-    protected GrantRevokeKycWrapper grantRevokeOp;
+    protected GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeOp;
     protected Id tokenId;
     protected Id accountId;
     protected AccountStore accountStore;

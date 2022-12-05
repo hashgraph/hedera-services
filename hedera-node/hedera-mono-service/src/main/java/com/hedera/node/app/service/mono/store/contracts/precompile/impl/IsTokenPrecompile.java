@@ -15,6 +15,10 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+
+
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -44,7 +48,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeIsToken(input);
-        tokenId = tokenInfoWrapper.tokenID();
+        tokenId = tokenInfoWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -54,7 +58,8 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
         return encoder.encodeIsToken(isToken);
     }
 
-    public static TokenInfoWrapper decodeIsToken(final Bytes input) {
-        return EvmIsTokenPrecompile.decodeIsToken(input);
+    public static TokenInfoWrapper<TokenID> decodeIsToken(final Bytes input) {
+        final var rawTokenInfoWrapper = EvmIsTokenPrecompile.decodeIsToken(input);
+        return TokenInfoWrapper.forToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
     }
 }

@@ -32,10 +32,10 @@ public interface EvmIsTokenPrecompile {
     Bytes IS_TOKEN_FUNCTION_SELECTOR = Bytes.wrap(IS_TOKEN_FUNCTION.selector());
     ABIType<Tuple> IS_TOKEN_DECODER = TypeFactory.create(BYTES32);
 
-    public static TokenInfoWrapper decodeIsToken(final Bytes input) {
+    public static TokenInfoWrapper<byte[]> decodeIsToken(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, IS_TOKEN_FUNCTION_SELECTOR, IS_TOKEN_DECODER);
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forToken(tokenID);
+
+        return TokenInfoWrapper.forToken(decodedArguments.get(0));
     }
 }

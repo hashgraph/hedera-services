@@ -562,7 +562,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createGrantKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenGrantKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -572,7 +572,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createRevokeKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenRevokeKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -607,7 +607,7 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
+    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
         builder.setAccount(freezeWrapper.account());
@@ -615,7 +615,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createUnFreeze(
-            final TokenFreezeUnfreezeWrapper unFreezeWrapper) {
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> unFreezeWrapper) {
         final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());

@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
@@ -50,7 +51,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetNonFungibleTokenInfo(input);
-        tokenId = tokenInfoWrapper.tokenID();
+        tokenId = tokenInfoWrapper.token();
         serialNumber = tokenInfoWrapper.serialNumber();
         return super.body(input, aliasResolver);
     }
@@ -71,7 +72,8 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
         return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 
-    public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
-        return EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+    public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {
+        final var rawTokenInfoWrapper = EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+        return TokenInfoWrapper.forNonFungibleToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()), rawTokenInfoWrapper.serialNumber());
     }
 }

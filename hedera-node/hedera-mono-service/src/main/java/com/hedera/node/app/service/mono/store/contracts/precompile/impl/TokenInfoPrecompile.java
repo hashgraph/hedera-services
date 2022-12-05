@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
@@ -47,7 +48,7 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetTokenInfo(input);
-        tokenId = tokenInfoWrapper.tokenID();
+        tokenId = tokenInfoWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -60,7 +61,8 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
         return encoder.encodeGetTokenInfo(tokenInfo);
     }
 
-    public static TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
-        return EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
+    public static TokenInfoWrapper<TokenID> decodeGetTokenInfo(final Bytes input) {
+        final var rawTokenInfoWrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
+        return TokenInfoWrapper.forToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
     }
 }

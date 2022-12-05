@@ -33,12 +33,11 @@ public interface EvmFungibleTokenInfoPrecompile {
             Bytes.wrap(GET_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
     ABIType<Tuple> GET_FUNGIBLE_TOKEN_INFO_DECODER = TypeFactory.create(BYTES32);
 
-    static TokenInfoWrapper decodeGetFungibleTokenInfo(final Bytes input) {
+    static TokenInfoWrapper<byte[]> decodeGetFungibleTokenInfo(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
                         input, GET_FUNGIBLE_TOKEN_INFO_SELECTOR, GET_FUNGIBLE_TOKEN_INFO_DECODER);
 
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forFungibleToken(tokenID);
+        return TokenInfoWrapper.forFungibleToken(decodedArguments.get(0));
     }
 }

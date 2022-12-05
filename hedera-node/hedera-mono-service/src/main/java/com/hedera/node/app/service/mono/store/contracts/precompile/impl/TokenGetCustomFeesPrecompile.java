@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenGetCustomFeesPrecompile;
@@ -45,7 +46,7 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenGetCustomFeesWrapper = decodeTokenGetCustomFees(input);
-        tokenId = tokenGetCustomFeesWrapper.tokenID();
+        tokenId = tokenGetCustomFeesWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -57,7 +58,8 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
         return encoder.encodeTokenGetCustomFees(customFees);
     }
 
-    public static TokenGetCustomFeesWrapper decodeTokenGetCustomFees(final Bytes input) {
-        return EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
+    public static TokenGetCustomFeesWrapper<TokenID> decodeTokenGetCustomFees(final Bytes input) {
+        final var rawTokenGetCustomFeesWrapper = EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
+        return new TokenGetCustomFeesWrapper<>(convertAddressBytesToTokenID(rawTokenGetCustomFeesWrapper.token()));
     }
 }

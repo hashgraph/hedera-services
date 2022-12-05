@@ -31,10 +31,10 @@ public interface EvmGetTokenTypePrecompile {
     Bytes GET_TOKEN_TYPE_SELECTOR = Bytes.wrap(GET_TOKEN_TYPE_FUNCTION.selector());
     ABIType<Tuple> GET_TOKEN_TYPE_DECODER = TypeFactory.create(BYTES32);
 
-    public static TokenInfoWrapper decodeGetTokenType(final Bytes input) {
+    public static TokenInfoWrapper<byte[]> decodeGetTokenType(final Bytes input) {
         final Tuple decodedArguments =
                 decodeFunctionCall(input, GET_TOKEN_TYPE_SELECTOR, GET_TOKEN_TYPE_DECODER);
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forToken(tokenID);
+
+        return TokenInfoWrapper.forToken(decodedArguments.get(0));
     }
 }

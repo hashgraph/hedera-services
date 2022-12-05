@@ -31,7 +31,9 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.token.FreezeLogic;
 import com.hedera.node.app.service.mono.txns.token.UnfreezeLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -41,7 +43,7 @@ public abstract class AbstractFreezeUnfreezePrecompile extends AbstractWritePrec
     private final boolean hasFreezeLogic;
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
-    protected TokenFreezeUnfreezeWrapper freezeUnfreezeOp;
+    protected TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeUnfreezeOp;
 
     protected AbstractFreezeUnfreezePrecompile(
             WorldLedgers ledgers,

@@ -15,25 +15,23 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public record TokenInfoWrapper(TokenID tokenID, long serialNumber) {
+public record TokenInfoWrapper<T>(T token, long serialNumber) {
     private static final long INVALID_SERIAL_NUMBER = -1;
 
-    public static TokenInfoWrapper forNonFungibleToken(
-            final TokenID tokenId, final long serialNumber) {
-        return new TokenInfoWrapper(tokenId, serialNumber);
+    public static <T> TokenInfoWrapper<T> forNonFungibleToken(
+            final T token, final long serialNumber) {
+        return new TokenInfoWrapper<>(token, serialNumber);
     }
 
-    public static TokenInfoWrapper forFungibleToken(final TokenID tokenId) {
-        return initializeWithTokenId(tokenId);
+    public static <T> TokenInfoWrapper<T> forFungibleToken(final T token) {
+        return initializeWithTokenId(token);
     }
 
-    public static TokenInfoWrapper forToken(final TokenID tokenId) {
-        return initializeWithTokenId(tokenId);
+    public static <T> TokenInfoWrapper<T> forToken(final T token) {
+        return initializeWithTokenId(token);
     }
 
-    private static TokenInfoWrapper initializeWithTokenId(final TokenID tokenId) {
-        return new TokenInfoWrapper(tokenId, INVALID_SERIAL_NUMBER);
+    private static <T> TokenInfoWrapper<T> initializeWithTokenId(final T token) {
+        return new TokenInfoWrapper<>(token, INVALID_SERIAL_NUMBER);
     }
 }
