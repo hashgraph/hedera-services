@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -69,7 +70,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREAT
 import static com.hedera.services.bdd.suites.utils.contracts.AddressResult.hexedAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.BoolResult.flag;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -91,6 +91,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
@@ -99,8 +101,6 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -791,7 +791,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -807,11 +807,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)));
                                 }))
                 .then(resetToDefault(LAZY_CREATION_ENABLED));
@@ -5426,7 +5422,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -5442,11 +5438,7 @@ public class ERCPrecompileSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_FROM_ACCOUNT_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)));
                                 }))
                 .then(resetToDefault(LAZY_CREATION_ENABLED));
