@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -30,12 +30,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;

@@ -23,11 +23,9 @@ import static com.hedera.node.app.service.mono.utils.EntityIdUtils.accountIdFrom
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -38,6 +36,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.ObjectUtils.Null;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -185,8 +184,8 @@ public class DecodingFacade {
      */
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress,
-            @NotNull final UnaryOperator<byte[]> aliasResolver,
-            @NotNull final Predicate<AccountID> exists) {
+            @NonNull final UnaryOperator<byte[]> aliasResolver,
+            @NonNull final Predicate<AccountID> exists) {
         var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
         if (!exists.test(accountID)) {
             accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
@@ -245,7 +244,7 @@ public class DecodingFacade {
         return fungibleTransfers;
     }
 
-    @NotNull
+    @NonNull
     public static AccountID generateAccountIDWithAliasCalculatedFrom(final AccountID accountID) {
         return AccountID.newBuilder()
                 .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))

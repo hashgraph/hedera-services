@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.ledger.accounts;
+package com.hedera.node.app.service.mono.ledger.accounts;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public interface HederaAliasManager {
 
     void link(final ByteString alias, final EntityNum num);
 
     boolean maybeLinkEvmAddress(
-            @org.jetbrains.annotations.Nullable final JKey key, final EntityNum num);
+            @Nullable final JKey key, final EntityNum num);
 
     void unlink(final ByteString alias);
 

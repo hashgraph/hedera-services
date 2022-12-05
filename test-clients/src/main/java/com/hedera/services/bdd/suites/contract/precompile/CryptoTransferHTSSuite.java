@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -64,7 +65,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZ
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -74,9 +74,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
