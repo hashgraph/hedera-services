@@ -157,10 +157,7 @@ class RedirectViewExecutorTest {
 
         final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        any(), any(), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
         given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
@@ -208,10 +205,7 @@ class RedirectViewExecutorTest {
 
         final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        any(), any(), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible))
                 .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));

@@ -38,8 +38,7 @@ class AllowancePrecompileTest {
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER = 0x602;
     private static final long ACCOUNT_NUM_ALLOWANCE_OWNER2 = 1001;
     private static final long ACCOUNT_NUM_ALLOWANCE_SPENDER2 = 1002;
-    private static final TokenID TOKEN_ID =
-            TokenID.newBuilder().setTokenNum(1004).build();
+    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeAllowanceInputERC() {
