@@ -65,7 +65,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     }
 
     @Override
-    public void handleTransaction(
+    public void submitTransaction(
             @NonNull final SessionContext ctx,
             @NonNull final ByteBuffer requestBuffer,
             @NonNull final ByteBuffer responseBuffer) {
@@ -82,7 +82,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             opCounters.countReceived(functionality);
 
             // 2. Check semantics
-            checker.checkTransactionSemantic(txBody, functionality);
+            checker.checkTransactionSemantics(txBody, functionality);
 
             // 3. Get payer account
             final AccountID payerID = txBody.getTransactionID().getAccountID();

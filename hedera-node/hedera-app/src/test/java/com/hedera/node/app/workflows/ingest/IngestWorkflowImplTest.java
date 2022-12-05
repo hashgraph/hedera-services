@@ -134,7 +134,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -153,7 +153,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -170,11 +170,11 @@ class IngestWorkflowImplTest {
         when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
         doThrow(new PreCheckException(NOT_SUPPORTED))
                 .when(checker)
-                .checkTransactionSemantic(TRANSACTION_BODY, ConsensusCreateTopic);
+                .checkTransactionSemantics(TRANSACTION_BODY, ConsensusCreateTopic);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -195,7 +195,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -216,7 +216,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
@@ -236,7 +236,7 @@ class IngestWorkflowImplTest {
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
-        workflow.handleTransaction(ctx, requestBuffer, responseBuffer);
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);

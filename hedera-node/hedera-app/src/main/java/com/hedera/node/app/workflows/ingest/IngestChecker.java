@@ -64,7 +64,7 @@ public class IngestChecker {
      * @throws PreCheckException if a semantic error was discovered. The contained {@code
      *     responseCode} provides the error reason.
      */
-    public void checkTransactionSemantic(
+    public void checkTransactionSemantics(
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
             throws PreCheckException {
         final ResponseCodeEnum errorCode;

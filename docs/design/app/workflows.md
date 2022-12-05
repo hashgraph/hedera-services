@@ -26,4 +26,6 @@ The ingest workflow consists of the following steps:
 7. **Submit to platform.** The transaction is submitted to the platform for further processing.
 8. **TransactionResponse.** Return `TransactionResponse`  with result-code.
 
-If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`. Otherwise, the pre-check code will provide the failure reason. In case of insufficient funds, the returned `TransactionResponse` also contains an estimation of the required fee.
+If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`.
+Otherwise the transaction is rejected with an appropriate response code.
+In case of insufficient funds, the returned `TransactionResponse` also contains an estimation of the required fee.

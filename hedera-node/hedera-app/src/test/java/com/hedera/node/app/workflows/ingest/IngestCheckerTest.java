@@ -54,7 +54,7 @@ class IngestCheckerTest {
 
         // then
         assertDoesNotThrow(
-                () -> checker.checkTransactionSemantic(txBody, HederaFunctionality.NONE));
+                () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE));
     }
 
     @Test
@@ -66,7 +66,8 @@ class IngestCheckerTest {
         final IngestChecker checker = new IngestChecker(transitionLogicLookup, dynamicProperties);
 
         // then
-        assertThatThrownBy(() -> checker.checkTransactionSemantic(txBody, HederaFunctionality.NONE))
+        assertThatThrownBy(
+                        () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", NOT_SUPPORTED);
     }
@@ -81,7 +82,8 @@ class IngestCheckerTest {
         final IngestChecker checker = new IngestChecker(transitionLogicLookup, dynamicProperties);
 
         // then
-        assertThatThrownBy(() -> checker.checkTransactionSemantic(txBody, HederaFunctionality.NONE))
+        assertThatThrownBy(
+                        () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", BATCH_SIZE_LIMIT_EXCEEDED);
     }

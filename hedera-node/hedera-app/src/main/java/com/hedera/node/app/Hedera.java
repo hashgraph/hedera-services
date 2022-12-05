@@ -34,6 +34,7 @@ public final class Hedera {
     public static void main(String[] args) throws InterruptedException {
         final var shutdownLatch = new CountDownLatch(1);
 
+        // TODO: These need to be replaced with appropriate setup code
         final var ingestWorkflow = new IngestWorkflowImpl(null, null, null, null, null);
         final var queryWorkflow = new QueryWorkflowImpl();
 
