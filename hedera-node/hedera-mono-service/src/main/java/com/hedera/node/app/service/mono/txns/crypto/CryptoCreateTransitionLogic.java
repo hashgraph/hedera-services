@@ -199,17 +199,13 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
         } else if (onlyEvmAddressProvided(op)) {
             customizer.alias(op.getEvmAddress());
         } else if (onlyAliasProvided(op)) {
-            final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
-            final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
-            customizer.key(jKeyFromAlias).alias(op.getAlias());
+            populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
         } else if (keyAndAliasProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         } else if (keyAndEvmAddressProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getEvmAddress());
         } else if (aliasAndEvmAddressProvided(op)) {
-            final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
-            final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
-            customizer.key(jKeyFromAlias).alias(op.getAlias());
+            populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(op, customizer);
         } else if (keyAndAliasAndEvmAddressProvided(op)) {
             customizer.key(asFcKeyUnchecked(op.getKey())).alias(op.getAlias());
         }
@@ -233,5 +229,12 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
     public ResponseCodeEnum validate(TransactionBody cryptoCreateTxn) {
         return cryptoCreateChecks.cryptoCreateValidation(cryptoCreateTxn.getCryptoCreateAccount());
+    }
+
+    private void populateKeyAndAliasInCaseOfAliasOrAliasAndEvmAddressProvided(
+            final CryptoCreateTransactionBody op, final HederaAccountCustomizer customizer) {
+        final var keyFromAlias = asPrimitiveKeyUnchecked(op.getAlias());
+        final JKey jKeyFromAlias = asFcKeyUnchecked(keyFromAlias);
+        customizer.key(jKeyFromAlias).alias(op.getAlias());
     }
 }
