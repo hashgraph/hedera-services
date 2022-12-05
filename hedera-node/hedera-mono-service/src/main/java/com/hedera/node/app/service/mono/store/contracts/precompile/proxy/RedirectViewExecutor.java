@@ -103,8 +103,7 @@ public class RedirectViewExecutor {
             return encoder.encodeSymbol(symbol);
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
             final var wrapper =
-                    AllowancePrecompile.decodeTokenAllowance(
-                            input, tokenId, updater::unaliased);
+                    AllowancePrecompile.decodeTokenAllowance(input, tokenId, updater::unaliased);
             final var allowance =
                     ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
             return encoder.encodeAllowance(allowance);

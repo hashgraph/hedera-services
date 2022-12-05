@@ -15,11 +15,8 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -27,8 +24,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
-import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmAllowancePrecompile {
@@ -41,11 +36,9 @@ public interface EvmAllowancePrecompile {
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var nestedInput = input.slice(24);
         final Tuple decodedArguments =
-                decodeFunctionCall(
-                        nestedInput,
-                        ERC_ALLOWANCE_SELECTOR,
-                        ERC_ALLOWANCE_DECODER);
+                decodeFunctionCall(nestedInput, ERC_ALLOWANCE_SELECTOR, ERC_ALLOWANCE_DECODER);
 
-        return new TokenAllowanceWrapper<>(tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
+        return new TokenAllowanceWrapper<>(
+                tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
     }
 }

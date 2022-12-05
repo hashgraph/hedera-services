@@ -51,11 +51,12 @@ import org.apache.tuweni.bytes.Bytes;
 public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         implements EvmAllowancePrecompile {
 
-    private static final  Function HAPI_ALLOWANCE_FUNCTION =
-        new Function("allowance(address,address,address)", "(int,int)");
-    private static final  Bytes HAPI_ALLOWANCE_SELECTOR = Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
-    private static final  ABIType<Tuple> HAPI_ALLOWANCE_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
-
+    private static final Function HAPI_ALLOWANCE_FUNCTION =
+            new Function("allowance(address,address,address)", "(int,int)");
+    private static final Bytes HAPI_ALLOWANCE_SELECTOR =
+            Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
+    private static final ABIType<Tuple> HAPI_ALLOWANCE_DECODER =
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private TokenAllowanceWrapper<TokenID, AccountID, AccountID> allowanceWrapper;
 
@@ -111,23 +112,20 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
             final Tuple decodedArguments =
-                decodeFunctionCall(
-                    input,
-                    HAPI_ALLOWANCE_SELECTOR,
-                    HAPI_ALLOWANCE_DECODER
-                );
+                    decodeFunctionCall(input, HAPI_ALLOWANCE_SELECTOR, HAPI_ALLOWANCE_DECODER);
 
             return new TokenAllowanceWrapper<>(
-                convertAddressBytesToTokenID(decodedArguments.get(0)),
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver)
-            );
+                    convertAddressBytesToTokenID(decodedArguments.get(0)),
+                    convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver));
         } else {
             final var rawTokenAllowanceWrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
             return new TokenAllowanceWrapper<>(
-                tokenIdFromEvmAddress(rawTokenAllowanceWrapper.tokenID()),
-                convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.owner(), aliasResolver),
-                convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.spender(), aliasResolver));
+                    tokenIdFromEvmAddress(rawTokenAllowanceWrapper.tokenID()),
+                    convertLeftPaddedAddressToAccountId(
+                            rawTokenAllowanceWrapper.owner(), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(
+                            rawTokenAllowanceWrapper.spender(), aliasResolver));
         }
     }
 }
