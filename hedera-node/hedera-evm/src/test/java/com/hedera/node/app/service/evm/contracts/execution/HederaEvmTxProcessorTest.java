@@ -25,8 +25,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
@@ -39,11 +41,12 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -78,8 +81,8 @@ class HederaEvmTxProcessorTest {
     @Mock private BlockValues blockValues;
     @Mock private BlockMetaSource blockMetaSource;
 
-    private final MockHederaEvmAccount sender =
-            new MockHederaEvmAccount(
+    private final HederaEvmAccount sender =
+            new HederaEvmAccount(
                     Address.fromHexString("0x000000000000000000000000000000000000071e"));
     private final Address senderAddress =
             Address.fromHexString("0x000000000000000000000000000000000000070e");
@@ -103,7 +106,12 @@ class HederaEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 =
+                new EVM(
+                        operationRegistry,
+                        gasCalculator,
+                        EvmConfiguration.DEFAULT,
+                        EvmSpecVersion.LONDON);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
                         EVM_VERSION_0_30,
@@ -144,7 +152,7 @@ class HederaEvmTxProcessorTest {
                         ccps,
                         blockMetaSource);
 
-        final var hederaEvmOperationTracer = new MockHederaEvmOperationTracer();
+        final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
     }
 
@@ -187,7 +195,7 @@ class HederaEvmTxProcessorTest {
 
         var messageFrame = evmTxProcessor.buildInitialFrame(protoFrame, receiver, Bytes.EMPTY, 33L);
 
-        assertEquals(Code.EMPTY, messageFrame.getCode());
+        assertEquals(CodeV0.EMPTY_CODE, messageFrame.getCode());
     }
 
     @Test
