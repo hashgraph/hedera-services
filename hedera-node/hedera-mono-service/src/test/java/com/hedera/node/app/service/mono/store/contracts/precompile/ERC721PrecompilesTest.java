@@ -1205,7 +1205,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
         getApprovedPrecompile
-                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedPretendArguments, token))
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(GET_APPROVED_WRAPPER);
         given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 

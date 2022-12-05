@@ -29,10 +29,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class GetApprovedPrecompileTest {
     private static final Bytes GET_APPROVED_INPUT_ERC =
             Bytes.fromHexString(
-                    "0x081812fc0000000000000000000000000000000000000000000000000000000000000001");
+                    "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000000000000000000001");
+
     private static final Bytes GET_APPROVED_LONG_OVERFLOWN =
-            Bytes.fromHexString(
-                    "0x081812fc0000000000000000000000000000000000000000000000010000000000000001");
+        Bytes.fromHexString(
+            "0x618dc65e00000000000000000000000000000000000003ec081812fc0000000000000000000000000000000000000000000000010000000000000001");
     private static final Bytes GET_APPROVED_INPUT_HAPI =
             Bytes.fromHexString(
                     "0x098f236600000000000000000000000000000000000000000000000000000000000012340000000000000000000000000000000000000000000000000000000000000001");
@@ -40,7 +41,7 @@ class GetApprovedPrecompileTest {
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
 
     private static final TokenID TOKEN_ID =
-            TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
+            TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeGetApprovedInputERC() {

@@ -172,9 +172,9 @@ class RedirectViewExecutorTest {
     void computeApprovedSpenderOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
-        final var getApprovedWrapper = new GetApprovedWrapper(nonfungibletoken, 123L);
+        final var getApprovedWrapper = new GetApprovedWrapper<>(nonfungibletoken, 123L);
         getApprovedPrecompile
-                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedInput, nonfungibletoken))
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(getApprovedWrapper);
         given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
                 .willReturn(Address.ALTBN128_ADD);
