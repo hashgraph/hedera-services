@@ -654,7 +654,12 @@ class CallEvmTxProcessorTest {
         MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 =
+                new EVM(
+                        operationRegistry,
+                        gasCalculator,
+                        EvmConfiguration.DEFAULT,
+                        EvmSpecVersion.LONDON);
         final MessageCallProcessor messageCallProcessor = mock(MessageCallProcessor.class);
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(
@@ -696,7 +701,7 @@ class CallEvmTxProcessorTest {
 
         var evmAccount = mock(EvmAccount.class);
         given(gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, false)).willReturn(0L);
-        given(codeCache.getIfPresent(any())).willReturn(Code.EMPTY);
+        given(codeCache.getIfPresent(any())).willReturn(CodeV0.EMPTY_CODE);
         var senderMutableAccount = mock(MutableAccount.class);
         given(evmAccount.getMutable()).willReturn(senderMutableAccount);
         given(stackedUpdater.getSenderAccount(any())).willReturn(evmAccount);
