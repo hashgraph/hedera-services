@@ -32,7 +32,8 @@ configurations.all {
 }
 
 dependencies {
-
+    api(project(":hedera-node:hedera-app-spi"))
+    implementation(project(":hedera-node:hedera-mono-service"))
     implementation(project(":hedera-node:hedera-admin-service-impl"))
     implementation(project(":hedera-node:hedera-consensus-service-impl"))
     implementation(project(":hedera-node:hedera-file-service-impl"))
@@ -56,8 +57,7 @@ dependencies {
     itestCompileOnly(libs.spotbugs.annotations)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testLibs.bundles.mockito)
-    testImplementation(testLibs.bundles.junit5)
+    testImplementation(testLibs.bundles.testing)
 
     testCompileOnly(libs.spotbugs.annotations)
 }
