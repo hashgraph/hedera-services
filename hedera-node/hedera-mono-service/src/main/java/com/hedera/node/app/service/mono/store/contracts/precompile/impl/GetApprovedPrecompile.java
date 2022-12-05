@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.tokenIdFromEvmAddress;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.SPENDER;
@@ -27,7 +28,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -48,9 +48,11 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         implements EvmGetApprovedPrecompile {
 
     private static final ABIType<Tuple> HAPI_GET_APPROVED_FUNCTION_DECODER =
-        TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
-    private static final Function HAPI_GET_APPROVED_FUNCTION = new Function("getApproved(address,uint256)", "(int,int)");
-    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR = Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
+            TypeFactory.create(ADDRESS_UINT256_RAW_TYPE);
+    private static final Function HAPI_GET_APPROVED_FUNCTION =
+            new Function("getApproved(address,uint256)", "(int,int)");
+    private static final Bytes HAPI_GET_APPROVED_FUNCTION_SELECTOR =
+            Bytes.wrap(HAPI_GET_APPROVED_FUNCTION.selector());
 
     GetApprovedWrapper<TokenID> getApprovedWrapper;
 
@@ -99,13 +101,20 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
             final Bytes input, final TokenID impliedTokenId) {
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
-            final Tuple decodedArguments = decodeFunctionCall(input,
-                HAPI_GET_APPROVED_FUNCTION_SELECTOR, HAPI_GET_APPROVED_FUNCTION_DECODER);
+            final Tuple decodedArguments =
+                    decodeFunctionCall(
+                            input,
+                            HAPI_GET_APPROVED_FUNCTION_SELECTOR,
+                            HAPI_GET_APPROVED_FUNCTION_DECODER);
             final var serialNo = (BigInteger) decodedArguments.get(offset);
-            return new GetApprovedWrapper<>(convertAddressBytesToTokenID(decodedArguments.get(0)), serialNo.longValueExact());
+            return new GetApprovedWrapper<>(
+                    convertAddressBytesToTokenID(decodedArguments.get(0)),
+                    serialNo.longValueExact());
         } else {
             final var rawGetApprovedWrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
-            return new GetApprovedWrapper<>(convertAddressBytesToTokenID(rawGetApprovedWrapper.tokenId()), rawGetApprovedWrapper.serialNo());
+            return new GetApprovedWrapper<>(
+                 tokenIdFromEvmAddress(rawGetApprovedWrapper.tokenId()),
+                    rawGetApprovedWrapper.serialNo());
         }
     }
 }

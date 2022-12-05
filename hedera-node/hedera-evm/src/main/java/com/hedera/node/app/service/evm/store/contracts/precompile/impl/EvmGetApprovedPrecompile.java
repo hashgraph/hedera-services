@@ -15,10 +15,7 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.tokenIdFromEvmAddress;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_UINT256_RAW_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.UINT256;
 
@@ -27,7 +24,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
-import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -39,7 +35,10 @@ public interface EvmGetApprovedPrecompile {
 
     static GetApprovedWrapper<byte[]> decodeGetApproved(final Bytes input) {
         final Tuple decodedArguments =
-                decodeFunctionCall(input, ERC_GET_APPROVED_FUNCTION_SELECTOR, ERC_GET_APPROVED_FUNCTION_DECODER);
+                decodeFunctionCall(
+                        input,
+                        ERC_GET_APPROVED_FUNCTION_SELECTOR,
+                        ERC_GET_APPROVED_FUNCTION_DECODER);
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var serialNo = (BigInteger) decodedArguments.get(0);
 
