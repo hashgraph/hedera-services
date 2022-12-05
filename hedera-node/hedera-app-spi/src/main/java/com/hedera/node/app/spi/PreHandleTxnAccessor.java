@@ -20,7 +20,12 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 
 /** Returns needed pre-transaction handlers for different modules. */
-public interface CallContext {
+public interface PreHandleTxnAccessor {
+    /**
+     * Gets Account lookup to fetch any account
+     * @return account lookup
+     */
+    AccountKeyLookup getAccountKeyLookup();
     /**
      * Gets pre-transaction handler for CryptoService
      *

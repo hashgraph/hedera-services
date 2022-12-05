@@ -17,19 +17,19 @@ package com.hedera.node.app.service.scheduled.impl;
 
 import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.spi.CallContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 public class ScheduleServiceImpl implements ScheduleService {
-    private final CallContext callContext;
+    private final PreHandleTxnAccessor callContext;
     public ScheduleServiceImpl(){
         this.callContext = null;
     }
 
-    public ScheduleServiceImpl(final CallContext callContext) {
+    public ScheduleServiceImpl(final PreHandleTxnAccessor callContext) {
         this.callContext = callContext; // How is this constructed ? Not sure if it should be injected here
     }
 
@@ -39,6 +39,6 @@ public class ScheduleServiceImpl implements ScheduleService {
             @NonNull States states, @NonNull PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        return new SchedulePreTransactionHandlerImpl(callContext, ctx);
+        return new SchedulePreTransactionHandlerImpl(callContext);
     }
 }

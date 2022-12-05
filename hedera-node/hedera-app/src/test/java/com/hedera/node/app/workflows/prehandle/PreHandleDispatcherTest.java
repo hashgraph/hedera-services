@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.service.admin.FreezePreTransactionHandler;
 import com.hedera.node.app.service.admin.FreezeService;
@@ -41,13 +35,10 @@ import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +47,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleDispatcherTest {
@@ -90,8 +90,7 @@ class PreHandleDispatcherTest {
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
             @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers,
-            @Mock AccountKeyLookup keyLookup) {
+            @Mock HederaFileNumbers hederaFileNumbers) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -104,7 +103,7 @@ class PreHandleDispatcherTest {
                         tokenService,
                         utilService);
 
-        context = new PreHandleContext(accountNumbers, hederaFileNumbers, keyLookup);
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
 
         when(consensusService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(consensusHandler);

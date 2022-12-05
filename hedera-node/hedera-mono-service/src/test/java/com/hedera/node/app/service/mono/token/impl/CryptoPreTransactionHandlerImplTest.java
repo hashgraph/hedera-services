@@ -121,7 +121,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         store = new AccountStore(states);
 
-        context = new PreHandleContext(accountNumbers, fileNumbers, store);
+        context = new PreHandleContext(accountNumbers, fileNumbers);
 
         subject = new CryptoPreTransactionHandlerImpl(store, context);
 

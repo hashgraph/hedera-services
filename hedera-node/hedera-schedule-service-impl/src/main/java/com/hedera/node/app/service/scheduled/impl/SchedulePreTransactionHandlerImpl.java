@@ -24,8 +24,7 @@ import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.*;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.CallContext;
-import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
 import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
@@ -34,7 +33,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -43,12 +41,11 @@ import org.apache.commons.lang3.NotImplementedException;
  */
 public class SchedulePreTransactionHandlerImpl implements SchedulePreTransactionHandler {
     private final AccountKeyLookup keyLookup;
-    private final CallContext callContext;
+    private final PreHandleTxnAccessor accessor;
 
-    public SchedulePreTransactionHandlerImpl(
-            final CallContext callContext, @NonNull final PreHandleContext ctx) {
-        this.callContext = callContext;
-        this.keyLookup = ctx.keyLookup();
+    public SchedulePreTransactionHandlerImpl(final PreHandleTxnAccessor accessor) {
+        this.accessor = accessor;
+        this.keyLookup = accessor.getAccountKeyLookup();
     }
 
     @Override
@@ -74,6 +71,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
             final var key = asHederaKey(op.getAdminKey());
             key.ifPresent(meta::addToReqKeys);
         }
+
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
         // to see
         // if provided payer is same as payer in the inner transaction.
@@ -96,7 +94,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
             return failedMeta(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST, scheduledTxn, payerForNested);
         }
 
-        final var innerTxnPreTxnHandler = callContext.getPreTxnHandler(scheduledFunction);
+        final var innerTxnPreTxnHandler = accessor.getPreTxnHandler(scheduledFunction);
         final var meta = innerTxnPreTxnHandler.preHandle(scheduledTxn, payerForNested);
         if (meta.failed()) {
             meta.setStatus(UNRESOLVABLE_REQUIRED_SIGNERS);

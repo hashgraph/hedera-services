@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.workflows.prehandle;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
-
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.service.admin.FreezeService;
 import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
@@ -33,7 +27,6 @@ import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -49,6 +42,14 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
@@ -57,13 +58,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
@@ -91,8 +89,7 @@ class PreHandleWorkflowImplTest {
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
             @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers,
-            @Mock AccountKeyLookup keyLookup) {
+            @Mock HederaFileNumbers hederaFileNumbers) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -105,7 +102,7 @@ class PreHandleWorkflowImplTest {
                         tokenService,
                         utilService);
 
-        context = new PreHandleContext(accountNumbers, hederaFileNumbers, keyLookup);
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
 
         workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
     }

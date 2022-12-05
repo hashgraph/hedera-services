@@ -18,10 +18,11 @@ package com.hedera.node.app.service.scheduled.impl.test;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.scheduled.impl.ScheduleServiceImpl;
-import com.hedera.node.app.spi.CallContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -35,8 +36,12 @@ class ScheduleServiceImplTest {
     private ScheduleServiceImpl subject;
     @Mock private InMemoryStateImpl schedules;
     @Mock private States states;
-    @Mock private CallContext callContext;
+    @Mock private PreHandleTxnAccessor callContext;
     @Mock private PreHandleContext preHandleCtx;
+    @BeforeEach
+    void setUp(){
+        subject = new ScheduleServiceImpl(callContext);
+    }
 
     @Test
     void testsSpi() {
@@ -48,8 +53,6 @@ class ScheduleServiceImplTest {
 
     @Test
     void createsNewInstance() {
-        subject = new ScheduleServiceImpl(callContext);
-
         given(states.get("SCHEDULES-BY-ID")).willReturn(schedules);
         given(states.get("SCHEDULES-BY-EQUALITY")).willReturn(schedules);
         given(states.get("SCHEDULES-BY-EXPIRY")).willReturn(schedules);
