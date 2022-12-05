@@ -128,9 +128,27 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testSuccess() throws PreCheckException, InvalidProtocolBufferException {
+    void testSuccessWithByteBuffer() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+
+        // when
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager).submit(ctx, TRANSACTION_BODY, requestBuffer);
+        verify(opCounters).countSubmitted(ConsensusCreateTopic);
+    }
+
+    @Test
+    void testSuccessWithByteArray() throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(ONSET_RESULT);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -148,7 +166,7 @@ class IngestWorkflowImplTest {
     @Test
     void testOnsetFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any()))
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class)))
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
@@ -167,7 +185,7 @@ class IngestWorkflowImplTest {
     @Test
     void testSemanticFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new PreCheckException(NOT_SUPPORTED))
                 .when(checker)
                 .checkTransactionSemantics(TRANSACTION_BODY, ConsensusCreateTopic);
@@ -188,7 +206,7 @@ class IngestWorkflowImplTest {
     @Test
     void testPayerSignatureFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                 .when(checker)
                 .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
@@ -209,7 +227,7 @@ class IngestWorkflowImplTest {
     @Test
     void testSolvencyFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                 .when(checker)
                 .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
@@ -231,7 +249,7 @@ class IngestWorkflowImplTest {
     @Test
     void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any())).thenReturn(ONSET_RESULT);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 

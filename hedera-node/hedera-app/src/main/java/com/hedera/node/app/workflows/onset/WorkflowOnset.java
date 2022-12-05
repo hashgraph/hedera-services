@@ -82,6 +82,31 @@ public class WorkflowOnset {
         requireNonNull(ctx);
         requireNonNull(buffer);
 
+        return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
+    }
+
+    /**
+     * Parse the given {@link ByteBuffer} and check its validity
+     *
+     * @param ctx the {@link SessionContext}
+     * @param buffer the {@code ByteBuffer} with the serialized transaction
+     * @return an {@link OnsetResult} with the parsed and checked entities
+     * @throws PreCheckException if the data is not valid
+     * @throws NullPointerException if one of the arguments is {@code null}
+     */
+    public OnsetResult parseAndCheck(
+            @NonNull final SessionContext ctx, @NonNull final byte[] buffer)
+            throws PreCheckException {
+        requireNonNull(ctx);
+        requireNonNull(buffer);
+
+        return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
+    }
+
+    private OnsetResult doParseAndCheck(
+            @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier) throws PreCheckException {
+
+        // Do some general pre-checks
         if (nodeInfo.isSelfZeroStake()) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
@@ -89,8 +114,14 @@ public class WorkflowOnset {
             throw new PreCheckException(PLATFORM_NOT_ACTIVE);
         }
 
-        // 1. Parse the transaction object from the txBytes (protobuf)
-        final var tx = parse(ctx.txParser(), buffer);
+        // 1. Parse the transaction object
+        final Transaction tx;
+        try {
+            tx = txSupplier.parse();
+        } catch (InvalidProtocolBufferException e) {
+            throw new PreCheckException(INVALID_TRANSACTION);
+        }
+
         checker.checkTransaction(tx);
 
         // 2. Parse and validate the signed transaction (if available)
@@ -126,14 +157,9 @@ public class WorkflowOnset {
         return new OnsetResult(txBody, signatureMap, functionality);
     }
 
-    private static Transaction parse(
-            @NonNull final Parser<Transaction> parser, @NonNull final ByteBuffer buffer)
-            throws PreCheckException {
-        try {
-            return parser.parseFrom(buffer);
-        } catch (InvalidProtocolBufferException e) {
-            throw new PreCheckException(INVALID_TRANSACTION);
-        }
+    @FunctionalInterface
+    private interface TransactionSupplier {
+        Transaction parse() throws InvalidProtocolBufferException;
     }
 
     private static <T> T parse(

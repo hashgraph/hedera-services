@@ -48,6 +48,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
+
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
@@ -213,7 +215,7 @@ class PreHandleWorkflowImplTest {
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
         final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
-        when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(onsetResult);
 
         when(preTransactionHandler.preHandleCreateTopic(txBody)).thenReturn(metadata);
         when(consensusService.createPreTransactionHandler(any(), eq(context)))
@@ -249,7 +251,7 @@ class PreHandleWorkflowImplTest {
                                                                 .getArgument(0, Callable.class)
                                                                 .call()));
 
-        when(onset.parseAndCheck(any(), any()))
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class)))
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
