@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -191,7 +191,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
                 final var recoveredEvmAddressFromPrimitiveKey =
                         recoverAddressFromPubKey(op.getKey().getECDSASecp256K1().toByteArray());
 
-                if (recoveredEvmAddressFromPrimitiveKey != null) {
+                if (recoveredEvmAddressFromPrimitiveKey.length > 0) {
                     customizer.alias(ByteString.copyFrom(recoveredEvmAddressFromPrimitiveKey));
                 }
             }
@@ -378,7 +378,7 @@ public class CryptoCreateTransitionLogic implements TransitionLogic {
 
     private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(final byte[] key) {
         var recoveredEVMAddress = recoverAddressFromPubKey(key);
-        if (recoveredEVMAddress != null) {
+        if (recoveredEVMAddress.length > 0) {
             return isUsedAsAliasCheck(ByteString.copyFrom(recoveredEVMAddress));
         }
         return OK;

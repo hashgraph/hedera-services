@@ -34,7 +34,7 @@ public class HederaEvmSLoadOperation extends AbstractOperation {
     protected final OperationResult warmSuccess;
     protected final OperationResult coldSuccess;
 
-    protected HederaEvmSLoadOperation(final GasCalculator gasCalculator) {
+    public HederaEvmSLoadOperation(final GasCalculator gasCalculator) {
         super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
         final long baseCost = gasCalculator.getSloadOperationGasCost();
         warmCost = baseCost + gasCalculator.getWarmStorageReadCost();
