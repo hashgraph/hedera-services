@@ -15,15 +15,24 @@
  */
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.FAILURE_DURING_LAZY_ACCOUNT_CREATE;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +44,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
-import org.jetbrains.annotations.NotNull;
 
 public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     private static final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
@@ -133,7 +141,7 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
         }
     }
 
-    @NotNull
+    @NonNull
     private BalanceChange constructSyntheticLazyCreateBalanceChangeFrom(final MessageFrame frame) {
         return BalanceChange.changingHbar(
                 AccountAmount.newBuilder()

@@ -30,7 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaTracer;
@@ -46,6 +47,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.code.CodeFactory;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -520,7 +522,7 @@ class HederaTracerTest {
         given(messageFrame.getRemainingGas()).willReturn(remainingGasAfterExecution);
         given(messageFrame.getOutputData()).willReturn(output);
 
-        subject.traceExecution(messageFrame, eo);
+        subject.tracePostExecution(messageFrame, operationResult);
 
         assertEquals(1, subject.getActions().size());
         final var action = subject.getActions().get(0);
@@ -550,7 +552,7 @@ class HederaTracerTest {
         given(messageFrame.getExceptionalHaltReason())
                 .willReturn(Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
 
-        subject.traceExecution(messageFrame, eo);
+        subject.tracePostExecution(messageFrame, operationResult);
 
         assertEquals(1, subject.getActions().size());
         final var action = subject.getActions().get(0);

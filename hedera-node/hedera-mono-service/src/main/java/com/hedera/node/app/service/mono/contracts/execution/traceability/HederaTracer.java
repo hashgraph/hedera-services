@@ -122,15 +122,20 @@ public class HederaTracer implements HederaOperationTracer {
                         messageFrame.getInputData().toArray(),
                         messageFrame.getValue().toLong(),
                         messageFrame.getMessageStackDepth());
-        final var recipient =
-                EntityId.fromAddress(
-                        asMirrorAddress(messageFrame.getContractAddress(), messageFrame));
-        if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
-            // code can be empty when calling precompiles too, but we handle
-            // that in tracePrecompileCall, after precompile execution is completed
-            action.setRecipientAccount(recipient);
+        final var contractAddress = messageFrame.getContractAddress();
+        if (messageFrame.getType() != Type.CONTRACT_CREATION
+                && messageFrame.getWorldUpdater().getAccount(contractAddress) == null) {
+            action.setTargetedAddress(contractAddress.toArray());
         } else {
-            action.setRecipientContract(recipient);
+            final var recipient =
+                    EntityId.fromAddress(asMirrorAddress(contractAddress, messageFrame));
+            if (CodeV0.EMPTY_CODE.equals(messageFrame.getCode())) {
+                // code can be empty when calling precompiles too, but we handle
+                // that in tracePrecompileCall, after precompile execution is completed
+                action.setRecipientAccount(recipient);
+            } else {
+                action.setRecipientContract(recipient);
+            }
         }
         actionConfig.accept(action);
 

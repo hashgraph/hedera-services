@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.contracts.execution;
 
+import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -32,6 +33,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;

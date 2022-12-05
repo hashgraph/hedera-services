@@ -43,6 +43,7 @@ import com.hedera.node.app.service.mono.store.contracts.MutableEntityAccess;
 import com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage;
 import com.hedera.node.app.service.mono.store.contracts.precompile.ExchangeRatePrecompiledContract;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
+import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.PrngSystemPrecompiledContract;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.virtualmap.VirtualMap;
