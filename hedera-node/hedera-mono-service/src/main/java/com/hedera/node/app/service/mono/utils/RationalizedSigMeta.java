@@ -16,20 +16,19 @@
 package com.hedera.node.app.service.mono.utils;
 
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.COMPRESSED_SECP256K1_PUBLIC_KEY_LEN;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-
-import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
-import com.hederahashgraph.api.proto.java.SignatureMap;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.INVALID_MISSING_SIG;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.VALID_IMPLICIT_SIG;
 import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigMapFrom;
 import static com.hedera.node.app.service.mono.keys.HederaKeyTraversal.visitSimpleKeys;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Arrays;
 import java.util.HashSet;
