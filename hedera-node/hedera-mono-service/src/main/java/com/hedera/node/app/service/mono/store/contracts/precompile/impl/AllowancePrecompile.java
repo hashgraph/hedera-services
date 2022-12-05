@@ -15,11 +15,20 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.FUNGIBLE_TOKEN_ALLOWANCES;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -42,7 +51,13 @@ import org.apache.tuweni.bytes.Bytes;
 public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         implements EvmAllowancePrecompile {
 
-    private TokenAllowanceWrapper allowanceWrapper;
+    private static final  Function HAPI_ALLOWANCE_FUNCTION =
+        new Function("allowance(address,address,address)", "(int,int)");
+    private static final  Bytes HAPI_ALLOWANCE_SELECTOR = Bytes.wrap(HAPI_ALLOWANCE_FUNCTION.selector());
+    private static final  ABIType<Tuple> HAPI_ALLOWANCE_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
+
+
+    private TokenAllowanceWrapper<TokenID, AccountID, AccountID> allowanceWrapper;
 
     public AllowancePrecompile(
             final TokenID tokenId,
@@ -64,9 +79,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
-        final var nestedInput = tokenId == null ? input : input.slice(24);
-        allowanceWrapper = decodeTokenAllowance(nestedInput, tokenId, aliasResolver);
-
+        allowanceWrapper = decodeTokenAllowance(input, tokenId, aliasResolver);
         return super.body(input, aliasResolver);
     }
 
@@ -91,10 +104,30 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
                 : encoder.encodeAllowance(value);
     }
 
-    public static TokenAllowanceWrapper decodeTokenAllowance(
+    public static TokenAllowanceWrapper<TokenID, AccountID, AccountID> decodeTokenAllowance(
             final Bytes input,
             final TokenID impliedTokenId,
             final UnaryOperator<byte[]> aliasResolver) {
-        return EvmAllowancePrecompile.decodeTokenAllowance(input, impliedTokenId, aliasResolver);
+        final var offset = impliedTokenId == null ? 1 : 0;
+        if (offset == 1) {
+            final Tuple decodedArguments =
+                decodeFunctionCall(
+                    input,
+                    HAPI_ALLOWANCE_SELECTOR,
+                    HAPI_ALLOWANCE_DECODER
+                );
+
+            return new TokenAllowanceWrapper<>(
+                convertAddressBytesToTokenID(decodedArguments.get(0)),
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
+                convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver)
+            );
+        } else {
+            final var rawTokenAllowanceWrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
+            return new TokenAllowanceWrapper<>(
+                tokenIdFromEvmAddress(rawTokenAllowanceWrapper.tokenID()),
+                convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.owner(), aliasResolver),
+                convertLeftPaddedAddressToAccountId(rawTokenAllowanceWrapper.spender(), aliasResolver));
+        }
     }
 }

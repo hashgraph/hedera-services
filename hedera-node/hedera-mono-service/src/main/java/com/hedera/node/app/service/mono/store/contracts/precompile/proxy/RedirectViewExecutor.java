@@ -104,7 +104,7 @@ public class RedirectViewExecutor {
         } else if (selector == ABI_ID_ERC_ALLOWANCE) {
             final var wrapper =
                     AllowancePrecompile.decodeTokenAllowance(
-                            input.slice(24), tokenId, updater::unaliased);
+                            input, tokenId, updater::unaliased);
             final var allowance =
                     ledgers.staticAllowanceOf(wrapper.owner(), wrapper.spender(), tokenId);
             return encoder.encodeAllowance(allowance);
