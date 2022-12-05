@@ -15,15 +15,15 @@
  */
 package com.hedera.node.app.service.token.impl.entity;
 
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.service.token.entity.AccountBuilder;
 import com.hedera.node.app.spi.key.HederaKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Objects;
-
-import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
+import java.util.Optional;
 
 /**
  * An implementation of {@link AccountBuilder} for building Account instances. This class is
@@ -31,8 +31,6 @@ import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS
  * module
  */
 public class AccountBuilderImpl implements AccountBuilder {
-    private Account copyOf;
-
     // These fields are the ones that can be set in the builder
     // FUTURE: Replace the empty KeyList we use for 0.0.800 and hollow
     // accounts with null
@@ -56,7 +54,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     private long autoRenewAccountNumber;
     private long autoRenewSecs;
     private long accountNumber;
-    private byte[] alias = new byte[0];
+    private Optional<byte[]> alias;
     private boolean isSmartContract;
 
     /**
@@ -66,7 +64,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      * @param copyOf The instance to copy
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
-        this.copyOf = Objects.requireNonNull(copyOf);
+        Objects.requireNonNull(copyOf);
         this.key = copyOf.getKey().isEmpty() ? null : copyOf.getKey().get();
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
@@ -87,11 +85,12 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.autoRenewAccountNumber = copyOf.autoRenewAccountNumber();
         this.autoRenewSecs = copyOf.autoRenewSecs();
         this.accountNumber = copyOf.accountNumber();
-        this.alias = copyOf.getAlias().isEmpty() ? new byte[0] : copyOf.getAlias().get();
+        this.alias = copyOf.alias();
         this.isSmartContract = copyOf.isSmartContract();
     }
 
     public AccountBuilderImpl() {
+        alias = Optional.empty();
         /* Default constructor for creating new Accounts */
     }
 
@@ -235,7 +234,7 @@ public class AccountBuilderImpl implements AccountBuilder {
     @Override
     @NonNull
     public AccountBuilder alias(byte[] value) {
-        this.alias = value;
+        this.alias = Optional.of(value);
         return this;
     }
 
@@ -252,7 +251,6 @@ public class AccountBuilderImpl implements AccountBuilder {
         this.autoRenewSecs = value;
         return this;
     }
-
 
     @Override
     @NonNull

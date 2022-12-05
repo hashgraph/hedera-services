@@ -43,8 +43,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
-import com.swirlds.common.system.transaction.Transaction;
-import com.swirlds.common.system.transaction.internal.SwirldTransaction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,8 +72,6 @@ class RationalizationTest {
     @Mock private AccountID payer;
     @Mock private LinkedRefs linkedRefs;
 
-    private Transaction swirldsTxn = new SwirldTransaction();
-
     private Rationalization subject;
 
     @BeforeEach
@@ -85,8 +81,6 @@ class RationalizationTest {
 
     @Test
     void resetWorks() {
-        given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
-
         final List<TransactionSignature> mockSigs = new ArrayList<>();
         final JKey fake = new JEd25519Key("FAKE".getBytes(StandardCharsets.UTF_8));
 
@@ -141,7 +135,6 @@ class RationalizationTest {
 
     @Test
     void setsUnavailableMetaIfCannotListPayerKey() {
-        given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
         given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
         ArgumentCaptor<RationalizedSigMeta> captor =
                 ArgumentCaptor.forClass(RationalizedSigMeta.class);
@@ -164,7 +157,6 @@ class RationalizationTest {
 
     @Test
     void propagatesFailureIfCouldNotExpandOthersKeys() {
-        given(txnAccessor.getPlatformTxn()).willReturn(swirldsTxn);
         given(txnAccessor.getLinkedRefs()).willReturn(linkedRefs);
         given(linkedRefs.haveNoChangesAccordingTo(sigImpactHistorian)).willReturn(true);
         ArgumentCaptor<RationalizedSigMeta> captor =

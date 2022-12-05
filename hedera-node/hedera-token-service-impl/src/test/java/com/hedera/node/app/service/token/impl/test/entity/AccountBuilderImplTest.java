@@ -53,7 +53,7 @@ class AccountBuilderImplTest {
         final var account = subject.build();
 
         assertEquals(2, account.accountNumber());
-        assertEquals(Optional.empty(), account.getAlias());
+        assertEquals(Optional.empty(), account.alias());
         assertEquals(key, account.getKey().get());
         assertEquals(123456789L, account.expiry());
         assertEquals(20_000_000_000L, account.balanceInTinyBar());
@@ -86,6 +86,12 @@ class AccountBuilderImplTest {
     }
 
     @Test
+    void defaultConstructorWorks() {
+        subject = new AccountBuilderImpl();
+        assertEquals(Optional.empty(), subject.build().alias());
+    }
+
+    @Test
     void settersWork() {
         final var newKey = asHederaKey(A_CONTRACT_KEY).get();
         subject.key(newKey);
@@ -114,7 +120,7 @@ class AccountBuilderImplTest {
 
         final var account = subject.build();
         assertEquals(20L, account.accountNumber());
-        assertEquals(Optional.of(new byte[10]), account.getAlias());
+        assertArrayEquals(new byte[10], account.alias().get());
         assertEquals(newKey, account.getKey().get());
         assertEquals(1_234_567_890L, account.expiry());
         assertEquals(40_000_000_000L, account.balanceInTinyBar());
@@ -141,7 +147,7 @@ class AccountBuilderImplTest {
     private AccountImpl setUpAccount() {
         return new AccountImpl(
                 2,
-                new byte[0],
+                Optional.empty(),
                 key,
                 12_3456_789L,
                 20_000_000_000L,

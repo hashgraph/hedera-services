@@ -19,9 +19,9 @@ import static com.hedera.node.app.service.mono.utils.Units.MIN_TRANS_TIMESTAMP_I
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.MigrationRecordsManager;
+import com.hedera.node.app.service.mono.txns.ProcessLogic;
 import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Provides a tracker of the usable consensus time space during a {@link
- * StandardProcessLogic#incorporateConsensusTxn} call.
+ * ProcessLogic#incorporateConsensusTxn} call.
  */
 @Singleton
 public class ConsensusTimeTracker {
@@ -56,7 +56,7 @@ public class ConsensusTimeTracker {
 
     /**
      * The max number of records that can be placed before transactions in a {@link
-     * StandardProcessLogic#incorporateConsensusTxn} call.
+     * ProcessLogic#incorporateConsensusTxn} call.
      */
     private long maxPrecedingRecords;
     /**
@@ -64,12 +64,12 @@ public class ConsensusTimeTracker {
      * process that need unlimited preceding records. See {@link MigrationRecordsManager}.
      *
      * <p>unlimitedPreceding should only ever true on the first transaction in an {@link
-     * StandardProcessLogic#incorporateConsensusTxn} call.
+     * ProcessLogic#incorporateConsensusTxn} call.
      */
     private boolean unlimitedPreceding;
     /**
      * The max number of records that can be placed after a transaction in a {@link
-     * StandardProcessLogic#incorporateConsensusTxn} call
+     * ProcessLogic#incorporateConsensusTxn} call
      */
     private long maxFollowingRecords;
 
@@ -124,7 +124,7 @@ public class ConsensusTimeTracker {
 
     /**
      * @return true if firstTransactionTime() cannot be used again in the current {@link
-     *     StandardProcessLogic#incorporateConsensusTxn} call
+     *     ProcessLogic#incorporateConsensusTxn} call
      */
     public boolean isFirstUsed() {
         return firstUsed;
@@ -140,7 +140,7 @@ public class ConsensusTimeTracker {
 
     /**
      * Resets this tracker, should be called at the beginning of {@link
-     * StandardProcessLogic#incorporateConsensusTxn}
+     * ProcessLogic#incorporateConsensusTxn}
      *
      * @param consensusTime the consensusTime passed to incorporateConsensusTxn
      */
@@ -159,12 +159,12 @@ public class ConsensusTimeTracker {
     }
 
     /**
-     * The first transaction in a {@link StandardProcessLogic#incorporateConsensusTxn} call can have
-     * more "preceding" transactions than normal, this method returns the first consensus time. If
-     * it has already been used, and exception is thrown. See {@link #isFirstUsed()}.
+     * The first transaction in a {@link ProcessLogic#incorporateConsensusTxn} call can have more
+     * "preceding" transactions than normal, this method returns the first consensus time. If it has
+     * already been used, and exception is thrown. See {@link #isFirstUsed()}.
      *
      * @return the consensus time to use for the first transaction in a {@link
-     *     StandardProcessLogic#incorporateConsensusTxn} call.
+     *     ProcessLogic#incorporateConsensusTxn} call.
      */
     public Instant firstTransactionTime() {
 
@@ -186,7 +186,7 @@ public class ConsensusTimeTracker {
      *
      * <p>This _should not_ be called anywhere that could possibly be called during the handling of
      * a normal transaction. It resets the tracker to the "next" state. It should really only be
-     * called by {@link StandardProcessLogic#incorporateConsensusTxn}.
+     * called by {@link ProcessLogic#incorporateConsensusTxn}.
      *
      * <p>Use {@link TxnAwareRecordsHistorian} for getting record consensus times that are
      * associated with a transaction.
