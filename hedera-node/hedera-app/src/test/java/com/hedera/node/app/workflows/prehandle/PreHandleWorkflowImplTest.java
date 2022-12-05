@@ -33,6 +33,7 @@ import com.hedera.node.app.service.scheduled.ScheduleService;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -90,7 +91,8 @@ class PreHandleWorkflowImplTest {
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
             @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers) {
+            @Mock HederaFileNumbers hederaFileNumbers,
+            @Mock AccountKeyLookup keyLookup) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -103,7 +105,7 @@ class PreHandleWorkflowImplTest {
                         tokenService,
                         utilService);
 
-        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers, keyLookup);
 
         workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
     }
@@ -215,7 +217,7 @@ class PreHandleWorkflowImplTest {
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
 
-        when(preTransactionHandler.preHandleCreateTopic(txBody)).thenReturn(metadata);
+        when(preTransactionHandler.preHandleCreateTopic(txBody, eq(any()))).thenReturn(metadata);
         when(consensusService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(preTransactionHandler);
 

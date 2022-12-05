@@ -17,7 +17,9 @@ package com.hedera.node.app.service.scheduled.impl;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
-import com.hedera.node.app.spi.*;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.CallContext;
+import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
@@ -29,8 +31,9 @@ import org.apache.commons.lang3.NotImplementedException;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.*;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.*;
 
 /**
  * A {@link SchedulePreTransactionHandler} implementation that pre-computes the required signing keys
@@ -83,7 +86,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         }
 
         final var innerTxnPreTxnHandler = callContext.getPreTxnHandler(scheduledFunction);
-        final var meta = innerTxnPreTxnHandler.preHandle(scheduledTxn, payerForNested, scheduledFunction);
+        final var meta = innerTxnPreTxnHandler.preHandle(scheduledTxn, payerForNested);
         if (meta.failed()) {
             meta.setStatus(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
@@ -101,12 +104,13 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     }
 
     @Override
-    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer, HederaFunctionality function) {
-        if(function == ScheduleCreate){
+    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer) {
+        final var function = tx.getDataCase();
+        if(function == SCHEDULECREATE){
             return preHandleCreateSchedule(tx, payer);
-        } else if(function == ScheduleDelete){
+        } else if(function == SCHEDULEDELETE){
             return preHandleDeleteSchedule(tx, payer);
-        } else if(function == ScheduleSign){
+        } else if(function == SCHEDULESIGN){
             return preHandleSignSchedule(tx, payer);
         }
         throw new IllegalArgumentException(function +" is not a valid functionality");

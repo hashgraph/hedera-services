@@ -20,15 +20,15 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.*;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -74,7 +74,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleApproveAllowances(
+            final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoApproveAllowance();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
@@ -107,7 +108,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleDeleteAllowances(
+            final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDeleteAllowance();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
@@ -191,20 +193,21 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     }
 
     @Override
-    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer, HederaFunctionality function) {
-       if(function == CryptoCreate){
-           return preHandleCryptoCreate(tx, payer);
-       } else if(function == CryptoTransfer){
-           return preHandleCryptoTransfer(tx, payer);
-       } else if(function == CryptoDelete){
-           return preHandleCryptoDelete(tx, payer);
-       } else if(function == CryptoUpdate){
-           return preHandleUpdateAccount(tx, payer);
-       } else if(function == CryptoApproveAllowance){
-           return preHandleApproveAllowances(tx, payer);
-       } else if(function == CryptoDeleteAllowance){
-           return preHandleDeleteAllowances(tx, payer);
-       }
-       throw new IllegalArgumentException(function +" is not a valid functionality");
+    public TransactionMetadata preHandle(TransactionBody tx, AccountID payer) {
+        final var function = tx.getDataCase();
+        if (function == CRYPTOCREATEACCOUNT) {
+            return preHandleCryptoCreate(tx, payer);
+        } else if (function == CRYPTOTRANSFER) {
+            return preHandleCryptoTransfer(tx, payer);
+        } else if (function == CRYPTODELETE) {
+            return preHandleCryptoDelete(tx, payer);
+        } else if (function == CRYPTOUPDATEACCOUNT) {
+            return preHandleUpdateAccount(tx, payer);
+        } else if (function == CRYPTOAPPROVEALLOWANCE) {
+            return preHandleApproveAllowances(tx, payer);
+        } else if (function == CRYPTODELETEALLOWANCE) {
+            return preHandleDeleteAllowances(tx, payer);
+        }
+        throw new IllegalArgumentException(function + " is not a valid functionality");
     }
 }

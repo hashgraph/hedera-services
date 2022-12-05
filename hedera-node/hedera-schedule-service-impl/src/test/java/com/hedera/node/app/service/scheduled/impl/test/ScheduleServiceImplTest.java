@@ -19,7 +19,7 @@ import com.hedera.node.app.service.scheduled.ScheduleService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class StandardScheduledServiceTest {
+class ScheduleServiceImplTest {
 
     @Test
     void testSpi() {
@@ -29,7 +29,7 @@ class StandardScheduledServiceTest {
         // then
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                StandardScheduledService.class,
+                ScheduleService.class,
                 service.getClass(),
                 "We must always receive an instance of type StandardScheduledService");
     }

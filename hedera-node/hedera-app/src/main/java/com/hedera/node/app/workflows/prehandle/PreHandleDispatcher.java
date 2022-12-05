@@ -105,69 +105,56 @@ public final class PreHandleDispatcher {
     @NonNull
     public TransactionMetadata dispatch(@NonNull final TransactionBody transactionBody) {
         requireNonNull(transactionBody);
+        final var payer = transactionBody.getTransactionID().getAccountID();
         return switch (transactionBody.getDataCase()) {
-            case CONSENSUSCREATETOPIC -> consensusHandler.preHandleCreateTopic(transactionBody);
-            case CONSENSUSUPDATETOPIC -> consensusHandler.preHandleUpdateTopic(transactionBody);
-            case CONSENSUSDELETETOPIC -> consensusHandler.preHandleDeleteTopic(transactionBody);
-            case CONSENSUSSUBMITMESSAGE -> consensusHandler.preHandleSubmitMessage(transactionBody);
-
-            case CONTRACTCREATEINSTANCE -> contractHandler.preHandleCreateContract(transactionBody);
-            case CONTRACTUPDATEINSTANCE -> contractHandler.preHandleUpdateContract(transactionBody);
-            case CONTRACTCALL -> contractHandler.preHandleContractCall(transactionBody);
-            case CONTRACTDELETEINSTANCE -> contractHandler.preHandleDeleteContract(transactionBody);
-            case ETHEREUMTRANSACTION -> contractHandler.preHandleCallEthereum(transactionBody);
-
-            case CRYPTOCREATEACCOUNT -> cryptoHandler.preHandleCryptoCreate(transactionBody);
-            case CRYPTOUPDATEACCOUNT -> cryptoHandler.preHandleUpdateAccount(transactionBody);
-            case CRYPTOTRANSFER -> cryptoHandler.preHandleCryptoTransfer(transactionBody);
-            case CRYPTODELETE -> cryptoHandler.preHandleCryptoDelete(transactionBody);
-            case CRYPTOAPPROVEALLOWANCE -> cryptoHandler.preHandleApproveAllowances(
-                    transactionBody);
-            case CRYPTODELETEALLOWANCE -> cryptoHandler.preHandleDeleteAllowances(transactionBody);
-            case CRYPTOADDLIVEHASH -> cryptoHandler.preHandleAddLiveHash(transactionBody);
-            case CRYPTODELETELIVEHASH -> cryptoHandler.preHandleDeleteLiveHash(transactionBody);
-
-            case FILECREATE -> fileHandler.preHandleCreateFile(transactionBody);
-            case FILEUPDATE -> fileHandler.preHandleUpdateFile(transactionBody);
-            case FILEDELETE -> fileHandler.preHandleDeleteFile(transactionBody);
-            case FILEAPPEND -> fileHandler.preHandleAppendContent(transactionBody);
-
-            case FREEZE -> freezeHandler.preHandleFreeze(transactionBody);
-
-            case UNCHECKEDSUBMIT -> networkHandler.preHandleUncheckedSubmit(transactionBody);
-
-            case SCHEDULECREATE -> scheduleHandler.preHandleCreateSchedule(transactionBody);
-            case SCHEDULESIGN -> scheduleHandler.preHandleSignSchedule(transactionBody);
-            case SCHEDULEDELETE -> scheduleHandler.preHandleDeleteSchedule(transactionBody);
-
-            case TOKENCREATION -> tokenHandler.preHandleCreateToken(transactionBody);
-            case TOKENUPDATE -> tokenHandler.preHandleUpdateToken(transactionBody);
-            case TOKENMINT -> tokenHandler.preHandleMintToken(transactionBody);
-            case TOKENBURN -> tokenHandler.preHandleBurnToken(transactionBody);
-            case TOKENDELETION -> tokenHandler.preHandleDeleteToken(transactionBody);
-            case TOKENWIPE -> tokenHandler.preHandleWipeTokenAccount(transactionBody);
-            case TOKENFREEZE -> tokenHandler.preHandleFreezeTokenAccount(transactionBody);
-            case TOKENUNFREEZE -> tokenHandler.preHandleUnfreezeTokenAccount(transactionBody);
-            case TOKENGRANTKYC -> tokenHandler.preHandleGrantKycToTokenAccount(transactionBody);
-            case TOKENREVOKEKYC -> tokenHandler.preHandleRevokeKycFromTokenAccount(transactionBody);
-            case TOKENASSOCIATE -> tokenHandler.preHandleAssociateTokens(transactionBody);
-            case TOKENDISSOCIATE -> tokenHandler.preHandleDissociateTokens(transactionBody);
-            case TOKEN_FEE_SCHEDULE_UPDATE -> tokenHandler.preHandleUpdateTokenFeeSchedule(
-                    transactionBody);
-            case TOKEN_PAUSE -> tokenHandler.preHandlePauseToken(transactionBody);
-            case TOKEN_UNPAUSE -> tokenHandler.preHandleUnpauseToken(transactionBody);
-
-            case UTIL_PRNG -> utilHandler.preHandlePrng(transactionBody);
-
+            case CONSENSUSCREATETOPIC,
+                    CONSENSUSUPDATETOPIC,
+                    CONSENSUSDELETETOPIC,
+                    CONSENSUSSUBMITMESSAGE -> consensusHandler.preHandle(transactionBody, payer);
+            case CONTRACTCREATEINSTANCE,
+                    CONTRACTUPDATEINSTANCE,
+                    CONTRACTCALL,
+                    CONTRACTDELETEINSTANCE,
+                    ETHEREUMTRANSACTION -> contractHandler.preHandle(transactionBody, payer);
+            case CRYPTOCREATEACCOUNT,
+                    CRYPTOUPDATEACCOUNT,
+                    CRYPTOTRANSFER,
+                    CRYPTODELETE,
+                    CRYPTOAPPROVEALLOWANCE,
+                    CRYPTODELETEALLOWANCE,
+                    CRYPTOADDLIVEHASH,
+                    CRYPTODELETELIVEHASH -> cryptoHandler.preHandle(transactionBody, payer);
+            case FILECREATE, FILEUPDATE, FILEDELETE, FILEAPPEND -> fileHandler.preHandle(
+                    transactionBody, payer);
+            case FREEZE -> freezeHandler.preHandleFreeze(transactionBody, payer);
+            case UNCHECKEDSUBMIT -> networkHandler.preHandle(transactionBody, payer);
+            case SCHEDULECREATE, SCHEDULESIGN, SCHEDULEDELETE -> scheduleHandler.preHandle(
+                    transactionBody, payer);
+            case TOKENCREATION,
+                    TOKENUPDATE,
+                    TOKENMINT,
+                    TOKENBURN,
+                    TOKENDELETION,
+                    TOKENWIPE,
+                    TOKENFREEZE,
+                    TOKENUNFREEZE,
+                    TOKENGRANTKYC,
+                    TOKENREVOKEKYC,
+                    TOKENASSOCIATE,
+                    TOKENDISSOCIATE,
+                    TOKEN_FEE_SCHEDULE_UPDATE,
+                    TOKEN_PAUSE,
+                    TOKEN_UNPAUSE -> tokenHandler.preHandle(transactionBody, payer);
+            case UTIL_PRNG -> utilHandler.preHandlePrng(transactionBody, payer);
             case SYSTEMDELETE -> switch (transactionBody.getSystemDelete().getIdCase()) {
-                case CONTRACTID -> contractHandler.preHandleSystemDelete(transactionBody);
-                case FILEID -> fileHandler.preHandleSystemDelete(transactionBody);
+                case CONTRACTID -> contractHandler.preHandle(transactionBody, payer);
+                case FILEID -> fileHandler.preHandle(transactionBody, payer);
                 case ID_NOT_SET -> throw new IllegalArgumentException(
                         "SystemDelete without IdCase");
             };
             case SYSTEMUNDELETE -> switch (transactionBody.getSystemUndelete().getIdCase()) {
-                case CONTRACTID -> contractHandler.preHandleSystemUndelete(transactionBody);
-                case FILEID -> fileHandler.preHandleSystemUndelete(transactionBody);
+                case CONTRACTID -> contractHandler.preHandle(transactionBody, payer);
+                case FILEID -> fileHandler.preHandle(transactionBody, payer);
                 case ID_NOT_SET -> throw new IllegalArgumentException(
                         "SystemUndelete without IdCase");
             };

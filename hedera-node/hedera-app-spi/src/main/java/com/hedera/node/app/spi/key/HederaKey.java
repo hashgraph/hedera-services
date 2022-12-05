@@ -16,5 +16,4 @@
 package com.hedera.node.app.spi.key;
 
 /** Placeholder implementation for moving JKey */
-public interface HederaKey {
-}
+public interface HederaKey {}

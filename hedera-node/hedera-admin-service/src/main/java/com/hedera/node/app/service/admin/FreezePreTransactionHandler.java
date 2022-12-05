@@ -17,6 +17,7 @@ package com.hedera.node.app.service.admin;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,5 +35,5 @@ public interface FreezePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.FreezeTransactionBody}
      * @return the metadata for the freeze
      */
-    TransactionMetadata preHandleFreeze(TransactionBody txn);
+    TransactionMetadata preHandleFreeze(TransactionBody txn, AccountID payer);
 }

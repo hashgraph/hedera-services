@@ -17,6 +17,7 @@ package com.hedera.node.app.service.network;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,5 +35,5 @@ public interface NetworkPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.UncheckedSubmitBody}
      * @return the metadata for the unchecked submit
      */
-    TransactionMetadata preHandleUncheckedSubmit(TransactionBody txn);
+    TransactionMetadata preHandleUncheckedSubmit(TransactionBody txn, AccountID payer);
 }

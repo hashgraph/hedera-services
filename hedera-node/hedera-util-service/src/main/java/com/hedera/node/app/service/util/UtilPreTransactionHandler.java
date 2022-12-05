@@ -17,6 +17,7 @@ package com.hedera.node.app.service.util;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -25,6 +26,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * Service</a>.
  */
 public interface UtilPreTransactionHandler extends PreTransactionHandler {
+    @Override
+    default TransactionMetadata preHandle(final TransactionBody tx, AccountID payer) {
+        return preHandlePrng(tx, payer);
+    }
+
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#UtilPrng}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
@@ -34,5 +40,5 @@ public interface UtilPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.UtilPrngTransactionBody}
      * @return the metadata for the pseudo-random number generation
      */
-    TransactionMetadata preHandlePrng(TransactionBody txn);
+    TransactionMetadata preHandlePrng(TransactionBody txn, AccountID payer);
 }

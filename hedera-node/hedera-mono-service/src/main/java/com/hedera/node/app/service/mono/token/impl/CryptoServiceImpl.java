@@ -17,14 +17,11 @@ package com.hedera.node.app.service.mono.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
-import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
-import java.util.Optional;
 
 /** An implementation of the {@link CryptoService} interface. */
 public final class CryptoServiceImpl implements CryptoService {
