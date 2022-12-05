@@ -107,7 +107,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
 
     public static void main(String... args) {
-        new CryptoTransferHTSSuite().runSuiteSync();
+        new CryptoTransferHTSSuite().runSuiteAsync();
     }
 
     @Override
