@@ -58,6 +58,7 @@ abstract class MethodBase implements ServerCalls.UnaryMethod<ByteBuffer, ByteBuf
                                     Transaction.parser(),
                                     SignedTransaction.parser(),
                                     TransactionBody.parser()));
+
     /**
      * Per-thread shared ByteBuffer for responses. We store these in a thread local, because we do
      * not have control over the thread pool used by the underlying gRPC server.

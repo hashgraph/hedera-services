@@ -1,4 +1,6 @@
 module com.hedera.node.app.service.mono {
+    exports com.hedera.node.app.service.mono;
+
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;
@@ -32,8 +34,6 @@ module com.hedera.node.app.service.mono {
     requires grpc.stub;
     requires commons.collections4;
 
-    exports com.hedera.node.app.service.mono to
-            com.swirlds.platform;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;
 
