@@ -16,8 +16,10 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookUp;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -39,6 +41,7 @@ public class TokenMovement {
     private long[] serialNums;
     private Optional<String> sender;
     private Optional<String> receiver;
+    private Optional<ByteString> evmAddressReceiver;
     private final Optional<List<String>> receivers;
     private final Optional<Function<HapiApiSpec, String>> senderFn;
     private final Optional<Function<HapiApiSpec, String>> receiverFn;
@@ -59,6 +62,25 @@ public class TokenMovement {
         this.receiver = receiver;
         this.receivers = receivers;
 
+        senderFn = Optional.empty();
+        receiverFn = Optional.empty();
+        expectedDecimals = -1;
+    }
+
+    TokenMovement(
+            String token,
+            Optional<String> sender,
+            long amount,
+            long[] serialNums,
+            Optional<ByteString> evmAddressReceiver) {
+        this.token = token;
+        this.sender = sender;
+        this.amount = amount;
+        this.serialNums = serialNums;
+        this.evmAddressReceiver = evmAddressReceiver;
+
+        receiver = Optional.empty();
+        receivers = Optional.empty();
         senderFn = Optional.empty();
         receiverFn = Optional.empty();
         expectedDecimals = -1;
@@ -177,6 +199,8 @@ public class TokenMovement {
             scopedTransfers.addTransfers(adjustment(specialReceiver, +amount, spec));
         } else if (receiver.isPresent()) {
             scopedTransfers.addTransfers(adjustment(receiver.get(), +amount, spec));
+        } else if (evmAddressReceiver.isPresent()) {
+            scopedTransfers.addTransfers(adjustment(evmAddressReceiver.get(), +amount));
         } else if (receivers.isPresent()) {
             var targets = receivers.get();
             var amountPerReceiver = amount / targets.size();
@@ -199,6 +223,11 @@ public class TokenMovement {
                 scopedTransfers.addNftTransfers(
                         adjustment(sender.get(), receiver.get(), serialNum, spec));
             }
+        } else if (sender.isPresent() && evmAddressReceiver.isPresent()) {
+            for (long serialNum : serialNums) {
+                scopedTransfers.addNftTransfers(
+                        adjustment(sender.get(), evmAddressReceiver.get(), serialNum, spec));
+            }
         }
 
         return scopedTransfers.build();
@@ -212,11 +241,29 @@ public class TokenMovement {
                 .build();
     }
 
+    private AccountAmount adjustment(ByteString evmAddress, long value) {
+        return AccountAmount.newBuilder()
+                .setAccountID(asIdWithAlias(evmAddress))
+                .setAmount(value)
+                .setIsApproval(isApproval)
+                .build();
+    }
+
     private NftTransfer adjustment(
             String senderName, String receiverName, long value, HapiApiSpec spec) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
                 .setReceiverAccountID(asIdForKeyLookUp(receiverName, spec))
+                .setSerialNumber(value)
+                .setIsApproval(isApproval)
+                .build();
+    }
+
+    private NftTransfer adjustment(
+            String senderName, ByteString evmAddress, long value, HapiApiSpec spec) {
+        return NftTransfer.newBuilder()
+                .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
+                .setReceiverAccountID(asIdWithAlias(evmAddress))
                 .setSerialNumber(value)
                 .setIsApproval(isApproval)
                 .build();
@@ -268,6 +315,11 @@ public class TokenMovement {
                     Optional.of(receiver),
                     Optional.empty(),
                     isAllowance);
+        }
+
+        public TokenMovement between(String sender, ByteString receiver) {
+            return new TokenMovement(
+                    token, Optional.of(sender), amount, serialNums, Optional.of(receiver));
         }
 
         public TokenMovement betweenWithDecimals(String sender, String receiver) {
