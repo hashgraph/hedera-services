@@ -59,7 +59,9 @@ public class TokenGetCustomFeesPrecompile extends AbstractReadOnlyPrecompile
     }
 
     public static TokenGetCustomFeesWrapper<TokenID> decodeTokenGetCustomFees(final Bytes input) {
-        final var rawTokenGetCustomFeesWrapper = EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-        return new TokenGetCustomFeesWrapper<>(convertAddressBytesToTokenID(rawTokenGetCustomFeesWrapper.token()));
+        final var rawTokenGetCustomFeesWrapper =
+                EvmTokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
+        return new TokenGetCustomFeesWrapper<>(
+                convertAddressBytesToTokenID(rawTokenGetCustomFeesWrapper.token()));
     }
 }

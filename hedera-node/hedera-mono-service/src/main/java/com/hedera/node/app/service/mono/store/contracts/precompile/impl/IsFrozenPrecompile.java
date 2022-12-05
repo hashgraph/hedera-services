@@ -63,6 +63,9 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile
     public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeIsFrozen(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var rawTokenFreezeUnfreezeWrapper = EvmIsFrozenPrecompile.decodeIsFrozen(input);
-        return TokenFreezeUnfreezeWrapper.forIsFrozen(convertAddressBytesToTokenID(rawTokenFreezeUnfreezeWrapper.token()), convertLeftPaddedAddressToAccountId(rawTokenFreezeUnfreezeWrapper.account(), aliasResolver));
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(
+                convertAddressBytesToTokenID(rawTokenFreezeUnfreezeWrapper.token()),
+                convertLeftPaddedAddressToAccountId(
+                        rawTokenFreezeUnfreezeWrapper.account(), aliasResolver));
     }
 }

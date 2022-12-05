@@ -104,8 +104,7 @@ public class ViewExecutor {
             case ABI_ID_GET_TOKEN_INFO -> {
                 final var wrapper = TokenInfoPrecompile.decodeGetTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -115,8 +114,7 @@ public class ViewExecutor {
             case ABI_ID_GET_FUNGIBLE_TOKEN_INFO -> {
                 final var wrapper = FungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -127,8 +125,7 @@ public class ViewExecutor {
                 final var wrapper =
                         NonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
                 final var tokenInfo =
-                        ledgers.infoForToken(
-                                        wrapper.token(), stateView.getNetworkInfo().ledgerId())
+                        ledgers.infoForToken(wrapper.token(), stateView.getNetworkInfo().ledgerId())
                                 .orElse(null);
 
                 validateTrueOrRevert(tokenInfo != null, ResponseCodeEnum.INVALID_TOKEN_ID);
@@ -190,8 +187,7 @@ public class ViewExecutor {
             }
             case ABI_ID_GET_TOKEN_CUSTOM_FEES -> {
                 final var wrapper = TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input);
-                final var customFees =
-                        ledgers.infoForTokenCustomFees(wrapper.token()).orElse(null);
+                final var customFees = ledgers.infoForTokenCustomFees(wrapper.token()).orElse(null);
 
                 validateTrueOrRevert(customFees != null, ResponseCodeEnum.INVALID_TOKEN_ID);
 
@@ -205,8 +201,7 @@ public class ViewExecutor {
                         ResponseCodeEnum.INVALID_TOKEN_ID);
 
                 final var isToken =
-                        ledgers.isTokenAddress(
-                                EntityIdUtils.asTypedEvmAddress((wrapper.token())));
+                        ledgers.isTokenAddress(EntityIdUtils.asTypedEvmAddress((wrapper.token())));
                 return encoder.encodeIsToken(isToken);
             }
             case ABI_ID_GET_TOKEN_TYPE -> {

@@ -73,7 +73,10 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {
-        final var rawTokenInfoWrapper = EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
-        return TokenInfoWrapper.forNonFungibleToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()), rawTokenInfoWrapper.serialNumber());
+        final var rawTokenInfoWrapper =
+                EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+        return TokenInfoWrapper.forNonFungibleToken(
+                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()),
+                rawTokenInfoWrapper.serialNumber());
     }
 }

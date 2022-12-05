@@ -15,8 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_PAIR;
@@ -26,7 +24,6 @@ import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmIsFrozenPrecompile {
@@ -40,6 +37,7 @@ public interface EvmIsFrozenPrecompile {
                 decodeFunctionCall(
                         input, IS_FROZEN_TOKEN_FUNCTION_SELECTOR, IS_FROZEN_TOKEN_DECODER);
 
-        return TokenFreezeUnfreezeWrapper.forIsFrozen(decodedArguments.get(0), decodedArguments.get(1));
+        return TokenFreezeUnfreezeWrapper.forIsFrozen(
+                decodedArguments.get(0), decodedArguments.get(1));
     }
 }

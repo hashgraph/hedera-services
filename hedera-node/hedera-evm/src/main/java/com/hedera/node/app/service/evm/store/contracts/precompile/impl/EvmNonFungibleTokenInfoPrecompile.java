@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -40,6 +39,7 @@ public interface EvmNonFungibleTokenInfoPrecompile {
                         GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
                         GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
 
-        return TokenInfoWrapper.forNonFungibleToken(decodedArguments.get(0), decodedArguments.get(1));
+        return TokenInfoWrapper.forNonFungibleToken(
+                decodedArguments.get(0), decodedArguments.get(1));
     }
 }

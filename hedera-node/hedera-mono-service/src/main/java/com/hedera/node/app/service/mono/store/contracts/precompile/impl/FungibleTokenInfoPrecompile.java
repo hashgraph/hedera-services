@@ -62,7 +62,9 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetFungibleTokenInfo(final Bytes input) {
-        final var rawTokenInfoWrapper =  EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
-        return TokenInfoWrapper.forFungibleToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
+        final var rawTokenInfoWrapper =
+                EvmFungibleTokenInfoPrecompile.decodeGetFungibleTokenInfo(input);
+        return TokenInfoWrapper.forFungibleToken(
+                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
     }
 }

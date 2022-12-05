@@ -607,7 +607,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
+    public TransactionBody.Builder createFreeze(
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
         builder.setAccount(freezeWrapper.account());

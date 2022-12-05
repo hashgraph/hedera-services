@@ -15,9 +15,6 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-
 public record TokenFreezeUnfreezeWrapper<T, U>(T token, U account) {
 
     public static <T, U> TokenFreezeUnfreezeWrapper<T, U> forIsFrozen(T token, U account) {
@@ -28,11 +25,11 @@ public record TokenFreezeUnfreezeWrapper<T, U>(T token, U account) {
         return createWrapper(token, account);
     }
 
-    public static <T, U>  TokenFreezeUnfreezeWrapper<T, U> forUnfreeze(T token, U account) {
+    public static <T, U> TokenFreezeUnfreezeWrapper<T, U> forUnfreeze(T token, U account) {
         return createWrapper(token, account);
     }
 
-    private static  <T, U> TokenFreezeUnfreezeWrapper<T, U> createWrapper(T token, U account) {
+    private static <T, U> TokenFreezeUnfreezeWrapper<T, U> createWrapper(T token, U account) {
         return new TokenFreezeUnfreezeWrapper<>(token, account);
     }
 }
