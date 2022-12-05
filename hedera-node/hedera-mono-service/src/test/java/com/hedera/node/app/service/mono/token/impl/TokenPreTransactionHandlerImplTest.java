@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
@@ -87,13 +86,12 @@ class TokenPreTransactionHandlerImplTest {
     @Test
     void noReceiverSigRequiredPreHandleCreateToken() {
         final var txn = createAccountTransaction(false);
-        final var expectedMeta = new SigTransactionMetadata(store, txn, payer);
 
         final var meta = subject.preHandleCreateToken(txn);
 
-        assertEquals(expectedMeta.getTxn(), meta.getTxn());
+        assertEquals(txn, meta.getTxn());
         assertTrue(meta.getReqKeys().contains(payerKey));
-        basicMetaAssertions(meta, 1, expectedMeta.failed(), OK);
+        basicMetaAssertions(meta, 1, false, OK);
         assertIterableEquals(List.of(payerKey), meta.getReqKeys());
     }
 

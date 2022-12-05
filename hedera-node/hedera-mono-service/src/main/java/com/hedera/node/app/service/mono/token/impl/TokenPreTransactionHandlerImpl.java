@@ -48,10 +48,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandleCreateToken(final TransactionBody txn) {
         final var op = txn.getTokenCreation();
         final var payer = txn.getTransactionID().getAccountID();
-        final var createAccountId = op.getTreasury();
+        final var treasuryId = op.getTreasury();
         final var autoRenewalAccountId = op.getAutoRenewAccount();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        meta.addNonPayerKey(createAccountId, INVALID_ALLOWANCE_OWNER_ID);
+        meta.addNonPayerKey(treasuryId, INVALID_ALLOWANCE_OWNER_ID);
         meta.addNonPayerKeyIfReceiverSigRequired(autoRenewalAccountId, INVALID_ALLOWANCE_OWNER_ID);
         return meta;
     }
