@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.store.schedule.ScheduleStore.MISS
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getCryptoGrantedAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getFungibleGrantedTokenAllowancesList;
 import static com.hedera.node.app.service.mono.txns.crypto.helpers.AllowanceHelpers.getNftGrantedAllowancesList;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asAccount;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asHexedEvmAddress;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
