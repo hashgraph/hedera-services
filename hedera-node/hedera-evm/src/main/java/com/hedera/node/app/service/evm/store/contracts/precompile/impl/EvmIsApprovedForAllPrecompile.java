@@ -17,17 +17,13 @@ package com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_PAIR_RAW_TYPE;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TRIO_RAW_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOL;
-import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_PAIR;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
-import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface EvmIsApprovedForAllPrecompile {
@@ -36,13 +32,17 @@ public interface EvmIsApprovedForAllPrecompile {
     Bytes ERC_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(ERC_IS_APPROVED_FOR_ALL.selector());
     ABIType<Tuple> ERC_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_PAIR_RAW_TYPE);
 
-    static IsApproveForAllWrapper<byte[], byte[], byte[]> decodeIsApprovedForAll(final Bytes input) {
+    static IsApproveForAllWrapper<byte[], byte[], byte[]> decodeIsApprovedForAll(
+            final Bytes input) {
         final var tokenAddress = input.slice(4, 20).toArrayUnsafe();
         final var nestedInput = input.slice(24);
         final Tuple decodedArguments =
-                decodeFunctionCall(nestedInput, ERC_IS_APPROVED_FOR_ALL_SELECTOR, ERC_IS_APPROVED_FOR_ALL_DECODER);
+                decodeFunctionCall(
+                        nestedInput,
+                        ERC_IS_APPROVED_FOR_ALL_SELECTOR,
+                        ERC_IS_APPROVED_FOR_ALL_DECODER);
 
-        return new IsApproveForAllWrapper<>(tokenAddress, decodedArguments.get(0),
-            decodedArguments.get(1));
+        return new IsApproveForAllWrapper<>(
+                tokenAddress, decodedArguments.get(0), decodedArguments.get(1));
     }
 }

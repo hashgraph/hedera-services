@@ -47,11 +47,12 @@ import org.apache.tuweni.bytes.Bytes;
 public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
         implements EvmIsApprovedForAllPrecompile {
 
-    private static final  Function HAPI_IS_APPROVED_FOR_ALL =
-        new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
-    private static final  Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR = Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
-    private static final  ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER = TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
-
+    private static final Function HAPI_IS_APPROVED_FOR_ALL =
+            new Function("isApprovedForAll(address,address,address)", INT_BOOL_PAIR);
+    private static final Bytes HAPI_IS_APPROVED_FOR_ALL_SELECTOR =
+            Bytes.wrap(HAPI_IS_APPROVED_FOR_ALL.selector());
+    private static final ABIType<Tuple> HAPI_IS_APPROVED_FOR_ALL_DECODER =
+            TypeFactory.create(ADDRESS_TRIO_RAW_TYPE);
 
     private IsApproveForAllWrapper<TokenID, AccountID, AccountID> isApproveForAllWrapper;
 
@@ -112,23 +113,24 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
         final var offset = impliedTokenId == null ? 1 : 0;
         if (offset == 1) {
             final Tuple decodedArguments =
-                decodeFunctionCall(
-                    input,
-                    HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
-                    HAPI_IS_APPROVED_FOR_ALL_DECODER
-                );
+                    decodeFunctionCall(
+                            input,
+                            HAPI_IS_APPROVED_FOR_ALL_SELECTOR,
+                            HAPI_IS_APPROVED_FOR_ALL_DECODER);
 
             return new IsApproveForAllWrapper<>(
-                convertAddressBytesToTokenID(decodedArguments.get(0)),
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
-                convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver)
-            );
+                    convertAddressBytesToTokenID(decodedArguments.get(0)),
+                    convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(decodedArguments.get(2), aliasResolver));
         } else {
-            final var rawIsApproveForAllWrapper = EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
+            final var rawIsApproveForAllWrapper =
+                    EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
             return new IsApproveForAllWrapper<>(
-                tokenIdFromEvmAddress(rawIsApproveForAllWrapper.tokenId()),
-                convertLeftPaddedAddressToAccountId(rawIsApproveForAllWrapper.owner(), aliasResolver),
-                convertLeftPaddedAddressToAccountId(rawIsApproveForAllWrapper.operator(), aliasResolver));
+                    tokenIdFromEvmAddress(rawIsApproveForAllWrapper.tokenId()),
+                    convertLeftPaddedAddressToAccountId(
+                            rawIsApproveForAllWrapper.owner(), aliasResolver),
+                    convertLeftPaddedAddressToAccountId(
+                            rawIsApproveForAllWrapper.operator(), aliasResolver));
         }
     }
 }
