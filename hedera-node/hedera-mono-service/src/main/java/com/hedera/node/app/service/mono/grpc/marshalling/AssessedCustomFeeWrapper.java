@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.grpc.marshalling;
+package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.FcAssessedCustomFee;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Arrays;
 import java.util.Map;

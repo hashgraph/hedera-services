@@ -22,7 +22,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.fees.CustomFeePayerExemptions;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcAssessedCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.store.models.Id;
 import java.util.Collections;
