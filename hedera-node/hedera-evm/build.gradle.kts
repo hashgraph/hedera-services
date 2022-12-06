@@ -44,7 +44,7 @@ dependencies {
     api(libs.swirlds.common)
     api(libs.besu.datatypes)
     api(libs.hapi) {
-        // this is an android version, not a jre version (since this belongs to the API layer)
+        // this is an android version, not a jre version
         exclude("com.google.guava", "guava")
     }
     api(libs.guava) // TODO: we should remove the internal usage of guava

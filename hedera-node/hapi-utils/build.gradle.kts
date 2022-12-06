@@ -41,7 +41,6 @@ dependencies {
     implementation(libs.jna)
     implementation(libs.javax.inject)
     implementation(libs.dagger.api)
-    implementation(libs.guava)
 
     testImplementation(testLibs.bundles.testing)
 }

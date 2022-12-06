@@ -19,10 +19,6 @@ plugins {
 
 description = "Default Hedera Network Service Implementation"
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
-}
-
 dependencies {
     api(project(":hedera-node:hedera-network-service"))
     implementation(project(":hedera-node:hedera-mono-service"))

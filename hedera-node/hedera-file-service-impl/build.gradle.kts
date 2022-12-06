@@ -19,10 +19,6 @@ plugins {
 
 description = "Default Hedera File Service Implementation"
 
-configurations.all {
-    exclude("javax.annotation", "javax.annotation-api")
-}
-
 dependencies {
     api(project(":hedera-node:hedera-file-service"))
     implementation(project(":hedera-node:hedera-mono-service"))

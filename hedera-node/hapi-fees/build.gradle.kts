@@ -37,7 +37,6 @@ dependencies {
     implementation(libs.dagger.api)
     implementation(libs.log4j.api)
     implementation(libs.jackson)
-    implementation(libs.guava)
 
     testImplementation(testLibs.bundles.testing)
 }
