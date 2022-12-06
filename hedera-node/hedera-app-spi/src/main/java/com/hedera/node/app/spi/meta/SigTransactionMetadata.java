@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
