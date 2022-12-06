@@ -33,6 +33,7 @@ import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
@@ -69,6 +70,7 @@ class PreHandleWorkflowImplTest {
 
     @Mock private HederaState state;
     @Mock private Event event;
+    @Mock private PreHandleTxnAccessor accessor;
 
     private ServicesAccessor servicesAccessor;
     private PreHandleContext context;
@@ -101,24 +103,32 @@ class PreHandleWorkflowImplTest {
 
         context = new PreHandleContext(accountNumbers, hederaFileNumbers);
 
-        workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
+        workflow =
+                new PreHandleWorkflowImpl(
+                        executorService, servicesAccessor, context, onset, accessor);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, context, onset))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, context, onset))
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        null, servicesAccessor, context, onset, accessor))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new PreHandleWorkflowImpl(
-                                        executorService, servicesAccessor, null, onset))
+                                        executorService, null, context, onset, accessor))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new PreHandleWorkflowImpl(
-                                        executorService, servicesAccessor, context, null))
+                                        executorService, servicesAccessor, null, onset, accessor))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new PreHandleWorkflowImpl(
+                                        executorService, servicesAccessor, context, null, accessor))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -167,7 +177,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any());
+        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any(), eq(accessor));
     }
 
     @Test
@@ -182,7 +192,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state2, event);
 
         // then
-        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any());
+        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any(), eq(accessor));
     }
 
     @Test
@@ -210,7 +220,7 @@ class PreHandleWorkflowImplTest {
         final HederaFunctionality functionality = HederaFunctionality.CryptoCreate;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
-        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
+        when(cryptoService.createPreTransactionHandler(any(), eq(context), eq(accessor)))
                 .thenReturn(preTransactionHandler);
         when(preTransactionHandler.preHandle(eq(txBody), any())).thenReturn(metadata);
 

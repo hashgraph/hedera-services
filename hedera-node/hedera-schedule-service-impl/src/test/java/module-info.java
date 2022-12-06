@@ -8,7 +8,12 @@ module com.hedera.node.app.service.schedule.impl.test {
     requires com.hedera.node.app.service.schedule.impl;
     requires org.mockito;
     requires org.mockito.junit.jupiter;
+    requires com.hedera.node.app.service.mono.testFixtures;
 
     opens com.hedera.node.app.service.schedule.impl.test to
-            org.junit.platform.commons;
+            org.junit.platform.commons,
+            org.mockito;
+
+    exports com.hedera.node.app.service.schedule.impl.test to
+            org.mockito;
 }

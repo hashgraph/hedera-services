@@ -24,23 +24,16 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 public class ScheduleServiceImpl implements ScheduleService {
-    private final PreHandleTxnAccessor callContext;
-
-    public ScheduleServiceImpl() {
-        this.callContext = null;
-    }
-
-    public ScheduleServiceImpl(final PreHandleTxnAccessor callContext) {
-        this.callContext =
-                callContext; // How is this constructed ? Not sure if it should be injected here
-    }
+    public ScheduleServiceImpl() {}
 
     @NonNull
     @Override
     public SchedulePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
+            @NonNull States states,
+            @NonNull PreHandleContext ctx,
+            @NonNull PreHandleTxnAccessor accessor) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        return new SchedulePreTransactionHandlerImpl(callContext);
+        return new SchedulePreTransactionHandlerImpl(accessor);
     }
 }

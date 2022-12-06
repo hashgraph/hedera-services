@@ -28,6 +28,7 @@ import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -59,40 +60,52 @@ public final class PreHandleDispatcher {
     public PreHandleDispatcher(
             @NonNull final HederaState hederaState,
             @NonNull final ServicesAccessor services,
-            @NonNull final PreHandleContext context) {
+            @NonNull final PreHandleContext context,
+            @NonNull final PreHandleTxnAccessor accessor) {
         requireNonNull(hederaState);
         requireNonNull(services);
         requireNonNull(context);
         final var consensusState = hederaState.createReadableStates(HederaState.CONSENSUS_SERVICE);
         consensusHandler =
-                services.consensusService().createPreTransactionHandler(consensusState, context);
+                services.consensusService()
+                        .createPreTransactionHandler(consensusState, context, accessor);
 
         final var contractState = hederaState.createReadableStates(HederaState.CONTRACT_SERVICE);
         contractHandler =
-                services.contractService().createPreTransactionHandler(contractState, context);
+                services.contractService()
+                        .createPreTransactionHandler(contractState, context, accessor);
 
         final var cryptoStates = hederaState.createReadableStates(HederaState.CRYPTO_SERVICE);
-        cryptoHandler = services.cryptoService().createPreTransactionHandler(cryptoStates, context);
+        cryptoHandler =
+                services.cryptoService()
+                        .createPreTransactionHandler(cryptoStates, context, accessor);
 
         final var fileStates = hederaState.createReadableStates(HederaState.FILE_SERVICE);
-        fileHandler = services.fileService().createPreTransactionHandler(fileStates, context);
+        fileHandler =
+                services.fileService().createPreTransactionHandler(fileStates, context, accessor);
 
         final var freezeState = hederaState.createReadableStates(HederaState.FREEZE_SERVICE);
-        freezeHandler = services.freezeService().createPreTransactionHandler(freezeState, context);
+        freezeHandler =
+                services.freezeService()
+                        .createPreTransactionHandler(freezeState, context, accessor);
 
         final var networkState = hederaState.createReadableStates(HederaState.NETWORK_SERVICE);
         networkHandler =
-                services.networkService().createPreTransactionHandler(networkState, context);
+                services.networkService()
+                        .createPreTransactionHandler(networkState, context, accessor);
 
         final var scheduledState = hederaState.createReadableStates(HederaState.SCHEDULE_SERVICE);
         scheduleHandler =
-                services.scheduleService().createPreTransactionHandler(scheduledState, context);
+                services.scheduleService()
+                        .createPreTransactionHandler(scheduledState, context, accessor);
 
         final var tokenStates = hederaState.createReadableStates(HederaState.TOKEN_SERVICE);
-        tokenHandler = services.tokenService().createPreTransactionHandler(tokenStates, context);
+        tokenHandler =
+                services.tokenService().createPreTransactionHandler(tokenStates, context, accessor);
 
         final var utilStates = hederaState.createReadableStates(HederaState.UTIL_SERVICE);
-        utilHandler = services.utilService().createPreTransactionHandler(utilStates, context);
+        utilHandler =
+                services.utilService().createPreTransactionHandler(utilStates, context, accessor);
     }
 
     /**

@@ -15,10 +15,7 @@
  */
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.Service;
-import com.hedera.node.app.spi.ServiceFactory;
+import com.hedera.node.app.spi.*;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -46,7 +43,9 @@ public interface CryptoService extends Service {
     @Override
     @NonNull
     CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
+            @NonNull States states,
+            @NonNull PreHandleContext ctx,
+            @NonNull PreHandleTxnAccessor accessor);
 
     /**
      * Returns the concrete implementation instance of the service

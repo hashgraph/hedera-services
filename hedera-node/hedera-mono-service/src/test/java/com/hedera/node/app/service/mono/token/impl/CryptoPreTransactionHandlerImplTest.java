@@ -26,7 +26,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willCallRealMethod;
+import static org.mockito.Mockito.*;
 
 import com.google.protobuf.BoolValue;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -453,6 +456,35 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleUpdateAccount(txn, payer);
         basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
+
+        meta = subject.preHandle(txn, payer);
+        basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void preHandleDelegatesCorrectly(){
+        subject = mock(CryptoPreTransactionHandlerImpl.class);
+        willCallRealMethod().given(subject).preHandle(any(), any());
+
+        var txn = cryptoUpdateTransaction(owner, updateAccountId);
+        subject.preHandle(txn, owner);
+        verify(subject).preHandleUpdateAccount(txn, owner);
+
+        txn = createAccountTransaction(true);
+        subject.preHandle(txn, payer);
+        verify(subject).preHandleCryptoCreate(txn, payer);
+
+        txn = cryptoDeleteAllowanceTransaction(owner);
+        subject.preHandle(txn, owner);
+        verify(subject).preHandleDeleteAllowances(txn, owner);
+
+        txn = cryptoApproveAllowanceTransaction(owner, false);
+        subject.preHandle(txn, owner);
+        verify(subject).preHandleApproveAllowances(txn, owner);
+
+        txn = deleteAccountTransaction(owner, updateAccountId);
+        subject.preHandle(txn, owner);
+        verify(subject).preHandleCryptoDelete(txn, owner);
     }
 
     private void basicMetaAssertions(
@@ -573,7 +605,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     final void setUpPayer() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
-        given(payerAccount.getAccountKey()).willReturn((JKey) payerKey);
+        lenient().when(accounts.get(payerNum)).thenReturn(Optional.of(payerAccount));
+        lenient().when(payerAccount.getAccountKey()).thenReturn((JKey) payerKey);
     }
 }

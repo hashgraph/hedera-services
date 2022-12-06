@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -26,7 +27,9 @@ public final class StandardTokenService implements TokenService {
     @NonNull
     @Override
     public TokenPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
+            @NonNull States states,
+            @NonNull PreHandleContext ctx,
+            @NonNull PreHandleTxnAccessor accessor) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

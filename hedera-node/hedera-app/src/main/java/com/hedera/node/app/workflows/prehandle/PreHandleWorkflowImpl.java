@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
@@ -56,6 +57,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final ServicesAccessor servicesAccessor;
     private final WorkflowOnset onset;
     private final PreHandleContext context;
+    private final PreHandleTxnAccessor preHandleTxnAccessor;
 
     private HederaState lastUsedState;
     private PreHandleDispatcher dispatcher;
@@ -73,11 +75,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ExecutorService exe,
             @NonNull final ServicesAccessor servicesAccessor,
             @NonNull final PreHandleContext context,
-            @NonNull final WorkflowOnset onset) {
+            @NonNull final WorkflowOnset onset,
+            @NonNull final PreHandleTxnAccessor preHandleTxnAccessor) {
         this.exe = requireNonNull(exe);
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.context = requireNonNull(context);
         this.onset = requireNonNull(onset);
+        this.preHandleTxnAccessor = requireNonNull(preHandleTxnAccessor);
     }
 
     @Override
@@ -88,7 +92,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcher(state, servicesAccessor, context);
+            dispatcher =
+                    new PreHandleDispatcher(state, servicesAccessor, context, preHandleTxnAccessor);
             lastUsedState = state;
         }
 

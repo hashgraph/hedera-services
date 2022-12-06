@@ -18,6 +18,7 @@ package com.hedera.node.app.service.util.impl;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -26,7 +27,9 @@ public final class StandardUtilService implements UtilService {
     @NonNull
     @Override
     public UtilPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
+            @NonNull States states,
+            @NonNull PreHandleContext ctx,
+            @NonNull PreHandleTxnAccessor accessor) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

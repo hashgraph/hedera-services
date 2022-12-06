@@ -21,6 +21,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,7 @@ class CryptoServiceImplTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock States states;
     @Mock PreHandleContext ctx;
+    @Mock PreHandleTxnAccessor accessor;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -45,8 +47,8 @@ class CryptoServiceImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
-        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
+        final var serviceImpl = subject.createPreTransactionHandler(states, ctx, accessor);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx, accessor);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 

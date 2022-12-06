@@ -29,6 +29,7 @@ configurations.all {
 dependencies {
     api(project(":hedera-node:hedera-schedule-service"))
     implementation(project(":hedera-node:hedera-mono-service"))
+    testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.mockito)
     compileOnly(libs.spotbugs.annotations)
 }

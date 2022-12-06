@@ -52,7 +52,8 @@ public interface PreHandleTxnAccessor {
                 || function == CryptoCreate
                 || function == CryptoDelete
                 || function == CryptoDeleteAllowance
-                || function == CryptoApproveAllowance) {
+                || function == CryptoApproveAllowance
+                || function == CryptoUpdate) {
             return getCryptoPreTransactionHandler();
         } else if (function == ScheduleCreate
                 || function == ScheduleDelete

@@ -18,6 +18,7 @@ package com.hedera.node.app.service.consensus.impl;
 import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,7 +29,9 @@ public final class StandardConsensusService implements ConsensusService {
     @NonNull
     @Override
     public ConsensusPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
+            @NonNull States states,
+            @NonNull PreHandleContext ctx,
+            @NonNull PreHandleTxnAccessor accessor) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

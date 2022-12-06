@@ -20,9 +20,11 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
-import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,15 +35,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
-    private ScheduleServiceImpl subject;
-    @Mock private State schedules;
     @Mock private States states;
-    @Mock private PreHandleTxnAccessor callContext;
-    @Mock private PreHandleContext preHandleCtx;
+    @Mock private HederaAccountNumbers numbers;
+    @Mock private HederaFileNumbers fileNumbers;
+    @Mock private PreHandleTxnAccessor accessor;
+    @Mock private AccountKeyLookup keyLookup;
+    public PreHandleContext preHandleCtx;
 
     @BeforeEach
     void setUp() {
-        subject = new ScheduleServiceImpl(callContext);
+        preHandleCtx = new PreHandleContext(numbers, fileNumbers);
     }
 
     @Test
@@ -49,19 +52,18 @@ class ScheduleServiceImplTest {
         final ScheduleService service = ScheduleService.getInstance();
         Assertions.assertNotNull(service, "We must always receive an instance");
         Assertions.assertEquals(
-                ScheduleService.class,
+                ScheduleServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type StandardScheduleService");
     }
 
     @Test
     void createsNewInstance() {
-        given(states.get("SCHEDULES-BY-ID")).willReturn(schedules);
-        given(states.get("SCHEDULES-BY-EQUALITY")).willReturn(schedules);
-        given(states.get("SCHEDULES-BY-EXPIRY")).willReturn(schedules);
-
-        final var serviceImpl = subject.createPreTransactionHandler(states, preHandleCtx);
-        final var serviceImpl1 = subject.createPreTransactionHandler(states, preHandleCtx);
+        given(accessor.getAccountKeyLookup()).willReturn(keyLookup);
+        final ScheduleService service = ScheduleService.getInstance();
+        final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx, accessor);
+        final var serviceImpl1 =
+                service.createPreTransactionHandler(states, preHandleCtx, accessor);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 }
