@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
+import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;

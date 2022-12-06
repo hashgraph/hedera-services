@@ -23,6 +23,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallCodeOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperation;
+import com.hedera.node.app.service.mono.contracts.operation.HederaCallOperationV032;
 import com.hedera.node.app.service.mono.contracts.operation.HederaChainIdOperation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreate2Operation;
 import com.hedera.node.app.service.mono.contracts.operation.HederaCreateOperation;

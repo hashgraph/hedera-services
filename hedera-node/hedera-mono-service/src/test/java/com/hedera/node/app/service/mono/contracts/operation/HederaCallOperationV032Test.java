@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.contracts.operation;
+package com.hedera.node.app.service.mono.contracts.operation;
 
-import static com.hedera.services.contracts.operation.CommonCallSetup.commonSetup;
-import static com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.node.app.service.mono.contracts.operation.CommonCallSetup.commonSetup;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.contracts.sources.EvmSigsVerifier;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.store.contracts.HederaStackedWorldStateUpdater;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
+import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -35,6 +35,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.Account;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
@@ -94,9 +95,8 @@ class HederaCallOperationV032Test {
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
-        assertEquals(opRes.getHaltReason(), Optional.of(INVALID_SOLIDITY_ADDRESS));
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertEquals(opRes.getHaltReason(), INVALID_SOLIDITY_ADDRESS);
+        assertEquals(opRes.getGasCost(), cost);
     }
 
     @ParameterizedTest
@@ -136,9 +136,8 @@ class HederaCallOperationV032Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(isFlagEnabled);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(Optional.empty(), opRes.getHaltReason());
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertEquals(null, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
 
         given(
                         sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
@@ -146,7 +145,7 @@ class HederaCallOperationV032Test {
                 .willReturn(false);
         var invalidSignaturesRes = subject.execute(evmMsgFrame, evm);
         assertEquals(
-                Optional.of(HederaExceptionalHaltReason.INVALID_SIGNATURE),
+                HederaExceptionalHaltReason.INVALID_SIGNATURE,
                 invalidSignaturesRes.getHaltReason());
     }
 
@@ -172,9 +171,8 @@ class HederaCallOperationV032Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(Optional.of(INVALID_SOLIDITY_ADDRESS), opRes.getHaltReason());
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
     }
 
     @Test
@@ -207,8 +205,7 @@ class HederaCallOperationV032Test {
         given(globalDynamicProperties.isImplicitCreationEnabled()).willReturn(true);
 
         var opRes = subject.execute(evmMsgFrame, evm);
-        assertEquals(Optional.empty(), opRes.getHaltReason());
-        assertTrue(opRes.getGasCost().isPresent());
-        assertEquals(opRes.getGasCost().getAsLong(), cost);
+        assertEquals(null, opRes.getHaltReason());
+        assertEquals(opRes.getGasCost(), cost);
     }
 }
