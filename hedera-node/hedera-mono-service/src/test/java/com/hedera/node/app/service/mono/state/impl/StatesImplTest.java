@@ -76,7 +76,10 @@ class StatesImplTest {
     @Mock private MerkleMap<EntityNum, MerkleToken> tokens;
     @Mock private MerkleMap<EntityNumVirtualKey, ScheduleVirtualValue> scheduleById;
     @Mock private MerkleMap<SecondSinceEpocVirtualKey, ScheduleSecondVirtualValue> scheduleByExpiry;
-    @Mock private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> scheduleByEquality;
+
+    @Mock
+    private MerkleMap<ScheduleEqualityVirtualKey, ScheduleEqualityVirtualValue> scheduleByEquality;
+
     @Mock private TokenRelStorageAdapter tokenAssociations;
     @Mock private MerkleScheduledTransactions scheduleTxs;
     @Mock private MerkleNetworkContext networkCtx;
@@ -98,6 +101,10 @@ class StatesImplTest {
     void updatesChildrenFromImmutableState() {
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
+        given(scheduleTxs.byId()).willReturn(scheduleById);
+        given(scheduleTxs.byEquality()).willReturn(scheduleByEquality);
+        given(scheduleTxs.byExpirationSecond()).willReturn(scheduleByExpiry);
+
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
         given(state.isInitialized()).willReturn(true);
 
@@ -108,7 +115,6 @@ class StatesImplTest {
 
     @Test
     void returnsInMemoryAccountsWhenAppropriate() {
-
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
@@ -144,6 +150,10 @@ class StatesImplTest {
     void returnsSchedulesFromChildren() {
         final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
         givenStateWithMockChildren();
+        given(scheduleTxs.byId()).willReturn(scheduleById);
+        given(scheduleTxs.byEquality()).willReturn(scheduleByEquality);
+        given(scheduleTxs.byExpirationSecond()).willReturn(scheduleByExpiry);
+
         given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
         given(state.isInitialized()).willReturn(true);
 
@@ -188,9 +198,6 @@ class StatesImplTest {
         given(state.tokens()).willReturn(tokens);
         given(state.tokenAssociations()).willReturn(tokenAssociations);
         given(state.scheduleTxs()).willReturn(scheduleTxs);
-        given(scheduleTxs.byId()).willReturn(scheduleById);
-        given(scheduleTxs.byEquality()).willReturn(scheduleByEquality);
-        given(scheduleTxs.byExpirationSecond()).willReturn(scheduleByExpiry);
         given(state.networkCtx()).willReturn(networkCtx);
         given(state.addressBook()).willReturn(addressBook);
         given(state.specialFiles()).willReturn(specialFiles);
@@ -210,6 +217,9 @@ class StatesImplTest {
         assertSame(tokens, children.tokens());
         assertSame(tokenAssociations, children.tokenAssociations());
         assertSame(scheduleTxs, children.schedules());
+        assertSame(scheduleById, children.schedules().byId());
+        assertSame(scheduleByEquality, children.schedules().byEquality());
+        assertSame(scheduleByExpiry, children.schedules().byExpirationSecond());
         assertSame(networkCtx, children.networkCtx());
         assertSame(addressBook, children.addressBook());
         assertSame(specialFiles, children.specialFiles());

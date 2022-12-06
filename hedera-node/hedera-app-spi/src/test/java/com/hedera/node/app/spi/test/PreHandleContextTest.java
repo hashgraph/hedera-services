@@ -34,17 +34,12 @@ class PreHandleContextTest {
     @Test
     void checksNullParams() {
         assertThrows(NullPointerException.class, () -> new PreHandleContext(null, null));
-        assertThrows(
-                NullPointerException.class,
-                () -> new PreHandleContext(accountNumbers, null));
-        assertThrows(
-                NullPointerException.class,
-                () -> new PreHandleContext(null, fileNumbers));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(accountNumbers, null));
+        assertThrows(NullPointerException.class, () -> new PreHandleContext(null, fileNumbers));
     }
 
     @Test
     void passesWIthNonNullParams() {
-        assertDoesNotThrow(
-                () -> new PreHandleContext(accountNumbers, fileNumbers));
+        assertDoesNotThrow(() -> new PreHandleContext(accountNumbers, fileNumbers));
     }
 }

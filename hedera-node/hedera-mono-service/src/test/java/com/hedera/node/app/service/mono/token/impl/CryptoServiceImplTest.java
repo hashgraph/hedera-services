@@ -51,7 +51,7 @@ class CryptoServiceImplTest {
     }
 
     @Test
-    void createsAccountKeyLookup(){
+    void createsAccountKeyLookup() {
         subject = new CryptoServiceImpl();
 
         given(states.get(ACCOUNTS)).willReturn(accounts);

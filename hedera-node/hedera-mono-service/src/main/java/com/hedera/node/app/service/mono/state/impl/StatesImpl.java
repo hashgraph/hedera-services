@@ -58,15 +58,20 @@ public class StatesImpl implements States {
             return (StateBase) state;
         } else if (stateKey.equals("SCHEDULES-BY-EQUALITY")) {
             final var state =
-                    new InMemoryStateImpl<>(stateKey, children.schedules().byEquality(), children.signedAt());
+                    new InMemoryStateImpl<>(
+                            stateKey, children.schedules().byEquality(), children.signedAt());
             return (StateBase) state;
         } else if (stateKey.equals("SCHEDULES-BY-ID")) {
             final var state =
-                    new InMemoryStateImpl<>(stateKey, children.schedules().byId(), children.signedAt());
+                    new InMemoryStateImpl<>(
+                            stateKey, children.schedules().byId(), children.signedAt());
             return (StateBase) state;
         } else if (stateKey.equals("SCHEDULES-BY-EXPIRY")) {
             final var state =
-                    new InMemoryStateImpl<>(stateKey, children.schedules().byExpirationSecond(), children.signedAt());
+                    new InMemoryStateImpl<>(
+                            stateKey,
+                            children.schedules().byExpirationSecond(),
+                            children.signedAt());
             return (StateBase) state;
         } else {
             throw new NotImplementedException(

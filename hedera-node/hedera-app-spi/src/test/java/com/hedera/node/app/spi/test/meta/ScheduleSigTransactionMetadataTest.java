@@ -15,8 +15,12 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
@@ -25,10 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSigTransactionMetadataTest {
@@ -39,9 +39,9 @@ class ScheduleSigTransactionMetadataTest {
     private ScheduleSigTransactionMetadata subject;
 
     @Test
-    void getsInnerMetadata(){
-        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
-        given(keyLookup.getKey(schedulePayer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+    void getsInnerMetadata() {
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
         subject = new ScheduleSigTransactionMetadata(keyLookup, createScheduleTransaction(), payer);
         final var innerMeta = new SigTransactionMetadata(keyLookup, any(), schedulePayer);
         subject.setScheduledMeta(innerMeta);
@@ -49,17 +49,14 @@ class ScheduleSigTransactionMetadataTest {
         assertEquals(innerMeta, subject.getScheduledMeta());
     }
 
-     private TransactionBody createScheduleTransaction() {
-        final var transactionID =
-                TransactionID.newBuilder()
-                        .setAccountID(payer);
+    private TransactionBody createScheduleTransaction() {
+        final var transactionID = TransactionID.newBuilder().setAccountID(payer);
         final var createTxnBody =
                 ScheduleCreateTransactionBody.newBuilder()
                         .setScheduledTransactionBody(
                                 SchedulableTransactionBody.newBuilder()
                                         .setMemo("test")
-                                        .setTransactionFee(1_000_000L)
-                        )
+                                        .setTransactionFee(1_000_000L))
                         .setPayerAccountID(schedulePayer)
                         .build();
         return TransactionBody.newBuilder()

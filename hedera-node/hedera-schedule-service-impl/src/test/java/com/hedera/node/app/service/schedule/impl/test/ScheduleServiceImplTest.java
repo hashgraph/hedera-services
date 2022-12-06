@@ -15,8 +15,11 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.State;
@@ -28,9 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
     private ScheduleServiceImpl subject;
@@ -38,8 +38,9 @@ class ScheduleServiceImplTest {
     @Mock private States states;
     @Mock private PreHandleTxnAccessor callContext;
     @Mock private PreHandleContext preHandleCtx;
+
     @BeforeEach
-    void setUp(){
+    void setUp() {
         subject = new ScheduleServiceImpl(callContext);
     }
 
@@ -47,7 +48,9 @@ class ScheduleServiceImplTest {
     void testsSpi() {
         final ScheduleService service = ScheduleService.getInstance();
         Assertions.assertNotNull(service, "We must always receive an instance");
-        Assertions.assertEquals(ScheduleService.class, service.getClass(),
+        Assertions.assertEquals(
+                ScheduleService.class,
+                service.getClass(),
                 "We must always receive an instance of type StandardScheduleService");
     }
 

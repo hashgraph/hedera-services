@@ -23,6 +23,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 public interface PreHandleTxnAccessor {
     /**
      * Gets Account lookup to fetch any account
+     *
      * @return account lookup
      */
     AccountKeyLookup getAccountKeyLookup();

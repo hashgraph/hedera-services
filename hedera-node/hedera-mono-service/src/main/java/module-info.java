@@ -45,7 +45,8 @@ module com.hedera.node.app.service.mono {
             com.fasterxml.jackson.databind;
 
     opens com.hedera.node.app.service.mono to
-            com.swirlds.common, com.hedera.node.app.spi.test;
+            com.swirlds.common,
+            com.hedera.node.app.spi.test;
     opens com.hedera.node.app.service.mono.context.properties to
             com.swirlds.common;
     opens com.hedera.node.app.service.mono.legacy.core.jproto to

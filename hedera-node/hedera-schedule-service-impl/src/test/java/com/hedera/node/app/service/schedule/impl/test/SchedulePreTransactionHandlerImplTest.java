@@ -16,7 +16,6 @@
 package com.hedera.node.app.service.schedule.impl.test;
 
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
