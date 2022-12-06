@@ -37,16 +37,14 @@ dependencies {
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.besu.secp256k1)
-    api(libs.swirlds.common)
 
-    implementation(libs.helidon.io.grpc)
+    implementation(libs.swirlds.common)
     implementation(libs.jna)
     implementation(libs.caffeine)
     implementation(libs.guava)
     implementation(libs.hapi) {
         exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
-    implementation(libs.javax.inject)
 
     testImplementation(testLibs.mockito.jupiter)
 }

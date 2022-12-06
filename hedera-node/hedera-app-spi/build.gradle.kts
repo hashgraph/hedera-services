@@ -39,8 +39,6 @@ dependencies {
 
     implementation(libs.grpc.stub)
     implementation(libs.helidon.io.grpc)
-    implementation(libs.jsr305.annotation)
 
     testImplementation(testLibs.bundles.mockito)
-    testCompileOnly(libs.spotbugs.annotations)
 }

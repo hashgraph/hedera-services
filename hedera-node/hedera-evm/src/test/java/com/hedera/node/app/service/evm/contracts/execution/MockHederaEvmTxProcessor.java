@@ -18,7 +18,7 @@ package com.hedera.node.app.service.evm.contracts.execution;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
-import javax.inject.Provider;
+import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.code.CodeV0;
@@ -35,8 +35,8 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Map<String, Supplier<MessageCallProcessor>> mcps,
+            final Map<String, Supplier<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
         super(
                 worldState,
@@ -55,7 +55,10 @@ public class MockHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     public MessageFrame buildInitialFrame(
-            Builder baseInitialFrame, Address to, Bytes payload, long value) {
+            final Builder baseInitialFrame,
+            final Address to,
+            final Bytes payload,
+            final long value) {
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)

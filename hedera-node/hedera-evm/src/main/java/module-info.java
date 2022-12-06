@@ -2,19 +2,17 @@
 module com.hedera.node.app.service.evm {
     requires org.hyperledger.besu.evm;
     requires org.hyperledger.besu.datatypes;
-    requires com.hedera.hashgraph.protobuf.java.api;
+    requires org.hyperledger.besu.secp256k1;
     requires tuweni.bytes;
     requires tuweni.units;
-    requires javax.inject;
     requires com.swirlds.common;
-    requires com.google.common;
     requires com.github.benmanes.caffeine;
-    requires com.google.protobuf;
     requires org.bouncycastle.provider;
-    requires com.sun.jna;
-    requires static com.github.spotbugs.annotations;
+    requires com.google.common;
+    requires com.google.protobuf;
     requires org.apache.commons.lang3;
-    requires org.hyperledger.besu.secp256k1;
+    requires com.sun.jna;
+    requires com.hedera.hashgraph.protobuf.java.api;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;

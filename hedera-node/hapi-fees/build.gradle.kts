@@ -32,11 +32,9 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     implementation(project(":hedera-node:hapi-utils"))
-
-    implementation(libs.bundles.di)
-    implementation(libs.helidon.io.grpc)
-    implementation(libs.bundles.logging)
-    implementation(libs.commons.lang3)
+    implementation(libs.javax.inject)
+    implementation(libs.dagger.api)
+    implementation(libs.log4j.api)
     implementation(libs.jackson)
 
     testImplementation(testLibs.bundles.testing)

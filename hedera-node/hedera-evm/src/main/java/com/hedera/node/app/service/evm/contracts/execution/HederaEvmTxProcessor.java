@@ -24,7 +24,7 @@ import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
-import javax.inject.Provider;
+import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -52,8 +52,8 @@ public abstract class HederaEvmTxProcessor {
     protected final GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
-    protected final Map<String, Provider<MessageCallProcessor>> mcps;
-    protected final Map<String, Provider<ContractCreationProcessor>> ccps;
+    protected final Map<String, Supplier<MessageCallProcessor>> mcps;
+    protected final Map<String, Supplier<ContractCreationProcessor>> ccps;
     protected AbstractMessageProcessor messageCallProcessor;
     protected AbstractMessageProcessor contractCreationProcessor;
     protected HederaEvmOperationTracer tracer;
@@ -69,8 +69,8 @@ public abstract class HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps) {
+            final Map<String, Supplier<MessageCallProcessor>> mcps,
+            final Map<String, Supplier<ContractCreationProcessor>> ccps) {
         this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
     }
 
@@ -91,8 +91,8 @@ public abstract class HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Map<String, Supplier<MessageCallProcessor>> mcps,
+            final Map<String, Supplier<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
