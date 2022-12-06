@@ -834,43 +834,167 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec hollowAccountCreationWithCryptoTransfer() {
+        final var initialTokenSupply = 1000;
+        final AtomicReference<TokenID> ftId = new AtomicReference<>();
+        final AtomicReference<TokenID> nftId = new AtomicReference<>();
+        final AtomicReference<AccountID> civilianId = new AtomicReference<>();
+        final AtomicReference<ByteString> civilianAlias = new AtomicReference<>();
+        final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
                         overriding(LAZY_CREATE_FEATURE_FLAG, TRUE),
+                        newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when()
-                .then(
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
+                        tokenCreate(A_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .supplyType(FINITE)
+                                .initialSupply(initialTokenSupply)
+                                .maxSupply(10L * initialTokenSupply)
+                                .treasury(TOKEN_TREASURY)
+                                .via(TOKEN_A_CREATE),
+                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .via(NFT_CREATE),
+                        mintToken(
+                                NFT_INFINITE_SUPPLY_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"))),
+                        cryptoCreate(CIVILIAN)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(2),
+                        tokenAssociate(CIVILIAN, A_TOKEN, NFT_INFINITE_SUPPLY_TOKEN),
+                        cryptoTransfer(
+                                moving(10, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
+                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
+                                        .between(TOKEN_TREASURY, CIVILIAN)),
                         withOpContext(
                                 (spec, opLog) -> {
+                                    final var registry = spec.registry();
                                     final var ecdsaKey =
                                             spec.registry()
                                                     .getKey(SECP_256K1_SOURCE_KEY)
                                                     .getECDSASecp256K1()
                                                     .toByteArray();
-                                    final var evmAddress =
+                                    final var evmAddressBytes =
                                             ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                    final var op =
+                                    ftId.set(registry.getTokenID(A_TOKEN));
+                                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                                    civilianId.set(registry.getAccountID(CIVILIAN));
+                                    civilianAlias.set(
+                                            ByteString.copyFrom(
+                                                    asSolidityAddress(civilianId.get())));
+                                    evmAddress.set(evmAddressBytes);
+                                }))
+                .when()
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /* hollow account created with transfer as expected */
+                                    final var cryptoTransferWithLazyCreate =
                                             cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    ONE_HUNDRED_HBARS))
+                                                            movingHbar(ONE_HUNDRED_HBARS)
+                                                                    .between(
+                                                                            LAZY_CREATE_SPONSOR,
+                                                                            evmAddress.get()),
+                                                            moving(5, A_TOKEN)
+                                                                    .between(
+                                                                            CIVILIAN,
+                                                                            evmAddress.get()),
+                                                            movingUnique(
+                                                                            NFT_INFINITE_SUPPLY_TOKEN,
+                                                                            1L)
+                                                                    .between(
+                                                                            CIVILIAN,
+                                                                            evmAddress.get()))
                                                     .hasKnownStatus(SUCCESS)
                                                     .via(TRANSFER_TXN);
-                                    final var op2 =
+
+                                    final var getHollowAccountInfoAfterCreation =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(relationshipWith(A_TOKEN).balance(5))
+                                                    .hasToken(
+                                                            relationshipWith(
+                                                                            NFT_INFINITE_SUPPLY_TOKEN)
+                                                                    .balance(1))
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(evmAddress)
+                                                                    .evmAddressAlias(
+                                                                            evmAddress.get())
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false)
                                                                     .memo(LAZY_MEMO));
-                                    allRunFor(spec, op, op2);
+
+                                    allRunFor(
+                                            spec,
+                                            cryptoTransferWithLazyCreate,
+                                            getHollowAccountInfoAfterCreation);
+
+                                    /* transfers of hbar, fungible and non-fungible tokens to the hollow account should succeed */
+                                    final var hbarTransfer =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    CIVILIAN,
+                                                                    evmAddress.get(),
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var fungibleTokenTransfer =
+                                            cryptoTransfer(
+                                                            moving(5, A_TOKEN)
+                                                                    .between(
+                                                                            CIVILIAN,
+                                                                            evmAddress.get()))
+                                                    .signedBy(DEFAULT_PAYER, CIVILIAN)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var nftTransfer =
+                                            cryptoTransfer(
+                                                            movingUnique(
+                                                                            NFT_INFINITE_SUPPLY_TOKEN,
+                                                                            2L)
+                                                                    .between(
+                                                                            CIVILIAN,
+                                                                            evmAddress.get()))
+                                                    .signedBy(DEFAULT_PAYER, CIVILIAN)
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var getHollowAccountInfoAfterTransfers =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(relationshipWith(A_TOKEN).balance(10))
+                                                    .hasToken(
+                                                            relationshipWith(
+                                                                            NFT_INFINITE_SUPPLY_TOKEN)
+                                                                    .balance(2))
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddressAlias(
+                                                                            evmAddress.get())
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            2 * ONE_HUNDRED_HBARS,
+                                                                            0,
+                                                                            0));
+
+                                    allRunFor(
+                                            spec,
+                                            hbarTransfer,
+                                            fungibleTokenTransfer,
+                                            nftTransfer,
+                                            getHollowAccountInfoAfterTransfers);
                                 }),
                         resetToDefault(LAZY_CREATE_FEATURE_FLAG));
     }
@@ -2089,9 +2213,11 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
         return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
                 .given(
                         overriding(LAZY_CREATION_ENABLED, TRUE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(PARTY)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(2),
+                        tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();
@@ -2107,21 +2233,91 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     counterAlias.set(evmAddressBytes);
                                 }))
                 .when(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .setToken(ftId.get())
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                partyAlias.get(),
-                                                                                -500))
-                                                                .addTransfers(
-                                                                        aaWith(
-                                                                                counterAlias.get(),
-                                                                                +500))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(FT_XFER))
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /* hollow account created with fungible token transfer as expected */
+                                    final var cryptoTransferWithLazyCreate =
+                                            cryptoTransfer(
+                                                            (s, b) ->
+                                                                    b.addTokenTransfers(
+                                                                            TokenTransferList
+                                                                                    .newBuilder()
+                                                                                    .setToken(
+                                                                                            ftId
+                                                                                                    .get())
+                                                                                    .addTransfers(
+                                                                                            aaWith(
+                                                                                                    partyAlias
+                                                                                                            .get(),
+                                                                                                    -500))
+                                                                                    .addTransfers(
+                                                                                            aaWith(
+                                                                                                    counterAlias
+                                                                                                            .get(),
+                                                                                                    +500))))
+                                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                                    .via(FT_XFER);
+
+                                    final var getHollowAccountInfoAfterCreation =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(
+                                                            relationshipWith(fungibleToken)
+                                                                    .balance(500))
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddressAlias(
+                                                                            counterAlias.get())
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO));
+
+                                    allRunFor(
+                                            spec,
+                                            cryptoTransferWithLazyCreate,
+                                            getHollowAccountInfoAfterCreation);
+
+                                    /* transfers of hbar or fungible tokens to the hollow account should succeed */
+                                    final var hbarTransfer =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    PARTY,
+                                                                    counterAlias.get(),
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var fungibleTokenTransfer =
+                                            cryptoTransfer(
+                                                            moving(5, fungibleToken)
+                                                                    .between(
+                                                                            PARTY,
+                                                                            counterAlias.get()))
+                                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var getHollowAccountInfoAfterTransfers =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(
+                                                            relationshipWith(fungibleToken)
+                                                                    .balance(505))
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddressAlias(
+                                                                            counterAlias.get())
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            ONE_HUNDRED_HBARS,
+                                                                            0,
+                                                                            0));
+
+                                    allRunFor(
+                                            spec,
+                                            hbarTransfer,
+                                            fungibleTokenTransfer,
+                                            getHollowAccountInfoAfterTransfers);
+                                }))
                 .then(
                         getTxnRecord(FT_XFER)
                                 .hasChildRecordCount(1)
@@ -2142,15 +2338,15 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(PARTY)
+                                .balance(INITIAL_BALANCE * ONE_HBAR)
+                                .maxAutomaticTokenAssociations(2),
                         tokenCreate(nonFungibleToken)
                                 .initialSupply(0)
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .supplyKey(MULTI_KEY),
-                        mintToken(
-                                nonFungibleToken,
-                                List.of(copyFromUtf8("Test transfer nft to EVM address alias."))),
+                        mintToken(nonFungibleToken, List.of(copyFromUtf8("a"), copyFromUtf8("b"))),
                         withOpContext(
                                 (spec, opLog) -> {
                                     final var registry = spec.registry();
@@ -2166,22 +2362,91 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                     counterAlias.set(evmAddressBytes);
                                 }))
                 .when(
-                        cryptoTransfer(
-                                        (spec, b) ->
-                                                b.addTokenTransfers(
-                                                        TokenTransferList.newBuilder()
-                                                                .setToken(nftId.get())
-                                                                .addNftTransfers(
-                                                                        ocWith(
-                                                                                accountId(
-                                                                                        partyAlias
-                                                                                                .get()),
-                                                                                accountId(
-                                                                                        counterAlias
-                                                                                                .get()),
-                                                                                1L))))
-                                .signedBy(DEFAULT_PAYER, PARTY)
-                                .via(NFT_XFER))
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /* hollow account created with nft transfer as expected */
+                                    var cryptoTransferWithLazyCreate =
+                                            cryptoTransfer(
+                                                            (s, b) ->
+                                                                    b.addTokenTransfers(
+                                                                            TokenTransferList
+                                                                                    .newBuilder()
+                                                                                    .setToken(
+                                                                                            nftId
+                                                                                                    .get())
+                                                                                    .addNftTransfers(
+                                                                                            ocWith(
+                                                                                                    accountId(
+                                                                                                            partyAlias
+                                                                                                                    .get()),
+                                                                                                    accountId(
+                                                                                                            counterAlias
+                                                                                                                    .get()),
+                                                                                                    1L))))
+                                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                                    .via(NFT_XFER);
+
+                                    final var getHollowAccountInfoAfterCreation =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(
+                                                            relationshipWith(nonFungibleToken)
+                                                                    .balance(1))
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddressAlias(
+                                                                            counterAlias.get())
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO));
+
+                                    allRunFor(
+                                            spec,
+                                            cryptoTransferWithLazyCreate,
+                                            getHollowAccountInfoAfterCreation);
+
+                                    /* transfers of hbar or nft to the hollow account should succeed */
+                                    final var hbarTransfer =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    PARTY,
+                                                                    counterAlias.get(),
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var nftTransfer =
+                                            cryptoTransfer(
+                                                            movingUnique(nonFungibleToken, 2L)
+                                                                    .between(
+                                                                            PARTY,
+                                                                            counterAlias.get()))
+                                                    .signedBy(DEFAULT_PAYER, PARTY)
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN_2);
+
+                                    final var getHollowAccountInfoAfterTransfers =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasToken(
+                                                            relationshipWith(nonFungibleToken)
+                                                                    .balance(2))
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .evmAddressAlias(
+                                                                            counterAlias.get())
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            ONE_HUNDRED_HBARS,
+                                                                            0,
+                                                                            0));
+
+                                    allRunFor(
+                                            spec,
+                                            hbarTransfer,
+                                            nftTransfer,
+                                            getHollowAccountInfoAfterTransfers);
+                                }))
                 .then(
                         getTxnRecord(NFT_XFER)
                                 .hasChildRecordCount(1)
