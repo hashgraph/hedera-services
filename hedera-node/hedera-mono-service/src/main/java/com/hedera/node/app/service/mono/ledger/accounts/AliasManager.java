@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
@@ -22,8 +23,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -56,7 +57,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     private static final String NON_TRANSACTIONAL_MSG =
             "Base alias manager does not buffer changes";
     private static final UnaryOperator<byte[]> ADDRESS_RECOVERY_FN =
-            EthTxSigs::recoverAddressFromPubKey;
+            EthSigsUtils::recoverAddressFromPubKey;
 
     private final Supplier<Map<ByteString, EntityNum>> aliases;
 
@@ -223,8 +224,8 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 // trust, but verify
                 if (rawCompressedKey.length
                         == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    final var evmAddress = EthTxSigs.recoverAddressFromPubKey(rawCompressedKey);
-                    if (evmAddress != null) {
+                    final var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
+                    if (evmAddress.length > 0) {
                         curAliases().remove(ByteString.copyFrom(evmAddress));
                     }
                 }

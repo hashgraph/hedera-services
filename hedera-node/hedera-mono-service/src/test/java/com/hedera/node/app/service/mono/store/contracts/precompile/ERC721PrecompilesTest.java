@@ -37,7 +37,6 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPre
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.CRYPTO_TRANSFER_NFT_WRAPPER;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.accountId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddr;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
@@ -221,6 +220,7 @@ class ERC721PrecompilesTest {
     @Mock private HbarCentExchange exchange;
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
+    @Mock private Account account;
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -567,7 +567,7 @@ class ERC721PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
         given(wrappedLedgers.hasApprovedForAll(any(), any(), any())).willReturn(true);
@@ -579,7 +579,7 @@ class ERC721PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -637,7 +637,7 @@ class ERC721PrecompilesTest {
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(
@@ -645,7 +645,7 @@ class ERC721PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
         given(wrappedLedgers.ownerIfPresent(any())).willReturn(senderId);
@@ -717,7 +717,7 @@ class ERC721PrecompilesTest {
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
 
@@ -790,7 +790,7 @@ class ERC721PrecompilesTest {
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(deleteAllowanceChecks.deleteAllowancesValidation(any(), any(), any())).willReturn(OK);
 
@@ -902,7 +902,7 @@ class ERC721PrecompilesTest {
 
         given(infrastructureFactory.newAccountStore(accounts)).willReturn(accountStore);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(cryptoDeleteAllowanceTransactionBody.getNftAllowancesList())
@@ -970,7 +970,7 @@ class ERC721PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(infrastructureFactory.newDeleteAllowanceChecks()).willReturn(deleteAllowanceChecks);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
         given(
@@ -978,7 +978,7 @@ class ERC721PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(FAIL_INVALID);
 
@@ -1045,7 +1045,7 @@ class ERC721PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
         given(wrappedLedgers.canonicalAddress(recipientAddress)).willReturn(recipientAddress);
@@ -1056,7 +1056,7 @@ class ERC721PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
@@ -1130,7 +1130,7 @@ class ERC721PrecompilesTest {
         given(infrastructureFactory.newApproveAllowanceLogic(accountStore, tokenStore))
                 .willReturn(approveAllowanceLogic);
         given(EntityIdUtils.accountIdFromEvmAddress((Address) any())).willReturn(sender);
-        given(accountStore.loadAccount(any())).willReturn(new Account(accountId));
+        given(accountStore.loadAccount(any())).willReturn(account);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newApproveAllowanceChecks()).willReturn(allowanceChecks);
 
@@ -1139,7 +1139,7 @@ class ERC721PrecompilesTest {
                                 cryptoAllowances,
                                 tokenAllowances,
                                 nftAllowances,
-                                new Account(accountId),
+                                account,
                                 stateView))
                 .willReturn(OK);
 
