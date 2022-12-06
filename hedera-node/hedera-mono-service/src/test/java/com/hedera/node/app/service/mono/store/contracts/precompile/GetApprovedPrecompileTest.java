@@ -46,7 +46,7 @@ class GetApprovedPrecompileTest {
     void decodeGetApprovedInputERC() {
         final var decodedInput = decodeGetApproved(GET_APPROVED_INPUT_ERC, TOKEN_ID);
 
-        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
+        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.token().getTokenNum());
         assertEquals(1, decodedInput.serialNo());
     }
 
@@ -61,7 +61,7 @@ class GetApprovedPrecompileTest {
     void decodeGetApprovedInput() {
         final var decodedInput = decodeGetApproved(GET_APPROVED_INPUT_HAPI, null);
 
-        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
         assertEquals(1, decodedInput.serialNo());
     }
 }

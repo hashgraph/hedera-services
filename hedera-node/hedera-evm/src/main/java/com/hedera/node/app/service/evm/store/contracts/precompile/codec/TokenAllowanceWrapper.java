@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record TokenAllowanceWrapper<T, U, V>(T tokenID, U owner, V spender) {}
+public record TokenAllowanceWrapper<T, U, V>(T token, U owner, V spender) {}

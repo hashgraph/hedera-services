@@ -87,7 +87,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
 
         final var nftsLedger = ledgers.nfts();
         final var nftId =
-                NftId.fromGrpc(getApprovedWrapper.tokenId(), getApprovedWrapper.serialNo());
+                NftId.fromGrpc(getApprovedWrapper.token(), getApprovedWrapper.serialNo());
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
         final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
@@ -112,7 +112,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         } else {
             final var rawGetApprovedWrapper = EvmGetApprovedPrecompile.decodeGetApproved(input);
             return new GetApprovedWrapper<>(
-                    tokenIdFromEvmAddress(rawGetApprovedWrapper.tokenId()),
+                    tokenIdFromEvmAddress(rawGetApprovedWrapper.token()),
                     rawGetApprovedWrapper.serialNo());
         }
     }

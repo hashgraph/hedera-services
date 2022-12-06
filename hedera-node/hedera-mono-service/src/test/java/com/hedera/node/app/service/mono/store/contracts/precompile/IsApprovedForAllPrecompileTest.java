@@ -45,7 +45,7 @@ class IsApprovedForAllPrecompileTest {
         final var decodedInput =
                 decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
-        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
+        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.token().getTokenNum());
         assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER2, decodedInput.owner().getAccountNum());
         assertEquals(
                 ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2, decodedInput.operator().getAccountNum());
@@ -56,7 +56,7 @@ class IsApprovedForAllPrecompileTest {
         final var decodedInput =
                 decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_HAPI, null, identity());
 
-        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenId().getTokenNum());
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
         assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
         assertEquals(
                 ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());

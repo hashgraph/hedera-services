@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record GetApprovedWrapper<T>(T tokenId, long serialNo) {}
+public record GetApprovedWrapper<T>(T token, long serialNo) {}

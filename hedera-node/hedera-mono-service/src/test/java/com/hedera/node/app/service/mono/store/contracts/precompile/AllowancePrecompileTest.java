@@ -44,7 +44,7 @@ class AllowancePrecompileTest {
     void decodeAllowanceInputERC() {
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_ERC, TOKEN_ID, identity());
 
-        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenID().getTokenNum());
+        assertEquals(TOKEN_ID.getTokenNum(), decodedInput.token().getTokenNum());
         assertEquals(ACCOUNT_NUM_ALLOWANCE_OWNER2, decodedInput.owner().getAccountNum());
         assertEquals(ACCOUNT_NUM_ALLOWANCE_SPENDER2, decodedInput.spender().getAccountNum());
     }
@@ -53,7 +53,7 @@ class AllowancePrecompileTest {
     void decodeAllowanceInputHAPI() {
         final var decodedInput = decodeTokenAllowance(ALLOWANCE_INPUT_HAPI, null, identity());
 
-        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.tokenID().getTokenNum());
+        assertEquals(TOKEN_NUM_HAPI_TOKEN, decodedInput.token().getTokenNum());
         assertEquals(ACCOUNT_NUM_ALLOWANCE_OWNER, decodedInput.owner().getAccountNum());
         assertEquals(ACCOUNT_NUM_ALLOWANCE_SPENDER, decodedInput.spender().getAccountNum());
     }

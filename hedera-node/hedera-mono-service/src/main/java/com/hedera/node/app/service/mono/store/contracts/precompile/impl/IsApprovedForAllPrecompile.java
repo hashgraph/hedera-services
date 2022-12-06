@@ -98,7 +98,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
                     (Set<FcTokenAllowanceId>)
                             accountsLedger.get(ownerId, APPROVE_FOR_ALL_NFTS_ALLOWANCES);
             final var allowanceId =
-                    FcTokenAllowanceId.from(isApproveForAllWrapper.tokenId(), operatorId);
+                    FcTokenAllowanceId.from(isApproveForAllWrapper.token(), operatorId);
             answer &= allowances.contains(allowanceId);
         }
         return tokenId == null
@@ -126,7 +126,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
             final var rawIsApproveForAllWrapper =
                     EvmIsApprovedForAllPrecompile.decodeIsApprovedForAll(input);
             return new IsApproveForAllWrapper<>(
-                    tokenIdFromEvmAddress(rawIsApproveForAllWrapper.tokenId()),
+                    tokenIdFromEvmAddress(rawIsApproveForAllWrapper.token()),
                     convertLeftPaddedAddressToAccountId(
                             rawIsApproveForAllWrapper.owner(), aliasResolver),
                     convertLeftPaddedAddressToAccountId(

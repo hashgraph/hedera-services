@@ -98,7 +98,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
                 (Map<FcTokenAllowanceId, Long>)
                         accountsLedger.get(allowanceWrapper.owner(), FUNGIBLE_TOKEN_ALLOWANCES);
         final var fcTokenAllowanceId =
-                FcTokenAllowanceId.from(allowanceWrapper.tokenID(), allowanceWrapper.spender());
+                FcTokenAllowanceId.from(allowanceWrapper.token(), allowanceWrapper.spender());
         final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
         return tokenId == null
                 ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
@@ -121,7 +121,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         } else {
             final var rawTokenAllowanceWrapper = EvmAllowancePrecompile.decodeTokenAllowance(input);
             return new TokenAllowanceWrapper<>(
-                    tokenIdFromEvmAddress(rawTokenAllowanceWrapper.tokenID()),
+                    tokenIdFromEvmAddress(rawTokenAllowanceWrapper.token()),
                     convertLeftPaddedAddressToAccountId(
                             rawTokenAllowanceWrapper.owner(), aliasResolver),
                     convertLeftPaddedAddressToAccountId(

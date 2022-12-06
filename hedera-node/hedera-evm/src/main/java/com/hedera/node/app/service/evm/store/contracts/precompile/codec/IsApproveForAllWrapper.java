@@ -15,4 +15,4 @@
  */
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record IsApproveForAllWrapper<T, U, V>(T tokenId, U owner, V operator) {}
+public record IsApproveForAllWrapper<T, U, V>(T token, U owner, V operator) {}
