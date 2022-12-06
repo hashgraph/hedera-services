@@ -5,6 +5,7 @@ module com.hedera.node.app.service.evm {
 	requires transitive org.hyperledger.besu.evm;
 	requires transitive org.hyperledger.besu.datatypes;
 	requires transitive org.hyperledger.besu.secp256k1;
+	requires transitive com.hedera.hashgraph.protobuf.java.api;
 
 	requires tuweni.bytes;
 	requires tuweni.units;
@@ -14,7 +15,6 @@ module com.hedera.node.app.service.evm {
 	requires com.google.protobuf;
 	requires org.apache.commons.lang3;
 	requires com.sun.jna;
-	requires com.hedera.hashgraph.protobuf.java.api;
 
 	exports com.hedera.node.app.service.evm.store.contracts.utils;
 	exports com.hedera.node.app.service.evm.contracts.execution;

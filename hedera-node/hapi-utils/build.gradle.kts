@@ -32,10 +32,8 @@ dependencies {
     annotationProcessor(libs.dagger.compiler)
 
     api(project(":hedera-node:hedera-evm"))
-    api(libs.hapi)
 
     implementation(libs.jackson)
-    implementation(libs.swirlds.common)
     implementation(libs.log4j.api)
     implementation(libs.bundles.bouncycastle)
     implementation(libs.headlong)
@@ -43,8 +41,7 @@ dependencies {
     implementation(libs.jna)
     implementation(libs.javax.inject)
     implementation(libs.dagger.api)
+    implementation(libs.guava)
 
     testImplementation(testLibs.bundles.testing)
-
-    itestImplementation(libs.hapi)
 }

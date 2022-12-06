@@ -31,11 +31,13 @@ configurations.all {
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
-    implementation(project(":hedera-node:hapi-utils"))
+    api(project(":hedera-node:hapi-utils"))
+
     implementation(libs.javax.inject)
     implementation(libs.dagger.api)
     implementation(libs.log4j.api)
     implementation(libs.jackson)
+    implementation(libs.guava)
 
     testImplementation(testLibs.bundles.testing)
 }
