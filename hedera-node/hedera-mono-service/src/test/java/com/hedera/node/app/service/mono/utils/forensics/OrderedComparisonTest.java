@@ -137,9 +137,6 @@ class OrderedComparisonTest {
         final var entries = parseV6RecordStreamEntriesIn(loc);
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
-        final var histograms = statusHistograms(entries);
-        System.out.println(histograms);
-
         visitWithSidecars(
                 entries,
                 sidecarRecords,

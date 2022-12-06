@@ -259,7 +259,6 @@ public class ContractCallSuite extends HapiApiSuite {
         final var tokenInQuestion = "TokenInQuestion";
         final var someSupplyKey = "someSupplyKey";
         final AtomicReference<String> tiqMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> somebodyMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
 
         return defaultHapiSpec("ActionsShowPropagatedRevert")
@@ -268,10 +267,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         uploadInitCode(APPROVE_BY_DELEGATE),
                         contractCreate(APPROVE_BY_DELEGATE),
                         cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(somebody)
-                                .maxAutomaticTokenAssociations(2)
-                                .exposingCreatedIdTo(
-                                        id -> somebodyMirrorAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(somebody).maxAutomaticTokenAssociations(2),
                         cryptoCreate(somebodyElse)
                                 .maxAutomaticTokenAssociations(2)
                                 .exposingCreatedIdTo(
