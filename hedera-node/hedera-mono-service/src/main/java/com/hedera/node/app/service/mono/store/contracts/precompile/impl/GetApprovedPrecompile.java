@@ -86,8 +86,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
                 getApprovedWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var nftsLedger = ledgers.nfts();
-        final var nftId =
-                NftId.fromGrpc(getApprovedWrapper.token(), getApprovedWrapper.serialNo());
+        final var nftId = NftId.fromGrpc(getApprovedWrapper.token(), getApprovedWrapper.serialNo());
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var spender = (EntityId) nftsLedger.get(nftId, SPENDER);
         final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
