@@ -93,7 +93,7 @@ class HederaCallOperationV032Test {
 
         var opRes = subject.execute(evmMsgFrame, evm);
 
-        assertEquals(opRes.getHaltReason(), INVALID_SOLIDITY_ADDRESS);
+        assertEquals(INVALID_SOLIDITY_ADDRESS, opRes.getHaltReason());
         assertEquals(opRes.getGasCost(), cost);
     }
 
