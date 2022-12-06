@@ -15,34 +15,36 @@
  */
 package com.hedera.test.factories.scenarios;
 
-import com.hedera.test.factories.txns.CryptoCreateFactory;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 
+import static com.hedera.test.factories.txns.CryptoCreateFactory.DEFAULT_ACCOUNT_KT;
+import static com.hedera.test.factories.txns.CryptoCreateFactory.newSignedCryptoCreate;
+
 public enum CryptoCreateScenarios implements TxnHandlingScenario {
-    CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    CryptoCreateFactory.newSignedCryptoCreate().receiverSigRequired(false).get());
-        }
-    },
-    CRYPTO_CREATE_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    CryptoCreateFactory.newSignedCryptoCreate()
-                            .receiverSigRequired(true)
-                            .nonPayerKts(CryptoCreateFactory.DEFAULT_ACCOUNT_KT)
-                            .get());
-        }
-    },
-    CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO {
-        public PlatformTxnAccessor platformTxn() throws Throwable {
-            return PlatformTxnAccessor.from(
-                    CryptoCreateFactory.newSignedCryptoCreate()
-                            .payer(COMPLEX_KEY_ACCOUNT_ID)
-                            .payerKt(COMPLEX_KEY_ACCOUNT_KT)
-                            .receiverSigRequired(true)
-                            .nonPayerKts(CryptoCreateFactory.DEFAULT_ACCOUNT_KT)
-                            .get());
-        }
-    }
+	CRYPTO_CREATE_NO_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(
+					newSignedCryptoCreate().receiverSigRequired(false).get());
+		}
+	},
+	CRYPTO_CREATE_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(
+					newSignedCryptoCreate()
+							.receiverSigRequired(true)
+							.nonPayerKts(DEFAULT_ACCOUNT_KT)
+							.get());
+		}
+	},
+	CRYPTO_CREATE_COMPLEX_PAYER_RECEIVER_SIG_SCENARIO {
+		public PlatformTxnAccessor platformTxn() throws Throwable {
+			return PlatformTxnAccessor.from(
+					newSignedCryptoCreate()
+							.payer(COMPLEX_KEY_ACCOUNT_ID)
+							.payerKt(COMPLEX_KEY_ACCOUNT_KT)
+							.receiverSigRequired(true)
+							.nonPayerKts(DEFAULT_ACCOUNT_KT)
+							.get());
+		}
+	}
 }
