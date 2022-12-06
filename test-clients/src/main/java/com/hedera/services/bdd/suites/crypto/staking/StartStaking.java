@@ -65,10 +65,10 @@ import org.apache.logging.log4j.Logger;
 public class StartStaking extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(StartStaking.class);
 
-    // Previewnet - change to point other network if desired
-    private static final String TARGET_NODES = "35.231.208.148:0.0.3";
-    private static final String PAYER_PEM_LOC = "previewtestnet-account2.pem";
-    private static final String PAYER_PEM_PASSPHRASE = "P1WUX2Xla2wFslpoPTN39avz";
+    // Change desired network
+    private static final String TARGET_NODES = "<node0-ip>:0.0.3";
+    private static final String PAYER_PEM_LOC = "<path-to-PEM>";
+    private static final String PAYER_PEM_PASSPHRASE = "<PEM passphrase>";
     private static final int NUM_TARGET_NODES = 7;
 
     private static final SplittableRandom RANDOM = new SplittableRandom(1234567);
