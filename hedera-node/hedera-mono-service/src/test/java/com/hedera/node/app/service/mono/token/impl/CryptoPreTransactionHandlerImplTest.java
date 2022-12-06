@@ -313,7 +313,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var meta = subject.preHandleApproveAllowances(txn, payer);
+        final var meta = subject.preHandleApproveAllowances(txn, owner);
         basicMetaAssertions(meta, 1, false, OK);
         assertIterableEquals(List.of(ownerKey), meta.getReqKeys());
     }
@@ -360,7 +360,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var meta = subject.preHandleDeleteAllowances(txn, payer);
+        final var meta = subject.preHandleDeleteAllowances(txn, owner);
         basicMetaAssertions(meta, 1, false, OK);
         assertIterableEquals(List.of(ownerKey), meta.getReqKeys());
     }
@@ -370,7 +370,7 @@ class CryptoPreTransactionHandlerImplTest {
         var txn = cryptoDeleteAllowanceTransaction(owner);
         given(accounts.get(owner.getAccountNum())).willReturn(Optional.empty());
 
-        var meta = subject.preHandleDeleteAllowances(txn, payer);
+        var meta = subject.preHandleDeleteAllowances(txn, owner);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
         assertIterableEquals(List.of(), meta.getReqKeys());
 
@@ -427,7 +427,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(txn, payer);
+        var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
         basicMetaAssertions(meta, 1, true, INVALID_PAYER_ACCOUNT_ID);
     }
 
@@ -439,7 +439,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(true);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(txn, payer);
+        var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
     }
 
