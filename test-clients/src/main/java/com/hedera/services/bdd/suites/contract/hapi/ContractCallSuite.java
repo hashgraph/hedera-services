@@ -304,6 +304,9 @@ public class ContractCallSuite extends HapiApiSuite {
                         cryptoTransfer(movingUnique(tokenInQuestion, 1L)
                                 .between(TOKEN_TREASURY, somebody))
                 ).when(
+                        // If you run in debugger with serial number BigInteger.valueOf(1L)
+                        // instead of 0xff...ff, you will see HederaTracer.tracePrecompileResult()
+                        // called, and all actions will have their `result_data` set
                         sourcing(() -> contractCall(APPROVE_BY_DELEGATE,
                                 "doIt",
                                 asHeadlongAddress(tiqMirrorAddr.get()),
