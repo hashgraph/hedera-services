@@ -28,11 +28,11 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -129,26 +129,27 @@ public class RecordParsers {
         return filteredFilesFrom(
                 streamDir,
                 s -> s.endsWith(V6_FILE_EXT) && !s.contains("Z_"),
-                RecordParsers::parseRecordFileConsensusTime);
+                comparing(RecordParsers::parseRecordFileConsensusTime));
     }
 
     private static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
                 s -> s.endsWith(V6_FILE_EXT) && s.contains("Z_"),
-                RecordParsers::parseSidecarFileConsensusTime);
+                // We index sidecars by consensus time anyways, any sort order is fine
+                Comparator.naturalOrder());
     }
 
     @SuppressWarnings("java:S2095")
     private static List<String> filteredFilesFrom(
             final String streamDir,
             final Predicate<String> criteria,
-            final Function<String, Instant> consTimeParser)
+            final Comparator<String> order)
             throws IOException {
         return Files.walk(Path.of(streamDir))
                 .map(Path::toString)
                 .filter(criteria)
-                .sorted(comparing(consTimeParser))
+                .sorted(order)
                 .toList();
     }
 
@@ -157,12 +158,5 @@ public class RecordParsers {
         final var n = recordFile.length();
         return Instant.parse(
                 recordFile.substring(s + 1, n - V6_FILE_EXT.length()).replace("_", ":"));
-    }
-
-    private static Instant parseSidecarFileConsensusTime(final String sidecarFile) {
-        final var s = sidecarFile.lastIndexOf("/");
-        final var base = sidecarFile.substring(s + 1);
-        final var underscoreI = base.lastIndexOf("_");
-        return Instant.parse(base.substring(0, underscoreI).replace("_", ":"));
     }
 }
