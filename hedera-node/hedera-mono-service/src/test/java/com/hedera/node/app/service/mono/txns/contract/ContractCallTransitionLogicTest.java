@@ -44,7 +44,7 @@ import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;

@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.sigs.sourcing;
 
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.ecdsa384Secp256k1;
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.ed25519;
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.list;
-import static com.hedera.node.app.service.mono.testFixtures.factories.sigs.SigFactory.signUnchecked;
-import static com.hedera.node.app.service.mono.testFixtures.factories.sigs.SigMapGenerator.withAlternatingUniqueAndFullPrefixes;
-import static com.hedera.node.app.service.mono.testFixtures.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
+import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.sigs.SigFactory.signUnchecked;
+import static com.hedera.test.factories.sigs.SigMapGenerator.withAlternatingUniqueAndFullPrefixes;
+import static com.hedera.test.factories.txns.SystemDeleteFactory.newSignedSystemDelete;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,10 +35,10 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyFactory;
-import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyTree;
-import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyTreeLeaf;
-import com.hedera.node.app.service.mono.testFixtures.factories.sigs.SigFactory;
+import com.hedera.test.factories.keys.KeyFactory;
+import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.test.factories.keys.KeyTreeLeaf;
+import com.hedera.test.factories.sigs.SigFactory;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;

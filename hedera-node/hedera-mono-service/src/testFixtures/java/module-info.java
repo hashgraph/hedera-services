@@ -1,5 +1,5 @@
 module com.hedera.node.app.service.mono.testFixtures {
-	exports com.hedera.node.app.service.mono.testFixtures.utils;
+	exports com.hedera.test.utils;
 	requires org.junit.jupiter.api;
 	requires com.google.protobuf;
 	requires com.hedera.node.app.hapi.utils;

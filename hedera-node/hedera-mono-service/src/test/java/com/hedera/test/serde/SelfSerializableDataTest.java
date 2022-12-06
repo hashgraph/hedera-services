@@ -16,7 +16,7 @@
 package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameSerialization;
-import static com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils.deserializeFromBytes;
+import static com.hedera.test.utils.SerdeUtils.deserializeFromBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;

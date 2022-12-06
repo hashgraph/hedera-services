@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;

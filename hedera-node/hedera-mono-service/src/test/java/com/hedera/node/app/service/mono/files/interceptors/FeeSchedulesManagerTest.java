@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.files.interceptors;
 
 import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.OK_FOR_NOW_VERDICT;
 import static com.hedera.node.app.service.mono.files.interceptors.FeeSchedulesManager.YES_VERDICT;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.mock;

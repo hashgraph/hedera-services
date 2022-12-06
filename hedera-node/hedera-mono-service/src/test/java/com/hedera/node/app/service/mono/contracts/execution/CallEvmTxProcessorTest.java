@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.contracts.execution;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_32Module.EVM_VERSION_0_32;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;

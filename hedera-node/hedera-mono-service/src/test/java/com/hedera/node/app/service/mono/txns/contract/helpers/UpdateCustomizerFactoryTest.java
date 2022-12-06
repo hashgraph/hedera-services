@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.contract.helpers;
 
-import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -35,9 +35,9 @@ import com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
-import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;

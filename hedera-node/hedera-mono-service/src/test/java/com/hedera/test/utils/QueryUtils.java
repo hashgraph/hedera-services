@@ -15,8 +15,8 @@
  */
 package com.hedera.test.utils;
 
-import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;

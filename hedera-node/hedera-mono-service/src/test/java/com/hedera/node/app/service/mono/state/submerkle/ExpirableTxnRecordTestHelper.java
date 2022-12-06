@@ -21,7 +21,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils;
+import com.hedera.test.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;

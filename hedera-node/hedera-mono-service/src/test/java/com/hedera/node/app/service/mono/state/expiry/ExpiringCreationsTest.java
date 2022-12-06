@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.state.expiry;
 
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.withAdjustments;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.UtilPrng;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -47,8 +47,8 @@ import com.hedera.node.app.service.mono.state.submerkle.FcTokenAssociation;
 import com.hedera.node.app.service.mono.txns.span.ExpandHandleSpanMapAccessor;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
-import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
+import com.hedera.test.utils.IdUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

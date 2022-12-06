@@ -39,7 +39,7 @@ import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.files.interceptors.MockFileNumbers;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.test.mocks.MockAppender;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;

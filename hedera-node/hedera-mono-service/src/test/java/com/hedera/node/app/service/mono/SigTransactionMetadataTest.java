@@ -22,7 +22,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.token.impl.AccountStore;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.service.mono.testFixtures.utils.KeyUtils;
+import com.hedera.test.utils.KeyUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Key;
@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;

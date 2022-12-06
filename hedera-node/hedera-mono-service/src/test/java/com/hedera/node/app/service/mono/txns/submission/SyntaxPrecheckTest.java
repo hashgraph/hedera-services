@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.txns.submission;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.timestampFrom;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.timestampFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;

@@ -23,7 +23,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;

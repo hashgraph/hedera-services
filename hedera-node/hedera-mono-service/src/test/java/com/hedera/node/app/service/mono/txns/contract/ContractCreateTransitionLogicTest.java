@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.sigs.utils.ImmutableKeyUtils.IMMU
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractId;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.create1ContractResolvedAddress;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
@@ -79,7 +79,7 @@ import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;

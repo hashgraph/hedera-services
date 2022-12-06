@@ -15,16 +15,16 @@
  */
 package com.hedera.node.app.service.mono.keys;
 
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.ed25519;
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.list;
-import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.threshold;
+import static com.hedera.test.factories.keys.NodeFactory.ed25519;
+import static com.hedera.test.factories.keys.NodeFactory.list;
+import static com.hedera.test.factories.keys.NodeFactory.threshold;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
-import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyTree;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.keys.KeyTree;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;

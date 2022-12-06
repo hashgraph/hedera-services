@@ -15,10 +15,10 @@
  */
 package com.hedera.node.app.service.mono.utils.accessors;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asModelId;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.buildTransactionFrom;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asModelId;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.TxnUtils.buildTransactionFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;

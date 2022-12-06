@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.EnumMap;
 import java.util.Map;

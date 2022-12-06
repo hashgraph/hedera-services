@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

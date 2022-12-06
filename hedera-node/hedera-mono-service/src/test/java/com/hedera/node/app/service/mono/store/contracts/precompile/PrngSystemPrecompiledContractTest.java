@@ -53,7 +53,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.txns.util.PrngLogic;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.Hash;

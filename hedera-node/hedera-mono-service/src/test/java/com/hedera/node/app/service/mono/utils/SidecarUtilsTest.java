@@ -24,7 +24,7 @@ import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;

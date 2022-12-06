@@ -16,14 +16,14 @@
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
-import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.defaultPaymentTxn;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.recordOne;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.recordTwo;
+import static com.hedera.test.utils.TxnUtils.recordOne;
+import static com.hedera.test.utils.TxnUtils.recordTwo;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountRecords;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -48,7 +48,7 @@ import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsResponse;
 import com.hederahashgraph.api.proto.java.Query;

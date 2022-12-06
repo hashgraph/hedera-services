@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.state.migration.UniqueTokenAdapter;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.merkle.map.MerkleMap;

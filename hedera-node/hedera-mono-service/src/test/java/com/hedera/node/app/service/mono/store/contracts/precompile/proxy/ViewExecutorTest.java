@@ -28,10 +28,10 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiCon
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_KYC;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants.ABI_ID_IS_TOKEN;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.proxy.RedirectViewExecutor.MINIMUM_TINYBARS_COST;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fixedHbar;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fixedHts;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fractional;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,8 +70,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenGet
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenInfoPrecompile;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.NftID;

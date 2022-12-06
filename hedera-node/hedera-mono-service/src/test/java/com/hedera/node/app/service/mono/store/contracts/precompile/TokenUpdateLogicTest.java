@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.TokenRelPropert
 import static com.hedera.node.app.service.mono.state.enums.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.mono.state.enums.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.node.app.service.mono.store.tokens.TokenStore.MISSING_TOKEN;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -43,7 +43,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;

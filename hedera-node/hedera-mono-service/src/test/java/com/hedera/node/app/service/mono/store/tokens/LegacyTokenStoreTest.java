@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.store.tokens;
 
 import static com.hedera.node.app.service.mono.ledger.BalanceChange.changingNftOwnership;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.nftXfer;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.nftXfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doCallRealMethod;

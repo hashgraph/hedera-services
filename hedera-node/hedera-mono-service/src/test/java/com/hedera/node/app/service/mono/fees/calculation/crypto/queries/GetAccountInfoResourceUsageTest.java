@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +35,7 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.ledger.accounts.staking.RewardCalculator;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoQuery;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;

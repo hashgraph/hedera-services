@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.queries.token;
 
-import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;

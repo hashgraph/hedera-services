@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.tokenChange;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.tokenChange;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static org.junit.jupiter.api.Assertions.assertEquals;

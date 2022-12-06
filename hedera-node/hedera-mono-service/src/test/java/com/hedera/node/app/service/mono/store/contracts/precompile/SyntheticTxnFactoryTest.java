@@ -33,7 +33,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.Synthe
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAliasAccount;
+import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,8 +77,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Unpause
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyFactory;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.keys.KeyFactory;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

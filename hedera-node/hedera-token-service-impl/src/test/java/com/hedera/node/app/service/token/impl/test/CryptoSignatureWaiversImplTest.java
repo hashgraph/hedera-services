@@ -17,7 +17,7 @@ package com.hedera.node.app.service.token.impl.test;
 
 import com.hedera.node.app.service.token.impl.CryptoSignatureWaiversImpl;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;

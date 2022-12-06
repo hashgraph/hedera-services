@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;

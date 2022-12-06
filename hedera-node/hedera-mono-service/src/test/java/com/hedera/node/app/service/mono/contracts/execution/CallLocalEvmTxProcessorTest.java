@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.contracts.execution;
 
 import static com.hedera.node.app.service.mono.contracts.ContractsV_0_30Module.EVM_VERSION_0_30;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.ArrayList;
 import java.util.List;

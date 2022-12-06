@@ -16,7 +16,7 @@
 package com.hedera.test.serde;
 
 import static com.hedera.test.serde.SerializedForms.assertSameBufferSerialization;
-import static com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils.deserializeFromBuffer;
+import static com.hedera.test.utils.SerdeUtils.deserializeFromBuffer;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.service.mono.state.virtual.annotations.StateSetter;

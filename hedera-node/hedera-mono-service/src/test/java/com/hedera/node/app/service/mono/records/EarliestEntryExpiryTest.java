@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.records;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

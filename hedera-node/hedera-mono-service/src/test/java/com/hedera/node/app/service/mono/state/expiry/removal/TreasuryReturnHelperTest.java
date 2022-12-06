@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.state.expiry.removal;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.*;
+import static com.hedera.test.utils.TxnUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;

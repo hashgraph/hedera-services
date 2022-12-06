@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.files;
 
 import static com.hedera.node.app.service.mono.files.TieredHederaFs.BYTES_PER_KB;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -39,8 +39,8 @@ import com.hedera.node.app.service.mono.files.TieredHederaFs.IllegalArgumentType
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleSpecialFiles;
-import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

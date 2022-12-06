@@ -46,7 +46,7 @@ import com.hedera.node.app.service.mono.state.tasks.SystemTaskResult;
 import com.hedera.node.app.service.mono.stats.ExpiryStats;
 import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;

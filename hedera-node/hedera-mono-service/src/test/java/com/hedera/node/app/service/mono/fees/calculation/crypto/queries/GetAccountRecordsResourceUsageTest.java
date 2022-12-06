@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.queries.meta.GetTxnRecordAnswer.PAYER_RECORDS_CTX_KEY;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.recordOne;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.recordTwo;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.TxnUtils.recordOne;
+import static com.hedera.test.utils.TxnUtils.recordTwo;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.state.migration.QueryableRecords;
 import com.hedera.node.app.service.mono.state.migration.RecordsStorageAdapter;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.test.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountRecordsQuery;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;

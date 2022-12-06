@@ -25,7 +25,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JContractAliasKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JDelegatableContractAliasKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
-import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.swirlds.common.io.streams.SerializableDataInputStream;

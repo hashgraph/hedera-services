@@ -50,7 +50,7 @@ import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
 import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenID;

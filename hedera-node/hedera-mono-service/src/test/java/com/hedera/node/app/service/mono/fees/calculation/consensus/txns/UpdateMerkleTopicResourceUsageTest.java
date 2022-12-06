@@ -41,7 +41,7 @@ import com.hedera.test.utils.AccountIDConverter;
 import com.hedera.test.utils.DurationConverter;
 import com.hedera.test.utils.Ed25519KeyConverter;
 import com.hedera.test.utils.EntityIdConverter;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hedera.test.utils.JEd25519KeyConverter;
 import com.hedera.test.utils.RichInstantConverter;
 import com.hederahashgraph.api.proto.java.AccountID;

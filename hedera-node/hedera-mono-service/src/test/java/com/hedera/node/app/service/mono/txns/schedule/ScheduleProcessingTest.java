@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.throttling.TimedFunctionalityThrottling;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.time.Instant;
 import java.util.TreeMap;

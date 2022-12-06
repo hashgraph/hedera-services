@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.txns.consensus;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromTopicId;
-import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;

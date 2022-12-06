@@ -30,7 +30,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_POSITIVE_BALANCES;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.NUM_TREASURY_TITLES;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -55,7 +55,7 @@ import com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer;
 import com.hedera.node.app.service.mono.state.submerkle.CurrencyAdjustments;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

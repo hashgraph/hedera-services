@@ -19,7 +19,7 @@ import static com.hedera.node.app.service.mono.legacy.core.jproto.JKeyListTest.r
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
+import com.hedera.test.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;

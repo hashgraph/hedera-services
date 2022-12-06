@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.state.submerkle;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.MISSING_ENTITY_ID;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fixedHbar;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fixedHts;
-import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fractional;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHbar;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_NOT_FULLY_SPECIFIED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FRACTIONAL_FEE_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
@@ -45,8 +45,8 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
-import com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.fees.CustomFeeBuilder;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;

@@ -26,7 +26,7 @@ import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
 import com.hedera.node.app.service.token.impl.TokenStore;
 import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

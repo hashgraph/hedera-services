@@ -37,7 +37,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;

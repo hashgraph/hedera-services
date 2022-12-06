@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.file;
 
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
+import static com.hedera.test.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
@@ -41,8 +41,8 @@ import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;

@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asContract;
-import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertExhaustsResourceLimit;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.test.utils.TxnUtils.assertExhaustsResourceLimit;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;

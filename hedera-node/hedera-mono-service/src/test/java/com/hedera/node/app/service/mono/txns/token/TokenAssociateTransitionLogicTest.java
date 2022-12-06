@@ -32,7 +32,7 @@ import com.hedera.node.app.service.mono.store.AccountStore;
 import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;

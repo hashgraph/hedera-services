@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.records;
 
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcScheduleId;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -44,7 +44,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

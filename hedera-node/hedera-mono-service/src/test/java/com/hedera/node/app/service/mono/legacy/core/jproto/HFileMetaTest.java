@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.files.HFileMeta;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

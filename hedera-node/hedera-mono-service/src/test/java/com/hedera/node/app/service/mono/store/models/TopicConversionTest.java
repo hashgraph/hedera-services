@@ -21,7 +21,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
+import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import org.junit.jupiter.api.Test;
 
 class TopicConversionTest {

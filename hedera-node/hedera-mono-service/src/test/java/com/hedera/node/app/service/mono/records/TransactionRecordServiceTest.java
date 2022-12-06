@@ -46,7 +46,7 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.ResponseCodeUtil;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;

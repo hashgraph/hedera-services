@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.ledger.ids;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asFile;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.test.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;

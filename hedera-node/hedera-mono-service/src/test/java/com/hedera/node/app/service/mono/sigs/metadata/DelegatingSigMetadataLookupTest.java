@@ -25,7 +25,7 @@ import com.hedera.node.app.service.mono.sigs.order.KeyOrderingFailure;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;

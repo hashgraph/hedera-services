@@ -15,7 +15,6 @@
  */
 package com.hedera.test.utils;
 
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.params.converter.ArgumentConversionException;
 import org.junit.jupiter.params.converter.ArgumentConverter;

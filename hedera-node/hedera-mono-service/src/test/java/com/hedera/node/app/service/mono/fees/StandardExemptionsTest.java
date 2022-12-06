@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.config.MockAccountNumbers;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

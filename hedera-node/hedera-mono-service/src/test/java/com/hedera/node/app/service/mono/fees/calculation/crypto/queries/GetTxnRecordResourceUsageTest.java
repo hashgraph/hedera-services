@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.fees.calculation.crypto.queries;
 
 import static com.hedera.node.app.service.mono.fees.calculation.crypto.queries.GetTxnRecordResourceUsage.MISSING_RECORD_STANDIN;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;

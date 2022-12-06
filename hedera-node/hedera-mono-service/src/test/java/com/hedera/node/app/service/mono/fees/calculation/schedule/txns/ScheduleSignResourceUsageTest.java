@@ -27,7 +27,7 @@ import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleInfo;

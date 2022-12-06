@@ -48,7 +48,7 @@ import com.hedera.node.app.service.mono.txns.submission.PlatformSubmissionManage
 import com.hedera.node.app.service.mono.txns.submission.TransactionPrecheck;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;

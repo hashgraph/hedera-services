@@ -28,7 +28,7 @@ import com.hedera.node.app.service.mono.throttling.TransactionThrottling;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpAuthorization;
 import com.hedera.node.app.service.mono.txns.auth.SystemOpPolicies;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;

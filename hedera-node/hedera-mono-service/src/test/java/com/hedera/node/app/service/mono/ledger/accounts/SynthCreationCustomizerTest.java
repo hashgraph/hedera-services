@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.MEMO;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
-import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.test.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
