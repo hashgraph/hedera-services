@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id("com.hedera.hashgraph.conventions")
     id("com.hedera.hashgraph.shadow-jar")
@@ -27,6 +29,10 @@ tasks.test {
     exclude("**/*")
 }
 
+configurations {
+    evaluationDependsOn(":hedera-node:hapi-fees")
+}
+
 sourceSets {
     // Needed because "resource" directory is misnamed. See https://github.com/hashgraph/hedera-services/issues/3361
     main {
@@ -37,8 +43,8 @@ sourceSets {
 }
 
 dependencies {
-    implementation(project(":hapi-utils"))
-    implementation(project(":hapi-fees"))
+    implementation(project(":hedera-node:hapi-utils"))
+    implementation(project(":hedera-node:hapi-fees"))
     implementation(libs.bundles.besu) {
         exclude("javax.annotation", "javax.annotation-api")
     }
@@ -51,6 +57,7 @@ dependencies {
         exclude("javax.annotation", "javax.annotation-api")
     }
     implementation(libs.headlong)
+    implementation(libs.log4j.core)
     implementation(testLibs.json)
     implementation(testLibs.junit.jupiter.api)
     implementation(testLibs.picocli)
@@ -60,7 +67,49 @@ dependencies {
     implementation(testLibs.testcontainers.core)
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
+    itestImplementation(project(":hedera-node:hedera-app"))
+    itestImplementation(project(":hedera-node:hedera-app-spi"))
+    itestImplementation(project(":hedera-node:hedera-evm"))
+    itestImplementation(project(":hedera-node:hedera-evm-impl"))
+    itestImplementation(project(":hedera-node:hedera-mono-service"))
+    itestImplementation(project(":hedera-node:hedera-admin-service"))
+    itestImplementation(project(":hedera-node:hedera-admin-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-consensus-service"))
+    itestImplementation(project(":hedera-node:hedera-consensus-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-file-service"))
+    itestImplementation(project(":hedera-node:hedera-file-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-network-service"))
+    itestImplementation(project(":hedera-node:hedera-network-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-schedule-service"))
+    itestImplementation(project(":hedera-node:hedera-schedule-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-smart-contract-service"))
+    itestImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-token-service"))
+    itestImplementation(project(":hedera-node:hedera-token-service-impl"))
+    itestImplementation(project(":hedera-node:hedera-util-service"))
+    itestImplementation(project(":hedera-node:hedera-util-service-impl"))
     eetImplementation(testLibs.bundles.testcontainers)
+    eetImplementation(project(":hedera-node:hedera-app"))
+    eetImplementation(project(":hedera-node:hedera-app-spi"))
+    eetImplementation(project(":hedera-node:hedera-evm"))
+    eetImplementation(project(":hedera-node:hedera-evm-impl"))
+    eetImplementation(project(":hedera-node:hedera-mono-service"))
+    eetImplementation(project(":hedera-node:hedera-admin-service"))
+    eetImplementation(project(":hedera-node:hedera-admin-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-consensus-service"))
+    eetImplementation(project(":hedera-node:hedera-consensus-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-file-service"))
+    eetImplementation(project(":hedera-node:hedera-file-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-network-service"))
+    eetImplementation(project(":hedera-node:hedera-network-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-schedule-service"))
+    eetImplementation(project(":hedera-node:hedera-schedule-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-smart-contract-service"))
+    eetImplementation(project(":hedera-node:hedera-smart-contract-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-token-service"))
+    eetImplementation(project(":hedera-node:hedera-token-service-impl"))
+    eetImplementation(project(":hedera-node:hedera-util-service"))
+    eetImplementation(project(":hedera-node:hedera-util-service-impl"))
 }
 
 tasks.itest {
@@ -74,10 +123,10 @@ tasks.eet {
     systemProperty("networkWorkspaceDir", File(project.buildDir, "network/eet"))
 }
 
-val sjJar: String by project
-val sjMainClass: String by project
 tasks.shadowJar {
-    archiveFileName.set(sjJar)
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
+    archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
     fileMode = 664
@@ -85,11 +134,52 @@ tasks.shadowJar {
 
     manifest {
         attributes(
-            "Main-Class" to sjMainClass
+            "Main-Class" to "com.hedera.services.bdd.suites.SuiteRunner",
+            "Multi-Release" to "true"
         )
     }
 }
 
+val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
+    dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
+
+    group = "shadow"
+    from(sourceSets.main.get().output)
+    configurations = listOf(project.configurations["runtimeClasspath"])
+
+    exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
+
+    archiveClassifier.set("yahcli")
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    fileMode = 664
+    dirMode = 775
+
+    manifest {
+        attributes(
+            "Main-Class" to "com.hedera.services.yahcli.Yahcli",
+            "Multi-Release" to "true"
+        )
+    }
+}
+
+val copyYahCli = tasks.register<Copy>("copyYahCli") {
+    group = "copy"
+    from(yahCliJar)
+    into(project.file("yahcli"))
+    rename { "yahcli.jar" }
+}
+
+val cleanYahCli = tasks.register<Delete>("cleanYahCli") {
+    group = "build"
+    delete(File(project.file("yahcli"), "yahcli.jar"))
+}
+
 tasks.assemble {
     dependsOn(tasks.shadowJar)
+    dependsOn(copyYahCli)
+}
+
+tasks.clean {
+    dependsOn(cleanYahCli)
 }

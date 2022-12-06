@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
@@ -36,9 +37,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -48,6 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -75,8 +74,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
     public static final String AUTO_CREATED_ACCOUNT = "auto-created account";
     public static final String ED_25519_KEY = "ed25519Alias";
     public static final String LAZY_CREATION_ENABLED = "lazyCreation.enabled";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final String TRUE = "true";
+    public static final String FALSE = "false";
 
     public static void main(String... args) {
         new CryptoCreateSuite().runSuiteSync();
@@ -115,7 +114,8 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 createAnAccountWithEVMAddressAliasAndECKey(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
-                hollowAccountCreationChargesExpectedFees());
+                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+            hollowAccountCreationChargesExpectedFees());
     }
 
     private HapiApiSpec createAnAccountWithStakingFields() {
@@ -531,6 +531,81 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                 LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
+    private HapiApiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
+        return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
+                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    // create with ECDSA alias and no key
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with EVM address alias and no key
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(tmp));
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(evmAddress)
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ED alias and no key
+                                    final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
+                                    final var op3 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ed25519Key.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with evm address alias and ECDSA key
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddress)
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ED alias and ED key
+                                    final var op5 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(ED_25519_KEY)
+                                                    .alias(ed25519Key.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ECDSA alias and key
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // assert that an account created with ECDSA key and no alias
+                                    // does not automagically set alias to evm address
+                                    final var op7 =
+                                            cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias());
+                                    allRunFor(
+                                            spec,
+                                            op,
+                                            op2,
+                                            op3,
+                                            op4,
+                                            op5,
+                                            op6,
+                                            op7,
+                                            hapiGetAccountInfo);
+                                }))
+                .then(
+                        UtilVerbs.resetToDefault(
+                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+    }
+
     private HapiApiSpec createAnAccountWithEVMAddressAlias() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAlias")
                 .given(
@@ -544,6 +619,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
@@ -626,7 +702,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op = cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
                                     final var op2 =
@@ -676,7 +752,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
     private HapiApiSpec createAnAccountWithEVMAddressAliasAndECKey() {
         return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
@@ -686,7 +762,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
                                     final var op =
                                             cryptoCreate(ACCOUNT)
@@ -783,7 +859,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                                     final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    assert addressBytes != null;
+                                    assert addressBytes.length > 0;
                                     final var evmAddressBytes = ByteString.copyFrom(addressBytes);
 
                                     final var op =

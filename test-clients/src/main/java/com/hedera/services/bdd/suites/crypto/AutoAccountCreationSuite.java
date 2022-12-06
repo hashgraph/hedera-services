@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
@@ -68,12 +69,9 @@ import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
@@ -469,6 +467,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, SPONSOR, VALID_ALIAS)
                                 .via(TRANSFER_TXN),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1),
@@ -616,6 +615,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                 .payingWith(CIVILIAN)
                                 .signedBy(CIVILIAN, VALID_ALIAS)
                                 .logged(),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, VALID_ALIAS)),
                         getTxnRecord(multiTokenXfer)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
@@ -806,7 +806,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getTxnRecord(sameTokenXfer)
                                                     .andAllChildRecords()
                                                     .hasNonStakingChildRecordCount(1)
-                                                    .hasAliasInChildRecord(VALID_ALIAS, 0)
+                                                    .hasNoAliasInChildRecord(0)
                                                     .logged();
                                     allRunFor(spec, lookup);
                                     final var sponsor = spec.registry().getAccountID(DEFAULT_PAYER);
@@ -1045,12 +1045,14 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                  * bytes of a secp256k1 key, so now the first child record will _always_ be for the
                                  * ed25519 auto-creation). */
                                 .payingWith(GENESIS)
-                                .via(autoCreation))
+                                .via(autoCreation),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ed25519SourceKey)),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, secp256k1SourceKey)))
                 .then(
                         getTxnRecord(autoCreation)
                                 .andAllChildRecords()
-                                .hasAliasInChildRecord(ed25519SourceKey, 0)
-                                .hasAliasInChildRecord(secp256k1SourceKey, 1)
+                                .hasNoAliasInChildRecord(0)
+                                .hasNoAliasInChildRecord(1)
                                 .logged(),
                         getAutoCreatedAccountBalance(ed25519SourceKey)
                                 .hasExpectedAccountID()
@@ -1096,7 +1098,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                         getTxnRecord(TRANSFER_TXN)
                                 .andAllChildRecords()
                                 .hasNonStakingChildRecordCount(1)
-                                .hasAliasInChildRecord(VALID_ALIAS, 0),
+                                .hasNoAliasInChildRecord(0),
                         getAccountInfo(PAYER)
                                 .has(
                                         accountWith()
@@ -1157,6 +1159,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord("txn").hasNonStakingChildRecordCount(1).logged())
                 .then(
                         cryptoDeleteAliased(ALIAS)
@@ -1189,6 +1192,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         tinyBarsFromToWithAlias(
                                                 PAYER_4, ALIAS, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, ALIAS)),
                         getTxnRecord("txn").andAllChildRecords().logged(),
                         getAliasedAccountInfo(ALIAS)
                                 .has(
@@ -1223,6 +1227,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(payer, alias, 2 * ONE_HUNDRED_HBARS))
                                 .via("txn"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, alias)),
                         getTxnRecord("txn").andAllChildRecords().logged(),
                         getAliasedAccountInfo(alias)
                                 .has(
@@ -1255,6 +1260,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                         tinyBarsFromToWithAlias(
                                                 PAYER, TRANSFER_ALIAS, ONE_HUNDRED_HBARS))
                                 .via("txn"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, TRANSFER_ALIAS)),
                         getTxnRecord("txn").andAllChildRecords().logged())
                 .then(
                         /* get the account associated with alias and transfer */
@@ -1470,7 +1476,7 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
                                             getTxnRecord(TRANSFER_TXN)
                                                     .andAllChildRecords()
                                                     .hasNonStakingChildRecordCount(1)
-                                                    .hasAliasInChildRecord(VALID_ALIAS, 0)
+                                                    .hasNoAliasInChildRecord(0)
                                                     .logged();
                                     allRunFor(spec, lookup);
                                     final var sponsor = spec.registry().getAccountID(SPONSOR);

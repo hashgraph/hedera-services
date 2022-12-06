@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
@@ -214,6 +216,15 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntil(String timeOfDay) throws ParseException {
         return new HapiSpecWaitUntil(timeOfDay);
+    }
+
+    public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
+        return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    public static HapiSpecWaitUntil waitUntilJustBeforeNextStakingPeriod(
+            final long stakePeriodMins, final long secondsBefore) {
+        return untilJustBeforeStakingPeriod(stakePeriodMins, secondsBefore);
     }
 
     public static UsableTxnId usableTxnIdNamed(String txnId) {
@@ -1268,6 +1279,27 @@ public class UtilVerbs {
                                 Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
     }
 
+    public static Tuple[] wrapIntoTupleArray(Tuple tuple) {
+        return new Tuple[] {tuple};
+    }
+
+    public static TransferListBuilder transferList() {
+        return new TransferListBuilder();
+    }
+
+    public static class TransferListBuilder {
+        private Tuple transferList;
+
+        public TransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
+            this.transferList = Tuple.singleton(accountAmounts);
+            return this;
+        }
+
+        public Tuple build() {
+            return transferList;
+        }
+    }
+
     public static TokenTransferListBuilder tokenTransferList() {
         return new TokenTransferListBuilder();
     }
@@ -1317,12 +1349,29 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
+    public static Tuple accountAmount(
+            final AccountID account, final Long amount, final boolean isApproval) {
+        return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
+    }
+
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber) {
         return Tuple.of(
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
                 serialNumber);
+    }
+
+    public static Tuple nftTransfer(
+            final AccountID sender,
+            final AccountID receiver,
+            final Long serialNumber,
+            final boolean isApproval) {
+        return Tuple.of(
+                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
+                HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
+                serialNumber,
+                isApproval);
     }
 
     public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(

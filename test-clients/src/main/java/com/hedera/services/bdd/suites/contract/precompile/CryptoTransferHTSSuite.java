@@ -64,6 +64,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_N
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
@@ -72,8 +74,6 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -102,7 +102,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
     private static final String OWNER = "Owner";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
     }
 
@@ -303,7 +303,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(FUNGIBLE_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn)
                                                     .hasPriority(
                                                             recordWith()
@@ -356,7 +356,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(FUNGIBLE_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn2)
                                                     .hasPriority(
                                                             recordWith()
@@ -525,7 +525,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(NFT_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn)
                                                     .hasPriority(
                                                             recordWith()
