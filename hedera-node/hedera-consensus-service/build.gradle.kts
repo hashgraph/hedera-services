@@ -25,6 +25,4 @@ configurations.all {
 
 dependencies {
     api(project(":hedera-node:hedera-app-spi"))
-    api(libs.slf4j.api)
-    compileOnly(libs.spotbugs.annotations)
 }

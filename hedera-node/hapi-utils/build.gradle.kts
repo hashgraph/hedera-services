@@ -29,12 +29,13 @@ configurations.all {
 }
 
 dependencies {
-    api(project(":hedera-node:hedera-evm"))
     annotationProcessor(libs.dagger.compiler)
+
+    api(project(":hedera-node:hedera-evm"))
+    api(libs.hapi)
 
     implementation(libs.helidon.io.grpc)
     implementation(libs.bundles.di)
-    implementation(libs.hapi)
     implementation(libs.bundles.logging)
     implementation(libs.protobuf.java)
     implementation(libs.jackson)
@@ -44,8 +45,8 @@ dependencies {
     implementation(libs.besu.secp256k1)
     implementation(libs.commons.codec)
     implementation(libs.jna)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
+
     itestImplementation(libs.hapi)
 }

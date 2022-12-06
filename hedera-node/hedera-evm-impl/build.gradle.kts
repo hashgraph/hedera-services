@@ -27,5 +27,4 @@ configurations.all {
 
 dependencies {
     api(project(":hedera-node:hedera-evm"))
-    compileOnly(libs.spotbugs.annotations)
 }

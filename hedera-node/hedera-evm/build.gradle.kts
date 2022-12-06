@@ -33,12 +33,13 @@ configurations.all {
 }
 
 dependencies {
-
+    compileOnlyApi(libs.spotbugs.annotations)
     api(libs.besu.evm)
     api(libs.besu.datatypes)
-    api(libs.swirlds.common)
-    implementation(libs.helidon.io.grpc)
     api(libs.besu.secp256k1)
+    api(libs.swirlds.common)
+
+    implementation(libs.helidon.io.grpc)
     implementation(libs.jna)
     implementation(libs.caffeine)
     implementation(libs.guava)
@@ -46,7 +47,6 @@ dependencies {
         exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.mockito.jupiter)
 }

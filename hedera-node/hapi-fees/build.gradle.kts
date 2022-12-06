@@ -31,14 +31,13 @@ configurations.all {
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
+    implementation(project(":hedera-node:hapi-utils"))
+
     implementation(libs.bundles.di)
     implementation(libs.helidon.io.grpc)
-    implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
-    implementation(libs.hapi)
     implementation(libs.jackson)
-    compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
 }
