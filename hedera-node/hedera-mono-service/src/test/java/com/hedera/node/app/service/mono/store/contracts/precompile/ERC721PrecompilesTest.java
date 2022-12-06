@@ -1733,8 +1733,8 @@ class ERC721PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    public static final IsApproveForAllWrapper IS_APPROVE_FOR_ALL_WRAPPER =
-            new IsApproveForAllWrapper(token, sender, receiver);
+    public static final IsApproveForAllWrapper<TokenID, AccountID, AccountID> IS_APPROVE_FOR_ALL_WRAPPER =
+            new IsApproveForAllWrapper<>(token, sender, receiver);
 
     public static final GetApprovedWrapper GET_APPROVED_WRAPPER =
             new GetApprovedWrapper(token, token.getTokenNum());

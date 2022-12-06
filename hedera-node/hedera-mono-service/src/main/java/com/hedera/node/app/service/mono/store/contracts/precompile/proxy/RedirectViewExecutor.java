@@ -116,7 +116,7 @@ public class RedirectViewExecutor {
         } else if (selector == ABI_ID_ERC_IS_APPROVED_FOR_ALL) {
             final var wrapper =
                     IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                            input.slice(24), tokenId, updater::unaliased);
+                            input, tokenId, updater::unaliased);
             final var isOperator =
                     ledgers.staticIsOperator(wrapper.owner(), wrapper.operator(), tokenId);
             return encoder.encodeIsApprovedForAll(isOperator);
