@@ -22,10 +22,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,7 +37,10 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
+import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
@@ -48,7 +53,10 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,9 +71,17 @@ class IngestWorkflowImplTest {
     private static final OnsetResult ONSET_RESULT =
             new OnsetResult(TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic);
 
-    @Mock private WorkflowOnset onset;
+    @Mock(strictness = LENIENT)
+    private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
+
+    @Mock(strictness = LENIENT)
+    private WorkflowOnset onset;
+
     @Mock private IngestChecker checker;
-    @Mock private CryptoService cryptoService;
+
+    @Mock(strictness = LENIENT)
+    private CryptoService cryptoService;
+
     @Mock private ThrottleAccumulator throttleAccumulator;
     @Mock private SubmissionManager submissionManager;
     @Mock private HapiOpCounters opCounters;
@@ -80,11 +96,24 @@ class IngestWorkflowImplTest {
     private SessionContext ctx;
     private IngestWorkflowImpl workflow;
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
-    void setup() {
+    void setup(
+            @Mock HederaState state,
+            @Mock(strictness = LENIENT) CryptoQueryHandler cryptoQueryHandler,
+            @Mock Account account)
+            throws PreCheckException {
+        when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
+
+        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
+
+        when(cryptoQueryHandler.getAccountById(any())).thenReturn(Optional.of(account));
+        when(cryptoService.createQueryHandler(any())).thenReturn(cryptoQueryHandler);
+
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         workflow =
                 new IngestWorkflowImpl(
+                        stateAccessor,
                         onset,
                         checker,
                         cryptoService,
@@ -93,12 +122,14 @@ class IngestWorkflowImplTest {
                         opCounters);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithInvalidArguments() {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
                                         null,
+                                        onset,
                                         checker,
                                         cryptoService,
                                         throttleAccumulator,
@@ -108,6 +139,18 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        stateAccessor,
+                                        null,
+                                        checker,
+                                        cryptoService,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        stateAccessor,
                                         onset,
                                         null,
                                         cryptoService,
@@ -118,6 +161,7 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        stateAccessor,
                                         onset,
                                         checker,
                                         null,
@@ -128,6 +172,7 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        stateAccessor,
                                         onset,
                                         checker,
                                         cryptoService,
@@ -138,6 +183,7 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        stateAccessor,
                                         onset,
                                         checker,
                                         cryptoService,
@@ -148,6 +194,7 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        stateAccessor,
                                         onset,
                                         checker,
                                         cryptoService,
@@ -158,9 +205,8 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testSuccessWithByteBuffer() throws PreCheckException, InvalidProtocolBufferException {
+    void testSuccess() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -176,10 +222,20 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testOnsetFails() throws PreCheckException, InvalidProtocolBufferException {
+    void testOnsetFails(@Mock WorkflowOnset localOnset)
+            throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class)))
+        when(localOnset.parseAndCheck(any(), any(ByteBuffer.class)))
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
+        workflow =
+                new IngestWorkflowImpl(
+                        stateAccessor,
+                        localOnset,
+                        checker,
+                        cryptoService,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -197,7 +253,6 @@ class IngestWorkflowImplTest {
     @Test
     void testSemanticFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new PreCheckException(NOT_SUPPORTED))
                 .when(checker)
                 .checkTransactionSemantics(TRANSACTION_BODY, ConsensusCreateTopic);
@@ -215,10 +270,40 @@ class IngestWorkflowImplTest {
         verify(opCounters, never()).countSubmitted(any());
     }
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
+    @Test
+    void testPayerAccountNotFoundFails(
+            @Mock CryptoQueryHandler cryptoQueryHandler, @Mock CryptoService localCryptoService)
+            throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        when(cryptoQueryHandler.getAccountById(any())).thenReturn(Optional.empty());
+        when(localCryptoService.createQueryHandler(any())).thenReturn(cryptoQueryHandler);
+        workflow =
+                new IngestWorkflowImpl(
+                        stateAccessor,
+                        onset,
+                        checker,
+                        localCryptoService,
+                        throttleAccumulator,
+                        submissionManager,
+                        opCounters);
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+
+        // when
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager, never()).submit(ctx, TRANSACTION_BODY, requestBuffer);
+        verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
+    }
+
     @Test
     void testPayerSignatureFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new PreCheckException(INVALID_PAYER_SIGNATURE))
                 .when(checker)
                 .checkPayerSignature(eq(TRANSACTION_BODY), eq(SIGNATURE_MAP), any());
@@ -239,7 +324,6 @@ class IngestWorkflowImplTest {
     @Test
     void testSolvencyFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_ACCOUNT_BALANCE, 42L))
                 .when(checker)
                 .checkSolvency(eq(TRANSACTION_BODY), eq(ConsensusCreateTopic), any());
@@ -261,7 +345,6 @@ class IngestWorkflowImplTest {
     @Test
     void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
         when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 

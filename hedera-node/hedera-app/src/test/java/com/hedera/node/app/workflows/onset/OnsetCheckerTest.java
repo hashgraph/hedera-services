@@ -103,6 +103,7 @@ class OnsetCheckerTest {
                         MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
         // given
@@ -202,6 +203,7 @@ class OnsetCheckerTest {
         verify(counters, never()).countDeprecatedTxnReceived();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void testCheckTransactionWithDeprecatedBytesOnlySucceeds() {
         // given
@@ -212,6 +214,7 @@ class OnsetCheckerTest {
         verify(counters).countDeprecatedTxnReceived();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void testCheckTransactionWithDeprecatedBytesFails() {
         // given
@@ -228,6 +231,7 @@ class OnsetCheckerTest {
         verify(counters).countDeprecatedTxnReceived();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void testCheckTransactionWithDeprecatedSignatureMapFails() {
         // given
@@ -289,6 +293,7 @@ class OnsetCheckerTest {
         verify(counters, never()).countDeprecatedTxnReceived();
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testCheckTransactionWithIllegalArguments() {
         assertThatThrownBy(() -> checker.checkTransaction(null))
@@ -317,6 +322,7 @@ class OnsetCheckerTest {
                 .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_HAS_UNKNOWN_FIELDS);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testCheckSignedTransactionWithIllegalArguments() {
         assertThatThrownBy(() -> checker.checkSignedTransaction(null))
@@ -590,6 +596,7 @@ class OnsetCheckerTest {
                 .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION_START);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testCheckTransactionBodyWithIllegalArguments() {
         assertThatThrownBy(() -> checker.checkTransactionBody(null))

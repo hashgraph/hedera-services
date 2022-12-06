@@ -77,6 +77,7 @@ class PreHandleDispatcherTest {
 
     private PreHandleDispatcher dispatcher;
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
     void setup(
             @Mock ConsensusService consensusService,
@@ -123,6 +124,7 @@ class PreHandleDispatcherTest {
         dispatcher = new PreHandleDispatcher(hederaState, servicesAccessor, context);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new PreHandleDispatcher(null, servicesAccessor, context))
@@ -133,6 +135,7 @@ class PreHandleDispatcherTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testDispatchWithIllegalParameters() {
         // given

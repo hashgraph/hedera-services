@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
+import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -100,7 +101,7 @@ public class IngestChecker {
     public void checkPayerSignature(
             @NonNull final TransactionBody txBody,
             @NonNull final SignatureMap signatureMap,
-            @NonNull final Object /* Account */ payer)
+            @NonNull final Account payer)
             throws PreCheckException {
         LOG.warn("IngestChecker.checkPayerSignature() has not been implemented yet");
         // TODO: Implement once signature check is implemented
@@ -118,7 +119,7 @@ public class IngestChecker {
     public void checkSolvency(
             @NonNull final TransactionBody txBody,
             @NonNull final HederaFunctionality functionality,
-            @NonNull final Object /* Account */ payer)
+            @NonNull final Account payer)
             throws InsufficientBalanceException {
         LOG.warn("IngestChecker.checkSolvency() has not been implemented yet");
         // TODO: Implement once fee calculation is implemented

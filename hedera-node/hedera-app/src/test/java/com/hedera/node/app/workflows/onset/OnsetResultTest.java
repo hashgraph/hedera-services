@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class OnsetResultTest {
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void checkConstructorWithIllegalArguments() {
         // given

@@ -119,6 +119,7 @@ class WorkflowOnsetTest {
         onset = new WorkflowOnset(nodeInfo, currentPlatformStatus, checker);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
         assertThatThrownBy(() -> new WorkflowOnset(null, currentPlatformStatus, checker))
@@ -140,6 +141,7 @@ class WorkflowOnsetTest {
         assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusCreateTopic);
     }
 
+    @SuppressWarnings({"JUnitMalformedDeclaration", "deprecation"})
     @Test
     void testParseAndChechWithDeprecatedFieldsSucceeds(
             @Mock Parser<Transaction> localTxParser,

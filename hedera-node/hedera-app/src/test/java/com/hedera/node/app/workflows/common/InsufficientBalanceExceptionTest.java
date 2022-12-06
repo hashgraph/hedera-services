@@ -35,7 +35,7 @@ class InsufficientBalanceExceptionTest {
         assertThat(exception.getMessage()).isNull();
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
+    @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new InsufficientBalanceException(null, 42L))

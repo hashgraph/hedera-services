@@ -79,6 +79,7 @@ class PreHandleWorkflowImplTest {
 
     private PreHandleWorkflowImpl workflow;
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
     void setup(
             @Mock ContractService contractService,
@@ -108,6 +109,7 @@ class PreHandleWorkflowImplTest {
         workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, context, onset))
@@ -126,6 +128,7 @@ class PreHandleWorkflowImplTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testStartWithIllegalParameters() {
         // then
@@ -144,6 +147,7 @@ class PreHandleWorkflowImplTest {
         assertThatCode(() -> workflow.start(state, event)).doesNotThrowAnyException();
     }
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
     void testStartEventWithTwoTransactions(
             @Mock SwirldTransaction transaction1, @Mock SwirldTransaction transaction2) {
@@ -174,6 +178,7 @@ class PreHandleWorkflowImplTest {
         verify(consensusService, times(1)).createPreTransactionHandler(any(), any());
     }
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
     void testChangedStateDoesRegenerateHandlers(
             @Mock HederaState state2, @Mock SwirldTransaction transaction) {
@@ -189,6 +194,7 @@ class PreHandleWorkflowImplTest {
         verify(consensusService, times(2)).createPreTransactionHandler(any(), any());
     }
 
+    @SuppressWarnings({"JUnitMalformedDeclaration", "unchecked"})
     @Test
     void testPreHandleSuccess(
             @Mock ConsensusPreTransactionHandler preTransactionHandler,
@@ -228,18 +234,15 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        @SuppressWarnings("unchecked")
         final ArgumentCaptor<Future<TransactionMetadata>> captor =
                 ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(captor.capture());
         assertThat(captor.getValue()).succeedsWithin(Duration.ofMillis(100)).isEqualTo(metadata);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    void testPreHandleOnsetFails(
-            @Mock ConsensusPreTransactionHandler preTransactionHandler,
-            @Mock SwirldTransaction transaction)
-            throws PreCheckException {
+    void testPreHandleOnsetFails(@Mock SwirldTransaction transaction) throws PreCheckException {
         // given
         when(executorService.submit(any(Callable.class)))
                 .thenAnswer(
@@ -263,7 +266,6 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        @SuppressWarnings("unchecked")
         final ArgumentCaptor<Future<TransactionMetadata>> captor =
                 ArgumentCaptor.forClass(Future.class);
         verify(transaction).setMetadata(captor.capture());

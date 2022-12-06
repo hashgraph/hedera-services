@@ -17,24 +17,30 @@ package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hedera.node.app.workflows.common.SubmissionManager;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.utility.AutoCloseableWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
+import java.util.function.Supplier;
 
 /** Default implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
+    private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
     private final WorkflowOnset onset;
     private final IngestChecker checker;
     private final CryptoService cryptoService;
@@ -45,6 +51,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     /**
      * Constructor of {@code IngestWorkflowImpl}
      *
+     * @param stateAccessor a {@link Supplier} that provides the latest immutable state
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
      * @param checker the {@link IngestWorkflow} with specific checks of an ingest-workflow
@@ -53,12 +60,14 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      */
     public IngestWorkflowImpl(
+            @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final WorkflowOnset onset,
             @NonNull final IngestChecker checker,
             @NonNull final CryptoService cryptoService,
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final HapiOpCounters opCounters) {
+        this.stateAccessor = requireNonNull(stateAccessor);
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
         this.cryptoService = requireNonNull(cryptoService);
@@ -75,7 +84,9 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;
-        try {
+        try (final var wrappedState = stateAccessor.get()) {
+            final var state = wrappedState.get();
+
             // 1. Parse the TransactionBody and check the syntax
             final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
             final var txBody = onsetResult.txBody();
@@ -88,15 +99,13 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             checker.checkTransactionSemantics(txBody, functionality);
 
             // 3. Get payer account
-            // TODO: Get payer account
-            // final AccountID payerID = txBody.getTransactionID().getAccountID();
-            // final States states =
-            //         getLatestImmutableState().createReadableStates("CryptoService");
-            // final var payer =
-            //         cryptoService.createQueryHandler(states).getAccountById(payerID)
-            //                 .orElseThrow(() -> new
-            //                         PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
-            final Object /* Account */ payer = null;
+            final AccountID payerID = txBody.getTransactionID().getAccountID();
+            final var cryptoStates = state.createReadableStates(cryptoService.getServiceName());
+            final var cryptoQueryHandler = cryptoService.createQueryHandler(cryptoStates);
+            final var payer =
+                    cryptoQueryHandler
+                            .getAccountById(payerID)
+                            .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
             // 4. Check payer's signature
             checker.checkPayerSignature(txBody, signatureMap, payer);
