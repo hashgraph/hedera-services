@@ -415,7 +415,7 @@ class ERC721PrecompilesTest {
                 .when(
                         () ->
                                 IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        eq(nestedPretendArguments), eq(token), any()))
+                                        any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
@@ -516,7 +516,7 @@ class ERC721PrecompilesTest {
                 .when(
                         () ->
                                 IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        eq(nestedPretendArguments), eq(token), any()))
+                                        any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 

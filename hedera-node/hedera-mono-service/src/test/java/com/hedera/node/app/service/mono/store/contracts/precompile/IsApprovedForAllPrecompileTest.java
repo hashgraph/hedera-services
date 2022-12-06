@@ -29,15 +29,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class IsApprovedForAllPrecompileTest {
     public static final Bytes IS_APPROVED_FOR_ALL_INPUT_ERC =
             Bytes.fromHexString(
-                    "0xe985e9c5000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
+                    "0x618dc65e00000000000000000000000000000000000003ece985e9c50000000000000000000000000000000000000000000000000000000027bc86aa00000000000000000000000000000000000000000000000000000000000003eb");
     public static final Bytes IS_APPROVED_FOR_ALL_INPUT_HAPI =
             Bytes.fromHexString(
                     "0xf49f40db0000000000000000000000000000000000000000000000000000000000001234000000000000000000000000000000000000000000000000000000000000065b000000000000000000000000000000000000000000000000000000000000065c");
     private static final long TOKEN_NUM_HAPI_TOKEN = 0x1234;
     private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER = 0x65b;
     private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR = 0x65c;
+    private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER2 = 666666666;
+    private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2 = 1003;
     private static final TokenID TOKEN_ID =
-            TokenID.newBuilder().setTokenNum(TOKEN_NUM_HAPI_TOKEN).build();
+            TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeIsApprovedForAllERC() {
@@ -45,9 +47,9 @@ class IsApprovedForAllPrecompileTest {
                 decodeIsApprovedForAll(IS_APPROVED_FOR_ALL_INPUT_ERC, TOKEN_ID, identity());
 
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
-        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER, decodedInput.owner().getAccountNum());
+        assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER2, decodedInput.owner().getAccountNum());
         assertEquals(
-                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR, decodedInput.operator().getAccountNum());
+            ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2, decodedInput.operator().getAccountNum());
     }
 
     @Test
