@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl;
+package com.hedera.node.app.service.schedule.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.*;
@@ -22,7 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.*;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
@@ -77,7 +77,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         // if provided payer is same as payer in the inner transaction.
 
         final var innerMeta = preHandleInnerTxn(scheduledTxn, payerForNested);
-        meta.setInnerMeta(innerMeta);
+        meta.setScheduledMeta(innerMeta);
         return meta;
     }
 

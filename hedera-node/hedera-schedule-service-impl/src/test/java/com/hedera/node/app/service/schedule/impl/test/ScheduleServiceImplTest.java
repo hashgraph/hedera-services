@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl.test;
+package com.hedera.node.app.service.schedule.impl.test;
 
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.service.scheduled.impl.ScheduleServiceImpl;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
+import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
+import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +34,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
     private ScheduleServiceImpl subject;
-    @Mock private InMemoryStateImpl schedules;
+    @Mock private State schedules;
     @Mock private States states;
     @Mock private PreHandleTxnAccessor callContext;
     @Mock private PreHandleContext preHandleCtx;

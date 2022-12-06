@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl;
+package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
-import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;

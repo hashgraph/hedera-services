@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
         implements ScheduleTransactionMetadata {
-    private TransactionMetadata innerTransactionMetadata;
+    private TransactionMetadata scheduledTxnMeta;
 
     public ScheduleSigTransactionMetadata(
             final AccountKeyLookup keyLookup,
@@ -40,12 +40,12 @@ public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
     }
 
     @Override
-    public TransactionMetadata getInnerMeta() {
-        return innerTransactionMetadata;
+    public TransactionMetadata getScheduledMeta() {
+        return scheduledTxnMeta;
     }
 
     @Override
-    public void setInnerMeta(TransactionMetadata metadata) {
-        this.innerTransactionMetadata = metadata;
+    public void setScheduledMeta(final TransactionMetadata meta) {
+        this.scheduledTxnMeta = meta;
     }
 }

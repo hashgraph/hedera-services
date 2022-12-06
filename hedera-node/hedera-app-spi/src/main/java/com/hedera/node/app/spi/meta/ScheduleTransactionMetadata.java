@@ -23,7 +23,7 @@ package com.hedera.node.app.spi.meta;
  * contains an inner {@link TransactionMetadata} for scheduled transaction.
  */
 public interface ScheduleTransactionMetadata extends TransactionMetadata {
-    TransactionMetadata getInnerMeta();
+    TransactionMetadata getScheduledMeta();
 
-    void setInnerMeta(TransactionMetadata metadata);
+    void setScheduledMeta(TransactionMetadata metadata);
 }

@@ -23,7 +23,7 @@ import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
 import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
 import com.hedera.node.app.service.file.FilePreTransactionHandler;
 import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;

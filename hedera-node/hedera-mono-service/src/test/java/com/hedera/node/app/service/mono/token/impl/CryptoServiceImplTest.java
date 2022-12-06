@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
@@ -48,5 +48,20 @@ class CryptoServiceImplTest {
         final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
         final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
         assertNotEquals(serviceImpl1, serviceImpl);
+    }
+
+    @Test
+    void createsAccountKeyLookup(){
+        subject = new CryptoServiceImpl();
+
+        given(states.get(ACCOUNTS)).willReturn(accounts);
+        given(states.get(ALIASES)).willReturn(aliases);
+
+        final var serviceImpl = subject.createAccountKeyLookupFor(states);
+        final var serviceImpl1 = subject.createAccountKeyLookupFor(states);
+        assertTrue(serviceImpl instanceof AccountStore);
+        assertNotEquals(serviceImpl1, serviceImpl);
+
+        assertThrows(NullPointerException.class, () -> subject.createAccountKeyLookupFor(null));
     }
 }
