@@ -40,7 +40,7 @@ public final class CryptoServiceImpl implements CryptoService {
 
     @NonNull
     @Override
-    public AccountKeyLookup createAccountKeyLookupFor(States states) {
+    public AccountKeyLookup createAccountKeyLookupFor(@NonNull final States states) {
         Objects.requireNonNull(states);
         return new AccountStore(states);
     }

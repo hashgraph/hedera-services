@@ -59,9 +59,12 @@ public interface CryptoService extends Service {
     }
 
     /**
-     * Returns an implementation of {@link AccountKeyLookup} for other modules to use.
+     * Creates {@link AccountKeyLookup} object for other modules to uset during pre-txn handle
+     * phase. NOTE: This class can be modified to return other Account's fields as needed in the
+     * future.
      *
-     * @return key lookup factory to use for different modules
+     * @param states states to use for looking up accounts
+     * @return lookup for account's keys
      */
     @NonNull
     AccountKeyLookup createAccountKeyLookupFor(States states);

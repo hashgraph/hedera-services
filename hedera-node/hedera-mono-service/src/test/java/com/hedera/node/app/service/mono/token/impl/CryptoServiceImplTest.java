@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
