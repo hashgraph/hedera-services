@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,5 +33,12 @@ public final class CryptoServiceImpl implements CryptoService {
         Objects.requireNonNull(ctx);
         final var store = new AccountStore(states);
         return new CryptoPreTransactionHandlerImpl(store, ctx);
+    }
+
+    @NonNull
+    @Override
+    public AccountKeyLookup createAccountKeyLookupFor(@NonNull final States states) {
+        Objects.requireNonNull(states);
+        return new AccountStore(states);
     }
 }

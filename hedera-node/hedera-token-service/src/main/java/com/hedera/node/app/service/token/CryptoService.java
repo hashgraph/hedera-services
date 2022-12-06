@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.token;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
@@ -57,4 +58,15 @@ public interface CryptoService extends Service {
         return ServiceFactory.loadService(
                 CryptoService.class, ServiceLoader.load(CryptoService.class));
     }
+
+    /**
+     * Creates {@link AccountKeyLookup} object for other modules to uset during pre-txn handle
+     * phase. NOTE: This class can be modified to return other Account's fields as needed in the
+     * future.
+     *
+     * @param states states to use for looking up accounts
+     * @return lookup for account's keys
+     */
+    @NonNull
+    public AccountKeyLookup createAccountKeyLookupFor(States states);
 }

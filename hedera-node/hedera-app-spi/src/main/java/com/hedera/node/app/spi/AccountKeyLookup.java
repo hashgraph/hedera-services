@@ -17,7 +17,10 @@ package com.hedera.node.app.spi;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 
-/** An interface used for looking up Keys on the account */
+/**
+ * An interface used for looking up Keys on the account. NOTE: This class can be modified to return
+ * any other fields needed from account object if needed in the future.
+ */
 public interface AccountKeyLookup {
 
     /**
