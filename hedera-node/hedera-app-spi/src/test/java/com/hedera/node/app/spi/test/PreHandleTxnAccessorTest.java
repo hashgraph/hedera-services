@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,6 @@
  */
 package com.hedera.node.app.spi.test;
 
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,12 +22,18 @@ import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.spi.PreHandleTxnAccessor;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 @ExtendWith(MockitoExtension.class)
 class PreHandleTxnAccessorTest {
     @Mock private PreHandleTxnAccessor subject;
 
     @Test
-    void getsPreTxnHandlersCorrectly(){
+    void getsPreTxnHandlersCorrectly() {
         willCallRealMethod().given(subject).getPreTxnHandler(any());
 
         subject.getPreTxnHandler(CryptoCreate);
@@ -63,20 +63,43 @@ class PreHandleTxnAccessorTest {
         subject.getPreTxnHandler(ScheduleDelete);
         verify(subject, times(3)).getSchedulePreTransactionHandler();
 
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenCreate));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenBurn));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenDelete));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenMint));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenAccountWipe));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenAssociateToAccount));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenDissociateFromAccount));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenFeeScheduleUpdate));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileAppend));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileCreate));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileUpdate));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(ConsensusCreateTopic));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(ConsensusSubmitMessage));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(ConsensusDeleteTopic));
-        assertThrows(UnsupportedOperationException.class, () -> subject.getPreTxnHandler(ConsensusUpdateTopic));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenCreate));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenBurn));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenDelete));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(TokenMint));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(TokenAccountWipe));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(TokenAssociateToAccount));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(TokenDissociateFromAccount));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(TokenFeeScheduleUpdate));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileAppend));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileCreate));
+        assertThrows(
+                UnsupportedOperationException.class, () -> subject.getPreTxnHandler(FileUpdate));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(ConsensusCreateTopic));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(ConsensusSubmitMessage));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(ConsensusDeleteTopic));
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> subject.getPreTxnHandler(ConsensusUpdateTopic));
     }
 }

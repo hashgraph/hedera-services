@@ -9,7 +9,8 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
-            com.hedera.node.app.service.schedule.impl, com.hedera.node.app.service.schedule.impl.test;
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.schedule.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.models to

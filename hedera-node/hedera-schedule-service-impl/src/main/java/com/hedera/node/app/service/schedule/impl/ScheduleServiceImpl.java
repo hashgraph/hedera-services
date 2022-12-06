@@ -24,8 +24,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 public class ScheduleServiceImpl implements ScheduleService {
-    public ScheduleServiceImpl() {}
-
     @NonNull
     @Override
     public SchedulePreTransactionHandler createPreTransactionHandler(

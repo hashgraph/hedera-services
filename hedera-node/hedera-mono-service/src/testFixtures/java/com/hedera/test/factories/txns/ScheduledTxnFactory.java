@@ -56,8 +56,7 @@ public class ScheduledTxnFactory {
                         .setAdminKey(scheduleAdminKey)
                         .setMemo(scheduleMemo)
                         .setScheduledTransactionBody(scheduledTxn);
-        if(payer != null)
-        {
+        if (payer != null) {
             creation.setPayerAccountID(payer);
         }
         if (expirationTime != null) {

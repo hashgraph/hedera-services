@@ -462,7 +462,7 @@ class CryptoPreTransactionHandlerImplTest {
     }
 
     @Test
-    void preHandleDelegatesCorrectly(){
+    void preHandleDelegatesCorrectly() {
         subject = mock(CryptoPreTransactionHandlerImpl.class);
         willCallRealMethod().given(subject).preHandle(any(), any());
 
@@ -485,6 +485,16 @@ class CryptoPreTransactionHandlerImplTest {
         txn = deleteAccountTransaction(owner, updateAccountId);
         subject.preHandle(txn, owner);
         verify(subject).preHandleCryptoDelete(txn, owner);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        subject.preHandle(
+                                TransactionBody.newBuilder()
+                                        .setTokenDeletion(
+                                                TokenDeleteTransactionBody.newBuilder().build())
+                                        .build(),
+                                owner));
     }
 
     private void basicMetaAssertions(

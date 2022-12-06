@@ -16,6 +16,7 @@
 package com.hedera.node.app.service.schedule.impl.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.schedule.ScheduleService;
@@ -65,5 +66,19 @@ class ScheduleServiceImplTest {
         final var serviceImpl1 =
                 service.createPreTransactionHandler(states, preHandleCtx, accessor);
         assertNotEquals(serviceImpl1, serviceImpl);
+    }
+
+    @Test
+    void throwsNPEIfArgsAreNull() {
+        final ScheduleService service = ScheduleService.getInstance();
+        assertThrows(
+                NullPointerException.class,
+                () -> service.createPreTransactionHandler(null, preHandleCtx, accessor));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.createPreTransactionHandler(states, null, accessor));
+        assertThrows(
+                NullPointerException.class,
+                () -> service.createPreTransactionHandler(states, preHandleCtx, null));
     }
 }
