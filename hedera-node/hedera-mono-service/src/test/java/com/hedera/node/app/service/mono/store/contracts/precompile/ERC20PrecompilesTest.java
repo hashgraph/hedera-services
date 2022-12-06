@@ -1697,9 +1697,10 @@ class ERC20PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER = new BalanceOfWrapper<>(sender);
+    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER =
+            new BalanceOfWrapper<>(sender);
 
-    public static final TokenAllowanceWrapper<TokenID, AccountID, AccountID>  ALLOWANCE_WRAPPER =
+    public static final TokenAllowanceWrapper<TokenID, AccountID, AccountID> ALLOWANCE_WRAPPER =
             new TokenAllowanceWrapper<>(token, sender, receiver);
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER =
