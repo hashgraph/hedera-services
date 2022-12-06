@@ -86,8 +86,8 @@ public class RecordParsers {
      * Given the location of a directory structure that includes compressed V6 sidecar files,
      * returns a map from consensus time to the sidecar entries found for that consensus time.
      *
-     * <p>The map can then be given to {@link RecordParsers#visitWithSidecars(List, Map, BiConsumer)}
-     * to investigate the record stream with sidecar information.
+     * <p>The map can then be given to {@link RecordParsers#visitWithSidecars(List, Map,
+     * BiConsumer)} to investigate the record stream with sidecar information.
      *
      * @param streamDir a directory with compressed V6 sidecar files
      * @return the map from consensus time to attached sidecars
