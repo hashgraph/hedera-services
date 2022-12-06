@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.legacy.proto.utils.CommonUtils.noThrowSha384HashOf;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -35,7 +35,7 @@ public final class CommonUpgradeResources {
     private static final PerfTestLoadSettings settings = new PerfTestLoadSettings();
 
     public static HapiSpecOperation[] initializeSettings() {
-        HapiSpecOperation[] ops = {
+        final HapiSpecOperation[] ops = {
             withOpContext((spec, ignore) -> settings.setFrom(spec.setup().ciPropertiesMap())),
             logIt(ignore -> settings.toString())
         };

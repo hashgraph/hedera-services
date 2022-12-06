@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.sysfiles.serdes;
 
-import com.hedera.services.sysfiles.serdes.ThrottlesJsonToProtoSerde;
+import com.hedera.node.app.hapi.utils.sysfiles.serdes.ThrottlesJsonToProtoSerde;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;
 import java.io.IOException;
 import java.io.InputStream;

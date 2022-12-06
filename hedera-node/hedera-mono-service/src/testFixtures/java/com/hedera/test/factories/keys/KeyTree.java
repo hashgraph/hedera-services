@@ -15,8 +15,8 @@
  */
 package com.hedera.test.factories.keys;
 
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.utils.MiscUtils;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
