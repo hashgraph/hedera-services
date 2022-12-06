@@ -15,97 +15,100 @@
  */
 package com.hedera.test.factories.txns;
 
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+
 import java.util.Optional;
 
+import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_REPLACE_KT;
+
 public class TokenUpdateFactory extends SignedTxnFactory<TokenUpdateFactory> {
-    private TokenID id;
-    private Optional<KeyTree> newAdminKt = Optional.empty();
-    private Optional<AccountID> newTreasury = Optional.empty();
-    private Optional<AccountID> newAutoRenew = Optional.empty();
-    private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
+	private TokenID id;
+	private Optional<KeyTree> newAdminKt = Optional.empty();
+	private Optional<AccountID> newTreasury = Optional.empty();
+	private Optional<AccountID> newAutoRenew = Optional.empty();
+	private boolean replaceFreeze, replaceSupply, replaceWipe, replaceKyc;
 
-    private TokenUpdateFactory() {}
+	private TokenUpdateFactory() {
+	}
 
-    public static TokenUpdateFactory newSignedTokenUpdate() {
-        return new TokenUpdateFactory();
-    }
+	public static TokenUpdateFactory newSignedTokenUpdate() {
+		return new TokenUpdateFactory();
+	}
 
-    public TokenUpdateFactory updating(TokenID id) {
-        this.id = id;
-        return this;
-    }
+	public TokenUpdateFactory updating(final TokenID id) {
+		this.id = id;
+		return this;
+	}
 
-    public TokenUpdateFactory newAdmin(KeyTree kt) {
-        newAdminKt = Optional.of(kt);
-        return this;
-    }
+	public TokenUpdateFactory newAdmin(final KeyTree kt) {
+		newAdminKt = Optional.of(kt);
+		return this;
+	}
 
-    public TokenUpdateFactory newAutoRenew(AccountID account) {
-        newAutoRenew = Optional.of(account);
-        return this;
-    }
+	public TokenUpdateFactory newAutoRenew(final AccountID account) {
+		newAutoRenew = Optional.of(account);
+		return this;
+	}
 
-    public TokenUpdateFactory newTreasury(AccountID account) {
-        newTreasury = Optional.of(account);
-        return this;
-    }
+	public TokenUpdateFactory newTreasury(final AccountID account) {
+		newTreasury = Optional.of(account);
+		return this;
+	}
 
-    public TokenUpdateFactory replacingFreeze() {
-        replaceFreeze = true;
-        return this;
-    }
+	public TokenUpdateFactory replacingFreeze() {
+		replaceFreeze = true;
+		return this;
+	}
 
-    public TokenUpdateFactory replacingSupply() {
-        replaceSupply = true;
-        return this;
-    }
+	public TokenUpdateFactory replacingSupply() {
+		replaceSupply = true;
+		return this;
+	}
 
-    public TokenUpdateFactory replacingWipe() {
-        replaceWipe = true;
-        return this;
-    }
+	public TokenUpdateFactory replacingWipe() {
+		replaceWipe = true;
+		return this;
+	}
 
-    public TokenUpdateFactory replacingKyc() {
-        replaceKyc = true;
-        return this;
-    }
+	public TokenUpdateFactory replacingKyc() {
+		replaceKyc = true;
+		return this;
+	}
 
-    @Override
-    protected TokenUpdateFactory self() {
-        return this;
-    }
+	@Override
+	protected TokenUpdateFactory self() {
+		return this;
+	}
 
-    @Override
-    protected long feeFor(Transaction signedTxn, int numPayerKeys) {
-        return 0;
-    }
+	@Override
+	protected long feeFor(final Transaction signedTxn, final int numPayerKeys) {
+		return 0;
+	}
 
-    @Override
-    protected void customizeTxn(TransactionBody.Builder txn) {
-        var op = TokenUpdateTransactionBody.newBuilder();
-        op.setToken(id);
-        newAdminKt.ifPresent(kt -> op.setAdminKey(kt.asKey()));
-        if (replaceFreeze) {
-            op.setFreezeKey(TxnHandlingScenario.TOKEN_REPLACE_KT.asKey());
-        }
-        if (replaceKyc) {
-            op.setKycKey(TxnHandlingScenario.TOKEN_REPLACE_KT.asKey());
-        }
-        if (replaceSupply) {
-            op.setSupplyKey(TxnHandlingScenario.TOKEN_REPLACE_KT.asKey());
-        }
-        if (replaceWipe) {
-            op.setWipeKey(TxnHandlingScenario.TOKEN_REPLACE_KT.asKey());
-        }
-        newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
-        newTreasury.ifPresent(op::setTreasury);
-        txn.setTokenUpdate(op);
-    }
+	@Override
+	protected void customizeTxn(final TransactionBody.Builder txn) {
+		final var op = TokenUpdateTransactionBody.newBuilder();
+		op.setToken(id);
+		newAdminKt.ifPresent(kt -> op.setAdminKey(kt.asKey()));
+		if (replaceFreeze) {
+			op.setFreezeKey(TOKEN_REPLACE_KT.asKey());
+		}
+		if (replaceKyc) {
+			op.setKycKey(TOKEN_REPLACE_KT.asKey());
+		}
+		if (replaceSupply) {
+			op.setSupplyKey(TOKEN_REPLACE_KT.asKey());
+		}
+		if (replaceWipe) {
+			op.setWipeKey(TOKEN_REPLACE_KT.asKey());
+		}
+		newAutoRenew.ifPresent(a -> op.setAutoRenewAccount(a));
+		newTreasury.ifPresent(op::setTreasury);
+		txn.setTokenUpdate(op);
+	}
 }
