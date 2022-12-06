@@ -80,4 +80,37 @@ public class SequentialIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(ScheduleSignSpecs::new),
                 extractSpecsFromSuite(TraceabilitySuite::new));
     }
+
+    @Tag("integration")
+    @Tag("integration.eth")
+    @TestFactory
+    Collection<DynamicContainer> sequentialEth() {
+        return List.of(
+            extractSpecsFromSuiteForEth(RecordCreationSuite::new),
+            extractSpecsFromSuiteForEth(AutoAccountUpdateSuite::new),
+            extractSpecsFromSuiteForEth(GracePeriodRestrictionsSuite::new),
+            extractSpecsFromSuiteForEth(CryptoApproveAllowanceSuite::new),
+            extractSpecsFromSuiteForEth(TokenPauseSpecs::new),
+            extractSpecsFromSuiteForEth(FileAppendSuite::new),
+            extractSpecsFromSuiteForEth(FileUpdateSuite::new),
+            extractSpecsFromSuiteForEth(ProtectedFilesUpdateSuite::new),
+            extractSpecsFromSuiteForEth(ExchangeRateControlSuite::new),
+            extractSpecsFromSuiteForEth(FileRecordsSanityCheckSuite::new),
+            extractSpecsFromSuiteForEth(FetchSystemFiles::new),
+            extractSpecsFromSuiteForEth(VersionInfoSpec::new),
+            extractSpecsFromSuiteForEth(ContractRecordsSanityCheckSuite::new),
+            //                extractSpecsFromSuite(TopicUpdateSuite::new),
+            extractSpecsFromSuiteForEth(TopicGetInfoSuite::new),
+            extractSpecsFromSuiteForEth(SpecialAccountsAreExempted::new),
+            extractSpecsFromSuiteForEth(CryptoUpdateSuite::new),
+            extractSpecsFromSuiteForEth(CryptoRecordsSanityCheckSuite::new),
+            extractSpecsFromSuiteForEth(ThrottleDefValidationSuite::new),
+            extractSpecsFromSuiteForEth(PrivilegedOpsSuite::new),
+            extractSpecsFromSuiteForEth(CongestionPricingSuite::new),
+            extractSpecsFromSuiteForEth(CryptoCreateSuite::new),
+            extractSpecsFromSuiteForEth(UmbrellaRedux::new),
+            extractSpecsFromSuiteForEth(ScheduleCreateSpecs::new),
+            extractSpecsFromSuiteForEth(ScheduleSignSpecs::new),
+            extractSpecsFromSuiteForEth(TraceabilitySuite::new));
+    }
 }

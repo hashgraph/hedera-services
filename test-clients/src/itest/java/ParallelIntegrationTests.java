@@ -180,4 +180,86 @@ public class ParallelIntegrationTests extends IntegrationTestBase {
                 extractSpecsFromSuite(EthereumSuite::new),
                 extractSpecsFromSuite(HelloWorldEthereumSuite::new));
     }
+
+    @Tag("integration")
+    @Tag("integration.eth")
+    @TestFactory
+    Collection<DynamicContainer> parallelEth() {
+        return List.of(
+            extractSpecsFromSuiteForEth(AutoAccountCreationSuite::new),
+            extractSpecsFromSuiteForEth(TokenAssociationSpecs::new),
+            extractSpecsFromSuiteForEth(TokenCreateSpecs::new),
+            extractSpecsFromSuiteForEth(TokenUpdateSpecs::new),
+            extractSpecsFromSuiteForEth(TokenDeleteSpecs::new),
+            extractSpecsFromSuiteForEth(TokenManagementSpecs::new),
+            extractSpecsFromSuiteForEth(TokenTransactSpecs::new),
+            extractSpecsFromSuiteForEth(FileCreateSuite::new),
+            extractSpecsFromSuiteForEth(PermissionSemanticsSpec::new),
+            extractSpecsFromSuiteForEth(SysDelSysUndelSpec::new),
+            extractSpecsFromSuiteForEth(UpdateFailuresSpec::new),
+            extractSpecsFromSuiteForEth(SignedTransactionBytesRecordsSuite::new),
+            extractSpecsFromSuiteForEth(TopicCreateSuite::new),
+            extractSpecsFromSuiteForEth(TopicDeleteSuite::new),
+            extractSpecsFromSuiteForEth(SubmitMessageSuite::new),
+            extractSpecsFromSuiteForEth(ChunkingSuite::new), // aka HCSTopicFragmentation
+            extractSpecsFromSuiteForEth(CryptoTransferSuite::new),
+            extractSpecsFromSuiteForEth(CannotDeleteSystemEntitiesSuite::new),
+            extractSpecsFromSuiteForEth(ScheduleDeleteSpecs::new),
+            extractSpecsFromSuiteForEth(ScheduleExecutionSpecs::new),
+            extractSpecsFromSuiteForEth(ScheduleRecordSpecs::new),
+            // contract.hapi
+            extractSpecsFromSuiteForEth(ContractCallLocalSuite::new),
+            extractSpecsFromSuiteForEth(ContractCallSuite::new),
+            extractSpecsFromSuiteForEth(ContractCreateSuite::new),
+            extractSpecsFromSuiteForEth(ContractDeleteSuite::new),
+            extractSpecsFromSuiteForEth(ContractGetBytecodeSuite::new),
+            extractSpecsFromSuiteForEth(ContractGetInfoSuite::new),
+            extractSpecsFromSuiteForEth(ContractMusicalChairsSuite::new),
+            extractSpecsFromSuiteForEth(ContractUpdateSuite::new),
+            // contract.opcode
+            extractSpecsFromSuiteForEth(BalanceOperationSuite::new),
+            extractSpecsFromSuiteForEth(CallCodeOperationSuite::new),
+            extractSpecsFromSuiteForEth(CallOperationSuite::new),
+            extractSpecsFromSuiteForEth(Create2OperationSuite::new),
+            extractSpecsFromSuiteForEth(CreateOperationSuite::new),
+            extractSpecsFromSuiteForEth(DelegateCallOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeCopyOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeHashOperationSuite::new),
+            extractSpecsFromSuiteForEth(ExtCodeSizeOperationSuite::new),
+            extractSpecsFromSuiteForEth(GlobalPropertiesSuite::new),
+            extractSpecsFromSuiteForEth(SelfDestructSuite::new),
+            extractSpecsFromSuiteForEth(SStoreSuite::new),
+            extractSpecsFromSuiteForEth(StaticCallOperationSuite::new),
+            // contract.openzeppelin
+            extractSpecsFromSuiteForEth(ERC20ContractInteractions::new),
+            extractSpecsFromSuiteForEth(ERC721ContractInteractions::new),
+            extractSpecsFromSuiteForEth(ERC1155ContractInteractions::new),
+            // contract.precompile
+            extractSpecsFromSuiteForEth(ApproveAllowanceSuite::new),
+            extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+            extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+            extractSpecsFromSuiteForEth(CreatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
+            extractSpecsFromSuiteForEth(DefaultTokenStatusSuite::new),
+            extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(DeleteTokenPrecompileSuite::new),
+            extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(ERCPrecompileSuite::new),
+            extractSpecsFromSuiteForEth(FreezeUnfreezeTokenPrecompileSuite::new),
+            extractSpecsFromSuiteForEth(GrantRevokeKycSuite::new),
+            extractSpecsFromSuiteForEth(MixedHTSPrecompileTestsSuite::new),
+            extractSpecsFromSuiteForEth(PauseUnpauseTokenAccountPrecompileSuite::new),
+            extractSpecsFromSuiteForEth(PrngPrecompileSuite::new),
+            extractSpecsFromSuiteForEth(TokenAndTypeCheckSuite::new),
+            extractSpecsFromSuiteForEth(TokenExpiryInfoSuite::new),
+            extractSpecsFromSuiteForEth(TokenInfoHTSSuite::new),
+            extractSpecsFromSuiteForEth(TokenUpdatePrecompileSuite::new),
+            extractSpecsFromSuiteForEth(WipeTokenAccountPrecompileSuite::new),
+            // contract.records
+            extractSpecsFromSuiteForEth(LogsSuite::new),
+            extractSpecsFromSuiteForEth(RecordsSuite::new));
+    }
 }

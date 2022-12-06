@@ -109,7 +109,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 defaultHapiSpec("SetChainId")
                         .given()
                         .when()
-                        .then(overriding(CHAIN_ID_PROP, "298")));
+                        .then(overriding(CHAIN_ID_PROP, "295")));
     }
 
     HapiApiSpec badRelayClient() {

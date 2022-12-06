@@ -314,7 +314,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     HapiApiSpec setChainId() {
-        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
+        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "295"));
     }
 
     HapiApiSpec invalidTxData() {
