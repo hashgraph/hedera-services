@@ -38,6 +38,8 @@ dependencies {
     api(libs.besu.datatypes)
     api(libs.swirlds.common)
     implementation(libs.helidon.io.grpc)
+    api(libs.besu.secp256k1)
+    implementation(libs.jna)
     implementation(libs.caffeine)
     implementation(libs.guava)
     implementation(libs.hapi) {
