@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.hedera.services.yahcli.commands.accounts.AccountsCommand;
 import com.hedera.services.yahcli.commands.fees.FeesCommand;
 import com.hedera.services.yahcli.commands.files.SysFilesCommand;
 import com.hedera.services.yahcli.commands.keys.KeysCommand;
+import com.hedera.services.yahcli.commands.signedstate.SignedStateCommand;
 import com.hedera.services.yahcli.commands.system.FreezeAbortCommand;
 import com.hedera.services.yahcli.commands.system.FreezeOnlyCommand;
 import com.hedera.services.yahcli.commands.system.FreezeUpgradeCommand;
@@ -50,6 +51,7 @@ import picocli.CommandLine.Spec;
             PrepareUpgradeCommand.class,
             FreezeUpgradeCommand.class,
             TelemetryUpgradeCommand.class,
+            SignedStateCommand.class,
             VersionInfoCommand.class
         },
         description = "Performs DevOps-type actions against a Hedera Services network")

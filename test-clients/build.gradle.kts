@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,10 @@ sourceSets {
 }
 
 dependencies {
+    compileOnly(libs.spotbugs.annotations)
     implementation(project(":hedera-node:hapi-utils"))
     implementation(project(":hedera-node:hapi-fees"))
+    implementation(project(":hedera-node:hedera-mono-service")) // for `yahcli signedstate`
     implementation(libs.bundles.besu) {
         exclude("javax.annotation", "javax.annotation-api")
     }
@@ -75,6 +77,8 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(testLibs.snakeyaml)
     implementation(libs.swirlds.common)
+    implementation(libs.swirlds.merkle)
+    implementation(libs.swirlds.platform.core)
     implementation(testLibs.testcontainers.core)
     itestImplementation(libs.bundles.swirlds)
     itestImplementation(testLibs.bundles.testcontainers)
