@@ -165,7 +165,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper<>(tokenMerkleId);
         final var fractionalFee = getFractionalFee();
         final Bytes pretendArguments =
                 Bytes.concatenate(
@@ -202,7 +202,7 @@ class TokenGetCustomFeesPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper(tokenMerkleId);
+        final var tokenCustomFeesWrapper = new TokenGetCustomFeesWrapper<>(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_CUSTOM_FEES)),

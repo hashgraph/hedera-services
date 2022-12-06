@@ -152,6 +152,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenInfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -196,7 +197,7 @@ class HTSPrecompiledContractTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private InfrastructureFactory infrastructureFactory;
     @Mock private TransactionalLedger<AccountID, AccountProperty, HederaAccount> accounts;
-    @Mock private TokenInfoWrapper tokenInfoWrapper;
+    @Mock private TokenInfoWrapper<TokenID> tokenInfoWrapper;
     @Mock private AccessorFactory accessorFactory;
     @Mock private NetworkInfo networkInfo;
 

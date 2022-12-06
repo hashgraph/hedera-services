@@ -160,15 +160,15 @@ public class HTSTestsUtil {
     public static final Long serialNumber = 1L;
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
-    public static final GetTokenDefaultFreezeStatusWrapper defaultFreezeStatusWrapper =
-            new GetTokenDefaultFreezeStatusWrapper(fungible);
-    public static final GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper =
-            new GetTokenDefaultKycStatusWrapper(fungible);
-    public static final GrantRevokeKycWrapper grantRevokeKycWrapper =
-            new GrantRevokeKycWrapper(fungible, account);
+    public static final GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper =
+            new GetTokenDefaultFreezeStatusWrapper<>(fungible);
+    public static final GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper =
+            new GetTokenDefaultKycStatusWrapper<>(fungible);
+    public static final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper =
+            new GrantRevokeKycWrapper<>(fungible, account);
 
-    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
-            new TokenFreezeUnfreezeWrapper(fungible, account);
+    public static final TokenFreezeUnfreezeWrapper<TokenID, AccountID> tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper<>(fungible, account);
 
     public static final DeleteWrapper tokenDeleteWrapper = new DeleteWrapper(fungible);
 
@@ -219,10 +219,10 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
-    public static final TokenGetCustomFeesWrapper customFeesWrapper =
-            new TokenGetCustomFeesWrapper(token);
-    public static final GetTokenExpiryInfoWrapper getTokenExpiryInfoWrapper =
-            new GetTokenExpiryInfoWrapper(token);
+    public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper =
+            new TokenGetCustomFeesWrapper<>(token);
+    public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
+            new GetTokenExpiryInfoWrapper<>(token);
     public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
             new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
     public static final TokenUpdateExpiryInfoWrapper
@@ -586,11 +586,11 @@ public class HTSTestsUtil {
                 new TokenExpiryWrapper(0L, null, 0L));
     }
 
-    public static TokenInfoWrapper createTokenInfoWrapperForToken(final TokenID tokenId) {
+    public static TokenInfoWrapper<TokenID> createTokenInfoWrapperForToken(final TokenID tokenId) {
         return TokenInfoWrapper.forToken(tokenId);
     }
 
-    public static TokenInfoWrapper createTokenInfoWrapperForNonFungibleToken(
+    public static TokenInfoWrapper<TokenID> createTokenInfoWrapperForNonFungibleToken(
             final TokenID tokenId, final long serialNumber) {
         return TokenInfoWrapper.forNonFungibleToken(tokenId, serialNumber);
     }

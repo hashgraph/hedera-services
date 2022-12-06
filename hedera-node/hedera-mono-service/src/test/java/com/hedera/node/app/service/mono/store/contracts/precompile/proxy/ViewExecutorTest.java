@@ -231,7 +231,7 @@ class ViewExecutorTest {
     void computeGetTokenDefaultKycStatus() {
         final var input = prerequisites(ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS, fungibleTokenAddress);
 
-        final var wrapper = new GetTokenDefaultKycStatusWrapper(fungible);
+        final var wrapper = new GetTokenDefaultKycStatusWrapper<>(fungible);
         getTokenDefaultKycStatus
                 .when(() -> GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input))
                 .thenReturn(wrapper);
@@ -246,7 +246,7 @@ class ViewExecutorTest {
     void computeIsKyc() {
         final var input = prerequisites(ABI_ID_IS_KYC, fungibleTokenAddress);
 
-        final var wrapper = new GrantRevokeKycWrapper(fungible, account);
+        final var wrapper = new GrantRevokeKycWrapper<>(fungible, account);
         isKycPrecompile.when(() -> IsKycPrecompile.decodeIsKyc(any(), any())).thenReturn(wrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
         given(encodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
@@ -343,7 +343,7 @@ class ViewExecutorTest {
 
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
-                .thenReturn(new TokenGetCustomFeesWrapper(fungible));
+                .thenReturn(new TokenGetCustomFeesWrapper<>(fungible));
         given(ledgers.infoForTokenCustomFees(fungible)).willReturn(getCustomFees());
         given(encodingFacade.encodeTokenGetCustomFees(any())).willReturn(tokenCustomFeesEncoded);
 
@@ -380,7 +380,7 @@ class ViewExecutorTest {
 
         tokenGetCustomFeesPrecompile
                 .when(() -> TokenGetCustomFeesPrecompile.decodeTokenGetCustomFees(input))
-                .thenReturn(new TokenGetCustomFeesWrapper(fungible));
+                .thenReturn(new TokenGetCustomFeesWrapper<>(fungible));
         assertEquals(Pair.of(gas, null), subject.computeCosted());
         verify(frame).setState(MessageFrame.State.REVERT);
     }
@@ -497,7 +497,7 @@ class ViewExecutorTest {
 
         getTokenExpiryInfoPrecompile
                 .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
-                .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
+                .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         given(ledgers.infoForToken(fungible, networkInfo.ledgerId()))
@@ -513,7 +513,7 @@ class ViewExecutorTest {
 
         getTokenExpiryInfoPrecompile
                 .when(() -> GetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input))
-                .thenReturn(new GetTokenExpiryInfoWrapper(fungible));
+                .thenReturn(new GetTokenExpiryInfoWrapper<>(fungible));
         given(stateView.getNetworkInfo()).willReturn(networkInfo);
         given(networkInfo.ledgerId()).willReturn(ledgerId);
         given(ledgers.infoForToken(fungible, networkInfo.ledgerId())).willReturn(Optional.empty());

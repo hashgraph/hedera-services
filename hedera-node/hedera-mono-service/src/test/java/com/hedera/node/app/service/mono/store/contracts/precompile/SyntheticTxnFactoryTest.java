@@ -422,7 +422,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedFreezeTokenCall() {
-        final var freezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var freezeWrapper = new TokenFreezeUnfreezeWrapper<>(fungible, a);
         final var result = subject.createFreeze(freezeWrapper);
         final var txnBody = result.build();
 
@@ -432,7 +432,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedUnfreezeTokenCall() {
-        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper(fungible, a);
+        final var unfreezeWrapper = new TokenFreezeUnfreezeWrapper<>(fungible, a);
         final var result = subject.createUnFreeze(unfreezeWrapper);
         final var txnBody = result.build();
 
@@ -1295,7 +1295,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedGrantKycCall() {
-        final var grantWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var grantWrapper = new GrantRevokeKycWrapper<>(fungible, a);
         final var result = subject.createGrantKyc(grantWrapper);
         final var txnBody = result.build();
 
@@ -1305,7 +1305,7 @@ class SyntheticTxnFactoryTest {
 
     @Test
     void createsExpectedRevokeKycCall() {
-        final var revokeWrapper = new GrantRevokeKycWrapper(fungible, a);
+        final var revokeWrapper = new GrantRevokeKycWrapper<>(fungible, a);
         final var result = subject.createRevokeKyc(revokeWrapper);
         final var txnBody = result.build();
 

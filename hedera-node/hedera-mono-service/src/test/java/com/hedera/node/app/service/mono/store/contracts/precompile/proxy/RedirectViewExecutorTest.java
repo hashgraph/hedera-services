@@ -80,7 +80,7 @@ class RedirectViewExecutorTest {
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
-    @Mock private BalanceOfWrapper balanceOfWrapper;
+    @Mock private BalanceOfWrapper<AccountID> balanceOfWrapper;
     @Mock private OwnerOfAndTokenURIWrapper ownerOfAndTokenURIWrapper;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");

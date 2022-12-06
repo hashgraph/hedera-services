@@ -164,7 +164,7 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
+        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper<>(tokenMerkleId);
         final var tokenInfo =
                 TokenInfo.newBuilder()
                         .setExpiry(Timestamp.newBuilder().setSeconds(442L).build())
@@ -208,7 +208,7 @@ class GetTokenExpiryInfoPrecompileTest {
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
-        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper(tokenMerkleId);
+        final var getTokenExpiryInfoWrapper = new GetTokenExpiryInfoWrapper<>(tokenMerkleId);
         final Bytes pretendArguments =
                 Bytes.concatenate(
                         Bytes.of(Integers.toBytes(ABI_ID_GET_TOKEN_EXPIRY_INFO)),

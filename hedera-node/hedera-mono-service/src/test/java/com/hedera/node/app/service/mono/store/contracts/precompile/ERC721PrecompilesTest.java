@@ -1712,7 +1712,7 @@ class ERC721PrecompilesTest {
                 nestedPretendArguments);
     }
 
-    public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
+    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER = new BalanceOfWrapper<>(sender);
 
     private void givenLedgers() {
         given(wrappedLedgers.accounts()).willReturn(accounts);
