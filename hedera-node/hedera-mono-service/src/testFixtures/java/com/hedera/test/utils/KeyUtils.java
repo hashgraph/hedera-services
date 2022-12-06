@@ -20,117 +20,47 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 
+import java.util.function.Function;
+
 public class KeyUtils {
-	public static final Key A_THRESHOLD_KEY =
-			Key.newBuilder()
-					.setThresholdKey(
-							ThresholdKey.newBuilder()
-									.setThreshold(2)
-									.setKeys(
-											KeyList.newBuilder()
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-																							.getBytes())))
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-																							.getBytes())))
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"cccccccccccccccccccccccccccccccc"
-																							.getBytes())))))
-					.build();
-	public static final Key A_KEY_LIST =
-			Key.newBuilder()
-					.setKeyList(
-							KeyList.newBuilder()
-									.addKeys(
-											Key.newBuilder()
-													.setEd25519(
-															ByteString.copyFrom(
-																	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-																			.getBytes())))
-									.addKeys(
-											Key.newBuilder()
-													.setEd25519(
-															ByteString.copyFrom(
-																	"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-																			.getBytes())))
-									.addKeys(
-											Key.newBuilder()
-													.setEd25519(
-															ByteString.copyFrom(
-																	"cccccccccccccccccccccccccccccccc"
-																			.getBytes()))))
-					.build();
-	public static final Key A_COMPLEX_KEY =
-			Key.newBuilder()
-					.setThresholdKey(
-							ThresholdKey.newBuilder()
-									.setThreshold(2)
-									.setKeys(
-											KeyList.newBuilder()
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-																							.getBytes())))
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-																							.getBytes())))
-													.addKeys(A_THRESHOLD_KEY)))
-					.build();
-	public static final Key B_COMPLEX_KEY =
-			Key.newBuilder()
-					.setThresholdKey(
-							ThresholdKey.newBuilder()
-									.setThreshold(2)
-									.setKeys(
-											KeyList.newBuilder()
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-																							.getBytes())))
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-																							.getBytes())))
-													.addKeys(A_COMPLEX_KEY)))
-					.build();
-	public static final Key C_COMPLEX_KEY =
-			Key.newBuilder()
-					.setThresholdKey(
-							ThresholdKey.newBuilder()
-									.setThreshold(2)
-									.setKeys(
-											KeyList.newBuilder()
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-																							.getBytes())))
-													.addKeys(
-															Key.newBuilder()
-																	.setEd25519(
-																			ByteString.copyFrom(
-																					"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-																							.getBytes())))
-													.addKeys(B_COMPLEX_KEY)))
-					.build();
+
+	private static final Function<String, Key.Builder> KEY_BUILDER = value -> Key.newBuilder().setEd25519(
+			ByteString.copyFrom(value.getBytes()));
+	private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+	private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+	private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+
+	public static final Key A_THRESHOLD_KEY = Key.newBuilder()
+			.setThresholdKey(ThresholdKey.newBuilder()
+					.setThreshold(2)
+					.setKeys(KeyList.newBuilder()
+							.addKeys(KEY_BUILDER.apply(A_NAME))
+							.addKeys(KEY_BUILDER.apply(B_NAME))
+							.addKeys(KEY_BUILDER.apply(C_NAME))))
+			.build();
+	public static final Key A_KEY_LIST = Key.newBuilder().setKeyList(KeyList.newBuilder()
+					.addKeys(KEY_BUILDER.apply(A_NAME))
+					.addKeys(KEY_BUILDER.apply(B_NAME))
+					.addKeys(KEY_BUILDER.apply(C_NAME)))
+			.build();
+	public static final Key A_COMPLEX_KEY = Key.newBuilder()
+			.setThresholdKey(ThresholdKey.newBuilder().setThreshold(2).setKeys(KeyList.newBuilder()
+					.addKeys(KEY_BUILDER.apply(A_NAME))
+					.addKeys(KEY_BUILDER.apply(B_NAME))
+					.addKeys(A_THRESHOLD_KEY)))
+			.build();
+	public static final Key B_COMPLEX_KEY = Key.newBuilder().setThresholdKey(
+					ThresholdKey.newBuilder().setThreshold(2).setKeys(KeyList.newBuilder()
+							.addKeys(KEY_BUILDER.apply(A_NAME))
+							.addKeys(KEY_BUILDER.apply(B_NAME))
+							.addKeys(A_COMPLEX_KEY)))
+			.build();
+	public static final Key C_COMPLEX_KEY = Key.newBuilder().setThresholdKey(
+					ThresholdKey.newBuilder().setThreshold(2).setKeys(KeyList.newBuilder()
+							.addKeys(KEY_BUILDER.apply(A_NAME))
+							.addKeys(KEY_BUILDER.apply(B_NAME))
+							.addKeys(B_COMPLEX_KEY)))
+			.build();
 }
