@@ -45,13 +45,13 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class EndOfStakingPeriodCalculator {
 
-    private static final Logger log = LogManager.getLogger(EndOfStakingPeriodCalculator.class);
+    private static final Logger log = LoggerFactory.getLogger(EndOfStakingPeriodCalculator.class);
     public static final String END_OF_STAKING_PERIOD_CALCULATIONS_MEMO =
             "End of staking period calculation record";
     private static final SideEffectsTracker NO_OTHER_SIDE_EFFECTS = new SideEffectsTracker();

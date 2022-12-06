@@ -22,12 +22,12 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ServicesIssListener implements IssListener {
-    private static final Logger log = LogManager.getLogger(ServicesIssListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ServicesIssListener.class);
 
     static final String ISS_ERROR_MSG_PATTERN =
             "In round %d, received a signed state from node %d with differing signature";

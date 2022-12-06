@@ -32,12 +32,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class TreasuryReturnHelper {
-    private static final Logger log = LogManager.getLogger(TreasuryReturnHelper.class);
+    private static final Logger log = LoggerFactory.getLogger(TreasuryReturnHelper.class);
 
     @Inject
     public TreasuryReturnHelper() {

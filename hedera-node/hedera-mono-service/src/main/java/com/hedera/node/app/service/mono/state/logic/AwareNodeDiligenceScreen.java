@@ -28,12 +28,12 @@ import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class AwareNodeDiligenceScreen {
-    private static final Logger log = LogManager.getLogger(AwareNodeDiligenceScreen.class);
+    private static final Logger log = LoggerFactory.getLogger(AwareNodeDiligenceScreen.class);
 
     private static final String WRONG_NODE_LOG_TPL =
             "Node {} (member #{}) submitted a txn meant for node account {} :: {}";

@@ -22,11 +22,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class ConsensusStatusCounts {
-    private static final Logger log = LogManager.getLogger(ConsensusStatusCounts.class);
+    private static final Logger log = LoggerFactory.getLogger(ConsensusStatusCounts.class);
 
     private final ObjectMapper om;
     EnumMap<ResponseCodeEnum, EnumMap<HederaFunctionality, AtomicInteger>> counts =

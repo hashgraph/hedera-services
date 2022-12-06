@@ -22,8 +22,8 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Encapsulates some basic invariants of the system, including:
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class InvariantChecks {
-    private static final Logger log = LogManager.getLogger(InvariantChecks.class);
+    private static final Logger log = LoggerFactory.getLogger(InvariantChecks.class);
 
     private final NodeInfo nodeInfo;
     private final Supplier<MerkleNetworkContext> networkCtx;

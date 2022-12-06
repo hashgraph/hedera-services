@@ -41,8 +41,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A key-value store with {@link FileID} keys and {@code byte[]} values. Used to accumulate the
@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
  * with a completely new {@code byte[]}.
  */
 public class MerkleSpecialFiles extends PartialMerkleLeaf implements MerkleLeaf {
-    private static final Logger log = LogManager.getLogger(MerkleSpecialFiles.class);
+    private static final Logger log = LoggerFactory.getLogger(MerkleSpecialFiles.class);
 
     private static final byte[] NO_CONTENTS = new byte[0];
 

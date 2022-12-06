@@ -20,13 +20,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public enum SemanticVersions {
     SEMANTIC_VERSIONS;
 
-    private static final Logger log = LogManager.getLogger(SemanticVersions.class);
+    private static final Logger log = LoggerFactory.getLogger(SemanticVersions.class);
 
     /* From https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string */
     private static final Pattern SEMVER_SPEC_REGEX =

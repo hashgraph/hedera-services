@@ -35,12 +35,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ContractGC {
-    private static final Logger log = LogManager.getLogger(ContractGC.class);
+    private static final Logger log = LoggerFactory.getLogger(ContractGC.class);
     static final List<MapAccessType> BYTECODE_REMOVAL_WORK = List.of(BLOBS_REMOVE);
     static final List<MapAccessType> ROOT_KEY_UPDATE_WORK = List.of(ACCOUNTS_GET_FOR_MODIFY);
     static final List<MapAccessType> ONLY_SLOT_REMOVAL_WORK = List.of(STORAGE_REMOVE);

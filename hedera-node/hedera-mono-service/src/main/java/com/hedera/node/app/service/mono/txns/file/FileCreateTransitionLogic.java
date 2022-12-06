@@ -42,12 +42,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class FileCreateTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(FileCreateTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(FileCreateTransitionLogic.class);
 
     private final HederaFs hfs;
     private final UsageLimits usageLimits;

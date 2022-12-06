@@ -32,12 +32,12 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import java.util.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class MerkleAccount extends PartialNaryMerkleInternal
         implements MerkleInternal, Keyed<EntityNum>, HederaAccount {
-    private static final Logger log = LogManager.getLogger(MerkleAccount.class);
+    private static final Logger log = LoggerFactory.getLogger(MerkleAccount.class);
 
     static Runnable stackDump = Thread::dumpStack;
 

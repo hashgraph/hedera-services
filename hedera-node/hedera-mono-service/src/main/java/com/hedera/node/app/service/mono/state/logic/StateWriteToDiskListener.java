@@ -20,8 +20,8 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Listener that will be notified with {@link
@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class StateWriteToDiskListener implements StateWriteToDiskCompleteListener {
-    private static final Logger log = LogManager.getLogger(StateWriteToDiskListener.class);
+    private static final Logger log = LoggerFactory.getLogger(StateWriteToDiskListener.class);
 
     private final UpgradeActions upgradeActions;
 

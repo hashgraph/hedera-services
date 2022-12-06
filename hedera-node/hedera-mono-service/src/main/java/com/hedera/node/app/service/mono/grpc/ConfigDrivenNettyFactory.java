@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.net.ssl.SSLException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ConfigDrivenNettyFactory implements NettyBuilderFactory {
-    private static final Logger log = LogManager.getLogger(ConfigDrivenNettyFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(ConfigDrivenNettyFactory.class);
 
     private static final List<String> SUPPORTED_CIPHERS =
             List.of(

@@ -50,12 +50,12 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class TopicUpdateTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(TopicUpdateTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(TopicUpdateTransitionLogic.class);
 
     private final HederaLedger ledger;
     private final OptionValidator validator;

@@ -4,11 +4,11 @@ module com.hedera.node.app.service.mono {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
     requires dagger;
+    requires org.slf4j;
     requires javax.inject;
     requires com.hedera.node.app.spi;
     requires com.google.protobuf;
     requires com.google.common;
-    requires org.apache.logging.log4j;
     requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.merkle;
     requires com.swirlds.virtualmap;
@@ -33,6 +33,7 @@ module com.hedera.node.app.service.mono {
     requires tuweni.units;
     requires grpc.stub;
     requires commons.collections4;
+    requires org.apache.logging.log4j;
 
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;

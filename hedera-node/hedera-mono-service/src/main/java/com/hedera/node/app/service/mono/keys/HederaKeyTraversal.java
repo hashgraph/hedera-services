@@ -19,8 +19,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Provides static helpers for interrogating the simple keys in a complex Hedera key.
@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
  */
 public final class HederaKeyTraversal {
 
-    private static final Logger log = LogManager.getLogger(HederaKeyTraversal.class);
+    private static final Logger log = LoggerFactory.getLogger(HederaKeyTraversal.class);
 
     private HederaKeyTraversal() {
         throw new UnsupportedOperationException("Utility Class");

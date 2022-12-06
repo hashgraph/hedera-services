@@ -36,12 +36,12 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class GetFileInfoAnswer implements AnswerService {
-    private static final Logger log = LogManager.getLogger(GetFileInfoAnswer.class);
+    private static final Logger log = LoggerFactory.getLogger(GetFileInfoAnswer.class);
 
     private final OptionValidator validator;
 

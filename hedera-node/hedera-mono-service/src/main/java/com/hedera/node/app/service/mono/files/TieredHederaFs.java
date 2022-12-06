@@ -41,8 +41,8 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A {@link HederaFs} that stores the contents and metadata of its files in separate injected {@link
@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public final class TieredHederaFs implements HederaFs {
-    private static final Logger log = LogManager.getLogger(TieredHederaFs.class);
+    private static final Logger log = LoggerFactory.getLogger(TieredHederaFs.class);
 
     private final EntityIdSource ids;
     private final Supplier<Instant> now;

@@ -22,11 +22,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public final class UnzipUtility {
-    private static final Logger log = LogManager.getLogger(UnzipUtility.class);
+    private static final Logger log = LoggerFactory.getLogger(UnzipUtility.class);
 
     private static final int BUFFER_SIZE = 4096;
 
@@ -38,7 +38,7 @@ public final class UnzipUtility {
         final File destDir = new File(dstDir);
         if (!destDir.exists()) {
             if (!destDir.mkdirs()) {
-                log.fatal("Unable to create the directory for update assets: {}", destDir);
+                log.error("Unable to create the directory for update assets: {}", destDir);
                 return;
             }
             log.info("Created directory {} for update assets", destDir);
@@ -94,7 +94,7 @@ public final class UnzipUtility {
         final File directory = file.getParentFile();
 
         if (!directory.exists() && !directory.mkdirs()) {
-            log.fatal("Unable to create the parent directories for the file: {}", file);
+            log.error("Unable to create the parent directories for the file: {}", file);
         }
     }
 }

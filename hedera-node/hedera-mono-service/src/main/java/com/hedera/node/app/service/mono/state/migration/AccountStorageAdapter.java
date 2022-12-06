@@ -28,11 +28,11 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class AccountStorageAdapter {
-    private static final Logger log = LogManager.getLogger(AccountStorageAdapter.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountStorageAdapter.class);
     private static final int THREAD_COUNT = 32;
     private final boolean accountsOnDisk;
     private final @Nullable VirtualMapDataAccess virtualMapDataAccess;

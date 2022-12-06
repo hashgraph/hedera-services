@@ -22,11 +22,11 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiPredicate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class OnlyIfSigVerifiableValid implements BiPredicate<JKey, TransactionSignature> {
-    private static final Logger log = LogManager.getLogger(OnlyIfSigVerifiableValid.class);
+    private static final Logger log = LoggerFactory.getLogger(OnlyIfSigVerifiableValid.class);
 
     @Override
     public boolean test(final JKey ignoredKey, final TransactionSignature sig) {

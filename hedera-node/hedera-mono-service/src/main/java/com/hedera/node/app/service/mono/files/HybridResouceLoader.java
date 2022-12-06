@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Helper that loads a resource as from <i>either</i> an asset in a JAR or from the Hedera file
@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class HybridResouceLoader {
     private static final Pattern HFS_RESOURCE_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
-    private static final Logger log = LogManager.getLogger(HybridResouceLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(HybridResouceLoader.class);
     private final TieredHederaFs hfs;
 
     @Inject

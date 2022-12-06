@@ -25,8 +25,8 @@ import com.hedera.node.app.service.mono.stream.NonBlockingHandoff;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Publishes records to the Platform-managed record stream, using the {@link
@@ -44,7 +44,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class RecordStreaming {
-    private static final Logger log = LogManager.getLogger(RecordStreaming.class);
+    private static final Logger log = LoggerFactory.getLogger(RecordStreaming.class);
     public static final long PENDING_USER_TXN_BLOCK_NO = -1;
 
     private final BlockManager blockManager;

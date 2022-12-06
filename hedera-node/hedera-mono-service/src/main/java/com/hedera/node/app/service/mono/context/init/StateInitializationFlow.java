@@ -29,12 +29,12 @@ import com.hedera.node.app.service.mono.stream.RecordStreamManager;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class StateInitializationFlow {
-    private static final Logger log = LogManager.getLogger(StateInitializationFlow.class);
+    private static final Logger log = LoggerFactory.getLogger(StateInitializationFlow.class);
 
     private final HederaFs hfs;
     private final HederaNumbers hederaNums;

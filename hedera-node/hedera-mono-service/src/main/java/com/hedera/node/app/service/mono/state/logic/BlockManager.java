@@ -32,8 +32,8 @@ import java.time.Instant;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Manages the block-related fields in the {@link MerkleNetworkContext}, based on 2-second "periods"
@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class BlockManager {
     private static final int UNKNOWN_BLOCK_NO = 0;
-    private static final Logger log = LogManager.getLogger(BlockManager.class);
+    private static final Logger log = LoggerFactory.getLogger(BlockManager.class);
 
     private final long blockPeriodMs;
     private final boolean logEveryTransaction;
@@ -182,7 +182,7 @@ public class BlockManager {
                 // This is almost certainly fatal, hence the ERROR log level
                 log.error(
                         "Interrupted when computing hash for block #{}",
-                        curNetworkCtx::getAlignmentBlockNo);
+                        curNetworkCtx.getAlignmentBlockNo());
                 Thread.currentThread().interrupt();
             }
         }

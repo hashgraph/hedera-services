@@ -56,8 +56,8 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and
@@ -65,7 +65,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class UsageBasedFeeCalculator implements FeeCalculator {
-    private static final Logger log = LogManager.getLogger(UsageBasedFeeCalculator.class);
+    private static final Logger log = LoggerFactory.getLogger(UsageBasedFeeCalculator.class);
 
     private final AutoRenewCalcs autoRenewCalcs;
     private final HbarCentExchange exchange;

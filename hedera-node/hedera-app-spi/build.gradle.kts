@@ -28,6 +28,7 @@ configurations.all {
 
 dependencies {
     api(libs.hapi)
+    api(libs.slf4j.api)
     implementation(libs.jsr305.annotation)
     compileOnly(libs.spotbugs.annotations)
 

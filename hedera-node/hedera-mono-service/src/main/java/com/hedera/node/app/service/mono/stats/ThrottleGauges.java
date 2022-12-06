@@ -33,12 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ThrottleGauges {
-    private static final Logger log = LogManager.getLogger(ThrottleGauges.class);
+    private static final Logger log = LoggerFactory.getLogger(ThrottleGauges.class);
 
     private static final String GAS_THROTTLE_ID = "<GAS>";
     private static final String GAS_THROTTLE_NAME = "Gas";

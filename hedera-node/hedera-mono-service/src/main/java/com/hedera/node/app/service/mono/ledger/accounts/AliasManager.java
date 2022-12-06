@@ -42,9 +42,9 @@ import java.util.function.UnaryOperator;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles a map with all the accounts that are auto-created. The map will be re-built on restart,
@@ -52,7 +52,7 @@ import org.hyperledger.besu.datatypes.Address;
  */
 @Singleton
 public class AliasManager extends HederaEvmContractAliases implements ContractAliases {
-    private static final Logger log = LogManager.getLogger(AliasManager.class);
+    private static final Logger log = LoggerFactory.getLogger(AliasManager.class);
 
     private static final String NON_TRANSACTIONAL_MSG =
             "Base alias manager does not buffer changes";
@@ -143,7 +143,9 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the
                     // LibSecp256k1 library
-                    log.warn("Unable to recover EVM address from {}", () -> hex(keyBytes));
+                    if(log.isWarnEnabled()) {
+                        log.warn("Unable to recover EVM address from {}", hex(keyBytes));
+                    }
                 }
             }
         }
@@ -193,12 +195,14 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                         }
                     }
                 });
-        log.info(
-                "Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned"
-                        + " accounts)",
-                workingAliases::size,
-                numCreate2Aliases::get,
-                numEOAliases::get);
+        if(log.isInfoEnabled()) {
+            log.info(
+                    "Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned"
+                            + " accounts)",
+                    workingAliases.size(),
+                    numCreate2Aliases.get(),
+                    numEOAliases.get());
+        }
     }
 
     /**

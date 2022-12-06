@@ -38,15 +38,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Defines a source of arbitrary properties keyed by strings. Provides strongly typed accessors for
  * commonly used property types.
  */
 public interface PropertySource {
-    Logger log = LogManager.getLogger(PropertySource.class);
+    Logger log = LoggerFactory.getLogger(PropertySource.class);
 
     Function<String, Object> AS_INT = s -> Integer.valueOf(s.replace("_", ""));
     Function<String, Object> AS_LONG = s -> Long.valueOf(s.replace("_", ""));

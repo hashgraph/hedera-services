@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public class ThrottleMultiplierSource implements FeeMultiplierSource {
     private static final long DEFAULT_MULTIPLIER = 1L;

@@ -45,12 +45,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class ContractCallLocalResourceUsage implements QueryResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(ContractCallLocalResourceUsage.class);
+    private static final Logger log = LoggerFactory.getLogger(ContractCallLocalResourceUsage.class);
 
     private final AccountStore accountStore;
     private final AliasManager aliasManager;

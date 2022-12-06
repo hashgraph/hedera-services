@@ -49,7 +49,8 @@ dependencies {
         exclude(group = "org.hyperledger.besu", module = "secp256r1")
     }
     implementation(libs.bundles.di)
-    implementation(libs.bundles.logging)
+    implementation(libs.slf4j.api)
+    implementation(libs.log4j.api)
     implementation(libs.bundles.swirlds)
     implementation(libs.caffeine)
     implementation(libs.hapi)
@@ -65,6 +66,7 @@ dependencies {
     implementation(libs.eclipse.collections)
     compileOnly(libs.spotbugs.annotations)
 
+    testImplementation(libs.bundles.logging)
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
     testCompileOnly(libs.spotbugs.annotations)

@@ -21,12 +21,12 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class CurrentRecordStreamType implements RecordStreamType {
-    private static final Logger log = LogManager.getLogger(CurrentRecordStreamType.class);
+    private static final Logger log = LoggerFactory.getLogger(CurrentRecordStreamType.class);
 
     private final SemanticVersions semanticVersions;
     private final GlobalDynamicProperties dynamicProperties;
@@ -57,7 +57,9 @@ public class CurrentRecordStreamType implements RecordStreamType {
                         protoSemVer.getMinor(),
                         protoSemVer.getPatch()
                     };
-            log.info("Record stream file header is {}", () -> Arrays.toString(fileHeader));
+            if(log.isInfoEnabled()) {
+                log.info("Record stream file header is {}", Arrays.toString(fileHeader));
+            }
         }
         return fileHeader;
     }

@@ -42,8 +42,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
 
 /**
@@ -58,7 +58,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 @Singleton
 public class SizeLimitedStorage {
 
-    private static final Logger log = LogManager.getLogger(SizeLimitedStorage.class);
+    private static final Logger log = LoggerFactory.getLogger(SizeLimitedStorage.class);
     public static final IterableContractValue ZERO_VALUE = IterableContractValue.from(ZERO);
 
     private final ContractStorageLimits usageLimits;

@@ -29,12 +29,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class NettyGrpcServerManager implements GrpcServerManager {
-    private static final Logger log = LogManager.getLogger(NettyGrpcServerManager.class);
+    private static final Logger log = LoggerFactory.getLogger(NettyGrpcServerManager.class);
 
     private static final long TIME_TO_AWAIT_TERMINATION = 5;
 

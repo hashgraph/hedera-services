@@ -45,12 +45,12 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class AutoRenewCalcs {
-    private static final Logger log = LogManager.getLogger(AutoRenewCalcs.class);
+    private static final Logger log = LoggerFactory.getLogger(AutoRenewCalcs.class);
 
     private static final RenewAssessment NO_RENEWAL_POSSIBLE = new RenewAssessment(0L, 0L);
 

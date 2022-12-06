@@ -37,8 +37,8 @@ import com.swirlds.common.system.events.Event;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Used by {@link EventExpansion#expandAllSigs(Event, ServicesState)} to expand the cryptographic
@@ -60,7 +60,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class SigReqsManager {
-    private static final Logger log = LogManager.getLogger(SigReqsManager.class);
+    private static final Logger log = LoggerFactory.getLogger(SigReqsManager.class);
 
     // The token-to-signing-metadata transformation used to construct instances of SigRequirements
     public static final Function<MerkleToken, TokenSigningMetadata> TOKEN_META_TRANSFORM =

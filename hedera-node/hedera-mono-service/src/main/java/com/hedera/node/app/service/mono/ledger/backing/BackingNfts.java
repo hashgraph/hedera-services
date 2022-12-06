@@ -22,11 +22,11 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class BackingNfts implements BackingStore<NftId, UniqueTokenAdapter> {
-    private static final Logger LOG = LogManager.getLogger(BackingNfts.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BackingNfts.class);
     private final Supplier<UniqueTokenMapAdapter> delegate;
 
     public BackingNfts(final Supplier<UniqueTokenMapAdapter> delegate) {

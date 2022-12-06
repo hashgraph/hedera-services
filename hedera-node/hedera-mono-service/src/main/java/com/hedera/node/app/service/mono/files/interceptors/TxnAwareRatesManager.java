@@ -40,12 +40,12 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class TxnAwareRatesManager implements FileUpdateInterceptor {
-    private static final Logger log = LogManager.getLogger(TxnAwareRatesManager.class);
+    private static final Logger log = LoggerFactory.getLogger(TxnAwareRatesManager.class);
     private static final int APPLICABLE_PRIORITY = 0;
 
     static final Map.Entry<ResponseCodeEnum, Boolean> YES_VERDICT =

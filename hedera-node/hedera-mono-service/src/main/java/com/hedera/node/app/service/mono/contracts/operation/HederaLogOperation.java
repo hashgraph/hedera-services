@@ -21,8 +21,8 @@ import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 import com.google.common.collect.ImmutableList;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -34,7 +34,7 @@ import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 
 public class HederaLogOperation extends AbstractOperation {
-    private static final Logger log = LogManager.getLogger(HederaLogOperation.class);
+    private static final Logger log = LoggerFactory.getLogger(HederaLogOperation.class);
 
     private static final Address UNRESOLVABLE_ADDRESS_STANDIN =
             EntityNum.MISSING_NUM.toEvmAddress();

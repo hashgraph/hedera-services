@@ -39,8 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * This class is used for generating record stream files when record streaming is enabled, and for
@@ -48,7 +48,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class RecordStreamManager {
     /** use this for all logging, as controlled by the optional data/log4j2.xml file */
-    private static final Logger log = LogManager.getLogger(RecordStreamManager.class);
+    private static final Logger log = LoggerFactory.getLogger(RecordStreamManager.class);
 
     /**
      * receives {@link RecordStreamObject}s from {@link StandardProcessLogic} * .addForStreaming,
@@ -189,16 +189,18 @@ public class RecordStreamManager {
             writeQueueThread.start();
         }
 
-        log.info(
-                "Finish initializing RecordStreamManager with: enableRecordStreaming: {},"
-                    + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
-                    + " recordStreamQueueCapacity: {}, initialHash: {}",
-                nodeLocalProperties::isRecordStreamEnabled,
-                () -> nodeScopedRecordLogDir,
-                () -> nodeScopedSidecarDir,
-                nodeLocalProperties::recordLogPeriod,
-                nodeLocalProperties::recordStreamQueueCapacity,
-                () -> initialHash);
+        if(log.isInfoEnabled()) {
+            log.info(
+                    "Finish initializing RecordStreamManager with: enableRecordStreaming: {},"
+                            + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
+                            + " recordStreamQueueCapacity: {}, initialHash: {}",
+                    nodeLocalProperties.isRecordStreamEnabled(),
+                    nodeScopedRecordLogDir,
+                    nodeScopedSidecarDir,
+                    nodeLocalProperties.recordLogPeriod(),
+                    nodeLocalProperties.recordStreamQueueCapacity(),
+                    initialHash);
+        }
     }
 
     /**
@@ -261,7 +263,7 @@ public class RecordStreamManager {
      */
     public void setInitialHash(final Hash initialHash) {
         this.initialHash = initialHash;
-        log.info("RecordStreamManager::setInitialHash: {}", () -> initialHash);
+        log.info("RecordStreamManager::setInitialHash: {}", initialHash);
         multiStream.setRunningHash(initialHash);
     }
 

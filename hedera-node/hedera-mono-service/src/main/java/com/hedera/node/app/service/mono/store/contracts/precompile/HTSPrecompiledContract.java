@@ -102,8 +102,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -114,7 +114,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Singleton
 public class HTSPrecompiledContract extends AbstractPrecompiledContract {
-    private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
+    private static final Logger log = LoggerFactory.getLogger(HTSPrecompiledContract.class);
 
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID =

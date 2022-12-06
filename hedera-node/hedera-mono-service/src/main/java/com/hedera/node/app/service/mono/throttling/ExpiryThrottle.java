@@ -32,8 +32,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A throttle to be used to control usage of {@link com.swirlds.merkle.map.MerkleMap} and {@link
@@ -42,7 +42,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class ExpiryThrottle {
-    private static final Logger log = LogManager.getLogger(ExpiryThrottle.class);
+    private static final Logger log = LoggerFactory.getLogger(ExpiryThrottle.class);
     private static final String FALLBACK_RESOURCE_LOC = "expiry-throttle.json";
 
     private final HybridResouceLoader resourceLoader;

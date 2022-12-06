@@ -31,12 +31,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class UpdateTopicResourceUsage implements TxnResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(UpdateTopicResourceUsage.class);
+    private static final Logger log = LoggerFactory.getLogger(UpdateTopicResourceUsage.class);
 
     @Inject
     public UpdateTopicResourceUsage() {

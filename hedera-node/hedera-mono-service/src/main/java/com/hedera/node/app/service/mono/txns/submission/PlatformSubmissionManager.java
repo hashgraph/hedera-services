@@ -26,12 +26,12 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.system.Platform;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class PlatformSubmissionManager {
-    private static final Logger log = LogManager.getLogger(PlatformSubmissionManager.class);
+    private static final Logger log = LoggerFactory.getLogger(PlatformSubmissionManager.class);
 
     private final Platform platform;
     private final RecordCache recordCache;

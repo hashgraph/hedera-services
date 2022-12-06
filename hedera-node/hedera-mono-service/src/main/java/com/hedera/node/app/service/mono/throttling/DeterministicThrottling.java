@@ -48,11 +48,11 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
-    private static final Logger log = LogManager.getLogger(DeterministicThrottling.class);
+    private static final Logger log = LoggerFactory.getLogger(DeterministicThrottling.class);
     private static final ScaleFactor ONE_TO_ONE = ScaleFactor.from("1:1");
 
     private static final String GAS_THROTTLE_AT_ZERO_WARNING_TPL =
@@ -277,7 +277,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                                     .append(manager.asReadableRequirements())
                                     .append("\n");
                         });
-        log.info("{}", () -> sb.toString().trim());
+        log.info("{}", sb.toString().trim());
     }
 
     private boolean shouldThrottleTxn(
@@ -646,7 +646,7 @@ public class DeterministicThrottling implements TimedFunctionalityThrottling {
                     .append(e.getValue().impliedMilliOpsPerSec() / 1000)
                     .append(" tps");
         }
-        log.info(sb);
+        log.info(sb.toString());
 
         if (sum > maxMtps) {
             throw new IllegalStateException("Could not scale throttles!");

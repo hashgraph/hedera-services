@@ -22,12 +22,12 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ExecutionTimeTracker {
-    private static final Logger log = LogManager.getLogger(ExecutionTimeTracker.class);
+    private static final Logger log = LoggerFactory.getLogger(ExecutionTimeTracker.class);
 
     private final boolean shouldNoop;
     private final TransactionContext txnCtx;

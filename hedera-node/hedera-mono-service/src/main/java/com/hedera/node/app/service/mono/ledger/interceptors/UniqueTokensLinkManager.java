@@ -37,11 +37,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class UniqueTokensLinkManager {
-    private static final Logger log = LogManager.getLogger(UniqueTokensLinkManager.class);
+    private static final Logger log = LoggerFactory.getLogger(UniqueTokensLinkManager.class);
 
     private final Supplier<AccountStorageAdapter> accounts;
     private final Supplier<MerkleMap<EntityNum, MerkleToken>> tokens;

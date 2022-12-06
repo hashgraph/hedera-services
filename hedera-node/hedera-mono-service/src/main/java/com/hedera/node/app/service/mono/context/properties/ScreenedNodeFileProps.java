@@ -46,12 +46,12 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ScreenedNodeFileProps implements PropertySource {
-    static Logger log = LogManager.getLogger(ScreenedNodeFileProps.class);
+    static Logger log = LoggerFactory.getLogger(ScreenedNodeFileProps.class);
 
     private static final Profile[] LEGACY_ENV_ORDER = {Profile.DEV, Profile.PROD, Profile.TEST};
 

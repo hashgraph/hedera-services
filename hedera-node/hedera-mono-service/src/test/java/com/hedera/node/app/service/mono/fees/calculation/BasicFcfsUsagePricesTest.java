@@ -60,7 +60,7 @@ import java.util.EnumSet;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -226,7 +226,7 @@ class BasicFcfsUsagePricesTest {
         final MockAppender mockAppender = new MockAppender();
         final var log =
                 (org.apache.logging.log4j.core.Logger)
-                        LogManager.getLogger(BasicFcfsUsagePrices.class);
+                        LoggerFactory.getLogger(BasicFcfsUsagePrices.class);
         log.addAppender(mockAppender);
         final Level levelForReset = log.getLevel();
         log.setLevel(Level.DEBUG);

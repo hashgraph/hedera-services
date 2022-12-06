@@ -20,12 +20,12 @@ import com.hedera.node.app.service.mono.state.expiry.ExpiryManager;
 import com.hedera.node.app.service.mono.state.logic.NetworkCtxManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class EntitiesInitializationFlow {
-    private static final Logger log = LogManager.getLogger(EntitiesInitializationFlow.class);
+    private static final Logger log = LoggerFactory.getLogger(EntitiesInitializationFlow.class);
 
     private final ExpiryManager expiries;
     private final NetworkCtxManager networkCtxManager;

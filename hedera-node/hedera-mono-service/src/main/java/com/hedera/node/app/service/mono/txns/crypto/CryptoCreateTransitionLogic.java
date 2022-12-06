@@ -67,8 +67,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoCreate transaction, and the conditions
@@ -79,7 +79,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class CryptoCreateTransitionLogic implements TransitionLogic {
     static final int MAX_CHARGEABLE_AUTO_ASSOCIATIONS = 5000;
-    private static final Logger log = LogManager.getLogger(CryptoCreateTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(CryptoCreateTransitionLogic.class);
 
     private final UsageLimits usageLimits;
     private final HederaLedger ledger;

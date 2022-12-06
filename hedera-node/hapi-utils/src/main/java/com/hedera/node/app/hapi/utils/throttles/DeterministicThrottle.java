@@ -15,12 +15,13 @@
  */
 package com.hedera.node.app.hapi.utils.throttles;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 /** A throttle with milli-TPS resolution that exists in a deterministic timeline. */
 public class DeterministicThrottle implements CongestibleThrottle {

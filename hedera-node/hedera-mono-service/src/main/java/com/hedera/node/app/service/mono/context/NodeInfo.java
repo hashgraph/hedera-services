@@ -23,8 +23,8 @@ import com.swirlds.common.system.address.AddressBook;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Summarizes useful information about the nodes in the {@link AddressBook} from the Platform. In
@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class NodeInfo {
-    private static final Logger log = LogManager.getLogger(NodeInfo.class);
+    private static final Logger log = LoggerFactory.getLogger(NodeInfo.class);
 
     private boolean bookIsRead = false;
 

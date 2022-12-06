@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Provides a ledger with transactional semantics. Changes during a transaction are summarized in
@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
         implements Ledger<K, P>, BackingStore<K, A> {
-    private static final Logger log = LogManager.getLogger(TransactionalLedger.class);
+    private static final Logger log = LoggerFactory.getLogger(TransactionalLedger.class);
 
     public static final int MAX_ENTITIES_CONCEIVABLY_TOUCHED_IN_LEDGER_TXN = 42;
 
@@ -485,9 +485,11 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     private void ensureNotInTxn() {
         if (isInTransaction) {
-            log.warn(
-                    "Ledger with property type {} still in transaction at begin()",
-                    propertyType::getSimpleName);
+            if(log.isWarnEnabled()) {
+                log.warn(
+                        "Ledger with property type {} still in transaction at begin()",
+                        propertyType.getSimpleName());
+            }
             rollback();
         }
     }

@@ -17,7 +17,10 @@ package com.hedera.test.extensions;
 
 import java.lang.reflect.Field;
 import java.util.stream.Stream;
+
+import com.swirlds.logging.LogMarker;
 import org.apache.logging.log4j.LogManager;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
@@ -28,7 +31,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
  * {@link LogCaptor} instance which must be a field on the test instance.
  *
  * <p>For example, suppose {@code ExampleService} is a class whose log events are generated on a
- * {@code Logger} acquired by {@code LogManager.getLogger(ExampleService.class)}. Then we can test
+ * {@code Logger} acquired by {@code LoggerFactory.getLogger(ExampleService.class)}. Then we can test
  * its logs as below.
  *
  * <pre>{@code

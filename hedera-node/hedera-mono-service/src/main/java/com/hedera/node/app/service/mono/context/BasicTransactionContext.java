@@ -56,8 +56,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements a transaction context using infrastructure known to be available in the node context.
@@ -67,7 +67,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BasicTransactionContext implements TransactionContext {
-    private static final Logger log = LogManager.getLogger(BasicTransactionContext.class);
+    private static final Logger log = LoggerFactory.getLogger(BasicTransactionContext.class);
 
     public static final JKey EMPTY_KEY;
 

@@ -31,15 +31,15 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements callbacks to bind gRPC services, react to platform status changes, and incorporate new
  * signed states.
  */
 public class ServicesMain implements SwirldMain {
-    private static final Logger log = LogManager.getLogger(ServicesMain.class);
+    private static final Logger log = LoggerFactory.getLogger(ServicesMain.class);
 
     private ServicesApp app;
 
@@ -148,7 +148,7 @@ public class ServicesMain implements SwirldMain {
             app.digestFactory().forName("SHA-384");
             return true;
         } catch (final NoSuchAlgorithmException nsae) {
-            log.error(nsae);
+            log.error("Error", nsae);
             return false;
         }
     }

@@ -60,14 +60,14 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 /** Class that encapsulates some of the more complex processing of scheduled transactions. */
 @Singleton
 public class ScheduleProcessing {
-    private static final Logger log = LogManager.getLogger(ScheduleProcessing.class);
+    private static final Logger log = LoggerFactory.getLogger(ScheduleProcessing.class);
 
     private final SigImpactHistorian sigImpactHistorian;
     private final ScheduleStore store;

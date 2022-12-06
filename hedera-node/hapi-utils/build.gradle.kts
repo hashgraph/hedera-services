@@ -21,6 +21,9 @@ description = "Hedera Services API Utilities"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
 }
 
 dependencies {
@@ -29,7 +32,7 @@ dependencies {
 
     implementation(libs.bundles.di)
     implementation(libs.hapi)
-    implementation(libs.bundles.logging)
+    implementation(libs.slf4j.api)
     implementation(libs.protobuf.java)
     implementation(libs.jackson)
     implementation(libs.swirlds.common)
@@ -41,5 +44,6 @@ dependencies {
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
+    testImplementation(libs.slf4j.simple)
     itestImplementation(libs.hapi)
 }

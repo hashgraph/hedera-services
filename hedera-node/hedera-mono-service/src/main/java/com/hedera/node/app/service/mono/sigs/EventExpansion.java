@@ -24,12 +24,12 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.system.events.Event;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class EventExpansion {
-    private static final Logger log = LogManager.getLogger(EventExpansion.class);
+    private static final Logger log = LoggerFactory.getLogger(EventExpansion.class);
 
     private final Cryptography engine;
     private final SigReqsManager sigReqsManager;

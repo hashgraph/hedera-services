@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.context.properties;
 
 import java.io.IOException;
 import java.util.Properties;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 
 public final class PropUtils {
     private PropUtils() {

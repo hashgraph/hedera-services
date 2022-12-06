@@ -23,11 +23,11 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public final class MetadataMapFactory {
-    private static final Logger log = LogManager.getLogger(MetadataMapFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(MetadataMapFactory.class);
 
     private static final String LEGACY_PATH_TEMPLATE = "/%d/k%d";
     public static final Pattern LEGACY_PATH_PATTERN = Pattern.compile("/(\\d+)/k(\\d+)");

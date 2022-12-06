@@ -25,8 +25,8 @@ import com.swirlds.common.notification.listeners.PlatformStatusChangeNotificatio
 import com.swirlds.common.system.NodeId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Listener that will be notified with {@link
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class StatusChangeListener implements PlatformStatusChangeListener {
-    private static final Logger log = LogManager.getLogger(StatusChangeListener.class);
+    private static final Logger log = LoggerFactory.getLogger(StatusChangeListener.class);
     private final CurrentPlatformStatus currentPlatformStatus;
     private final NodeId nodeId;
     private final RecordStreamManager recordStreamManager;

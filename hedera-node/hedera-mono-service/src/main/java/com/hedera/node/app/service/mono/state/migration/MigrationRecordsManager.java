@@ -50,8 +50,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,
@@ -67,7 +67,7 @@ public class MigrationRecordsManager {
 
     static final String AUTO_RENEW_MEMO_TPL =
             "Contract 0.0.%d was renewed during 0.30.0 upgrade; new expiry is %d";
-    private static final Logger log = LogManager.getLogger(MigrationRecordsManager.class);
+    private static final Logger log = LoggerFactory.getLogger(MigrationRecordsManager.class);
     private static final Key immutableKey =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";

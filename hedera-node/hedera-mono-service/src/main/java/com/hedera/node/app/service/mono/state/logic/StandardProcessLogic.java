@@ -34,12 +34,12 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class StandardProcessLogic implements ProcessLogic {
-    private static final Logger log = LogManager.getLogger(StandardProcessLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(StandardProcessLogic.class);
 
     private final ExpiryManager expiries;
     private final InvariantChecks invariantChecks;

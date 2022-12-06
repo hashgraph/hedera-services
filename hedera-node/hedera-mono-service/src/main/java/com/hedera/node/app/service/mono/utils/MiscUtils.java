@@ -209,12 +209,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public final class MiscUtils {
     private static final long ONE_SEC_IN_NANOS = 1_000_000_000;
-    private static final Logger log = LogManager.getLogger(MiscUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(MiscUtils.class);
 
     private MiscUtils() {
         throw new UnsupportedOperationException("Utility Class");

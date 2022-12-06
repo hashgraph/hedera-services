@@ -49,8 +49,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all
@@ -75,7 +75,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class TraceabilityExportTask implements SystemTask {
-    private static final Logger log = LogManager.getLogger(TraceabilityExportTask.class);
+    private static final Logger log = LoggerFactory.getLogger(TraceabilityExportTask.class);
     private static final int EXPORTS_PER_LOG = 1000;
 
     private final EntityAccess entityAccess;

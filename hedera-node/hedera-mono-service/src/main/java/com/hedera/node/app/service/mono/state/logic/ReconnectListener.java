@@ -22,12 +22,12 @@ import com.swirlds.common.notification.listeners.ReconnectCompleteListener;
 import com.swirlds.common.notification.listeners.ReconnectCompleteNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ReconnectListener implements ReconnectCompleteListener {
-    private static final Logger log = LogManager.getLogger(ReconnectListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ReconnectListener.class);
 
     private final UpgradeActions upgradeActions;
     private final RecordStreamManager recordStreamManager;

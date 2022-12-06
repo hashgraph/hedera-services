@@ -41,8 +41,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Determines if the payer account set in the {@code TransactionID} is expected to be both willing
@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class SolvencyPrecheck {
-    private static final Logger log = LogManager.getLogger(SolvencyPrecheck.class);
+    private static final Logger log = LoggerFactory.getLogger(SolvencyPrecheck.class);
 
     private static final TxnValidityAndFeeReq VERIFIED_EXEMPT = new TxnValidityAndFeeReq(OK);
     private static final TxnValidityAndFeeReq LOST_PAYER_EXPIRATION_RACE =

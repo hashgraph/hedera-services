@@ -25,12 +25,12 @@ import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class TxnRateFeeMultiplierSource extends DelegatingMultiplierSource {
-    private static final Logger log = LogManager.getLogger(TxnRateFeeMultiplierSource.class);
+    private static final Logger log = LoggerFactory.getLogger(TxnRateFeeMultiplierSource.class);
 
     private final UsageLimits usageLimits;
     private final GlobalDynamicProperties dynamicProperties;

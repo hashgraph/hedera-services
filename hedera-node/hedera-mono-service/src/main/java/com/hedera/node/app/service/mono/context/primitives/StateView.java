@@ -111,13 +111,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
 public class StateView {
 
-    private static final Logger log = LogManager.getLogger(StateView.class);
+    private static final Logger log = LoggerFactory.getLogger(StateView.class);
 
     /* EVM storage maps from 256-bit (32-byte) keys to 256-bit (32-byte) values */
     public static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64L;

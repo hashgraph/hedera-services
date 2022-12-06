@@ -16,10 +16,10 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires com.fasterxml.jackson.databind;
+    requires org.slf4j;
     requires com.google.protobuf;
     requires com.swirlds.common;
-    requires org.apache.logging.log4j;
-    requires static jsr305;
+    requires static com.github.spotbugs.annotations;
     requires org.bouncycastle.provider;
     requires org.bouncycastle.pkix;
     requires org.hyperledger.besu.secp256k1;

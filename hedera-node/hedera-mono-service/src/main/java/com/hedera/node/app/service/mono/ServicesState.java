@@ -103,15 +103,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /** The Merkle tree root of the Hedera Services world state. */
 public class ServicesState extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState2 {
     private static final VirtualMapDataAccess VIRTUAL_MAP_DATA_ACCESS =
             VirtualMapMigration::extractVirtualMapData;
-    private static final Logger log = LogManager.getLogger(ServicesState.class);
+    private static final Logger log = LoggerFactory.getLogger(ServicesState.class);
 
     private static final long RUNTIME_CONSTRUCTABLE_ID = 0x8e300b0dfdafbb1aL;
     public static final ImmutableHash EMPTY_HASH =

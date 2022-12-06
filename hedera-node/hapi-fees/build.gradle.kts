@@ -21,18 +21,23 @@ description = "Hedera Services API Fees"
 
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
+    exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
 }
 
 dependencies {
     annotationProcessor(libs.dagger.compiler)
 
+    implementation(libs.slf4j.api)
+
     implementation(libs.bundles.di)
     implementation(project(":hedera-node:hapi-utils"))
-    implementation(libs.bundles.logging)
     implementation(libs.commons.lang3)
     implementation(libs.hapi)
     implementation(libs.jackson)
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.bundles.testing)
+    testImplementation(libs.slf4j.simple)
 }

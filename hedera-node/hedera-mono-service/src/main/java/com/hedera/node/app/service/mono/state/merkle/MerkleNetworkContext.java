@@ -57,13 +57,13 @@ import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
 
 public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLeaf {
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
-    private static final Logger log = LogManager.getLogger(MerkleNetworkContext.class);
+    private static final Logger log = LoggerFactory.getLogger(MerkleNetworkContext.class);
 
     private static final int NUM_BLOCK_HASHES_TO_KEEP = 256;
     private static final String LINE_WRAP = "\n    ";
@@ -220,17 +220,21 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
         final var matchIndex = matchIndexOf(knownBlockValues.hash());
         if (matchIndex == -1) {
-            log.info(
-                    "None of {} trailing block hashes matched '{}'",
-                    blockHashes::size,
-                    () -> CommonUtils.hex(knownBlockValues.hash()));
+            if(log.isInfoEnabled()) {
+                log.info(
+                        "None of {} trailing block hashes matched '{}'",
+                        blockHashes.size(),
+                        CommonUtils.hex(knownBlockValues.hash()));
+            }
         } else {
             blockNo = knownBlockValues.number() + (blockHashes.size() - matchIndex);
-            log.info(
-                    "Renumbered {} trailing block hashes given '0x{}@{}'",
-                    blockHashes::size,
-                    () -> CommonUtils.hex(knownBlockValues.hash()),
-                    knownBlockValues::number);
+            if(log.isInfoEnabled()) {
+                log.info(
+                        "Renumbered {} trailing block hashes given '0x{}@{}'",
+                        blockHashes.size(),
+                        CommonUtils.hex(knownBlockValues.hash()),
+                        knownBlockValues.number());
+            }
             blocksToLog = NUM_BLOCKS_TO_LOG_AFTER_RENUMBERING;
         }
     }

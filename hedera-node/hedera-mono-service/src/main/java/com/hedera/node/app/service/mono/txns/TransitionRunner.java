@@ -49,12 +49,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class TransitionRunner {
-    private static final Logger log = LogManager.getLogger(TransitionRunner.class);
+    private static final Logger log = LoggerFactory.getLogger(TransitionRunner.class);
 
     /**
      * Some operation's transition logic still explicitly set SUCCESS instead of letting the runner
@@ -109,9 +109,11 @@ public class TransitionRunner {
         final var function = accessor.getFunction();
         final var logic = lookup.lookupFor(function, txn);
         if (logic.isEmpty()) {
-            log.warn(
-                    "Transaction w/o applicable transition logic at consensus :: {}",
-                    accessor::getSignedTxnWrapper);
+            if (log.isWarnEnabled()) {
+                log.warn(
+                        "Transaction w/o applicable transition logic at consensus :: {}",
+                        accessor.getSignedTxnWrapper());
+            }
             txnCtx.setStatus(FAIL_INVALID);
             return false;
         } else {

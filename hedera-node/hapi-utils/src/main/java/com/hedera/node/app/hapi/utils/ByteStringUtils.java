@@ -20,15 +20,16 @@ import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Protobuf related utilities shared by client and server. */
 public final class ByteStringUtils {
-    private static final Logger log = LogManager.getLogger(ByteStringUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(ByteStringUtils.class);
 
     public static ByteString wrapUnsafely(@NonNull final byte[] bytes) {
         return UnsafeByteOperations.unsafeWrap(bytes);

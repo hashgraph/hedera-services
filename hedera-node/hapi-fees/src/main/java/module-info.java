@@ -15,9 +15,9 @@ module com.hedera.node.app.hapi.fees {
     exports com.hedera.node.app.hapi.fees.usage.token.entities;
 
     requires com.hedera.node.app.hapi.utils;
+    requires org.slf4j;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.fasterxml.jackson.databind;
-    requires org.apache.logging.log4j;
     requires javax.inject;
     requires com.google.protobuf;
     requires org.apache.commons.lang3;

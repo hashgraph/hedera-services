@@ -40,8 +40,8 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements a {@link UsagePricesProvider} by loading the required fee schedules from the Hedera
@@ -49,7 +49,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
-    private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
+    private static final Logger log = LoggerFactory.getLogger(BasicFcfsUsagePrices.class);
 
     private static final long DEFAULT_FEE = 100_000L;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES =

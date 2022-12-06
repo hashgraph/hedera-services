@@ -61,12 +61,12 @@ import java.util.function.Function;
 import java.util.zip.GZIPOutputStream;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {
-    private static final Logger log = LogManager.getLogger(SignedStateBalancesExporter.class);
+    private static final Logger log = LoggerFactory.getLogger(SignedStateBalancesExporter.class);
 
     private static final String UNKNOWN_EXPORT_DIR = "";
     private static final String BAD_EXPORT_ATTEMPT_ERROR_MSG_TPL = "Could not export to '{}'!";

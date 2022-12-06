@@ -41,13 +41,13 @@ import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /** Post-consensus execution of smart contract api calls */
 @Singleton
 public class SmartContractRequestHandler {
-    private static final Logger log = LogManager.getLogger(SmartContractRequestHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(SmartContractRequestHandler.class);
 
     private final Map<EntityId, Long> entityExpiries;
 
@@ -89,10 +89,12 @@ public class SmartContractRequestHandler {
             }
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemDelete", e);
-            log.debug(
-                    "File System Exception {} tx= {}",
-                    () -> e,
-                    () -> TextFormat.shortDebugString(op));
+            if(log.isDebugEnabled()) {
+                log.debug(
+                        "File System Exception {} tx= {}",
+                        e,
+                        TextFormat.shortDebugString(op));
+            }
             receipt =
                     getTransactionReceipt(
                             ResponseCodeEnum.FILE_SYSTEM_EXCEPTION, exchange.activeRates());
@@ -151,10 +153,12 @@ public class SmartContractRequestHandler {
             entityExpiries.remove(entity);
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemUndelete", e);
-            log.debug(
-                    "File System Exception {} tx= {}",
-                    () -> e,
-                    () -> TextFormat.shortDebugString(op));
+            if(log.isDebugEnabled()) {
+                log.debug(
+                        "File System Exception {} tx= {}",
+                        e,
+                        TextFormat.shortDebugString(op));
+            }
             receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
         }
         TransactionRecord.Builder transactionRecord =

@@ -27,12 +27,12 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class TxnResponseHelper {
-    private static final Logger log = LogManager.getLogger(TxnResponseHelper.class);
+    private static final Logger log = LoggerFactory.getLogger(TxnResponseHelper.class);
 
     static final TransactionResponse FAIL_INVALID_RESPONSE =
             TransactionResponse.newBuilder().setNodeTransactionPrecheckCode(FAIL_INVALID).build();

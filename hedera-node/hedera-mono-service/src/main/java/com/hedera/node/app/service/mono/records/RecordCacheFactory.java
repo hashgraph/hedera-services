@@ -25,8 +25,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Minimal helper to construct a {@link RecordCache} based on the TTL configured in the Hedera
@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public final class RecordCacheFactory {
-    private static final Logger log = LogManager.getLogger(RecordCacheFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(RecordCacheFactory.class);
 
     private final PropertySource properties;
 

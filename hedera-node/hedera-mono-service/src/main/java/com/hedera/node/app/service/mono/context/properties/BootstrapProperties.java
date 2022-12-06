@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class BootstrapProperties implements PropertySource {
@@ -46,7 +46,7 @@ public final class BootstrapProperties implements PropertySource {
     private static final Function<String, InputStream> nullableResourceStreamProvider =
             BootstrapProperties.class.getClassLoader()::getResourceAsStream;
 
-    private static final Logger log = LogManager.getLogger(BootstrapProperties.class);
+    private static final Logger log = LoggerFactory.getLogger(BootstrapProperties.class);
 
     static ThrowingStreamProvider resourceStreamProvider =
             resource -> {

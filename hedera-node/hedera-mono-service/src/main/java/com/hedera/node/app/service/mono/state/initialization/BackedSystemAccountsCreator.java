@@ -41,12 +41,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class BackedSystemAccountsCreator implements SystemAccountsCreator {
-    private static final Logger log = LogManager.getLogger(BackedSystemAccountsCreator.class);
+    private static final Logger log = LoggerFactory.getLogger(BackedSystemAccountsCreator.class);
 
     public static final long FUNDING_ACCOUNT_EXPIRY = 33197904000L;
     private static final int ZERO_BALANCE = 0;

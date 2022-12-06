@@ -23,15 +23,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property reference by delegating to a
  * supplier.
  */
 public class StandardizedPropertySources implements PropertySources {
-    public static final Logger log = LogManager.getLogger(StandardizedPropertySources.class);
+    public static final Logger log = LoggerFactory.getLogger(StandardizedPropertySources.class);
 
     private final PropertySource bootstrapProps;
     private final ScreenedSysFileProps dynamicGlobalProps;

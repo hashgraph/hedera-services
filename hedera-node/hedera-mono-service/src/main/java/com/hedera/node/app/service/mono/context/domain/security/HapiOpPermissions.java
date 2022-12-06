@@ -27,12 +27,12 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.EnumMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class HapiOpPermissions {
-    private static final Logger log = LogManager.getLogger(HapiOpPermissions.class);
+    private static final Logger log = LoggerFactory.getLogger(HapiOpPermissions.class);
 
     static final String MISSING_OP_TPL =
             "Ignoring key '%s', which does not correspond to a known Hedera operation!";

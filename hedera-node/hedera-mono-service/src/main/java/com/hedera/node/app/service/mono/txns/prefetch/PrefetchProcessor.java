@@ -27,8 +27,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Processing dispatch layer for transactions submitted during the prepare stage (aka expand
@@ -38,7 +38,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class PrefetchProcessor {
-    private static final Logger logger = LogManager.getLogger(PrefetchProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(PrefetchProcessor.class);
 
     @VisibleForTesting static final int MINIMUM_QUEUE_CAPACITY = 10_000;
 

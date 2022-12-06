@@ -45,8 +45,8 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -62,7 +62,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
  */
 @Singleton
 public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
-    private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
+    private static final Logger log = LoggerFactory.getLogger(PrngSystemPrecompiledContract.class);
     private static final String PRECOMPILE_NAME = "PRNG";
     // random256BitGenerator(uint256)
     static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;

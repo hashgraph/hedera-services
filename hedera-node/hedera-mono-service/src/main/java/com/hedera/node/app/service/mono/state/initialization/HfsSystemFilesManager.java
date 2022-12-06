@@ -72,12 +72,12 @@ import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public final class HfsSystemFilesManager implements SystemFilesManager {
-    private static final Logger log = LogManager.getLogger(HfsSystemFilesManager.class);
+    private static final Logger log = LoggerFactory.getLogger(HfsSystemFilesManager.class);
     private static final String PROPERTIES_SYS_FILE_NAME = "properties";
     private static final String PERMISSIONS_SYS_FILE_NAME = "API permissions";
     private static final String EXCHANGE_RATES_SYS_FILE_NAME = "exchange rates";

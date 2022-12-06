@@ -59,8 +59,8 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction, and the conditions
@@ -70,7 +70,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoUpdateTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(CryptoUpdateTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(CryptoUpdateTransitionLogic.class);
 
     private static final EnumSet<AccountProperty> EXPIRY_ONLY = EnumSet.of(AccountProperty.EXPIRY);
 

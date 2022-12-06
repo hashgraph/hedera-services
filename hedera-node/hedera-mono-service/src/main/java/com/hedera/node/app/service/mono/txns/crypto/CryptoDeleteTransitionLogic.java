@@ -40,8 +40,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoDelete transaction, and the conditions
@@ -51,7 +51,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class CryptoDeleteTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(CryptoDeleteTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(CryptoDeleteTransitionLogic.class);
 
     private final HederaLedger ledger;
     private final SigImpactHistorian sigImpactHistorian;

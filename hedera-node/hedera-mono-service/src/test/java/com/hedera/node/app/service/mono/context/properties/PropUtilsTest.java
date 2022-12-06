@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 import org.junit.jupiter.api.Test;
 
 class PropUtilsTest {

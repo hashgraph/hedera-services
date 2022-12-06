@@ -29,12 +29,12 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class StoreInitializationFlow {
-    private static final Logger log = LogManager.getLogger(StoreInitializationFlow.class);
+    private static final Logger log = LoggerFactory.getLogger(StoreInitializationFlow.class);
 
     private final UsageLimits usageLimits;
     private final AliasManager aliasManager;

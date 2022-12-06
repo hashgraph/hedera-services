@@ -27,12 +27,12 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class MerkleScheduledTransactions extends PartialNaryMerkleInternal
         implements MerkleInternal {
-    private static final Logger log = LogManager.getLogger(MerkleScheduledTransactions.class);
+    private static final Logger log = LoggerFactory.getLogger(MerkleScheduledTransactions.class);
 
     private int pendingMigrationSize;
 

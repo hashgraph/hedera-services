@@ -40,13 +40,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /** Provides the state transition for token updates. */
 @Singleton
 public class TokenUpdateTransitionLogic implements TransitionLogic {
-    private static final Logger log = LogManager.getLogger(TokenUpdateTransitionLogic.class);
+    private static final Logger log = LoggerFactory.getLogger(TokenUpdateTransitionLogic.class);
 
     private final boolean allowChangedTreasuryToOwnNfts;
     private final TokenStore store;

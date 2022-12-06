@@ -27,15 +27,15 @@ import com.hederahashgraph.api.proto.java.Response;
 import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 @Singleton
 public class QueryResponseHelper {
-    private static final Logger log = LogManager.getLogger(QueryResponseHelper.class);
-    private static final Marker ALL_QUERIES_MARKER = MarkerManager.getMarker("ALL_QUERIES");
+    private static final Logger log = LoggerFactory.getLogger(QueryResponseHelper.class);
+    private static final Marker ALL_QUERIES_MARKER = MarkerFactory.getMarker("ALL_QUERIES");
 
     private final AnswerFlow answerFlow;
     private final HapiOpCounters opCounters;

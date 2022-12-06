@@ -28,12 +28,12 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ContractUpdateResourceUsage implements TxnResourceUsageEstimator {
-    private static final Logger log = LogManager.getLogger(ContractUpdateResourceUsage.class);
+    private static final Logger log = LoggerFactory.getLogger(ContractUpdateResourceUsage.class);
 
     private final SmartContractFeeBuilder usageEstimator;
 

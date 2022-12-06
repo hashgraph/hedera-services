@@ -27,11 +27,11 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class UniqueTokensMigrator {
-    private static final Logger LOG = LogManager.getLogger(UniqueTokensMigrator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UniqueTokensMigrator.class);
 
     /**
      * Migrate tokens from MerkleMap data structure to VirtualMap data structure.

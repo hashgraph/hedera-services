@@ -77,11 +77,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Provides the resource usage of the "base configuration" for each Hedera operation.
@@ -92,7 +93,7 @@ import org.apache.logging.log4j.Logger;
  * etc.)
  */
 public class BaseOperationUsage {
-    static final Logger log = LogManager.getLogger(BaseOperationUsage.class);
+    static final Logger log = LoggerFactory.getLogger(BaseOperationUsage.class);
     public static final int CANONICAL_NUM_CONTRACT_KV_PAIRS = 64;
     private static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     private static final ByteString CANONICAL_SIG =

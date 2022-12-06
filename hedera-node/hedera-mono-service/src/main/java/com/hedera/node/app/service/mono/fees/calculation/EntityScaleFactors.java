@@ -22,14 +22,14 @@ import com.hedera.node.app.service.mono.context.properties.EntityType;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public record EntityScaleFactors(
         UtilizationScaleFactors defaultScaleFactors,
         Map<EntityType, UtilizationScaleFactors> typeScaleFactors) {
 
-    private static final Logger log = LogManager.getLogger(EntityScaleFactors.class);
+    private static final Logger log = LoggerFactory.getLogger(EntityScaleFactors.class);
 
     private static final String DEFAULT_TYPE = "DEFAULT";
     private static final Pattern SCOPED_FACTOR_PATTERN = Pattern.compile("(.*?)\\((.*?)\\),?");

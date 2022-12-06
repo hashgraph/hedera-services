@@ -39,12 +39,12 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class UpgradeActions {
-    private static final Logger log = LogManager.getLogger(UpgradeActions.class);
+    private static final Logger log = LoggerFactory.getLogger(UpgradeActions.class);
 
     private static final String PREPARE_UPGRADE_DESC = "software";
     private static final String TELEMETRY_UPGRADE_DESC = "telemetry";
@@ -189,7 +189,7 @@ public class UpgradeActions {
         if (!curNetworkCtx.isPreparedFileHashValidGiven(curSpecialFiles)) {
             log.error(
                     "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-                    () -> readableId(upgradeFileId));
+                    readableId(upgradeFileId));
             log.error(MANUAL_REMEDIATION_ALERT);
             return;
         }

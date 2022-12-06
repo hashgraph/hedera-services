@@ -22,15 +22,15 @@ import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Provides various helpers useful for estimating resource usage while calculating fees for
  * transactions or queries.
  */
 public final class FeeCalcUtils {
-    private static final Logger log = LogManager.getLogger(FeeCalcUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(FeeCalcUtils.class);
 
     static final Timestamp ZERO_EXPIRY = Timestamp.newBuilder().setSeconds(0).build();
 
