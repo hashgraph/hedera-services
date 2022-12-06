@@ -19,13 +19,10 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import static com.swirlds.common.utility.Units.MB_TO_BYTES;
 import static com.swirlds.common.utility.Units.SECONDS_TO_MILLISECONDS;
 
-import com.google.protobuf.Message;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.state.logic.StandardProcessLogic;
 import com.hedera.node.app.service.mono.stats.MiscRunningAvgs;
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;

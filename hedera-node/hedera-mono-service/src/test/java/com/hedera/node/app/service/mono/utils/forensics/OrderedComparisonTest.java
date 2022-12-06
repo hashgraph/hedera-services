@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.TextFormat;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
@@ -43,8 +42,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -52,8 +49,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class OrderedComparisonTest {
-    private static final Path STREAMS_DIR =
+    private static final Path WRONG_NONCE_STREAMS_DIR =
             Paths.get("src", "test", "resources", "forensics", "CaseOfTheObviouslyWrongNonce");
+    private static final Path ABSENT_RESULT_STREAMS_DIR =
+            Paths.get("src", "test", "resources", "forensics", "CaseOfTheAbsentResult");
     private static final TransactionRecord MOCK_RECORD = TransactionRecord.getDefaultInstance();
     private static final Instant THEN = Instant.ofEpochSecond(1_234_567, 890);
     private static final Instant NOW = Instant.ofEpochSecond(9_999_999, 001);
@@ -63,8 +62,8 @@ class OrderedComparisonTest {
 
     @Test
     void detectsDifferenceInCaseOfObviouslyWrongNonce() throws IOException {
-        final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
-        final var consensusStreamLoc = STREAMS_DIR + File.separator + "node0";
+        final var issStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node5";
+        final var consensusStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node0";
 
         final var diffs = findDifferencesBetweenV6(issStreamLoc, consensusStreamLoc);
         assertEquals(1, diffs.size());
@@ -119,7 +118,7 @@ class OrderedComparisonTest {
 
     @Test
     void auxInvestigationMethodsWork() throws IOException {
-        final var issStreamLoc = STREAMS_DIR + File.separator + "node5";
+        final var issStreamLoc = WRONG_NONCE_STREAMS_DIR + File.separator + "node5";
         final var entries = parseV6RecordStreamEntriesIn(issStreamLoc);
 
         final var histograms = statusHistograms(entries);
@@ -134,36 +133,33 @@ class OrderedComparisonTest {
 
     @Test
     void sidecarIssue() throws IOException {
-        final var loc = "/Users/michaeltinker/Forensics/previewnet-telemetry/node0";
+        final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
 
         final var histograms = statusHistograms(entries);
         System.out.println(histograms);
 
-        visitWithSidecars(entries, sidecarRecords, (entry, records) -> {
-            final var accessor = entry.accessor();
-            if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
-                System.out.println(accessor.getTxn());
-                System.out.println("====>>");
-                System.out.println(entry.txnRecord());
-                System.out.println("====>>");
-                System.out.println(records);
-                final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
-                final var actual = records.stream()
-                        .filter(TransactionSidecarRecord::hasActions)
-                        .flatMap(r -> r.getActions().getContractActionsList().stream())
-                        .map(ContractAction::getResultDataCase)
-                        .toList();
-                assertEquals(expected, actual);
-            }
-        });
-    }
-
-    @Test
-    void hmm() throws TextFormat.InvalidEscapeSequenceException {
-        final var encoded = "a\\215\\306^\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\235\\033\\t^\\247\\263\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000-\\000\\277\\021c\\254t\\341QU{C\\322\\t\\020\\331\\224b*\\'\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377";
-        final var raw = TextFormat.unescapeBytes(encoded);
-        System.out.println(CommonUtils.hex(raw.toByteArray()));
+        visitWithSidecars(
+                entries,
+                sidecarRecords,
+                (entry, records) -> {
+                    final var accessor = entry.accessor();
+                    if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+                        final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
+                        final var actual =
+                                records.stream()
+                                        .filter(TransactionSidecarRecord::hasActions)
+                                        .flatMap(
+                                                r ->
+                                                        r
+                                                                .getActions()
+                                                                .getContractActionsList()
+                                                                .stream())
+                                        .map(ContractAction::getResultDataCase)
+                                        .toList();
+                        assertEquals(expected, actual);
+                    }
+                });
     }
 }

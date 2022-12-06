@@ -15,15 +15,13 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
-import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readSidecarFile;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static java.util.Comparator.comparing;
 
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,24 +83,29 @@ public class RecordParsers {
     }
 
     /**
-     * Given a directory of compressed V6 sidecar files, returns a list of all the
-     * sidecar entries contained in those files, in order of ascending consensus time.
+     * Given a directory of compressed V6 sidecar files, returns a list of all the sidecar entries
+     * contained in those files, in order of ascending consensus time.
      *
      * @param streamDir a directory with compressed V6 sidecar files
      * @return all the contained stream entries
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
-    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(final String streamDir)
-            throws IOException {
+    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(
+            final String streamDir) throws IOException {
         final var sidecarFiles = orderedSidecarFilesFrom(streamDir);
         final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords = new HashMap<>();
         for (final var sidecarFile : sidecarFiles) {
             final var data = readSidecarFile(sidecarFile);
-            data.getSidecarRecordsList().forEach(sidecarRecord ->
-                    sidecarRecords.computeIfAbsent(
-                            timestampToInstant(sidecarRecord.getConsensusTimestamp()),
-                            ignore -> new ArrayList<>()).add(sidecarRecord));
+            data.getSidecarRecordsList()
+                    .forEach(
+                            sidecarRecord ->
+                                    sidecarRecords
+                                            .computeIfAbsent(
+                                                    timestampToInstant(
+                                                            sidecarRecord.getConsensusTimestamp()),
+                                                    ignore -> new ArrayList<>())
+                                            .add(sidecarRecord));
         }
         return sidecarRecords;
     }
@@ -111,8 +114,12 @@ public class RecordParsers {
             final List<RecordStreamEntry> entries,
             final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords,
             final BiConsumer<RecordStreamEntry, List<TransactionSidecarRecord>> observer) {
-        entries.forEach(entry -> observer.accept(
-                entry, sidecarRecords.getOrDefault(entry.consensusTime(), Collections.emptyList())));
+        entries.forEach(
+                entry ->
+                        observer.accept(
+                                entry,
+                                sidecarRecords.getOrDefault(
+                                        entry.consensusTime(), Collections.emptyList())));
     }
 
     private static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
@@ -121,6 +128,7 @@ public class RecordParsers {
                 s -> s.endsWith(V6_FILE_EXT) && !s.contains("Z_"),
                 RecordParsers::parseRecordFileConsensusTime);
     }
+
     private static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
@@ -132,7 +140,8 @@ public class RecordParsers {
     private static List<String> filteredFilesFrom(
             final String streamDir,
             final Predicate<String> criteria,
-            final Function<String, Instant> consTimeParser) throws IOException {
+            final Function<String, Instant> consTimeParser)
+            throws IOException {
         return Files.walk(Path.of(streamDir))
                 .map(Path::toString)
                 .filter(criteria)
