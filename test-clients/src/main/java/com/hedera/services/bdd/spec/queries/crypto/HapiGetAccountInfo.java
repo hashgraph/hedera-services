@@ -62,6 +62,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     Optional<Integer> maxAutomaticAssociations = Optional.empty();
     Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> idObserver = Optional.empty();
+    private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
@@ -112,6 +113,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
         this.idObserver = Optional.of(obs);
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingContractAccountIdTo(Consumer<String> obs) {
+        this.contractAccountIdObserver = Optional.of(obs);
         return this;
     }
 
@@ -255,6 +261,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             exposingBalanceTo.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
+            contractAccountIdObserver.ifPresent(
+                    cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
         if (verboseLoggingOn) {
             log.info("Info for '" + repr() + "': " + response.getCryptoGetInfo().getAccountInfo());

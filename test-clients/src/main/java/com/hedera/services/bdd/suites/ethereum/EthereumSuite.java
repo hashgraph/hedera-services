@@ -119,491 +119,224 @@ public class EthereumSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return Stream.concat(Stream.of(setChainId()), Stream.of(debuggingLocalNodeIssue()))
+        return Stream.concat(
+                        Stream.of(setChainId()),
+                        Stream.of(debuggingLocalNodeIssueForSetApproveForAll()))
                 .toList();
     }
 
-//    HapiApiSpec debuggingLocalNodeIssue() {
-//
-//        final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
-//        final AtomicReference<String> tokenTransferContractID = new AtomicReference<>();
-//        final AtomicReference<String> erc721ContractID = new AtomicReference<>();
-//        final AtomicReference<Address> createdTokenAddress = new AtomicReference<>();
-//
-//        return defaultHapiSpec("Debugging Local Node Issue")
-//                .given(
-//                        /** Generate random ECDSA keys */
-//                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-//                        newKeyNamed(SECP_256K1_RECEIVER_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-//                        /** Create the Relayer account */
-//                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-//                        /** Create two ECDSA accounts via account auto-create transactions */
-//                        cryptoTransfer(
-//                                        tinyBarsFromAccountToAlias(
-//                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
-//                                .via("autoAccount"),
-//                        cryptoTransfer(
-//                                        tinyBarsFromAccountToAlias(
-//                                                GENESIS,
-//                                                SECP_256K1_RECEIVER_SOURCE_KEY,
-//                                                ONE_HUNDRED_HBARS))
-//                                .via("autoAccount2"),
-//                        /** Upload contract bytecodes */
-//                        createLargeFile(
-//                                GENESIS,
-//                                TOKEN_CREATE_CONTRACT,
-//                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
-//                        createLargeFile(
-//                                GENESIS,
-//                                TOKEN_TRANSFER_CONTRACT,
-//                                TxnUtils.literalInitcodeFor(TOKEN_TRANSFER_CONTRACT)),
-//                        createLargeFile(
-//                                GENESIS,
-//                                ERC721_CONTRACT,
-//                                TxnUtils.literalInitcodeFor(ERC721_CONTRACT)),
-//                        /** Deploy the contracts and expose their EVM Address Aliases */
-//                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
-//                                .type(EthTransactionType.EIP1559)
-//                                .signingWith(SECP_256K1_SOURCE_KEY)
-//                                .payingWith(RELAYER)
-//                                .nonce(0)
-//                                .bytecode(TOKEN_CREATE_CONTRACT)
-//                                .gasPrice(10L)
-//                                .maxGasAllowance(ONE_HUNDRED_HBARS)
-//                                .gasLimit(1_000_000L)
-//                                .hasKnownStatusFrom(SUCCESS),
-//                        getContractInfo(TOKEN_CREATE_CONTRACT)
-//                                .exposingEvmAddress(
-//                                        address -> tokenCreateContractID.set("0x" + address)),
-//                        ethereumContractCreate(TOKEN_TRANSFER_CONTRACT)
-//                                .type(EthTransactionType.EIP1559)
-//                                .signingWith(SECP_256K1_SOURCE_KEY)
-//                                .payingWith(RELAYER)
-//                                .nonce(1)
-//                                .bytecode(TOKEN_TRANSFER_CONTRACT)
-//                                .gasPrice(10L)
-//                                .maxGasAllowance(ONE_HUNDRED_HBARS)
-//                                .gasLimit(1_000_000L)
-//                                .hasKnownStatusFrom(SUCCESS),
-//                        getContractInfo(TOKEN_TRANSFER_CONTRACT)
-//                                .exposingEvmAddress(
-//                                        address -> tokenTransferContractID.set("0x" + address)),
-//                        ethereumContractCreate(ERC721_CONTRACT)
-//                                .type(EthTxData.EthTransactionType.EIP1559)
-//                                .signingWith(SECP_256K1_SOURCE_KEY)
-//                                .payingWith(RELAYER)
-//                                .nonce(2)
-//                                .bytecode(ERC721_CONTRACT)
-//                                .gasPrice(10L)
-//                                .maxGasAllowance(ONE_HUNDRED_HBARS)
-//                                .gasLimit(1_000_000L)
-//                                .hasKnownStatusFrom(SUCCESS),
-//                        getContractInfo(ERC721_CONTRACT)
-//                                .exposingEvmAddress(
-//                                        address -> erc721ContractID.set("0x" + address)))
-//                .when(
-//                        withOpContext(
-//                                (spec, opLog) -> {
-//                                    /** Create HTS token via call to TokenCreateContract */
-//                                    var createNFTPublicFunctionCall =
-//                                            ethereumCall(
-//                                                            TOKEN_CREATE_CONTRACT,
-//                                                            "createNonFungibleTokenPublic",
-//                                                            asHeadlongAddress(
-//                                                                    tokenCreateContractID.get()))
-//                                                    .type(EthTransactionType.EIP1559)
-//                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-//                                                    .payingWith(RELAYER)
-//                                                    .nonce(3)
-//                                                    .gasPrice(10L)
-//                                                    .sending(10000000000L)
-//                                                    .gasLimit(1_000_000L)
-//                                                    .via("createTokenTxn")
-//                                                    .hasKnownStatusFrom(
-//                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
-//                                    /**
-//                                     * Save the created token address exposed through the txn record
-//                                     */
-//                                    var getNewTokenAddressFromCreateRecord =
-//                                            getTxnRecord("createTokenTxn")
-//                                                    .exposingFilteredCallResultVia(
-//                                                            getABIForContract(
-//                                                                    TOKEN_CREATE_CONTRACT),
-//                                                            "CreatedToken",
-//                                                            data ->
-//                                                                    createdTokenAddress.set(
-//                                                                            (Address) data.get(0)));
-//
-//                                    allRunFor(
-//                                            spec,
-//                                            createNFTPublicFunctionCall,
-//                                            getNewTokenAddressFromCreateRecord);
-//                                }),
-//                        withOpContext(
-//                                (spec, opLog) -> {
-//                                    /**
-//                                     * Mint an NFT via call to token create contract mint function
-//                                     */
-//                                    var mintTokenPublicFunctionCall =
-//                                            ethereumCall(
-//                                                            TOKEN_CREATE_CONTRACT,
-//                                                            "mintTokenPublic",
-//                                                            createdTokenAddress.get(),
-//                                                            BigInteger.ZERO,
-//                                                            new byte[][] {new byte[] {(byte) 0x01}})
-//                                                    .type(EthTransactionType.EIP1559)
-//                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-//                                                    .payingWith(RELAYER)
-//                                                    .nonce(4)
-//                                                    .gasPrice(10L)
-//                                                    .gasLimit(1_000_000L)
-//                                                    .via("mintTokenTxn")
-//                                                    .hasKnownStatusFrom(
-//                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
-//                                    allRunFor(spec, mintTokenPublicFunctionCall);
-//                                }))
-//                .then(
-//                        withOpContext(
-//                                (spec, opLog) -> {
-//                                    // todo get aliased account info
-//                                    //                                    System.out.println(
-//                                    //                                            "*** acc address:
-//                                    // "
-//                                    //                                                    +
-//                                    // Address.wrap(
-//                                    //
-//                                    // "0x"
-//                                    //
-//                                    //      + ByteString.copyFrom(
-//                                    //
-//                                    //              Objects.requireNonNull(
-//                                    //
-//                                    //                      EthTxSigs
-//                                    //
-//                                    //                              .recoverAddressFromPubKey(
-//                                    //
-//                                    //                                      spec.registry()
-//                                    //
-//                                    //                                              .getKey(
-//                                    //
-//                                    //
-//                                    // SECP_256K1_SOURCE_KEY)
-//                                    //
-//                                    //
-//                                    // .getECDSASecp256K1()
-//                                    //
-//                                    //
-//                                    // .toByteArray())))));
-//                                    /**
-//                                     * Transfer the minted NFT from the created contract address to
-//                                     * the account alias address
-//                                     */
-//                                    var transferNFTPublicCall =
-//                                            ethereumCall(
-//                                                            TOKEN_TRANSFER_CONTRACT,
-//                                                            "transferNFTPublic",
-//                                                            createdTokenAddress.get(),
-//                                                            // todo created contract address
-//                                                            // todo account alias address
-//                                                            new byte[][] {new byte[] {(byte) 0x01}})
-//                                                    .type(EthTxData.EthTransactionType.EIP1559)
-//                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-//                                                    .payingWith(RELAYER)
-//                                                    .nonce(5)
-//                                                    .gasPrice(10L)
-//                                                    .gasLimit(1_000_000L)
-//                                                    .via("transferNFTTxn")
-//                                                    .hasKnownStatusFrom(
-//                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
-//                                    //                                    allRunFor(spec,
-//                                    // transferNFTPublicCall);
-//                                }));
-//    }
+    HapiApiSpec debuggingLocalNodeIssueForSetApproveForAll() {
+        final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
+        final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
+        final AtomicReference<String> erc721ContractID = new AtomicReference<>();
+        final AtomicReference<ByteString> createdTokenAddressString = new AtomicReference<>();
+        final String spenderAlias = "spenderAlias";
+        final var createTokenContractNum = new AtomicLong();
+        return defaultHapiSpec("DebuggingLocalNodeIssueForSetApproveForAll")
+                .given(
+                        /** Generate random ECDSA keys */
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
+                        /** Create the Relayer account */
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        /** Create the Treasury account */
 
-  HapiApiSpec debuggingLocalNodeIssue() {
+                        /** Create two ECDSA accounts via account auto-create transactions */
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
+                                .via("autoAccount"),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
+                                .via("autoAccountSpender"),
+                        getAliasedAccountInfo(spenderAlias)
+                                .exposingContractAccountIdTo(
+                                        id -> spenderAutoCreatedAccountId.set(id)),
+                        /** Upload contract bytecodes */
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .gas(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS)
+                                .exposingNumTo(createTokenContractNum::set),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(tokenCreateContractID::set))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    /** Create HTS token via call to TokenCreateContract */
+                                    var createNFTPublicFunctionCall =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            asHeadlongAddress(
+                                                                    tokenCreateContractID.get()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .gasPrice(10L)
+                                                    .sending(10000000000L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatusFrom(
+                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
 
-    final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
-    final AtomicReference<String> tokenTransferContractID = new AtomicReference<>();
-    final AtomicReference<String> erc721ContractID = new AtomicReference<>();
-    final AtomicReference<Address> createdTokenAddress = new AtomicReference<>();
-    final AtomicReference<ByteString> createdTokenAddressString = new AtomicReference<>();
-    final String nft = "nft";
-    final String treasury = "treasury";
-    final String spender = "spender";
-    final var createTokenNum = new AtomicLong();
-    final var createTokenContractNum = new AtomicLong();
-    return defaultHapiSpec("Debugging Local Node Issue")
-        .given(
-            /** Generate random ECDSA keys */
-            newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-            newKeyNamed(SECP_256K1_RECEIVER_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-            /** Create the Relayer account */
-            cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-            cryptoCreate(spender),
-            /** Create the Treasury account */
+                                    final var setCreatedToken =
+                                            getTxnRecord("createTokenTxn")
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .contractCallResult(
+                                                                            resultWith()
+                                                                                    .exposeCreatedTokenAddress(
+                                                                                            data ->
+                                                                                                    createdTokenAddressString
+                                                                                                            .set(
+                                                                                                                    data))));
+                                    allRunFor(spec, createNFTPublicFunctionCall, setCreatedToken);
 
-            /** Create two ECDSA accounts via account auto-create transactions */
-            cryptoTransfer(
-                tinyBarsFromAccountToAlias(
-                    GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
-                .via("autoAccount"),
-            cryptoTransfer(
-                tinyBarsFromAccountToAlias(
-                    GENESIS,
-                    SECP_256K1_RECEIVER_SOURCE_KEY,
-                    ONE_HUNDRED_HBARS))
-                .via("autoAccount2"),
-            /** Upload contract bytecodes */
-            createLargeFile(
-                GENESIS,
-                TOKEN_CREATE_CONTRACT,
-                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)),
-            createLargeFile(
-                GENESIS,
-                TOKEN_TRANSFER_CONTRACT,
-                TxnUtils.literalInitcodeFor(TOKEN_TRANSFER_CONTRACT)),
-//uploadInitCode(ASSOCIATE_CONTRACT),
-//contractCreate(ASSOCIATE_CONTRACT),
+                                    var uploadEthereumContract = uploadInitCode(ERC721_CONTRACT);
+                                    allRunFor(spec, uploadEthereumContract);
 
-//            createLargeFile(
-//                GENESIS,
-//                ERC721_CONTRACT,
-//                TxnUtils.literalInitcodeFor(ERC721_CONTRACT)),
-            /** Create NFT*/
-//            tokenCreate(nft).tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-//                .treasury(treasury)
-//                .initialSupply(0L)
-//                .supplyKey(MULTI_KEY)
-//                .exposingCreatedIdTo(),
-            /** Mint the NFT*/
-//            mintToken(
-//                nft,
-//                List.of(
-//                    ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-//                    ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-            /** Deploy the contracts and expose their EVM Address Aliases */
-            ethereumContractCreate(TOKEN_CREATE_CONTRACT)
-                .type(EthTransactionType.EIP1559)
-                .signingWith(SECP_256K1_SOURCE_KEY)
-                .payingWith(RELAYER)
-                .nonce(0)
-                .bytecode(TOKEN_CREATE_CONTRACT)
-                .gasPrice(10L)
-                .maxGasAllowance(ONE_HUNDRED_HBARS)
-                .gasLimit(1_000_000L)
-                .gas(1_000_000L)
-                .hasKnownStatusFrom(SUCCESS)
-                .exposingNumTo(createTokenContractNum::set),
-            getContractInfo(TOKEN_CREATE_CONTRACT)
-                .exposingEvmAddress(
-                    tokenCreateContractID::set),
-            ethereumContractCreate(TOKEN_TRANSFER_CONTRACT)
-                .type(EthTransactionType.EIP1559)
-                .signingWith(SECP_256K1_SOURCE_KEY)
-                .payingWith(RELAYER)
-                .nonce(1)
-                .bytecode(TOKEN_TRANSFER_CONTRACT)
-                .gasPrice(10L)
-                .maxGasAllowance(ONE_HUNDRED_HBARS)
-                .gasLimit(1_000_000L)
-                .hasKnownStatusFrom(SUCCESS),
-            getContractInfo(TOKEN_TRANSFER_CONTRACT)
-                .exposingEvmAddress(
-                    tokenTransferContractID::set))
-//            ethereumContractCreate(ERC721_CONTRACT, asHeadlongAddress())
-//                .type(EthTxData.EthTransactionType.EIP1559)
-//                .signingWith(SECP_256K1_SOURCE_KEY)
-//                .payingWith(RELAYER)
-//                .nonce(2)
-//                .bytecode(ERC721_CONTRACT)
-//                .gasPrice(10L)
-//                .maxGasAllowance(ONE_HUNDRED_HBARS)
-//                .gasLimit(1_000_000L)
-//                .hasKnownStatusFrom(SUCCESS),
-//            getContractInfo(ERC721_CONTRACT)
-//                .exposingEvmAddress(
-//                    address -> erc721ContractID.set("0x" + address))
-//        )
-        .when(
-            withOpContext(
-                (spec, opLog) -> {
-                  /** Create HTS token via call to TokenCreateContract */
-                  var createNFTPublicFunctionCall =
-                      ethereumCall(
-                          TOKEN_CREATE_CONTRACT,
-                          "createNonFungibleTokenPublic",
-//                          asHeadlongAddress(
-//                              tokenCreateContractID.get()
-                          asHeadlongAddress(
-                              tokenCreateContractID
-                                      .get())
-                          )
-                          .type(EthTransactionType.EIP1559)
-                          .signingWith(SECP_256K1_SOURCE_KEY)
-                          .payingWith(RELAYER)
-                          .nonce(2)
-                          .gasPrice(10L)
-                          .sending(10000000000L)
-                          .gasLimit(1_000_000L)
-                          .via("createTokenTxn")
-                          .hasKnownStatusFrom(
-                              CONTRACT_REVERT_EXECUTED, SUCCESS)
-//                          .exposingResultTo(
-//                              result -> {
-//                                log.info(
-//                                    EXPLICIT_CREATE_RESULT,
-//                                    result[0]);
-//                                final var res =
-//                                    (Address) result[0];
-//                                createTokenNum.set(
-//                                    res.value()
-//                                        .longValueExact());
-//                              })
-        ;
+                                    var createEthereumContract =
+                                            ethereumContractCreate(ERC721_CONTRACT)
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(2)
+                                                    .gasPrice(10L)
+                                                    .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                                    .gasLimit(1_000_000L)
+                                                    .hasKnownStatusFrom(SUCCESS);
 
-                  /**
-                   * Save the created token address exposed through the txn record
-                   */
-//                  var getNewTokenAddressFromCreateRecord =
-//                      getTxnRecord("createTokenTxn")
-////                          .andAllChildRecords().logged()
-//                          .exposingFilteredCallResultVia(
-//                              getABIForContract(
-//                                  TOKEN_CREATE_CONTRACT),
-//                              "CreatedToken",
-//                              data ->
-//                                  createdTokenAddress.set(
-//                                      (Address) data.get(0)));
-//
-                  final var setCreatedToken = getTxnRecord("createTokenTxn")
-                      .hasPriority(
-                          recordWith()
-                              .contractCallResult(resultWith().exposeCreatedTokenAddress(data -> createdTokenAddressString.set(data))));
+                                    var exposeEthereumContractAddress =
+                                            getContractInfo(ERC721_CONTRACT)
+                                                    .exposingEvmAddress(
+                                                            address ->
+                                                                    erc721ContractID.set(
+                                                                            "0x" + address));
 
+                                    allRunFor(
+                                            spec,
+                                            createEthereumContract,
+                                            exposeEthereumContractAddress);
+                                }),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var associateTokenToERC721 =
+                                            ethereumCall(
+                                                            ERC721_CONTRACT,
+                                                            "associateTokenPublic",
+                                                            asHeadlongAddress(
+                                                                    erc721ContractID.get()),
+                                                            asHeadlongAddress(
+                                                                    Bytes.wrap(
+                                                                                    createdTokenAddressString
+                                                                                            .get()
+                                                                                            .toByteArray())
+                                                                            .toHexString()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(GENESIS)
+                                                    .nonce(3)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("associateTokenTxn")
+                                                    .hasKnownStatusFrom(SUCCESS);
 
-                  allRunFor(
-                      spec,
-                      createNFTPublicFunctionCall,
-//                     , getNewTokenAddressFromCreateRecord,
-                      setCreatedToken
-                  );
+                                    var associateTokenToSpender =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "associateTokenPublic",
+                                                            asHeadlongAddress(
+                                                                    spenderAutoCreatedAccountId
+                                                                            .get()),
+                                                            asHeadlongAddress(
+                                                                    Bytes.wrap(
+                                                                                    createdTokenAddressString
+                                                                                            .get()
+                                                                                            .toByteArray())
+                                                                            .toHexString()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(spenderAlias)
+                                                    .payingWith(GENESIS)
+                                                    .nonce(0)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("associateTokenTxn")
+                                                    .hasKnownStatusFrom(SUCCESS);
 
-//                  var uploadEthereumContract = uploadInitCodeWithAddressConstructorArguments(ERC721_CONTRACT,
-////                      asHeadlongAddress(Bytes.wrap(stripFirst12Bytes(CommonUtils.unhex(createdTokenAddressString.get().toString()))).toHexString())
-////                      asHeadlongAddress(Bytes.wrap(createdTokenAddressString.get().toByteArray()).toHexString())
-//                      stripFirst12Bytes(createdTokenAddressString.get().toByteArray())
-//                     );
+                                    var approveForAllCall =
+                                            ethereumCall(
+                                                            ERC721_CONTRACT,
+                                                            "setApprovalForAlll",
+                                                            asHeadlongAddress(
+                                                                    Bytes.wrap(
+                                                                                    createdTokenAddressString
+                                                                                            .get()
+                                                                                            .toByteArray())
+                                                                            .toHexString()),
+                                                            asHeadlongAddress(
+                                                                    spenderAutoCreatedAccountId
+                                                                            .get()),
+                                                            true)
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(4)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("setApproveForAllTxn")
+                                                    .hasKnownStatusFrom(SUCCESS)
+                                                    .logged();
 
+                                    var isApprovedForAll =
+                                            ethereumCall(
+                                                            ERC721_CONTRACT,
+                                                            "isApprovedForAlll",
+                                                            asHeadlongAddress(
+                                                                    tokenCreateContractID.get()),
+                                                            asHeadlongAddress(
+                                                                    erc721ContractID.get()),
+                                                            asHeadlongAddress(
+                                                                    spenderAutoCreatedAccountId
+                                                                            .get()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(5)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("isApprovedForAllTxn")
+                                                    .hasKnownStatusFrom(SUCCESS)
+                                                    .logged();
 
-                  var uploadEthereumContract = uploadInitCode(ERC721_CONTRACT);
+                                    var isApprovedForAllRecord =
+                                            getTxnRecord("isApprovedForAllTxn")
+                                                    .andAllChildRecords()
+                                                    .logged();
 
-
-                  allRunFor(
-                      spec
-                      ,uploadEthereumContract
-                  );
-
-                  var createEthereumContract = ethereumContractCreate(ERC721_CONTRACT)
-                      .type(EthTxData.EthTransactionType.EIP1559)
-                      .signingWith(SECP_256K1_SOURCE_KEY)
-                      .payingWith(RELAYER)
-                      .nonce(3)
-//                      .bytecode(ERC721_CONTRACT)
-                      .gasPrice(10L)
-                      .maxGasAllowance(ONE_HUNDRED_HBARS)
-                      .gasLimit(1_000_000L)
-                      .hasKnownStatusFrom(SUCCESS);
-//
-                      var exposeEthereumContractAddress = getContractInfo(ERC721_CONTRACT)
-                          .exposingEvmAddress(
-                              address -> erc721ContractID.set("0x" + address));
-
-                  var setAddress =
-                      ethereumCall(
-                          ERC721_CONTRACT,
-                          "setAddress",
-                          asHeadlongAddress(
-                              Bytes.wrap(createdTokenAddressString.get().toByteArray()).toHexString()))
-                          .type(EthTransactionType.EIP1559)
-                          .signingWith(SECP_256K1_SOURCE_KEY)
-                          .payingWith(RELAYER)
-                          .nonce(4)
-                          .gasPrice(10L)
-                          .gasLimit(1_000_000L)
-                          .via("setAddressTxn")
-                          .hasKnownStatusFrom(SUCCESS);
-
-
-
-                  allRunFor(
-                      spec
-                      ,createEthereumContract
-                      ,exposeEthereumContractAddress
-                      ,setAddress
-                      );
-                }),
-            withOpContext(
-                (spec, opLog) -> {
-
-                  var associateToken =
-                      ethereumCall(
-                          ERC721_CONTRACT,
-                          "associateTokenPublic",
-                          asHeadlongAddress(erc721ContractID.get()),
-                          asHeadlongAddress(
-                              Bytes.wrap(createdTokenAddressString.get().toByteArray()).toHexString()))
-                          .type(EthTransactionType.EIP1559)
-                          .signingWith(SECP_256K1_SOURCE_KEY)
-                          .payingWith(GENESIS)
-                          .nonce(5)
-                          .gasPrice(10L)
-                          .gasLimit(1_000_000L)
-                          .via("associateTokenTxn")
-                          .hasKnownStatusFrom(SUCCESS);
-                  var approveForAllCall =
-                      ethereumCall(
-                          ERC721_CONTRACT,
-                          "setApprovalForAll",
-                          asHeadlongAddress(asAddress(spec.registry().getAccountID(spender))),
-                          true)
-                          .type(EthTransactionType.EIP1559)
-                          .signingWith(SECP_256K1_SOURCE_KEY)
-                          .payingWith(RELAYER)
-                          .nonce(6)
-                          .gasPrice(10L)
-                          .gasLimit(1_000_000L)
-                          .via("setApproveForAllTxn")
-                          .hasKnownStatusFrom(SUCCESS).logged();
-//
-                  var isApprovedForAll =
-                      ethereumCall(
-                          ERC721_CONTRACT,
-                          "isApprovedForAll",
-                          asHeadlongAddress(tokenCreateContractID.get()),
-                          asHeadlongAddress(asAddress(spec.registry().getAccountID(spender))))
-                          .type(EthTransactionType.EIP1559)
-                          .signingWith(SECP_256K1_SOURCE_KEY)
-                          .payingWith(RELAYER)
-                          .nonce(7)
-                          .gasPrice(10L)
-                          .gasLimit(1_000_000L)
-                          .via("isApprovedForAllTxn")
-                          .hasKnownStatusFrom(SUCCESS).logged();
-
-                  var isApprovedForAllRecord = getTxnRecord("isApprovedForAllTxn").andAllChildRecords().logged();
-
-                  allRunFor(spec
-                      ,associateToken
-                      ,approveForAllCall
-                      , isApprovedForAll
-                      ,isApprovedForAllRecord
-                  );
-                }))
-        .then(
-            withOpContext(
-                (spec, opLog) -> {
-                }));
-  }
+                                    allRunFor(
+                                            spec,
+                                            associateTokenToERC721,
+                                            associateTokenToSpender,
+                                            approveForAllCall,
+                                            isApprovedForAll,
+                                            isApprovedForAllRecord);
+                                }))
+                .then(withOpContext((spec, opLog) -> {}));
+    }
 
     HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
