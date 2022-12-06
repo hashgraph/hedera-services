@@ -38,8 +38,7 @@ class IsApprovedForAllPrecompileTest {
     private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR = 0x65c;
     private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER2 = 666666666;
     private static final long ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2 = 1003;
-    private static final TokenID TOKEN_ID =
-            TokenID.newBuilder().setTokenNum(1004).build();
+    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(1004).build();
 
     @Test
     void decodeIsApprovedForAllERC() {
@@ -49,7 +48,7 @@ class IsApprovedForAllPrecompileTest {
         assertEquals(TOKEN_ID.getTokenNum(), decodedInput.tokenId().getTokenNum());
         assertEquals(ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OWNER2, decodedInput.owner().getAccountNum());
         assertEquals(
-            ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2, decodedInput.operator().getAccountNum());
+                ACCOUNT_NUM_IS_APPROVED_FOR_ALL_OPERATOR2, decodedInput.operator().getAccountNum());
     }
 
     @Test

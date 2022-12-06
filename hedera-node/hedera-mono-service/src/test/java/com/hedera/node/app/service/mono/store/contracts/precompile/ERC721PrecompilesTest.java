@@ -412,10 +412,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        any(), any(), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
@@ -513,10 +510,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        any(), any(), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 

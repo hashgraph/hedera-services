@@ -186,12 +186,10 @@ class RedirectViewExecutorTest {
         final var nestedInput =
                 prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
-        final var isApproveForAll = new IsApproveForAllWrapper<>(nonfungibletoken, account, spender);
+        final var isApproveForAll =
+                new IsApproveForAllWrapper<>(nonfungibletoken, account, spender);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        any(), any(), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(isApproveForAll);
         given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
         given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
