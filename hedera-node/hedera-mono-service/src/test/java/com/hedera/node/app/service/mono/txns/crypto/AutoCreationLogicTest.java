@@ -38,8 +38,8 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -199,7 +199,7 @@ class AutoCreationLogicTest {
         final var key = Key.parseFrom(ecdsaKeyBytes);
         final var evmAddress =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(
+                        EthSigsUtils.recoverAddressFromPubKey(
                                 JKey.mapKey(key).getECDSASecp256k1Key()));
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
@@ -235,7 +235,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -282,7 +282,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -328,7 +328,7 @@ class AutoCreationLogicTest {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                        EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()

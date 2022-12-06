@@ -24,6 +24,7 @@ configurations.all {
 }
 
 dependencies {
+    api(project(":hedera-node:hedera-evm"))
     annotationProcessor(libs.dagger.compiler)
 
     implementation(libs.bundles.di)
