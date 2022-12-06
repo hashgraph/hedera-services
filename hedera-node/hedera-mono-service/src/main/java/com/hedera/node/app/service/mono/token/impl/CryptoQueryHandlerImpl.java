@@ -29,15 +29,9 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Default implementation of {@link CryptoQueryHandler} */
 public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
-
-    private static final Logger LOG = LoggerFactory.getLogger(CryptoQueryHandlerImpl.class);
-
-    private final AccountStore accountStore;
 
     /**
      * Constructor of {@code CryptoQueryHandlerImpl}
@@ -47,14 +41,11 @@ public class CryptoQueryHandlerImpl implements CryptoQueryHandler {
      */
     public CryptoQueryHandlerImpl(@NonNull States states) {
         requireNonNull(states);
-        accountStore = new AccountStore(states);
     }
 
     @Override
     public Optional<Account> getAccountById(@NonNull final AccountID id) {
-        // TODO: Implement getAccountById
-        LOG.warn("CryptoQueryHandlerImpl.getAccountById() not implemented");
-        return Optional.empty();
+        throw new NotImplementedException();
     }
 
     @Override

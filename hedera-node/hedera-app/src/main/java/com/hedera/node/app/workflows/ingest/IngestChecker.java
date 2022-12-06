@@ -70,7 +70,6 @@ public class IngestChecker {
             throws PreCheckException {
         final ResponseCodeEnum errorCode;
         if (functionality == TokenAccountWipe) {
-            // TODO: Not really sure why TokenAccountWipe gets special treatment
             errorCode =
                     TokenWipeAccessor.validateSyntax(
                             txBody.getTokenWipe(),
