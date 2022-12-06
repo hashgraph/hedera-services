@@ -108,6 +108,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -135,7 +136,6 @@ import com.hedera.services.bdd.suites.utils.validation.domain.SysFilesUpScenario
 import com.hedera.services.bdd.suites.utils.validation.domain.UpdateAction;
 import com.hedera.services.bdd.suites.utils.validation.domain.ValidationConfig;
 import com.hedera.services.bdd.suites.utils.validation.domain.VersionInfoScenario;
-import com.hedera.services.keys.Ed25519Utils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

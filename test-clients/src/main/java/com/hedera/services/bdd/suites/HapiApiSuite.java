@@ -80,6 +80,7 @@ public abstract class HapiApiSuite {
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
     public static final String SECP_256K1_RECEIVER_SOURCE_KEY = "secp256k1ReceiverAlias";
     public static final String TOKEN_TREASURY = "treasury";
+    public static final String UPDATED_TREASURY = "NewTreasury";
     public static final String NONSENSE_KEY = "Jabberwocky!";
     public static final String ZERO_BYTE_MEMO = "\u0000kkkk";
     public static final String NODE = HapiSpecSetup.getDefaultInstance().defaultNodeName();

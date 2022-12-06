@@ -16,7 +16,7 @@
 package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.state.States;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
@@ -28,6 +28,25 @@ public interface Service {
      *
      * @return A new {@link PreTransactionHandler}
      */
-    @Nonnull
-    PreTransactionHandler createPreTransactionHandler(@Nonnull States states);
+    @NonNull
+    PreTransactionHandler createPreTransactionHandler(
+            @NonNull States states, @NonNull PreHandleContext ctx);
+
+    /**
+     * Creates and returns a new {@link TransactionHandler}
+     *
+     * @return A new {@link TransactionHandler}
+     */
+    default @NonNull TransactionHandler createTransactionHandler(@NonNull States states) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Creates and returns a new {@link QueryHandler}
+     *
+     * @return A new {@link QueryHandler}
+     */
+    default @NonNull QueryHandler createQueryHandler(@NonNull States states) {
+        throw new UnsupportedOperationException();
+    }
 }

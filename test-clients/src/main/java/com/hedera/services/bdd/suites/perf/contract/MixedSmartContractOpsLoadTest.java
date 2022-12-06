@@ -34,6 +34,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -68,7 +69,7 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
         final String PAYABLE_CONTRACT = "PayReceivable";
         final String LOOKUP_CONTRACT = "BalanceLookup";
         final String CIVILIAN_ACCOUNT = "civilian";
-        final int depositAmount = 1;
+        final BigInteger depositAmount = BigInteger.ONE;
 
         Supplier<HapiSpecOperation[]> mixedOpsBurst =
                 () ->
@@ -91,13 +92,15 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
                                             "lookup",
                                             spec ->
                                                     new Object[] {
-                                                        spec.registry()
-                                                                .getAccountID(CIVILIAN_ACCOUNT)
-                                                                .getAccountNum()
+                                                        BigInteger.valueOf(
+                                                                spec.registry()
+                                                                        .getAccountID(
+                                                                                CIVILIAN_ACCOUNT)
+                                                                        .getAccountNum())
                                                     })
                                     .payingWith(GENESIS),
                             contractCall(PAYABLE_CONTRACT, "deposit", depositAmount)
-                                    .sending(depositAmount)
+                                    .sending(depositAmount.longValueExact())
                                     .suppressStats(true)
                                     .deferStatusResolution()
                         };

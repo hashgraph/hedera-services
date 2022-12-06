@@ -49,16 +49,17 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.ethereum.EthTxData;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -312,7 +313,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .createCallDataFile()
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -359,7 +361,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 .when(
                         ethereumCall(CALLDATA_SIZE_CONTRACT, "callme", largerThanMaxCalldata)
                                 .via("payTxn")
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -419,7 +422,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .hasKnownStatus(SUCCESS)
-                                .via("payTxn"))
+                                .via("payTxn"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -478,7 +482,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .via("payTxn")
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(SUCCESS),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
@@ -543,7 +548,8 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .maxGasAllowance(ONE_HUNDRED_HBARS)
                                 .gasLimit(1_000_000L)
                                 .via("payTxn")
-                                .hasKnownStatus(SUCCESS))
+                                .hasKnownStatus(SUCCESS),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
                 .then(
                         withOpContext(
                                 (spec, opLog) ->
