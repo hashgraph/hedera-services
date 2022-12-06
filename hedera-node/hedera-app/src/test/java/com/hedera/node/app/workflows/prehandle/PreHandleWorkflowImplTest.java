@@ -24,6 +24,7 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
@@ -35,10 +36,7 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -67,7 +65,7 @@ import static org.mockito.Mockito.*;
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
-    @Mock private ConsensusService consensusService;
+    @Mock private CryptoService cryptoService;
     @Mock private WorkflowOnset onset;
 
     @Mock private HederaState state;
@@ -81,7 +79,7 @@ class PreHandleWorkflowImplTest {
     @BeforeEach
     void setup(
             @Mock ContractService contractService,
-            @Mock CryptoService cryptoService,
+            @Mock ConsensusService consensusService,
             @Mock FileService fileService,
             @Mock FreezeService freezeService,
             @Mock NetworkService networkService,
@@ -170,7 +168,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(consensusService, times(1)).createPreTransactionHandler(any(), any());
+        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any());
     }
 
     @Test
@@ -185,12 +183,12 @@ class PreHandleWorkflowImplTest {
         workflow.start(state2, event);
 
         // then
-        verify(consensusService, times(2)).createPreTransactionHandler(any(), any());
+        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any());
     }
 
     @Test
     void testPreHandleSuccess(
-            @Mock ConsensusPreTransactionHandler preTransactionHandler,
+            @Mock CryptoPreTransactionHandler preTransactionHandler,
             @Mock TransactionMetadata metadata,
             @Mock SwirldTransaction transaction)
             throws PreCheckException {
@@ -205,18 +203,18 @@ class PreHandleWorkflowImplTest {
                                                                 .getArgument(0, Callable.class)
                                                                 .call()));
 
-        final ConsensusCreateTopicTransactionBody content =
-                ConsensusCreateTopicTransactionBody.newBuilder().build();
+        final CryptoCreateTransactionBody content =
+                CryptoCreateTransactionBody.newBuilder().build();
         final TransactionBody txBody =
-                TransactionBody.newBuilder().setConsensusCreateTopic(content).build();
+                TransactionBody.newBuilder().setCryptoCreateAccount(content).build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
+        final HederaFunctionality functionality = HederaFunctionality.CryptoCreate;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
-
-        when(preTransactionHandler.preHandleCreateTopic(txBody, eq(any()))).thenReturn(metadata);
-        when(consensusService.createPreTransactionHandler(any(), eq(context)))
+        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(preTransactionHandler);
+        when(preTransactionHandler.preHandle(eq(txBody), any())).thenReturn(metadata);
+
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);

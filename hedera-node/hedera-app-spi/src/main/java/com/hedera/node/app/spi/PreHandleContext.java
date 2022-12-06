@@ -22,17 +22,16 @@ import java.util.Objects;
 
 /**
  * Contextual information needed to perform pre-handle. Currently, provides extra information needed
- * for signing requirements using {@link HederaAccountNumbers}, {@link HederaFileNumbers} and {@link
- * AccountKeyLookup}to validate if any account's signature can be waived. Any {@link
- * PreTransactionHandler} will need to construct its own {@link SigWaivers} to check for signature
- * waivers using the information provided in this class.
+ * for signing requirements using {@link HederaAccountNumbers} and {@link HederaFileNumbers} to
+ * validate if any account's signature can be waived. Any {@link PreTransactionHandler} will need to
+ * construct its own {@link SigWaivers} to check for signature waivers using the information
+ * provided in this class.
  *
  * @param accountNumbers provides information about signature waiver special cases for some
  *     transactions
  */
 public record PreHandleContext(
-        @NonNull HederaAccountNumbers accountNumbers,
-        @NonNull HederaFileNumbers fileNumbers) {
+        @NonNull HederaAccountNumbers accountNumbers, @NonNull HederaFileNumbers fileNumbers) {
     public PreHandleContext {
         Objects.requireNonNull(accountNumbers);
         Objects.requireNonNull(fileNumbers);
