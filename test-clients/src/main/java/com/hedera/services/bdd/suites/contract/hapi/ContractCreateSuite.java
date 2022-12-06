@@ -393,7 +393,7 @@ public class ContractCreateSuite extends HapiApiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        /* FIXME - the hollow account's number shows as 0 in the effective payer
+                                        /* fixed in another PR - the hollow account's number shows as 0 in the effective payer
                                         list of the resulting record; i.e.,
                                             assessed_custom_fees {
                                               amount: 5000000

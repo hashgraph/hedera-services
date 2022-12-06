@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.traceability;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -52,7 +53,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.extractBytecodeUnhex
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite.getNestedContractAddress;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hedera.services.stream.proto.ContractActionType.CREATE;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
@@ -70,6 +70,8 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.common.hash.Hashing;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.StateChange;
@@ -83,8 +85,6 @@ import com.hedera.services.bdd.spec.verification.traceability.ExpectedSidecar;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils.FunctionType;
-import com.hedera.services.ethereum.EthTxData;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActions;
@@ -139,7 +139,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     private static final String SIDECARS_PROP = "contracts.sidecars";
     private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new TraceabilitySuite().runSuiteSync();
     }
 
@@ -148,7 +148,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         try {
             initialize();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             log.warn("An exception occurred initializing watch service", e);
             return List.of(
                     defaultHapiSpec("initialize")
@@ -6176,7 +6176,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     }
 
     HapiApiSpec traceabilityE2EScenario13() {
-        AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
+        final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
                         overriding(CHAIN_ID_PROPERTY, "298"),
@@ -6258,7 +6258,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    AtomicReference<AccountID> accountIDAtomicReference =
+                                    final AtomicReference<AccountID> accountIDAtomicReference =
                                             new AtomicReference<>();
                                     final var hapiGetAccountInfo =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
@@ -6660,7 +6660,8 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                                     .wrapUnsafely(
                                                                                             Function
                                                                                                     .parse(
-                                                                                                            "isToken(address)")
+                                                                                                            "isToken"
+                                                                                                                + "(address)")
                                                                                                     .encodeCallWithArgs(
                                                                                                             hexedSolidityAddressToHeadlongAddress(
                                                                                                                     asHexedSolidityAddress(
@@ -6833,7 +6834,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    AtomicReference<AccountID> ethSenderAccountReference =
+                                    final AtomicReference<AccountID> ethSenderAccountReference =
                                             new AtomicReference<>();
                                     final var hapiGetAccountInfo =
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
@@ -7253,7 +7254,7 @@ public class TraceabilitySuite extends HapiApiSuite {
     }
 
     private CustomSpecAssert expectContractActionSidecarFor(
-            String txnName, List<ContractAction> actions) {
+            final String txnName, final List<ContractAction> actions) {
         return withOpContext(
                 (spec, opLog) -> {
                     final var txnRecord = getTxnRecord(txnName);

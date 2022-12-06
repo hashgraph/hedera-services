@@ -1,11 +1,7 @@
 module com.hedera.node.app {
-    requires io.helidon.webserver;
-    requires io.helidon.webserver.http2;
+    requires com.swirlds.common;
     requires io.helidon.grpc.server;
-    requires io.helidon.grpc.core;
-    requires jsr305;
+    requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
-    requires com.swirlds.platform;
-    requires com.hedera.node.app.spi;
     requires org.slf4j;
 }

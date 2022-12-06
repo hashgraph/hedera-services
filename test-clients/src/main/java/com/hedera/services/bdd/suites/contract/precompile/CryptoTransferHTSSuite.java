@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -64,7 +65,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZ
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
-import static com.hedera.services.ethereum.EthTxSigs.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -75,6 +75,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -85,8 +87,6 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
-import com.hedera.services.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.legacy.proto.utils.ByteStringUtils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -122,7 +122,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
             "contracts.allowAutoAssociations";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
 
-    public static void main(String... args) {
+    public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteSync();
     }
 
@@ -325,7 +325,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(FUNGIBLE_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn)
                                                     .hasPriority(
                                                             recordWith()
@@ -378,7 +378,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(FUNGIBLE_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn2)
                                                     .hasPriority(
                                                             recordWith()
@@ -545,7 +545,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     + (spec.registry()
                                                             .getTokenID(NFT_TOKEN)
                                                             .getTokenNum());
-                                    var txnRecord =
+                                    final var txnRecord =
                                             getTxnRecord(successfulTransferFromTxn)
                                                     .hasPriority(
                                                             recordWith()
@@ -1684,11 +1684,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)),
                                             childRecordsCheck(
                                                     TRANSFER_TXN2,
@@ -1697,7 +1693,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
@@ -1826,16 +1822,12 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .alias(
-                                                                    ByteStringUtils.wrapUnsafely(
-                                                                            addressBytes)),
+                                                    recordWith().status(SUCCESS),
                                                     recordWith().status(SUCCESS)),
                                             getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(
                                                                             evmAddressBytes)
                                                                     .autoRenew(
@@ -1923,10 +1915,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     successfulTransferFromTxn,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .memo(LAZY_MEMO)
-                                                            .alias(alias),
+                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                                     recordWith()
                                                             .status(SUCCESS)
                                                             .contractCallResult(
@@ -1942,7 +1931,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
@@ -2021,10 +2010,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             childRecordsCheck(
                                                     TRANSFER_TXN,
                                                     SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .memo(LAZY_MEMO)
-                                                            .alias(alias),
+                                                    recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                                     recordWith()
                                                             .status(SUCCESS)
                                                             .contractCallResult(
@@ -2040,7 +2026,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .logged()
                                                     .has(
                                                             AccountInfoAsserts.accountWith()
-                                                                    .key(EMPTY_KEY)
+                                                                    .hasEmptyKey()
                                                                     .evmAddressAlias(alias)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
