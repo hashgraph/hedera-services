@@ -15,7 +15,11 @@
  */
 package com.hedera.node.app.service.mono.utils.forensics;
 
+import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+
 import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readRecordStreamFile;
+import static com.hedera.node.app.hapi.utils.exports.recordstreaming.RecordStreamingUtils.readSidecarFile;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.timestampToInstant;
 import static com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor.uncheckedFrom;
 import static java.util.Comparator.comparing;
@@ -25,7 +29,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Provides a helper to parse the <i>.rcd.gz</i> files in a directory into a list of {@link
@@ -74,12 +84,59 @@ public class RecordParsers {
         return entries;
     }
 
-    @SuppressWarnings("java:S2095")
+    /**
+     * Given a directory of compressed V6 sidecar files, returns a list of all the
+     * sidecar entries contained in those files, in order of ascending consensus time.
+     *
+     * @param streamDir a directory with compressed V6 sidecar files
+     * @return all the contained stream entries
+     * @throws IOException if the files cannot be read or parsed
+     */
+    @SuppressWarnings("java:S3655")
+    public static Map<Instant, List<TransactionSidecarRecord>> parseV6SidecarRecordsByConsTimeIn(final String streamDir)
+            throws IOException {
+        final var sidecarFiles = orderedSidecarFilesFrom(streamDir);
+        final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords = new HashMap<>();
+        for (final var sidecarFile : sidecarFiles) {
+            final var data = readSidecarFile(sidecarFile);
+            data.getSidecarRecordsList().forEach(sidecarRecord ->
+                    sidecarRecords.computeIfAbsent(
+                            timestampToInstant(sidecarRecord.getConsensusTimestamp()),
+                            ignore -> new ArrayList<>()).add(sidecarRecord));
+        }
+        return sidecarRecords;
+    }
+
+    public static void visitWithSidecars(
+            final List<RecordStreamEntry> entries,
+            final Map<Instant, List<TransactionSidecarRecord>> sidecarRecords,
+            final BiConsumer<RecordStreamEntry, List<TransactionSidecarRecord>> observer) {
+        entries.forEach(entry -> observer.accept(
+                entry, sidecarRecords.getOrDefault(entry.consensusTime(), Collections.emptyList())));
+    }
+
     private static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
+        return filteredFilesFrom(
+                streamDir,
+                s -> s.endsWith(V6_FILE_EXT) && !s.contains("Z_"),
+                RecordParsers::parseRecordFileConsensusTime);
+    }
+    private static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
+        return filteredFilesFrom(
+                streamDir,
+                s -> s.endsWith(V6_FILE_EXT) && s.contains("Z_"),
+                RecordParsers::parseSidecarFileConsensusTime);
+    }
+
+    @SuppressWarnings("java:S2095")
+    private static List<String> filteredFilesFrom(
+            final String streamDir,
+            final Predicate<String> criteria,
+            final Function<String, Instant> consTimeParser) throws IOException {
         return Files.walk(Path.of(streamDir))
                 .map(Path::toString)
-                .filter(s -> s.endsWith(V6_FILE_EXT))
-                .sorted(comparing(RecordParsers::parseRecordFileConsensusTime))
+                .filter(criteria)
+                .sorted(comparing(consTimeParser))
                 .toList();
     }
 
@@ -88,5 +145,12 @@ public class RecordParsers {
         final var n = recordFile.length();
         return Instant.parse(
                 recordFile.substring(s + 1, n - V6_FILE_EXT.length()).replace("_", ":"));
+    }
+
+    private static Instant parseSidecarFileConsensusTime(final String sidecarFile) {
+        final var s = sidecarFile.lastIndexOf("/");
+        final var base = sidecarFile.substring(s + 1);
+        final var underscoreI = base.lastIndexOf("_");
+        return Instant.parse(base.substring(0, underscoreI).replace("_", ":"));
     }
 }

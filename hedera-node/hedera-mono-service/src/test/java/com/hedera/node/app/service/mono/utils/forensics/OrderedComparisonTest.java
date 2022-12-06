@@ -18,6 +18,10 @@ package com.hedera.node.app.service.mono.utils.forensics;
 import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.findDifferencesBetweenV6;
 import static com.hedera.node.app.service.mono.utils.forensics.OrderedComparison.statusHistograms;
 import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6RecordStreamEntriesIn;
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.parseV6SidecarRecordsByConsTimeIn;
+import static com.hedera.node.app.service.mono.utils.forensics.RecordParsers.visitWithSidecars;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.RESULTDATA_NOT_SET;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.FileAppend;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
@@ -26,7 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.TextFormat;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.*;
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +43,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import com.swirlds.common.utility.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -121,5 +130,40 @@ class OrderedComparisonTest {
         assertEquals(3, fileAppends.size());
         final var appendTarget = fileAppends.get(0).body().getFileAppend().getFileID();
         assertEquals(48287857L, appendTarget.getFileNum());
+    }
+
+    @Test
+    void sidecarIssue() throws IOException {
+        final var loc = "/Users/michaeltinker/Forensics/previewnet-telemetry/node0";
+        final var entries = parseV6RecordStreamEntriesIn(loc);
+        final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);
+
+        final var histograms = statusHistograms(entries);
+        System.out.println(histograms);
+
+        visitWithSidecars(entries, sidecarRecords, (entry, records) -> {
+            final var accessor = entry.accessor();
+            if (accessor.getFunction() == HederaFunctionality.EthereumTransaction) {
+                System.out.println(accessor.getTxn());
+                System.out.println("====>>");
+                System.out.println(entry.txnRecord());
+                System.out.println("====>>");
+                System.out.println(records);
+                final var expected = List.of(RESULTDATA_NOT_SET, REVERT_REASON);
+                final var actual = records.stream()
+                        .filter(TransactionSidecarRecord::hasActions)
+                        .flatMap(r -> r.getActions().getContractActionsList().stream())
+                        .map(ContractAction::getResultDataCase)
+                        .toList();
+                assertEquals(expected, actual);
+            }
+        });
+    }
+
+    @Test
+    void hmm() throws TextFormat.InvalidEscapeSequenceException {
+        final var encoded = "a\\215\\306^\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\235\\033\\t^\\247\\263\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000-\\000\\277\\021c\\254t\\341QU{C\\322\\t\\020\\331\\224b*\\'\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377\\377";
+        final var raw = TextFormat.unescapeBytes(encoded);
+        System.out.println(CommonUtils.hex(raw.toByteArray()));
     }
 }

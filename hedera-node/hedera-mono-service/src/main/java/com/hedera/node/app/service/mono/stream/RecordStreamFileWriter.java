@@ -29,6 +29,7 @@ import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Message;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
 import com.hedera.services.stream.proto.RecordStreamFile;
@@ -40,6 +41,7 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.SignatureFile;
 import com.hedera.services.stream.proto.SignatureObject;
 import com.hedera.services.stream.proto.SignatureType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.services.stream.proto.TransactionSidecarRecord.SidecarRecordsCase;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.crypto.Cryptography;
@@ -671,6 +673,15 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                                                 sidecarStreamDigest,
                                                 gzipStream != null ? gzipStream : stream)))) {
             // write contents of sidecar
+            System.out.println(sidecarFileBuilder);
+            final var tmp = sidecarFileBuilder.build();
+            System.out.println(tmp.getSidecarRecordsList()
+                    .stream()
+                    .filter(TransactionSidecarRecord::hasActions)
+                    .flatMap(r -> r.getActions().getContractActionsList().stream())
+                    .map(ContractAction::getResultDataCase)
+                    .toList());
+
             dos.write(serialize(sidecarFileBuilder));
 
             // make sure the whole sidecar is written to disk before continuing
