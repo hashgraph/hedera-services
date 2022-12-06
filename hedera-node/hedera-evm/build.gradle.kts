@@ -47,7 +47,7 @@ dependencies {
         // this is an android version, not a jre version (since this belongs to the API layer)
         exclude("com.google.guava", "guava")
     }
-    api(libs.guava) //TODO: we should remove the internal usage of guava
+    api(libs.guava) // TODO: we should remove the internal usage of guava
 
     implementation(libs.jna)
     implementation(libs.caffeine)

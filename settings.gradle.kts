@@ -41,7 +41,7 @@ include(":hedera-node:hedera-app-spi")
 include(":hedera-node:hedera-evm")
 include(":hedera-node:hedera-evm-impl")
 include(":hedera-node:hedera-mono-service")
-//include(":test-clients")
+// include(":test-clients")
 
 // Enable Gradle Build Scan
 gradleEnterprise {
