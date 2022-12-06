@@ -49,8 +49,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link SystemTask} added in release 0.31 that exports the bytecode and storage slots of all

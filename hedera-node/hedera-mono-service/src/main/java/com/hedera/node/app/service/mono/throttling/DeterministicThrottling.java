@@ -48,8 +48,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.IntSupplier;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeterministicThrottling implements TimedFunctionalityThrottling {
     private static final Logger log = LoggerFactory.getLogger(DeterministicThrottling.class);

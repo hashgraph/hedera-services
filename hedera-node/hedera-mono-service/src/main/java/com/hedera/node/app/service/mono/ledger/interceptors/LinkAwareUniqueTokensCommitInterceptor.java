@@ -26,8 +26,8 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.validation.UsageLimits;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import java.util.Objects;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Manages the "map value linked list" of each account's owned non-treasury NFTs. */
 public class LinkAwareUniqueTokensCommitInterceptor

@@ -56,8 +56,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements a transaction context using infrastructure known to be available in the node context.

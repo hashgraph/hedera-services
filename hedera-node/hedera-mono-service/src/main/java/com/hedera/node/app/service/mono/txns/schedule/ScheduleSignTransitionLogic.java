@@ -38,8 +38,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ScheduleSignTransitionLogic implements TransitionLogic {

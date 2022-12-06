@@ -24,6 +24,11 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
@@ -32,6 +37,7 @@ dependencies {
     implementation(libs.slf4j.api)
 
     implementation(libs.bundles.di)
+    implementation(libs.helidon.io.grpc)
     implementation(project(":hedera-node:hapi-utils"))
     implementation(libs.commons.lang3)
     implementation(libs.hapi)

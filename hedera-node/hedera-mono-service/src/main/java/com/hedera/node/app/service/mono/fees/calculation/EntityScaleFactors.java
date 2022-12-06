@@ -22,8 +22,8 @@ import com.hedera.node.app.service.mono.context.properties.EntityType;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record EntityScaleFactors(
         UtilizationScaleFactors defaultScaleFactors,

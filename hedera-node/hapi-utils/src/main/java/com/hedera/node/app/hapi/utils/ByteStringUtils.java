@@ -20,12 +20,11 @@ import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Protobuf related utilities shared by client and server. */
 public final class ByteStringUtils {

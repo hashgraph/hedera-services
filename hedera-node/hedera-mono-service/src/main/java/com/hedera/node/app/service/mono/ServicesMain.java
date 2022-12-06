@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,8 +31,8 @@ import com.swirlds.common.system.state.notifications.NewSignedStateListener;
 import com.swirlds.platform.Browser;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements callbacks to bind gRPC services, react to platform status changes, and incorporate new

@@ -258,12 +258,12 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.commons.codec.DecoderException;
-import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
 
 @ExtendWith({MockitoExtension.class})
 class MiscUtilsTest {

@@ -39,8 +39,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is used for generating record stream files when record streaming is enabled, and for
@@ -189,11 +189,11 @@ public class RecordStreamManager {
             writeQueueThread.start();
         }
 
-        if(log.isInfoEnabled()) {
+        if (log.isInfoEnabled()) {
             log.info(
                     "Finish initializing RecordStreamManager with: enableRecordStreaming: {},"
-                            + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {} secs,"
-                            + " recordStreamQueueCapacity: {}, initialHash: {}",
+                        + " recordStreamDir: {}, sidecarRecordStreamDir: {}, recordsLogPeriod: {}"
+                        + " secs, recordStreamQueueCapacity: {}, initialHash: {}",
                     nodeLocalProperties.isRecordStreamEnabled(),
                     nodeScopedRecordLogDir,
                     nodeScopedSidecarDir,

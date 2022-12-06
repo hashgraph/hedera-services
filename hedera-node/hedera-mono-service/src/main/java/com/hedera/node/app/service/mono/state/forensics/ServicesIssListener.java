@@ -22,8 +22,8 @@ import com.swirlds.common.system.state.notifications.IssListener;
 import com.swirlds.common.system.state.notifications.IssNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ServicesIssListener implements IssListener {

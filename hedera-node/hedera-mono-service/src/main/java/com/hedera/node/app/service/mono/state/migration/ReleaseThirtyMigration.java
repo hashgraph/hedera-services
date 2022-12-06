@@ -27,8 +27,8 @@ import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.swirlds.platform.RandomExtended;
 import java.time.Instant;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReleaseThirtyMigration {
     private static final Logger log = LoggerFactory.getLogger(ReleaseThirtyMigration.class);

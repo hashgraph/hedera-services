@@ -56,8 +56,8 @@ import java.util.Set;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements a {@link FeeCalculator} in terms of injected usage prices, exchange rates, and

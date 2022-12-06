@@ -34,8 +34,8 @@ import com.swirlds.common.system.transaction.ConsensusTransaction;
 import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class StandardProcessLogic implements ProcessLogic {

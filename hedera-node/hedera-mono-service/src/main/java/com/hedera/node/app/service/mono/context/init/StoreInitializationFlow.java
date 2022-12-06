@@ -29,8 +29,8 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class StoreInitializationFlow {

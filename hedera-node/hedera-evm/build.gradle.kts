@@ -26,12 +26,19 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
+    exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
+    exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
+    exclude("io.grpc", "grpc-stub")
 }
 
 dependencies {
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.swirlds.common)
+    implementation(libs.helidon.io.grpc)
     api(libs.besu.secp256k1)
     implementation(libs.jna)
     implementation(libs.caffeine)

@@ -17,8 +17,8 @@ package com.hedera.node.app.service.mono.files.interceptors;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConfigListUtils {
     private static final Logger log = LoggerFactory.getLogger(ConfigListUtils.class);

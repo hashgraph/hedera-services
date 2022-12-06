@@ -63,8 +63,8 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPOutputStream;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
@@ -374,7 +374,7 @@ class RecordStreamFileWriter implements LinkedObjectStream<RecordStreamObject> {
                     dosMeta.close();
                     dosMeta = null;
                     recordStreamFileBuilder = null;
-                    if(LOG.isDebugEnabled()) {
+                    if (LOG.isDebugEnabled()) {
                         LOG.debug(
                                 convert(OBJECT_STREAM_FILE),
                                 "File {} is closed at {}",

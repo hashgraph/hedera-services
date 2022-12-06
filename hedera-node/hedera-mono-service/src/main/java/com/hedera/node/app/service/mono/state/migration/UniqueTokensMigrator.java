@@ -27,8 +27,8 @@ import com.swirlds.jasperdb.JasperDbBuilder;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UniqueTokensMigrator {
     private static final Logger LOG = LoggerFactory.getLogger(UniqueTokensMigrator.class);

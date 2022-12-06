@@ -37,8 +37,8 @@ import com.swirlds.common.system.events.Event;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used by {@link EventExpansion#expandAllSigs(Event, ServicesState)} to expand the cryptographic

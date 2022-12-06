@@ -111,9 +111,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StateView {
 

@@ -27,8 +27,8 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.EnumMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class HapiOpPermissions {

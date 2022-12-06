@@ -42,9 +42,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Buffers a set of changes to the key/value pairs in contract storage into a <i>session</i>, and

@@ -41,8 +41,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Determines if the payer account set in the {@code TransactionID} is expected to be both willing

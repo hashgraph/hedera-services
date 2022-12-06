@@ -18,8 +18,8 @@ package com.hedera.node.app.service.mono.state.forensics;
 import com.hedera.node.app.service.mono.ServicesState;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class HashLogger {

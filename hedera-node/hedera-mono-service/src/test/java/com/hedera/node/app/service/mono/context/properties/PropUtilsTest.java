@@ -23,8 +23,8 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-import org.slf4j.Logger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
 
 class PropUtilsTest {
     @Test

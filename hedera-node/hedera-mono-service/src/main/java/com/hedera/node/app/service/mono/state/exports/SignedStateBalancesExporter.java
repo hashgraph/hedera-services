@@ -61,8 +61,8 @@ import java.util.function.Function;
 import java.util.zip.GZIPOutputStream;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.time.StopWatch;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class SignedStateBalancesExporter implements BalancesExporter {

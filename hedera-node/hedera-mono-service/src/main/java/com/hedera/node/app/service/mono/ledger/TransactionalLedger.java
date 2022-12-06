@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a ledger with transactional semantics. Changes during a transaction are summarized in
@@ -485,7 +485,7 @@ public class TransactionalLedger<K, P extends Enum<P> & BeanProperty<A>, A>
 
     private void ensureNotInTxn() {
         if (isInTransaction) {
-            if(log.isWarnEnabled()) {
+            if (log.isWarnEnabled()) {
                 log.warn(
                         "Ledger with property type {} still in transaction at begin()",
                         propertyType.getSimpleName());

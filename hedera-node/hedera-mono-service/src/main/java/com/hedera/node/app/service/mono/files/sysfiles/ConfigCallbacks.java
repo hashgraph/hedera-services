@@ -38,8 +38,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ConfigCallbacks {
@@ -116,7 +116,7 @@ public class ConfigCallbacks {
                                             num.longValue(), DEFAULT_MAX_TO_MIN_STAKE_RATIO);
                             final var minStake = maxStake / maxToMinRatio;
                             mutableInfo.setMinStake(minStake);
-                            if(log.isInfoEnabled()) {
+                            if (log.isInfoEnabled()) {
                                 log.info(
                                         "Set node{} max/min stake to {}/{} ~ {}:1 ratio",
                                         num.longValue(),

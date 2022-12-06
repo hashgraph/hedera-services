@@ -41,8 +41,8 @@ import java.time.Instant;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Post-consensus execution of smart contract api calls */
 @Singleton
@@ -89,11 +89,8 @@ public class SmartContractRequestHandler {
             }
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemDelete", e);
-            if(log.isDebugEnabled()) {
-                log.debug(
-                        "File System Exception {} tx= {}",
-                        e,
-                        TextFormat.shortDebugString(op));
+            if (log.isDebugEnabled()) {
+                log.debug("File System Exception {} tx= {}", e, TextFormat.shortDebugString(op));
             }
             receipt =
                     getTransactionReceipt(
@@ -153,11 +150,8 @@ public class SmartContractRequestHandler {
             entityExpiries.remove(entity);
         } catch (Exception e) {
             log.warn("Unhandled exception in SystemUndelete", e);
-            if(log.isDebugEnabled()) {
-                log.debug(
-                        "File System Exception {} tx= {}",
-                        e,
-                        TextFormat.shortDebugString(op));
+            if (log.isDebugEnabled()) {
+                log.debug("File System Exception {} tx= {}", e, TextFormat.shortDebugString(op));
             }
             receipt = getTransactionReceipt(FILE_SYSTEM_EXCEPTION, exchange.activeRates());
         }

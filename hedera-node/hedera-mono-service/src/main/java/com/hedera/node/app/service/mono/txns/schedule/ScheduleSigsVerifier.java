@@ -53,8 +53,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Class that encapsulates checking schedule signatures. */
 @Singleton

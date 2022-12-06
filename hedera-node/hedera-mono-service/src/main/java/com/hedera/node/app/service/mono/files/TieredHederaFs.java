@@ -41,8 +41,8 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link HederaFs} that stores the contents and metadata of its files in separate injected {@link

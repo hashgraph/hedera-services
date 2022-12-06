@@ -22,8 +22,8 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ExecutionTimeTracker {

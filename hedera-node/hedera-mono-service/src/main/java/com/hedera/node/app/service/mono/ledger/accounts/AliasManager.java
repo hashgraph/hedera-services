@@ -143,7 +143,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                 } else {
                     // Not ever expected, since above checks should imply a valid input to the
                     // LibSecp256k1 library
-                    if(log.isWarnEnabled()) {
+                    if (log.isWarnEnabled()) {
                         log.warn("Unable to recover EVM address from {}", hex(keyBytes));
                     }
                 }
@@ -195,7 +195,7 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                         }
                     }
                 });
-        if(log.isInfoEnabled()) {
+        if (log.isInfoEnabled()) {
             log.info(
                     "Rebuild complete, re-mapped {} aliases ({} from CREATE2, {} externally owned"
                             + " accounts)",

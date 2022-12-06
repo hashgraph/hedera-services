@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,9 +60,9 @@ import java.util.EnumSet;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Level;
-import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 class BasicFcfsUsagePricesTest {
     public static final String R4_FEE_SCHEDULE_REPR_PATH =

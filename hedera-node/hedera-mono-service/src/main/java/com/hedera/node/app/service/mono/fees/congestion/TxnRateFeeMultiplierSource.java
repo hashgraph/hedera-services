@@ -25,8 +25,8 @@ import com.hedera.node.app.service.mono.throttling.annotations.HandleThrottle;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class TxnRateFeeMultiplierSource extends DelegatingMultiplierSource {

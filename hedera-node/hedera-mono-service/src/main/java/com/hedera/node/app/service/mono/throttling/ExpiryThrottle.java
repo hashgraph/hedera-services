@@ -32,8 +32,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A throttle to be used to control usage of {@link com.swirlds.merkle.map.MerkleMap} and {@link

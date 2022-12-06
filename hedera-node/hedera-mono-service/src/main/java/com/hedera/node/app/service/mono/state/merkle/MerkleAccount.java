@@ -32,8 +32,8 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.fcqueue.FCQueue;
 import java.util.*;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerkleAccount extends PartialNaryMerkleInternal
         implements MerkleInternal, Keyed<EntityNum>, HederaAccount {

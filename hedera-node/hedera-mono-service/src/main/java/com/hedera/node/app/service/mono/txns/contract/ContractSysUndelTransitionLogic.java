@@ -39,12 +39,13 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class ContractSysUndelTransitionLogic implements TransitionLogic {
-    private static final Logger log = LoggerFactory.getLogger(ContractSysUndelTransitionLogic.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(ContractSysUndelTransitionLogic.class);
 
     private final boolean supported;
     private final OptionValidator validator;

@@ -25,8 +25,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Minimal helper to construct a {@link RecordCache} based on the TTL configured in the Hedera

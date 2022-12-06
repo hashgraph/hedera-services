@@ -23,8 +23,8 @@ import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class MetadataMapFactory {
     private static final Logger log = LoggerFactory.getLogger(MetadataMapFactory.class);

@@ -25,8 +25,8 @@ import com.swirlds.common.notification.listeners.PlatformStatusChangeNotificatio
 import com.swirlds.common.system.NodeId;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Listener that will be notified with {@link

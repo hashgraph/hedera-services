@@ -79,9 +79,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.StringUtils;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.bouncycastle.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Encapsulates access to several commonly referenced parts of a gRPC {@link Transaction}. */
 public class SignedTxnAccessor implements TxnAccessor {

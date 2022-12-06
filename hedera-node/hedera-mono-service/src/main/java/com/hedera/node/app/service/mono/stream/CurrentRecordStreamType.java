@@ -21,8 +21,8 @@ import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class CurrentRecordStreamType implements RecordStreamType {
@@ -57,7 +57,7 @@ public class CurrentRecordStreamType implements RecordStreamType {
                         protoSemVer.getMinor(),
                         protoSemVer.getPatch()
                     };
-            if(log.isInfoEnabled()) {
+            if (log.isInfoEnabled()) {
                 log.info("Record stream file header is {}", Arrays.toString(fileHeader));
             }
         }

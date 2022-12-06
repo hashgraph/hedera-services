@@ -37,8 +37,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UniqueTokensLinkManager {
     private static final Logger log = LoggerFactory.getLogger(UniqueTokensLinkManager.class);

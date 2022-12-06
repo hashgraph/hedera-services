@@ -37,8 +37,8 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MapMigrationToDisk {
     private static final Logger log = LoggerFactory.getLogger(MapMigrationToDisk.class);

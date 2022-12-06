@@ -57,9 +57,9 @@ import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLeaf {
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
@@ -220,7 +220,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
         }
         final var matchIndex = matchIndexOf(knownBlockValues.hash());
         if (matchIndex == -1) {
-            if(log.isInfoEnabled()) {
+            if (log.isInfoEnabled()) {
                 log.info(
                         "None of {} trailing block hashes matched '{}'",
                         blockHashes.size(),
@@ -228,7 +228,7 @@ public class MerkleNetworkContext extends PartialMerkleLeaf implements MerkleLea
             }
         } else {
             blockNo = knownBlockValues.number() + (blockHashes.size() - matchIndex);
-            if(log.isInfoEnabled()) {
+            if (log.isInfoEnabled()) {
                 log.info(
                         "Renumbered {} trailing block hashes given '0x{}@{}'",
                         blockHashes.size(),

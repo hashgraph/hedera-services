@@ -20,8 +20,8 @@ import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteListene
 import com.swirlds.common.notification.listeners.StateWriteToDiskCompleteNotification;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Listener that will be notified with {@link

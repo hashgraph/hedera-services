@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements a {@link PropertySources} that re-resolves every property reference by delegating to a

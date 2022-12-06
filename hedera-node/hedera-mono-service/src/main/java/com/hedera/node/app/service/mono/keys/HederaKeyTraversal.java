@@ -19,8 +19,8 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides static helpers for interrogating the simple keys in a complex Hedera key.

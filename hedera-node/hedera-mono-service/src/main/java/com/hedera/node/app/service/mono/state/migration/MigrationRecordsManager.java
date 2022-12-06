@@ -50,8 +50,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible for externalizing any state changes that happened during migration via child records,

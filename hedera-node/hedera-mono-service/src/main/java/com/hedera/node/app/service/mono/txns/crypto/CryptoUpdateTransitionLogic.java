@@ -59,8 +59,8 @@ import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.codec.DecoderException;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements the {@link TransitionLogic} for a HAPI CryptoUpdate transaction, and the conditions

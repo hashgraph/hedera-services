@@ -20,8 +20,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum SemanticVersions {
     SEMANTIC_VERSIONS;

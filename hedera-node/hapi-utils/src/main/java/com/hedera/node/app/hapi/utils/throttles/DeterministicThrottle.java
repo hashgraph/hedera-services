@@ -15,10 +15,9 @@
  */
 package com.hedera.node.app.hapi.utils.throttles;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;

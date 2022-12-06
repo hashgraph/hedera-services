@@ -25,8 +25,8 @@ import com.hedera.node.app.service.mono.stream.NonBlockingHandoff;
 import com.hedera.node.app.service.mono.stream.RecordStreamObject;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Publishes records to the Platform-managed record stream, using the {@link

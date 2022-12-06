@@ -27,8 +27,8 @@ import com.hederahashgraph.api.proto.java.TransactionResponse;
 import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public final class TxnResponseHelper {

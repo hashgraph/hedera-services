@@ -25,9 +25,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.hyperledger.besu.datatypes.Address;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StackedContractAliases extends HederaEvmContractAliases implements ContractAliases {
     private static final Logger log = LoggerFactory.getLogger(StackedContractAliases.class);

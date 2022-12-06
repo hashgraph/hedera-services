@@ -51,12 +51,13 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StakingAccountsCommitInterceptor extends AccountsCommitInterceptor {
     private static final int INITIAL_CHANGE_CAPACITY = 32;
-    private static final Logger log = LoggerFactory.getLogger(StakingAccountsCommitInterceptor.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(StakingAccountsCommitInterceptor.class);
 
     private final StakeChangeManager stakeChangeManager;
     private final Supplier<MerkleNetworkContext> networkCtx;

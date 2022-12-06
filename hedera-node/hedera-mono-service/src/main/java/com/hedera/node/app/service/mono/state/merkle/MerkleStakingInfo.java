@@ -59,8 +59,8 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
     private static final Logger log = LoggerFactory.getLogger(MerkleStakingInfo.class);
@@ -179,7 +179,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         perHbarRateThisNode = Math.min(perHbarRateThisNode, maxPerHbarRate);
         rewardSumHistory[0] += perHbarRateThisNode;
 
-        if(log.isInfoEnabled()) {
+        if (log.isInfoEnabled()) {
             log.info(
                     "   > Non-zero reward sum history is now {}",
                     readableNonZeroHistory(rewardSumHistory));
