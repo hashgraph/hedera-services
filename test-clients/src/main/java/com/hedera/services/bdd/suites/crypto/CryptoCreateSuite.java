@@ -37,6 +37,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -115,7 +117,7 @@ public class CryptoCreateSuite extends HapiApiSuite {
                 createAnAccountWithED25519KeyAndED25519Alias(),
                 createAnAccountWithECKeyAndECKeyAlias(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-            hollowAccountCreationChargesExpectedFees());
+                hollowAccountCreationChargesExpectedFees());
     }
 
     private HapiApiSpec createAnAccountWithStakingFields() {
