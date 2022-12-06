@@ -141,6 +141,40 @@ class WorkflowOnsetTest {
         assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusCreateTopic);
     }
 
+    @Test
+    void testParseAndCheckWithByteArraySucceeds(@Mock Parser<Transaction> localTxParser)
+            throws PreCheckException, InvalidProtocolBufferException {
+        // when
+        final var byteArray = new byte[0];
+        when(localTxParser.parseFrom(byteArray)).thenReturn(tx);
+
+        ctx = new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
+        final var result = onset.parseAndCheck(ctx, byteArray);
+
+        // then
+        assertThat(result.txBody()).isEqualTo(txBody);
+        assertThat(result.signatureMap()).isEqualTo(signatureMap);
+        assertThat(result.functionality()).isEqualTo(HederaFunctionality.ConsensusCreateTopic);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @Test
+    void testParseAndCheckWithIllegalArguments() {
+        // given
+        final var byteArray = new byte[0];
+
+        // then
+        assertThatThrownBy(() -> onset.parseAndCheck(null, inputBuffer))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (ByteBuffer) null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> onset.parseAndCheck(null, byteArray))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> onset.parseAndCheck(ctx, (byte[]) null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
     @SuppressWarnings({"JUnitMalformedDeclaration", "deprecation"})
     @Test
     void testParseAndChechWithDeprecatedFieldsSucceeds(

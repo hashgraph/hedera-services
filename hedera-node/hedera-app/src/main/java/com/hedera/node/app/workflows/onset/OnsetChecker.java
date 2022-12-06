@@ -31,10 +31,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_TOO_MANY_LAYERS;
 import static java.util.Objects.requireNonNull;
 
-import com.google.protobuf.GeneratedMessageV3;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
@@ -50,14 +48,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
 
     private final int maxSignedTxnSize;
-    private final int maxProtoMessageDepth;
     private final RecordCache recordCache;
     private final AccountID nodeAccountID;
     private final GlobalDynamicProperties dynamicProperties;
@@ -67,7 +63,6 @@ public class OnsetChecker {
      * Constructor of an {@code OnsetChecker}
      *
      * @param maxSignedTxnSize the maximum transaction size
-     * @param maxProtoMessageDepth the maximum message depth
      * @param recordCache the {@link RecordCache}
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
      * @param dynamicProperties the {@link GlobalDynamicProperties}
@@ -76,7 +71,6 @@ public class OnsetChecker {
      */
     public OnsetChecker(
             final int maxSignedTxnSize,
-            final int maxProtoMessageDepth,
             @NonNull final RecordCache recordCache,
             @NonNull final AccountID nodeAccountID,
             @NonNull final GlobalDynamicProperties dynamicProperties,
@@ -84,11 +78,7 @@ public class OnsetChecker {
         if (maxSignedTxnSize <= 0) {
             throw new IllegalArgumentException("maxSignedTxnSize must be > 0");
         }
-        if (maxProtoMessageDepth <= 0) {
-            throw new IllegalArgumentException("maxProtoMessageDepth must be > 0");
-        }
         this.maxSignedTxnSize = maxSignedTxnSize;
-        this.maxProtoMessageDepth = maxProtoMessageDepth;
         this.recordCache = requireNonNull(recordCache);
         this.nodeAccountID = requireNonNull(nodeAccountID);
         this.dynamicProperties = requireNonNull(dynamicProperties);
@@ -134,10 +124,6 @@ public class OnsetChecker {
         if (MiscUtils.hasUnknownFields(tx)) {
             throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
         }
-
-        if (hasTooManyLayers(tx)) {
-            throw new PreCheckException(TRANSACTION_TOO_MANY_LAYERS);
-        }
     }
 
     /**
@@ -154,10 +140,6 @@ public class OnsetChecker {
         if (MiscUtils.hasUnknownFields(tx)) {
             throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
         }
-
-        if (hasTooManyLayers(tx)) {
-            throw new PreCheckException(TRANSACTION_TOO_MANY_LAYERS);
-        }
     }
 
     /**
@@ -173,10 +155,6 @@ public class OnsetChecker {
 
         if (MiscUtils.hasUnknownFields(txBody)) {
             throw new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS);
-        }
-
-        if (hasTooManyLayers(txBody)) {
-            throw new PreCheckException(TRANSACTION_TOO_MANY_LAYERS);
         }
 
         if (!txBody.hasTransactionID()) {
@@ -207,30 +185,6 @@ public class OnsetChecker {
         checkMemo(txBody.getMemo());
 
         checkTimebox(txnId.getTransactionValidStart(), txBody.getTransactionValidDuration());
-    }
-
-    private static int protoDepthOf(final GeneratedMessageV3 msg) {
-        int depth = 0;
-        for (final var field : msg.getAllFields().values()) {
-            if (field instanceof GeneratedMessageV3 message) {
-                depth = Math.max(depth, 1 + protoDepthOf(message));
-            } else if (field instanceof List<?> list) {
-                for (final var item : list) {
-                    depth =
-                            Math.max(
-                                    depth,
-                                    item instanceof GeneratedMessageV3 message
-                                            ? 1 + protoDepthOf(message)
-                                            : 0);
-                }
-            }
-            /* Otherwise the field is a primitive and adds no depth to the message. */
-        }
-        return depth;
-    }
-
-    private boolean hasTooManyLayers(final GeneratedMessageV3 msg) {
-        return protoDepthOf(msg) > maxProtoMessageDepth;
     }
 
     private static boolean isPlausibleTxnFee(final long transactionFee) {

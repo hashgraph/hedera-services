@@ -63,7 +63,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OnsetCheckerTest {
 
     private static final int MAX_TXN_SIZE = 6 * 1024;
-    private static final int MAX_LEVELS = 20;
     private static final int MAX_MEMO_SIZE = 2 * 1024;
     private static final long MIN_DURATION = 10L;
     private static final long MAX_DURATION = 120L;
@@ -98,9 +97,7 @@ class OnsetCheckerTest {
                         .setTransactionValidStart(now)
                         .build();
 
-        checker =
-                new OnsetChecker(
-                        MAX_TXN_SIZE, MAX_LEVELS, recordCache, nodeId, dynamicProperties, counters);
+        checker = new OnsetChecker(MAX_TXN_SIZE, recordCache, nodeId, dynamicProperties, counters);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -111,85 +108,35 @@ class OnsetCheckerTest {
 
         // then
         assertThatThrownBy(
-                        () ->
-                                new OnsetChecker(
-                                        0,
-                                        MAX_LEVELS,
-                                        recordCache,
-                                        nodeId,
-                                        dynamicProperties,
-                                        counters))
+                        () -> new OnsetChecker(0, recordCache, nodeId, dynamicProperties, counters))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(
                         () ->
                                 new OnsetChecker(
-                                        -1,
-                                        MAX_LEVELS,
-                                        recordCache,
-                                        nodeId,
-                                        dynamicProperties,
-                                        counters))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(
-                        () ->
-                                new OnsetChecker(
-                                        MAX_TXN_SIZE,
-                                        0,
-                                        recordCache,
-                                        nodeId,
-                                        dynamicProperties,
-                                        counters))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(
-                        () ->
-                                new OnsetChecker(
-                                        MAX_TXN_SIZE,
-                                        -1,
-                                        recordCache,
-                                        nodeId,
-                                        dynamicProperties,
-                                        counters))
+                                        -1, recordCache, nodeId, dynamicProperties, counters))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThatThrownBy(
                         () ->
                                 new OnsetChecker(
-                                        MAX_TXN_SIZE,
-                                        MAX_LEVELS,
-                                        null,
-                                        nodeId,
-                                        dynamicProperties,
-                                        counters))
+                                        MAX_TXN_SIZE, null, nodeId, dynamicProperties, counters))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new OnsetChecker(
                                         MAX_TXN_SIZE,
-                                        MAX_LEVELS,
                                         recordCache,
                                         null,
                                         dynamicProperties,
                                         counters))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
-                        () ->
-                                new OnsetChecker(
-                                        MAX_TXN_SIZE,
-                                        MAX_LEVELS,
-                                        recordCache,
-                                        nodeId,
-                                        null,
-                                        counters))
+                        () -> new OnsetChecker(MAX_TXN_SIZE, recordCache, nodeId, null, counters))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new OnsetChecker(
-                                        MAX_TXN_SIZE,
-                                        MAX_LEVELS,
-                                        recordCache,
-                                        nodeId,
-                                        dynamicProperties,
-                                        null))
+                                        MAX_TXN_SIZE, recordCache, nodeId, dynamicProperties, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -446,9 +393,9 @@ class OnsetCheckerTest {
     }
 
     @Test
-    void testCheckTransactionBodyWithInvalidAccountFails() {
+    void testCheckTransactionBodyWithInvalidAccountNumFails() {
         // given
-        final var payerId = AccountID.newBuilder().build();
+        final var payerId = AccountID.newBuilder().setAccountNum(0L).build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
         transactionID =
                 TransactionID.newBuilder()
@@ -465,6 +412,52 @@ class OnsetCheckerTest {
         assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
                 .isInstanceOf(PreCheckException.class)
                 .hasFieldOrPropertyWithValue("responseCode", PAYER_ACCOUNT_NOT_FOUND);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithInvalidRealmNumFails() {
+        // given
+        final var payerId = AccountID.newBuilder().setAccountNum(1L).setRealmNum(-1L).build();
+        final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
+
+        // then
+        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", PAYER_ACCOUNT_NOT_FOUND);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithInvalidAccountFails() {
+        // given
+        final var payerId = AccountID.newBuilder().setAccountNum(1L).setShardNum(-1L).build();
+        final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();
+        transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(payerId)
+                        .setTransactionValidStart(now)
+                        .build();
+        final var txBody =
+                TransactionBody.newBuilder()
+                        .setTransactionID(transactionID)
+                        .setTransactionValidDuration(ONE_MINUTE)
+                        .build();
+
+        // then
+        assertThatThrownBy(() -> checker.checkTransactionBody(txBody))
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", PAYER_ACCOUNT_NOT_FOUND);
+
+        //        final var payerId = AccountID.newBuilder().setAccountNum(1L).build();
     }
 
     @Test
