@@ -29,13 +29,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.BoolValue;
-import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;

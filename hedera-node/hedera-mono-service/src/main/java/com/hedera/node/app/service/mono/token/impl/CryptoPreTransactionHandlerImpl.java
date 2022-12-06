@@ -21,9 +21,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.hedera.node.app.service.mono.SigTransactionMetadata;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;

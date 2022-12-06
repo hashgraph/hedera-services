@@ -13,28 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono;
+package com.hedera.node.app.spi.test.meta;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
-import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
-import com.hedera.node.app.service.mono.utils.KeyUtils;
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
+import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,41 +38,54 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataTest {
+    public static final com.hederahashgraph.api.proto.java.Key A_COMPLEX_KEY =
+            com.hederahashgraph.api.proto.java.Key.newBuilder()
+                    .setThresholdKey(
+                            ThresholdKey.newBuilder()
+                                    .setThreshold(2)
+                                    .setKeys(
+                                            KeyList.newBuilder()
+                                                    .addKeys(
+                                                            com.hederahashgraph.api.proto.java.Key
+                                                                    .newBuilder()
+                                                                    .setEd25519(
+                                                                            ByteString.copyFrom(
+                                                                                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                                                                                            .getBytes())))
+                                                    .addKeys(
+                                                            com.hederahashgraph.api.proto.java.Key
+                                                                    .newBuilder()
+                                                                    .setEd25519(
+                                                                            ByteString.copyFrom(
+                                                                                    "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                                                                                            .getBytes())))))
+                    .build();
     private Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
-    private Key key = KeyUtils.A_COMPLEX_KEY;
-    private AccountID payer = asAccount("0.0.3");
+    private Key key = A_COMPLEX_KEY;
+    private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
     private Long payerNum = 3L;
-    private HederaKey payerKey = asHederaKey(key).get();
-
-    final AccountID otherAccountId = asAccount("0.0.12345");
-    private HederaKey otherKey = asHederaKey(key).get();
+    @Mock private HederaKey payerKey;
+    final AccountID otherAccountId = AccountID.newBuilder().setAccountNum(12345L).build();
+    @Mock private HederaKey otherKey;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    @Mock private RebuiltStateImpl aliases;
-    @Mock private InMemoryStateImpl accounts;
+    @Mock private State aliases;
+    @Mock private State accounts;
     @Mock private States states;
-    @Mock private MerkleAccount account;
-    @Mock private MerkleAccount otherAccount;
-
-    private AccountStore store;
+    @Mock private AccountKeyLookup keyLookup;
     private SigTransactionMetadata subject;
 
     @BeforeEach
-    void setUp() {
-        given(states.get(ACCOUNTS)).willReturn(accounts);
-        given(states.get(ALIASES)).willReturn(aliases);
-        store = new AccountStore(states);
-    }
+    void setUp() {}
 
     @Test
     void gettersWorkAsExpectedWhenOnlyPayerKeyExist() {
         final var txn = createAccountTransaction();
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadata(store, txn, payer, List.of());
+        subject = new SigTransactionMetadata(keyLookup, txn, payer, List.of());
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -87,10 +95,9 @@ class SigTransactionMetadataTest {
     @Test
     void gettersWorkAsExpectedWhenOtherSigsExist() {
         final var txn = createAccountTransaction();
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
+        subject = new SigTransactionMetadata(keyLookup, txn, payer, List.of(payerKey));
 
         assertFalse(subject.failed());
         assertEquals(txn, subject.getTxn());
@@ -100,9 +107,9 @@ class SigTransactionMetadataTest {
     @Test
     void failsWhenPayerKeyDoesntExist() {
         final var txn = createAccountTransaction();
-        given(accounts.get(payerNum)).willReturn(Optional.empty());
+        given(keyLookup.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
 
-        subject = new SigTransactionMetadata(store, txn, payer, List.of(payerKey));
+        subject = new SigTransactionMetadata(keyLookup, txn, payer, List.of(payerKey));
 
         assertTrue(subject.failed());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.status());
@@ -113,37 +120,35 @@ class SigTransactionMetadataTest {
 
     @Test
     void addsToReqKeysCorrectly() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        final var anotherKey = asHederaKey(KeyUtils.A_COMPLEX_KEY).get();
-
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
 
         assertEquals(1, subject.getReqKeys().size());
         assertTrue(subject.getReqKeys().contains(payerKey));
 
-        subject.addToReqKeys(anotherKey);
+        subject.addToReqKeys(otherKey);
         assertEquals(2, subject.getReqKeys().size());
-        assertTrue(subject.getReqKeys().contains(anotherKey));
+        assertTrue(subject.getReqKeys().contains(otherKey));
     }
 
     @Test
     void settersWorkCorrectly() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         subject.setStatus(INVALID_ACCOUNT_ID);
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
     }
 
     @Test
     void returnsIfGivenKeyIsPayer() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
 
         subject.addNonPayerKey(payer);
@@ -156,10 +161,10 @@ class SigTransactionMetadataTest {
 
     @Test
     void returnsIfGivenKeyIsInvalidAccountId() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
 
         subject.addNonPayerKey(AccountID.getDefaultInstance());
@@ -170,20 +175,21 @@ class SigTransactionMetadataTest {
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
 
-        subject.addNonPayerKey(asAccount("0.0.0"));
+        subject.addNonPayerKey(AccountID.getDefaultInstance());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
 
-        subject.addNonPayerKeyIfReceiverSigRequired(asAccount("0.0.0"), INVALID_ACCOUNT_ID);
+        subject.addNonPayerKeyIfReceiverSigRequired(
+                AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
     }
 
     @Test
     void doesntLookupIfMetaIsFailedAlready() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         subject.setStatus(INVALID_ACCOUNT_ID);
 
@@ -198,21 +204,22 @@ class SigTransactionMetadataTest {
 
     @Test
     void looksUpOtherKeysIfMetaIsNotFailedAlready() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
 
-        given(accounts.get(otherAccountId.getAccountNum())).willReturn(Optional.of(otherAccount));
-        given(otherAccount.getAccountKey()).willReturn((JKey) otherKey);
+        given(keyLookup.getKey(otherAccountId))
+                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
         subject.addNonPayerKey(otherAccountId);
         assertIterableEquals(List.of(payerKey, otherKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
 
-        given(otherAccount.isReceiverSigRequired()).willReturn(true);
+        given(keyLookup.getKeyIfReceiverSigRequired(otherAccountId))
+                .willReturn(new KeyOrLookupFailureReason(otherKey, null));
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(payerKey, otherKey, otherKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
@@ -220,21 +227,23 @@ class SigTransactionMetadataTest {
 
     @Test
     void setsDefaultFailureStatusIfFailedStatusIsNull() {
-        given(accounts.get(payerNum)).willReturn(Optional.of(account));
-        given(account.getAccountKey()).willReturn((JKey) payerKey);
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadata(store, createAccountTransaction(), payer, List.of());
+        subject =
+                new SigTransactionMetadata(keyLookup, createAccountTransaction(), payer, List.of());
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(OK, subject.status());
 
-        given(accounts.get(otherAccountId.getAccountNum())).willReturn(Optional.empty());
+        given(keyLookup.getKey(otherAccountId))
+                .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId);
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
 
         // only for testing , resetting the status to OK
         subject.setStatus(OK);
-        given(accounts.get(otherAccountId.getAccountNum())).willReturn(Optional.empty());
+        given(keyLookup.getKeyIfReceiverSigRequired(otherAccountId))
+                .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(payerKey), subject.getReqKeys());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, subject.status());

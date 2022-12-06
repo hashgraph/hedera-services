@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono;
+package com.hedera.node.app.spi.meta;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.node.app.service.mono.token.impl.AccountStore;
-import com.hedera.node.app.service.mono.token.impl.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.AccountKeyLookup;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,17 +43,16 @@ import java.util.List;
 public class SigTransactionMetadata implements TransactionMetadata {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
     protected TransactionBody txn;
-    protected AccountStore store;
+    protected AccountKeyLookup keyLookup;
     protected AccountID payer;
-
     protected ResponseCodeEnum status = OK;
 
     public SigTransactionMetadata(
-            final AccountStore store,
+            final AccountKeyLookup keyLookup,
             final TransactionBody txn,
             final AccountID payer,
             final List<HederaKey> otherKeys) {
-        this.store = store;
+        this.keyLookup = keyLookup;
         this.txn = txn;
         this.payer = payer;
         requiredKeys.addAll(otherKeys);
@@ -61,8 +60,8 @@ public class SigTransactionMetadata implements TransactionMetadata {
     }
 
     public SigTransactionMetadata(
-            final AccountStore store, final TransactionBody txn, final AccountID payer) {
-        this(store, txn, payer, Collections.emptyList());
+            final AccountKeyLookup keyLookup, final TransactionBody txn, final AccountID payer) {
+        this(keyLookup, txn, payer, Collections.emptyList());
     }
 
     @Override
@@ -110,7 +109,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
         if (isNotNeeded(id)) {
             return;
         }
-        final var result = store.getKey(id);
+        final var result = keyLookup.getKey(id);
         failOrAddToKeys(result, failureStatus);
     }
 
@@ -129,7 +128,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
         if (isNotNeeded(id)) {
             return;
         }
-        final var result = store.getKeyIfReceiverSigRequired(id);
+        final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         failOrAddToKeys(result, failureStatus);
     }
 
@@ -140,7 +139,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
      * fails adds failure status {@code INVALID_PAYER_ACCOUNT_ID} to the metadata.
      */
     private void addPayerKey() {
-        final var result = store.getKey(payer);
+        final var result = keyLookup.getKey(payer);
         failOrAddToKeys(result, INVALID_PAYER_ACCOUNT_ID);
     }
 
