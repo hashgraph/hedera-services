@@ -26,6 +26,8 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+    exclude("com.google.errorprone", "error_prone_annotations")
+    exclude("com.google.j2objc", "j2objc-annotations")
 
     exclude("io.grpc", "grpc-core")
     exclude("io.grpc", "grpc-context")
@@ -36,17 +38,19 @@ configurations.all {
 
 dependencies {
     compileOnlyApi(libs.spotbugs.annotations)
+    api(libs.slf4j.api)
     api(libs.besu.evm)
-    api(libs.besu.datatypes)
     api(libs.besu.secp256k1)
     api(libs.swirlds.common)
+    api(libs.besu.datatypes)
     api(libs.hapi) {
-        exclude("com.google.guava", "guava") // this is an android version, not a jre version
+        // this is an android version, not a jre version (since this belongs to the API layer)
+        exclude("com.google.guava", "guava")
     }
+    api(libs.guava) //TODO: we should remove the internal usage of guava
 
     implementation(libs.jna)
     implementation(libs.caffeine)
-    implementation(libs.guava)
-    
+
     testImplementation(testLibs.mockito.jupiter)
 }

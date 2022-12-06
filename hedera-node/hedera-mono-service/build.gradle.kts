@@ -73,10 +73,10 @@ dependencies {
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
 
+    testFixturesApi(project(":hedera-node:hedera-app-spi"))
     testFixturesApi(project(":hedera-node:hapi-utils"))
     testFixturesApi(libs.swirlds.merkle)
     testFixturesApi(libs.swirlds.virtualmap)
-    testFixturesApi(libs.hapi)
     testFixturesApi(libs.commons.codec)
     testFixturesImplementation(testLibs.bundles.testing)
 
