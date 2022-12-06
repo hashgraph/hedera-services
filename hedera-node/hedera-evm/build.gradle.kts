@@ -24,6 +24,8 @@ description = "Hedera EVM - API"
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
     exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
 
     exclude("io.grpc", "grpc-core")
     exclude("io.grpc", "grpc-context")

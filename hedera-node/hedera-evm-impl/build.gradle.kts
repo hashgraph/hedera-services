@@ -23,6 +23,8 @@ description = "Hedera EVM - Implementation"
 configurations.all {
     exclude("javax.annotation", "javax.annotation-api")
     exclude("com.google.code.findbugs", "jsr305")
+    exclude("org.jetbrains", "annotations")
+    exclude("org.checkerframework", "checker-qual")
 }
 
 dependencies {
