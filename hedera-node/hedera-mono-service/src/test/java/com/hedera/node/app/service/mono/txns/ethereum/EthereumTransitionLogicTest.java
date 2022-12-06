@@ -17,7 +17,7 @@ package com.hedera.node.app.service.mono.txns.ethereum;
 
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.ETHEREUM_NONCE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;

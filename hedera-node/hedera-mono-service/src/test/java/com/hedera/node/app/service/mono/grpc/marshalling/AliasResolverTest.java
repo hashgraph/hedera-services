@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAliasAccount;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -27,7 +27,7 @@ import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;

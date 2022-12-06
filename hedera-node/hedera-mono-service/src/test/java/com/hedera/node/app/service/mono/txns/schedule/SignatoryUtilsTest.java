@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;

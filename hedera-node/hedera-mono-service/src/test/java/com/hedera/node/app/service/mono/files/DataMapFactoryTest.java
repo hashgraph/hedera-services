@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtilsTest;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;

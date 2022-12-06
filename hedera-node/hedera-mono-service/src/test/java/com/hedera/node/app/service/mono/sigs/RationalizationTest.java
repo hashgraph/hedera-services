@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
 import com.hedera.node.app.service.mono.utils.accessors.PlatformTxnAccessor;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;

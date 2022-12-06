@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.NftProperty.OWNER;
 import static com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty.TOKEN_BALANCE;
 import static com.hedera.node.app.service.mono.store.contracts.WorldLedgers.staticLedgersWith;
-import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asContract;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +70,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.SidecarUtils;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;

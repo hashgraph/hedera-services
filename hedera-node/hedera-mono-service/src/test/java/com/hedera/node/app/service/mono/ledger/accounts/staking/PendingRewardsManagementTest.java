@@ -31,7 +31,7 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.time.Instant;
 import java.util.Set;

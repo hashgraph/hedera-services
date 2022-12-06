@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.ledger.backing.pure;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.Set;

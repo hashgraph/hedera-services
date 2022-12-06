@@ -47,7 +47,7 @@ import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
 import java.util.List;

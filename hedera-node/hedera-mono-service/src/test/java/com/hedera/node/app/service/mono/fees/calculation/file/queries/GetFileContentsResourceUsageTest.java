@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
-import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asFile;
 import static com.hedera.test.utils.QueryUtils.queryHeaderOf;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;

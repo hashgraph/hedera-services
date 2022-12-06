@@ -54,7 +54,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.impl.OwnerOfP
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenURIPrecompile;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;

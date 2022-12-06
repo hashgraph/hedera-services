@@ -15,7 +15,7 @@
  */
 package com.hedera.services.api.implementation;
 
-import com.hedera.test.factories.txns.CryptoCreateFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.txns.CryptoCreateFactory;
 import org.junit.jupiter.api.Test;
 
 class PlaceholderTest {

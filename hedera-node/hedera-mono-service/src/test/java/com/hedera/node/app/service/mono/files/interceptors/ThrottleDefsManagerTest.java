@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ThrottleBucket;
 import com.hedera.node.app.hapi.utils.sysfiles.validation.ErrorCodeUtils;
 import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.test.utils.SerdeUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ThrottleDefinitions;

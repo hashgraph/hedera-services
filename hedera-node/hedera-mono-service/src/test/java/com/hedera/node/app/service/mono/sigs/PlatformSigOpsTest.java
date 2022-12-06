@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.sigs;
 
 import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
-import static com.hedera.test.factories.keys.NodeFactory.ecdsa384Secp256k1;
-import static com.hedera.test.factories.keys.NodeFactory.ed25519;
-import static com.hedera.test.factories.keys.NodeFactory.list;
-import static com.hedera.test.factories.keys.NodeFactory.threshold;
+import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.ecdsa384Secp256k1;
+import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.ed25519;
+import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.list;
+import static com.hedera.node.app.service.mono.testFixtures.factories.keys.NodeFactory.threshold;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_PREFIX_MISMATCH;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -40,7 +40,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.exception.KeyPrefixMismatchException;
 import com.hedera.node.app.service.mono.sigs.factories.TxnScopedPlatformSigFactory;
 import com.hedera.node.app.service.mono.sigs.sourcing.PubKeyToSigBytes;
-import com.hedera.test.factories.keys.KeyTree;
+import com.hedera.node.app.service.mono.testFixtures.factories.keys.KeyTree;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;

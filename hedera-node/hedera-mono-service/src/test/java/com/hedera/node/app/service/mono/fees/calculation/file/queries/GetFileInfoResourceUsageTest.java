@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.file.queries;
 
-import static com.hedera.test.utils.IdUtils.asFile;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asFile;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import com.hedera.node.app.hapi.fees.usage.file.ExtantFileContext;
 import com.hedera.node.app.hapi.fees.usage.file.FileOpsUsage;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileGetInfoQuery;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;

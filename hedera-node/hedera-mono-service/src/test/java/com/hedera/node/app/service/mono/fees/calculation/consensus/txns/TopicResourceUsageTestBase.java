@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.consensus.txns;
 
-import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 

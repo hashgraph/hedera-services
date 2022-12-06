@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.contract;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;

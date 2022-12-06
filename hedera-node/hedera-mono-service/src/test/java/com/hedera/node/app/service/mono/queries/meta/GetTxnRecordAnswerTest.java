@@ -15,12 +15,12 @@
  */
 package com.hedera.node.app.service.mono.queries.meta;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.defaultPaymentTxn;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.queryOf;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;

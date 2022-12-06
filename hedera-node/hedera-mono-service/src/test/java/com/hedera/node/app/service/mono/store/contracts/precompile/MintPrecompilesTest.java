@@ -42,7 +42,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMint;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.MintPrecompile.decodeMintV2;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;

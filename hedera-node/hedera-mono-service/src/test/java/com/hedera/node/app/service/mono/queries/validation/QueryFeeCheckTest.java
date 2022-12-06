@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.queries.validation;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_ID_DOES_NOT_EXIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;

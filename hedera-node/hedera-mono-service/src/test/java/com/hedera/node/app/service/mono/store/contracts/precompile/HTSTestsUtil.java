@@ -48,7 +48,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Unpause
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.WipeWrapper;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

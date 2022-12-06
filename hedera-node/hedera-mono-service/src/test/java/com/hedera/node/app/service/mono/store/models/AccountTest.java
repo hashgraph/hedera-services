@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.store.models;
 
 import static com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils.buildAutomaticAssociationMetaData;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;

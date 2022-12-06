@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.txns.consensus;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_ACCOUNT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISSING_TOPIC;
-import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISSING_ACCOUNT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISSING_TOPIC;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_ACCOUNT_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -59,7 +59,7 @@ import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;

@@ -20,7 +20,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.fees.congestion.MultiplierSources;
 import com.hedera.node.app.service.mono.throttling.FunctionalityThrottling;
-import com.hedera.test.utils.SerdeUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.queries;
 
-import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asContract;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertFalse;

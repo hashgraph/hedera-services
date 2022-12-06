@@ -16,10 +16,10 @@
 package com.hedera.node.app.service.mono.queries.answering;
 
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
-import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.QueryUtils.payer;
 import static com.hedera.test.utils.QueryUtils.txnRecordQuery;
-import static com.hedera.test.utils.TxnUtils.withAdjustments;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.withAdjustments;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

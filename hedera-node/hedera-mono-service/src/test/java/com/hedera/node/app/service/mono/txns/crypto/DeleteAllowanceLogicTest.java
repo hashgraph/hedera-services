@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto;
 
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

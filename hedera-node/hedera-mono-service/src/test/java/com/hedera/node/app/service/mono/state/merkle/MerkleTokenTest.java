@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.mono.state.merkle;
 
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fixedHts;
-import static com.hedera.test.factories.fees.CustomFeeBuilder.fractional;
+import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fixedHts;
+import static com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder.fractional;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +33,7 @@ import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.fees.CustomFeeBuilder;
+import com.hedera.node.app.service.mono.testFixtures.factories.fees.CustomFeeBuilder;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import java.util.Collections;
 import java.util.List;

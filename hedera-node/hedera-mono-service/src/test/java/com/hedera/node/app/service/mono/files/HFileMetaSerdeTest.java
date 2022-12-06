@@ -25,8 +25,8 @@ import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JObjectType;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hedera.test.utils.SeededPropertySource;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse.FileInfo;
 import com.hederahashgraph.api.proto.java.FileID;

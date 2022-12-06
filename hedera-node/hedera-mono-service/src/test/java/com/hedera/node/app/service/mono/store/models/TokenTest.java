@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.models;
 
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -49,8 +49,8 @@ import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Timestamp;

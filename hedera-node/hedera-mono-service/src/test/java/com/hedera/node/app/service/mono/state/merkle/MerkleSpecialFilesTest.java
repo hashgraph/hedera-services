@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.service.mono.state.merkle.internals.BytesElement;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;

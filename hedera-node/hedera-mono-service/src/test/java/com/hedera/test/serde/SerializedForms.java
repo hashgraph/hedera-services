@@ -17,7 +17,7 @@ package com.hedera.test.serde;
 
 import static com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccountSerdeTest.NUM_ON_DISK_ACCOUNT_TEST_CASES;
 import static com.hedera.test.serde.SelfSerializableDataTest.MIN_TEST_CASES_PER_VERSION;
-import static com.hedera.test.utils.SerdeUtils.serializeToHex;
+import static com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils.serializeToHex;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
@@ -68,7 +68,7 @@ import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskAccount;
 import com.hedera.node.app.service.mono.state.virtual.entities.OnDiskTokenRel;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.test.utils.SeededPropertySource;
-import com.hedera.test.utils.SerdeUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.SerdeUtils;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.virtualmap.VirtualValue;

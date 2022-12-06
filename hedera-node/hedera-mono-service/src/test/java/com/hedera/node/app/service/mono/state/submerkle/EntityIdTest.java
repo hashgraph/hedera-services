@@ -31,7 +31,7 @@ import static org.mockito.Mockito.inOrder;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.service.mono.state.merkle.internals.BitPackUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

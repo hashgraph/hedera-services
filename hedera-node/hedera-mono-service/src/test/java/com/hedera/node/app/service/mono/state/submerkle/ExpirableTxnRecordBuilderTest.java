@@ -32,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;

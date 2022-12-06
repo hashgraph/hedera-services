@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.sigs.metadata;
 
-import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hedera.node.app.service.mono.testFixtures.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -25,8 +25,8 @@ import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;

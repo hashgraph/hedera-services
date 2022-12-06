@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage.ZERO_VALUE;
 import static com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage.incorporateKvImpact;
 import static com.hedera.node.app.service.mono.store.contracts.SizeLimitedStorage.treeSetFactory;
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CONTRACT_STORAGE_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -47,7 +47,7 @@ import com.hedera.node.app.service.mono.state.validation.ContractStorageLimits;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.state.virtual.IterableContractValue;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;

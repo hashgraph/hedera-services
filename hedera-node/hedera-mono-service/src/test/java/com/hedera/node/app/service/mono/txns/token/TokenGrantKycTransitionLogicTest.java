@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;

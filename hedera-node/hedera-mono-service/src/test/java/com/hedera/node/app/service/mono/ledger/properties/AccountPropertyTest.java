@@ -42,7 +42,7 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.STAKED_ID;
 import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty.USED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecordTestHelper.fromGprc;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.TOKEN_ADMIN_KT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -62,7 +62,7 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
 import com.hedera.node.app.service.mono.state.virtual.ContractKey;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.txns.SignedTxnFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.txns.SignedTxnFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;

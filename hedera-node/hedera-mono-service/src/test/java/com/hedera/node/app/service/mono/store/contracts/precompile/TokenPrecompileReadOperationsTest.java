@@ -24,7 +24,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.serialNumber;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.tokenMerkleId;
-import static com.hedera.test.utils.IdUtils.asToken;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;

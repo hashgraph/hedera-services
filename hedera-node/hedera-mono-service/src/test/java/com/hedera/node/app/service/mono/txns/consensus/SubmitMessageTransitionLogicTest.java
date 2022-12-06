@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.consensus;
 
-import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CHUNK_TRANSACTION_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;

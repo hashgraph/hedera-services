@@ -29,7 +29,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import org.junit.jupiter.api.Assertions;

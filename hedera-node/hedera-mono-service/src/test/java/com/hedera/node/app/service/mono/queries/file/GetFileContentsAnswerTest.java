@@ -15,9 +15,9 @@
  */
 package com.hedera.node.app.service.mono.queries.file;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asFile;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asFile;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
@@ -33,7 +33,7 @@ import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
+import com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
 import com.hederahashgraph.api.proto.java.FileGetContentsResponse;
 import com.hederahashgraph.api.proto.java.FileGetInfoResponse;

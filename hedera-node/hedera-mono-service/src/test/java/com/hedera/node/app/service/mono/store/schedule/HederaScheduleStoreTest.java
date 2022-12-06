@@ -19,8 +19,8 @@ import static com.hedera.node.app.service.mono.ledger.properties.AccountProperty
 import static com.hedera.node.app.service.mono.state.submerkle.EntityId.fromGrpcAccountId;
 import static com.hedera.node.app.service.mono.utils.EntityNum.fromScheduleId;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
-import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.SCHEDULE_ADMIN_KT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -59,7 +59,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleEqualityV
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleSecondVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.state.virtual.temporal.SecondSinceEpocVirtualKey;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;

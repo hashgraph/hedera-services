@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.store.models;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 

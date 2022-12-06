@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.node.app.service.mono.config.HederaNumbers;
 import com.hedera.node.app.service.mono.config.MockHederaNumbers;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JContractIDKey;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

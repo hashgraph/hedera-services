@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.legacy.unit;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
-import com.hedera.test.utils.TxnUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;

@@ -16,7 +16,7 @@
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
 import static com.hedera.node.app.service.mono.store.models.Id.MISSING_ID;
-import static com.hedera.test.utils.IdUtils.asAliasAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAliasAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;

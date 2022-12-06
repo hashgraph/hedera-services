@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.fees.calculation.contract.txns;
 
-import static com.hedera.test.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asContract;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

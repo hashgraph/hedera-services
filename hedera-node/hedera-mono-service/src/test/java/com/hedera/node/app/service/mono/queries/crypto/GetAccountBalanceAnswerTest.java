@@ -16,9 +16,9 @@
 package com.hedera.node.app.service.mono.queries.crypto;
 
 import static com.hedera.node.app.service.mono.utils.EntityNumPair.fromAccountTokenRel;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asContract;
-import static com.hedera.test.utils.IdUtils.tokenBalanceWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asContract;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.tokenBalanceWith;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetAccountBalance;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -49,8 +49,8 @@ import com.hedera.node.app.service.mono.store.schedule.ScheduleStore;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoGetAccountBalanceQuery;

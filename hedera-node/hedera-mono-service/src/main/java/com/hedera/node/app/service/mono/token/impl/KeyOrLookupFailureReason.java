@@ -27,19 +27,19 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * are null.
  */
 public record KeyOrLookupFailureReason(
-        @Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
-    public static final KeyOrLookupFailureReason PRESENT_BUT_NOT_REQUIRED =
-            new KeyOrLookupFailureReason(null, null);
+		@Nullable HederaKey key, @Nullable ResponseCodeEnum failureReason) {
+	public static final KeyOrLookupFailureReason PRESENT_BUT_NOT_REQUIRED =
+			new KeyOrLookupFailureReason(null, null);
 
-    public boolean failed() {
-        return failureReason != null;
-    }
+	public boolean failed() {
+		return failureReason != null;
+	}
 
-    public static KeyOrLookupFailureReason withFailureReason(final ResponseCodeEnum response) {
-        return new KeyOrLookupFailureReason(null, response);
-    }
+	public static KeyOrLookupFailureReason withFailureReason(final ResponseCodeEnum response) {
+		return new KeyOrLookupFailureReason(null, response);
+	}
 
-    public static KeyOrLookupFailureReason withKey(final HederaKey key) {
-        return new KeyOrLookupFailureReason(key, null);
-    }
+	public static KeyOrLookupFailureReason withKey(final HederaKey key) {
+		return new KeyOrLookupFailureReason(key, null);
+	}
 }

@@ -57,7 +57,7 @@ import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.store.tokens.TokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;

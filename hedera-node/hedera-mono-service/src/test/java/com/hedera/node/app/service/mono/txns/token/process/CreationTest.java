@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.token.process;
 
-import static com.hedera.test.utils.TxnUtils.assertFailsWith;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.Token;
 import com.hedera.node.app.service.mono.store.models.TokenRelationship;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
-import com.hedera.test.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Timestamp;

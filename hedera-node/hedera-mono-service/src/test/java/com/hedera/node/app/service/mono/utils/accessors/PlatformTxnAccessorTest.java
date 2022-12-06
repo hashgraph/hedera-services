@@ -16,8 +16,8 @@
 package com.hedera.node.app.service.mono.utils.accessors;
 
 import static com.hedera.node.app.service.mono.utils.MiscUtils.FUNCTION_EXTRACTOR;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asTopic;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -42,8 +42,8 @@ import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.sigs.order.LinkedRefs;
 import com.hedera.node.app.service.mono.utils.RationalizedSigMeta;
-import com.hedera.test.utils.IdUtils;
-import com.hedera.test.utils.TxnUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.IdUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;

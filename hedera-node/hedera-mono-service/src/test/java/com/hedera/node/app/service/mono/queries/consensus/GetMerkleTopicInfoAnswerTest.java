@@ -15,11 +15,11 @@
  */
 package com.hedera.node.app.service.mono.queries.consensus;
 
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hedera.test.utils.IdUtils.asTopic;
-import static com.hedera.test.utils.TxnUtils.payerSponsoredTransfer;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.COMPLEX_KEY_ACCOUNT_KT;
+import static com.hedera.node.app.service.mono.testFixtures.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asAccount;
+import static com.hedera.node.app.service.mono.testFixtures.utils.IdUtils.asTopic;
+import static com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils.payerSponsoredTransfer;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
@@ -41,7 +41,7 @@ import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.txns.validation.OptionValidator;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.test.factories.topics.TopicFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.topics.TopicFactory;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoResponse;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;

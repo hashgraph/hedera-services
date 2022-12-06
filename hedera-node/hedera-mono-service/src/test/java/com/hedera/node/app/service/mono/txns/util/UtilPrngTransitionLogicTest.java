@@ -34,7 +34,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.node.app.service.mono.utils.accessors.SignedTxnAccessor;
-import com.hedera.test.utils.TxnUtils;
+import com.hedera.node.app.service.mono.testFixtures.utils.TxnUtils;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import com.swirlds.common.crypto.Hash;

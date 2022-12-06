@@ -38,7 +38,7 @@ import com.hedera.node.app.service.mono.throttling.ExpiryThrottle;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.NftNumPair;
-import com.hedera.test.factories.accounts.MerkleAccountFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.accounts.MerkleAccountFactory;
 import com.swirlds.merkle.map.MerkleMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

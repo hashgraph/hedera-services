@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.queries;
 
-import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static com.hedera.node.app.service.mono.testFixtures.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FILE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RESULT_SIZE_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
@@ -27,7 +27,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
 import com.hedera.node.app.service.mono.context.primitives.StateView;
-import com.hedera.test.factories.txns.CryptoTransferFactory;
+import com.hedera.node.app.service.mono.testFixtures.factories.txns.CryptoTransferFactory;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
