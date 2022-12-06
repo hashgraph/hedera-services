@@ -132,7 +132,7 @@ class OrderedComparisonTest {
     }
 
     @Test
-    void sidecarIssue() throws IOException {
+    void canInvestigateWithCorrelatedSidecars() throws IOException {
         final var loc = ABSENT_RESULT_STREAMS_DIR + File.separator + "node0";
         final var entries = parseV6RecordStreamEntriesIn(loc);
         final var sidecarRecords = parseV6SidecarRecordsByConsTimeIn(loc);

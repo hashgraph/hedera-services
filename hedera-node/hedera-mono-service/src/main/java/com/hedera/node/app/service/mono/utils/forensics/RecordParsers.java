@@ -83,11 +83,14 @@ public class RecordParsers {
     }
 
     /**
-     * Given a directory of compressed V6 sidecar files, returns a list of all the sidecar entries
-     * contained in those files, in order of ascending consensus time.
+     * Given the location of a directory structure that includes compressed V6 sidecar files,
+     * returns a map from consensus time to the sidecar entries found for that consensus time.
+     *
+     * <p>The map can then be given to {@link RecordParsers#visitWithSidecars(List, Map, BiConsumer)}
+     * to investigate the record stream with sidecar information.
      *
      * @param streamDir a directory with compressed V6 sidecar files
-     * @return all the contained stream entries
+     * @return the map from consensus time to attached sidecars
      * @throws IOException if the files cannot be read or parsed
      */
     @SuppressWarnings("java:S3655")
