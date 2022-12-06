@@ -77,6 +77,7 @@ public class GrantRevokeKycSuite extends HapiApiSuite {
     public boolean canRunConcurrent() {
         return true;
     }
+
     @Override
     protected Logger getResultsLogger() {
         return log;
