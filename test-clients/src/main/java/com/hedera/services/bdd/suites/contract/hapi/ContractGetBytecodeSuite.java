@@ -42,7 +42,7 @@ public class ContractGetBytecodeSuite extends HapiApiSuite {
             HapiSpecSetup.getDefaultInstance().invalidContractName();
 
     public static void main(String... args) {
-        new ContractGetBytecodeSuite().runSuiteSync();
+        new ContractGetBytecodeSuite().runSuiteAsync();
     }
 
     @Override

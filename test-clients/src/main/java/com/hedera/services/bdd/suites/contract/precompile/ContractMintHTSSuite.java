@@ -118,7 +118,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     private static final String MINT_FUNGIBLE_TOKEN = "mintFungibleToken";
 
     public static void main(final String... args) {
-        new ContractMintHTSSuite().runSuiteSync();
+        new ContractMintHTSSuite().runSuiteAsync();
     }
 
     @Override

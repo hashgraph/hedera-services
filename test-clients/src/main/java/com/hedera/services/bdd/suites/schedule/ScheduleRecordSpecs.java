@@ -68,6 +68,11 @@ public class ScheduleRecordSpecs extends HapiApiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->

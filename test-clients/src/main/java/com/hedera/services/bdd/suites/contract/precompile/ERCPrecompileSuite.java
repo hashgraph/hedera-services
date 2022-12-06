@@ -174,12 +174,12 @@ public class ERCPrecompileSuite extends HapiApiSuite {
     static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
-        new ERCPrecompileSuite().runSuiteSync();
+        new ERCPrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

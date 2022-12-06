@@ -39,7 +39,12 @@ public class RecordsSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(RecordsSuite.class);
 
     public static void main(String... args) {
-        new RecordsSuite().runSuiteSync();
+        new RecordsSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

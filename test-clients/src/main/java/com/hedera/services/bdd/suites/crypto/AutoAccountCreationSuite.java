@@ -120,12 +120,12 @@ public class AutoAccountCreationSuite extends HapiApiSuite {
     private static final long EXPECTED_SINGLE_TOKEN_TRANSFER_AUTO_CREATE_FEE = 40927290L;
 
     public static void main(String... args) {
-        new AutoAccountCreationSuite().runSuiteSync();
+        new AutoAccountCreationSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

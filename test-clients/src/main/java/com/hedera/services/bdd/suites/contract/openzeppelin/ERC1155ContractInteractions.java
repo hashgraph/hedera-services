@@ -43,7 +43,12 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
     private static final String CONTRACT = "GameItems";
 
     public static void main(String... args) {
-        new ERC1155ContractInteractions().runSuiteSync();
+        new ERC1155ContractInteractions().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

@@ -104,7 +104,12 @@ public class EthereumSuite extends HapiApiSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
     public static void main(String... args) {
-        new EthereumSuite().runSuiteSync();
+        new EthereumSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

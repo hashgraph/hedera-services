@@ -45,6 +45,11 @@ public class ScheduleDeleteSpecs extends HapiApiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     protected Logger getResultsLogger() {
         return log;
     }

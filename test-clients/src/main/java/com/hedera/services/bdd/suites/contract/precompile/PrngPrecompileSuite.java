@@ -58,7 +58,7 @@ public class PrngPrecompileSuite extends HapiApiSuite {
                 + "00000000d83bf9a1000000000d83bf9a1000";
 
     public static void main(String... args) {
-        new PrngPrecompileSuite().runSuiteSync();
+        new PrngPrecompileSuite().runSuiteAsync();
     }
 
     @Override

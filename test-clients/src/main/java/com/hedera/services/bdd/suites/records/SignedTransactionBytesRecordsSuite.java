@@ -40,7 +40,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
             LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
 
     public static void main(String... args) {
-        new SignedTransactionBytesRecordsSuite().runSuiteSync();
+        new SignedTransactionBytesRecordsSuite().runSuiteAsync();
     }
 
     @Override

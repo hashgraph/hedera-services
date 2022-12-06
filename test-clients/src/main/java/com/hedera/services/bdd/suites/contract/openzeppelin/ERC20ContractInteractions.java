@@ -51,7 +51,12 @@ public class ERC20ContractInteractions extends HapiApiSuite {
     private static final String TRANSFER_FROM = "transferFrom";
 
     public static void main(String[] args) {
-        new ERC20ContractInteractions().runSuiteSync();
+        new ERC20ContractInteractions().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

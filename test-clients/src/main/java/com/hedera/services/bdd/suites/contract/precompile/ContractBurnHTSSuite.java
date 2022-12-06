@@ -84,7 +84,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
     private static final String BURN_AFTER_NESTED_MINT_TX = "burnAfterNestedMint";
 
     public static void main(String... args) {
-        new ContractBurnHTSSuite().runSuiteSync();
+        new ContractBurnHTSSuite().runSuiteAsync();
     }
 
     @Override

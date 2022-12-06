@@ -58,7 +58,12 @@ public class SStoreSuite extends HapiApiSuite {
     AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
-        new SStoreSuite().runSuiteSync();
+        new SStoreSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

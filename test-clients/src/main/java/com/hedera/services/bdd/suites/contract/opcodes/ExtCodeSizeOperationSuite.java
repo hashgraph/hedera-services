@@ -45,6 +45,11 @@ import org.junit.jupiter.api.Assertions;
 public class ExtCodeSizeOperationSuite extends HapiApiSuite {
     private static final Logger LOG = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String[] args) {
         new ExtCodeSizeOperationSuite().runSuiteAsync();
     }

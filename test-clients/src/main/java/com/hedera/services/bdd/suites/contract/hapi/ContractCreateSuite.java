@@ -123,8 +123,13 @@ public class ContractCreateSuite extends HapiApiSuite {
             HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String... args) {
-        new ContractCreateSuite().runSuiteSync();
+        new ContractCreateSuite().runSuiteAsync();
     }
 
     @Override

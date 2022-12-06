@@ -75,7 +75,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
             "updateExpiryInfoForTokenAndReadLatestInfo";
 
     public static void main(String... args) {
-        new TokenExpiryInfoSuite().runSuiteSync();
+        new TokenExpiryInfoSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

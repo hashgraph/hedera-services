@@ -130,7 +130,7 @@ public class Create2OperationSuite extends HapiApiSuite {
             "Contract reported TestContract initcode is {} bytes";
 
     public static void main(String... args) {
-        new Create2OperationSuite().runSuiteSync();
+        new Create2OperationSuite().runSuiteAsync();
     }
 
     @Override
@@ -140,7 +140,7 @@ public class Create2OperationSuite extends HapiApiSuite {
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

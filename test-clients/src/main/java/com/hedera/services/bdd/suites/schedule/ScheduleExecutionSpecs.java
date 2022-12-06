@@ -164,6 +164,11 @@ public class ScheduleExecutionSpecs extends HapiApiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     protected Logger getResultsLogger() {
         return log;
     }

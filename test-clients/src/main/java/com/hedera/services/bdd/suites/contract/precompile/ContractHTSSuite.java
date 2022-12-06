@@ -102,7 +102,7 @@ public class ContractHTSSuite extends HapiApiSuite {
     private static final String UNIVERSAL_KEY = "multipurpose";
 
     public static void main(String... args) {
-        new ContractHTSSuite().runSuiteSync();
+        new ContractHTSSuite().runSuiteAsync();
     }
 
     @Override

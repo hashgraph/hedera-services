@@ -79,7 +79,12 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
-        new HelloWorldEthereumSuite().runSuiteSync();
+        new HelloWorldEthereumSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

@@ -35,6 +35,11 @@ import org.apache.logging.log4j.Logger;
 public class DelegateCallOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(DelegateCallOperationSuite.class);
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String[] args) {
         new DelegateCallOperationSuite().runSuiteAsync();
     }

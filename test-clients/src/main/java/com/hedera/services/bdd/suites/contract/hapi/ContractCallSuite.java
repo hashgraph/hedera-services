@@ -193,12 +193,12 @@ public class ContractCallSuite extends HapiApiSuite {
     private static final String RECEIVER_3_INFO = "receiver3Info";
 
     public static void main(String... args) {
-        new ContractCallSuite().runSuiteSync();
+        new ContractCallSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

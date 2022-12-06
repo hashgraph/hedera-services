@@ -44,6 +44,11 @@ public class CallOperationSuite extends HapiApiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiApiSpec[] {

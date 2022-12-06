@@ -47,6 +47,11 @@ public class BalanceOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
     private static final String BALANCE_OF = "balanceOf";
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String[] args) {
         new BalanceOperationSuite().runSuiteAsync();
     }

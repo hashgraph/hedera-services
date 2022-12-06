@@ -48,6 +48,11 @@ public class GlobalPropertiesSuite extends HapiApiSuite {
     private static final String GET_BASE_FEE = "getBaseFee";
     private static final String GET_GAS_LIMIT = "getGasLimit";
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String... args) {
         new GlobalPropertiesSuite().runSuiteAsync();
     }

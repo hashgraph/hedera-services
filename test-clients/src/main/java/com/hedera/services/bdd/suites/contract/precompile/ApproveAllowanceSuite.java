@@ -77,7 +77,12 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
 
     public static void main(String... args) {
-        new ApproveAllowanceSuite().runSuiteSync();
+        new ApproveAllowanceSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

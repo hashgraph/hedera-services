@@ -39,6 +39,11 @@ import org.junit.jupiter.api.Assertions;
 public class ExtCodeCopyOperationSuite extends HapiApiSuite {
     private static final Logger LOG = LogManager.getLogger(ExtCodeCopyOperationSuite.class);
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String[] args) {
         new ExtCodeCopyOperationSuite().runSuiteAsync();
     }

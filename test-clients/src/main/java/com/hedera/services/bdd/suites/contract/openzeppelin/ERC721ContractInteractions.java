@@ -36,7 +36,12 @@ public class ERC721ContractInteractions extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(ERC721ContractInteractions.class);
 
     public static void main(String... args) {
-        new ERC721ContractInteractions().runSuiteSync();
+        new ERC721ContractInteractions().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

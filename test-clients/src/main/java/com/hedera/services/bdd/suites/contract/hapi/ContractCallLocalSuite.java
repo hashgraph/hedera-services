@@ -53,7 +53,7 @@ public class ContractCallLocalSuite extends HapiApiSuite {
     private static final int DECIMALS = 13;
 
     public static void main(String... args) {
-        new ContractCallLocalSuite().runSuiteSync();
+        new ContractCallLocalSuite().runSuiteAsync();
     }
 
     @Override

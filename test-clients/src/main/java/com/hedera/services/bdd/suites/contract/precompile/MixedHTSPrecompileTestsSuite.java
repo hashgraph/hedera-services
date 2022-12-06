@@ -69,7 +69,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiApiSuite {
     private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
 
     public static void main(String... args) {
-        new MixedHTSPrecompileTestsSuite().runSuiteSync();
+        new MixedHTSPrecompileTestsSuite().runSuiteAsync();
     }
 
     @Override

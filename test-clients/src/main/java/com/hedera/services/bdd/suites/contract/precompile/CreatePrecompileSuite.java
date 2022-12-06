@@ -109,12 +109,12 @@ public class CreatePrecompileSuite extends HapiApiSuite {
             "createNFTTokenWithKeysAndExpiry";
 
     public static void main(String... args) {
-        new CreatePrecompileSuite().runSuiteSync();
+        new CreatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     // TODO: Fix contract name in TokenCreateContract.sol

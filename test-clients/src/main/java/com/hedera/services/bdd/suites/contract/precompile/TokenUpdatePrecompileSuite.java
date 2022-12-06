@@ -121,12 +121,12 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final long PAUSE_KEY_TYPE = 64L;
 
     public static void main(String... args) {
-        new TokenUpdatePrecompileSuite().runSuiteSync();
+        new TokenUpdatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

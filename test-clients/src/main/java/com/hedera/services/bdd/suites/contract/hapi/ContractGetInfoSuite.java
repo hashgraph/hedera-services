@@ -36,8 +36,13 @@ public class ContractGetInfoSuite extends HapiApiSuite {
     private static final String NON_EXISTING_CONTRACT =
             HapiSpecSetup.getDefaultInstance().invalidContractName();
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String... args) {
-        new ContractGetInfoSuite().runSuiteSync();
+        new ContractGetInfoSuite().runSuiteAsync();
     }
 
     @Override

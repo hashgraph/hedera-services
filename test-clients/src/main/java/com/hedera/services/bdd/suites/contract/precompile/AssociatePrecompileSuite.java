@@ -94,12 +94,12 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
 
     public static void main(String... args) {
-        new AssociatePrecompileSuite().runSuiteSync();
+        new AssociatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

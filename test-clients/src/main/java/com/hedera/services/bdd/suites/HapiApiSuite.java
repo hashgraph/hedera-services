@@ -245,7 +245,7 @@ public abstract class HapiApiSuite {
 
     private void runAsync(Iterable<HapiApiSpec> specs) {
         final CompletableFuture[] futures =
-                StreamSupport.stream(specs.spliterator(), false)
+                StreamSupport.stream(specs.spliterator(), true)
                         .map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
                         .toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();

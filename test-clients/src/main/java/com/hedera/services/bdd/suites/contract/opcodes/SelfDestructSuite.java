@@ -38,7 +38,12 @@ public class SelfDestructSuite extends HapiApiSuite {
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
     public static void main(String... args) {
-        new SelfDestructSuite().runSuiteSync();
+        new SelfDestructSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

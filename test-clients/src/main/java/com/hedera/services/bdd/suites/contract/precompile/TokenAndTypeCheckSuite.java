@@ -58,7 +58,12 @@ public class TokenAndTypeCheckSuite extends HapiApiSuite {
     private static final String IS_TOKEN = "isAToken";
 
     public static void main(String... args) {
-        new TokenAndTypeCheckSuite().runSuiteSync();
+        new TokenAndTypeCheckSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

@@ -79,12 +79,12 @@ public class DelegatePrecompileSuite extends HapiApiSuite {
     private static final String SUPPLY_KEY = "supplyKey";
 
     public static void main(String... args) {
-        new DelegatePrecompileSuite().runSuiteSync();
+        new DelegatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override

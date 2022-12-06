@@ -67,7 +67,7 @@ public class DeleteTokenPrecompileSuite extends HapiApiSuite {
     final AtomicReference<AccountID> accountID = new AtomicReference<>();
 
     public static void main(String... args) {
-        new DeleteTokenPrecompileSuite().runSuiteSync();
+        new DeleteTokenPrecompileSuite().runSuiteAsync();
     }
 
     @Override

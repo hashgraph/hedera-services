@@ -143,7 +143,7 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
     public static final String GET_CUSTOM_FEES_FOR_TOKEN = "getCustomFeesForToken";
 
     public static void main(final String... args) {
-        new TokenInfoHTSSuite().runSuiteSync();
+        new TokenInfoHTSSuite().runSuiteAsync();
     }
 
     @Override

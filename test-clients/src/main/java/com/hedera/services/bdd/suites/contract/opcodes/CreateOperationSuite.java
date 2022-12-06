@@ -59,8 +59,13 @@ public class CreateOperationSuite extends HapiApiSuite {
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
     private static final String CONTRACT = "FactoryContract";
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     public static void main(String... args) {
-        new CreateOperationSuite().runSuiteSync();
+        new CreateOperationSuite().runSuiteAsync();
     }
 
     @Override
