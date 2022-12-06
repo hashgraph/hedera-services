@@ -76,8 +76,7 @@ public class SignedStateHolder {
      *     contract
      * @param bytecode - bytecode of the contractd
      */
-    public record Contract(
-            @NonNull Set</*NonNull*/ Integer> ids, @NonNull byte /*@NonNull*/[] bytecode) {
+    public record Contract(@NonNull Set</*@NonNull*/ Integer> ids, @NonNull byte[] bytecode) {
 
         @Override
         public boolean equals(Object o) {

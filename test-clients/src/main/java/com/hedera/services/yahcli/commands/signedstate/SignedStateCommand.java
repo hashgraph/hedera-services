@@ -23,7 +23,11 @@ import picocli.CommandLine.ParentCommand;
 
 @Command(
         name = "signedstate",
-        subcommands = {CommandLine.HelpCommand.class, SummarizeSignedStateFileCommand.class},
+        subcommands = {
+            CommandLine.HelpCommand.class,
+            SummarizeSignedStateFileCommand.class,
+            DumpRawContractsCommand.class
+        },
         description = "Dealing with signed state files")
 public class SignedStateCommand implements Callable<Integer> {
     @ParentCommand Yahcli yahcli;
