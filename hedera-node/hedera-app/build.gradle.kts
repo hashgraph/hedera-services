@@ -24,8 +24,11 @@ configurations.all {
     exclude("com.google.code.findbugs", "jsr305")
     exclude("org.jetbrains", "annotations")
     exclude("org.checkerframework", "checker-qual")
+
     exclude("io.grpc", "grpc-core")
+    exclude("io.grpc", "grpc-context")
     exclude("io.grpc", "grpc-api")
+    exclude("io.grpc", "grpc-testing")
 }
 
 dependencies {
@@ -40,12 +43,12 @@ dependencies {
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
 
-    implementation(libs.hapi)
-    implementation(libs.bundles.helidon)
     implementation(libs.bundles.swirlds)
     implementation(libs.commons.codec)
-
     compileOnly(libs.spotbugs.annotations)
+    implementation(libs.hapi)
+    implementation(libs.bundles.helidon)
+    implementation(libs.helidon.grpc.server)
 
     itestImplementation(libs.hapi)
     itestImplementation(libs.bundles.helidon)
