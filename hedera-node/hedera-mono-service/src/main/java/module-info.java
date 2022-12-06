@@ -1,12 +1,62 @@
 module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono;
-    exports com.hedera.node.app.service.mono.state.merkle;
-    exports com.hedera.node.app.service.mono.legacy.core.jproto;
-    exports com.hedera.node.app.service.mono.utils;
-    exports com.hedera.node.app.service.mono.state.submerkle;
-    exports com.hedera.node.app.service.mono.state.impl;
-    exports com.hedera.node.app.service.mono.exceptions;
-    exports com.hedera.node.app.service.mono.sigs.order;
+    exports com.hedera.node.app.service.mono.state.submerkle to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.exceptions to
+            com.hedera.node.app.service.mono.testFixtures, com.hedera.node.app.service.schedule.impl;
+    exports com.hedera.node.app.service.mono.legacy.core.jproto to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.utils to
+            com.hedera.node.app.service.mono.testFixtures, com.hedera.node.app.service.schedule.impl;
+    exports com.hedera.node.app.service.mono.ledger to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.store.models to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.state.merkle to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.utils.accessors to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.sigs.utils to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.sigs.verification to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.files to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.state.virtual.schedule to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.store.schedule to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.store.tokens to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.context to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.state.enums to
+            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.throttling to
+            com.fasterxml.jackson.databind;
+
+    opens com.hedera.node.app.service.mono to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.context.properties to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.legacy.core.jproto to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.merkle to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.merkle.internals to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.submerkle to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.entities to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.schedule to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.state.virtual.temporal to
+            com.swirlds.common;
+    opens com.hedera.node.app.service.mono.stream to
+            com.swirlds.common;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
@@ -38,33 +88,9 @@ module com.hedera.node.app.service.mono {
     requires com.swirlds.logging;
     requires org.bouncycastle.provider;
     requires tuweni.units;
-    requires grpc.stub;
     requires commons.collections4;
-
-    exports com.hedera.node.app.service.mono.throttling to
-            com.fasterxml.jackson.databind;
-
-    opens com.hedera.node.app.service.mono to
-            com.swirlds.common,
-            com.hedera.node.app.spi.test;
-    opens com.hedera.node.app.service.mono.context.properties to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.legacy.core.jproto to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.merkle to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.merkle.internals to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.submerkle to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.entities to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.schedule to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.state.virtual.temporal to
-            com.swirlds.common;
-    opens com.hedera.node.app.service.mono.stream to
-            com.swirlds.common;
+    requires org.eclipse.collections.impl;
+    requires org.apache.commons.io;
+    requires io.grpc;
+    requires grpc.stub;
 }

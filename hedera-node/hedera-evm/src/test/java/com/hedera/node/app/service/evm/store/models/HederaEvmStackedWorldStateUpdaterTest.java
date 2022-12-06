@@ -15,8 +15,8 @@
  */
 package com.hedera.node.app.service.evm.store.models;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
@@ -50,7 +50,8 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void getAccount() {
-        UpdatedHederaEvmAccount updatedHederaEvmAccount = new UpdatedHederaEvmAccount(address);
+        final UpdatedHederaEvmAccount updatedHederaEvmAccount =
+                new UpdatedHederaEvmAccount(address);
 
         assertEquals(
                 updatedHederaEvmAccount.getAddress(),
