@@ -21,7 +21,7 @@ import static com.hedera.node.app.service.mono.keys.HederaKeyActivation.pkToSigM
 import static com.hedera.node.app.service.mono.sigs.PlatformSigOps.createCryptoSigsFrom;
 import static com.hedera.node.app.service.mono.sigs.sourcing.KeyType.ECDSA_SECP256K1;
 
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.PlatformSigsCreationResult;
@@ -78,7 +78,8 @@ public class PrecheckVerifier {
                                     if (type.equals(ECDSA_SECP256K1)
                                             && Arrays.equals(
                                                     payerKey.getHollowKey().getEvmAddress(),
-                                                    EthTxSigs.recoverAddressFromPubKey(pubKey))) {
+                                                    EthSigsUtils.recoverAddressFromPubKey(
+                                                            pubKey))) {
                                         reqKeys.set(0, new JECDSASecp256k1Key(pubKey));
                                     }
                                 });
