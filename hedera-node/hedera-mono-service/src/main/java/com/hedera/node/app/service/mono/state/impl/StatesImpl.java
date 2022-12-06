@@ -64,7 +64,7 @@ public class StatesImpl implements States {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.schedules().byId(), children.signedAt());
             return (StateBase) state;
-        } else if (stateKey.equals("SCHEDULES-BY-EXPIRATION")) {
+        } else if (stateKey.equals("SCHEDULES-BY-EXPIRY")) {
             final var state =
                     new InMemoryStateImpl<>(stateKey, children.schedules().byExpirationSecond(), children.signedAt());
             return (StateBase) state;

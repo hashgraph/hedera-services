@@ -26,11 +26,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * Service</a>.
  */
 public interface UtilPreTransactionHandler extends PreTransactionHandler {
-    @Override
-    default TransactionMetadata preHandle(final TransactionBody tx, AccountID payer) {
-        return preHandlePrng(tx, payer);
-    }
-
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#UtilPrng}
      * transaction, returning the metadata required to, at minimum, validate the signatures of all
