@@ -80,6 +80,8 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -113,10 +115,8 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.ApproveWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
@@ -765,10 +765,7 @@ class ERC20PrecompilesTest {
 
         given(accounts.contains(any())).willReturn(true);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedPretendArguments), any(), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(allowances);
         given(encoder.encodeAllowance(10L)).willReturn(successResult);
@@ -1702,10 +1699,11 @@ class ERC20PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
+    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER =
+            new BalanceOfWrapper<>(sender);
 
-    public static final TokenAllowanceWrapper ALLOWANCE_WRAPPER =
-            new TokenAllowanceWrapper(token, sender, receiver);
+    public static final TokenAllowanceWrapper<TokenID, AccountID, AccountID> ALLOWANCE_WRAPPER =
+            new TokenAllowanceWrapper<>(token, sender, receiver);
 
     public static final TokenTransferWrapper TOKEN_TRANSFER_FROM_WRAPPER =
             new TokenTransferWrapper(
