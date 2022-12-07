@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -69,6 +70,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContrac
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -692,6 +695,7 @@ public class Create2OperationSuite extends HapiApiSuite {
 
         return onlyDefaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
                 .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
                         uploadInitCode(contract),
@@ -836,7 +840,8 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)));
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     @SuppressWarnings("java:S5669")
