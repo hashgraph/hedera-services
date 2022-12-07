@@ -65,10 +65,10 @@ class FractionalFeeAssessorTest {
                                 skippedFixedFee,
                                 fractionalFeeNetOfTransfers));
         final var firstCollectorChange =
-                BalanceChange.tokenAdjust(
+                BalanceChange.tokenCustomFeeAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var secondCollectorChange =
-                BalanceChange.tokenAdjust(
+                BalanceChange.tokenCustomFeeAdjust(
                         secondFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         // and:
@@ -141,7 +141,7 @@ class FractionalFeeAssessorTest {
         // setup:
         final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
-                BalanceChange.tokenAdjust(
+                BalanceChange.tokenCustomFeeAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         // and:
@@ -190,7 +190,7 @@ class FractionalFeeAssessorTest {
         // setup:
         final var feeMeta = newCustomFeeMeta(tokenWithFractionalFee, List.of(firstFractionalFee));
         final var collectorChange =
-                BalanceChange.tokenAdjust(
+                BalanceChange.tokenCustomFeeAdjust(
                         firstFractionalFeeCollector.asId(), tokenWithFractionalFee, 0L);
         final var credits = List.of(firstVanillaReclaim, secondVanillaReclaim);
         given(
@@ -508,17 +508,18 @@ class FractionalFeeAssessorTest {
                             skippedFixedFee,
                             fractionalFeeNetOfTransfers));
     private final BalanceChange vanillaTrigger =
-            BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -vanillaTriggerAmount);
+            BalanceChange.tokenCustomFeeAdjust(
+                    payer, tokenWithFractionalFee, -vanillaTriggerAmount);
     private final BalanceChange firstVanillaReclaim =
-            BalanceChange.tokenAdjust(
+            BalanceChange.tokenCustomFeeAdjust(
                     firstReclaimedAcount, tokenWithFractionalFee, +firstCreditAmount);
     private final BalanceChange secondVanillaReclaim =
-            BalanceChange.tokenAdjust(
+            BalanceChange.tokenCustomFeeAdjust(
                     secondReclaimedAcount, tokenWithFractionalFee, +secondCreditAmount);
     private final BalanceChange wildlyInsufficientChange =
-            BalanceChange.tokenAdjust(payer, tokenWithFractionalFee, -1);
+            BalanceChange.tokenCustomFeeAdjust(payer, tokenWithFractionalFee, -1);
     private final BalanceChange someCredit =
-            BalanceChange.tokenAdjust(firstReclaimedAcount, tokenWithFractionalFee, +1);
+            BalanceChange.tokenCustomFeeAdjust(firstReclaimedAcount, tokenWithFractionalFee, +1);
 
     private final NftTransfer ownershipChange =
             NftTransfer.newBuilder()

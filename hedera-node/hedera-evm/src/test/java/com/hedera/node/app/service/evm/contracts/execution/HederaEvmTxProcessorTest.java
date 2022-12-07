@@ -25,8 +25,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
@@ -79,8 +81,8 @@ class HederaEvmTxProcessorTest {
     @Mock private BlockValues blockValues;
     @Mock private BlockMetaSource blockMetaSource;
 
-    private final MockHederaEvmAccount sender =
-            new MockHederaEvmAccount(
+    private final HederaEvmAccount sender =
+            new HederaEvmAccount(
                     Address.fromHexString("0x000000000000000000000000000000000000071e"));
     private final Address senderAddress =
             Address.fromHexString("0x000000000000000000000000000000000000070e");
@@ -150,7 +152,7 @@ class HederaEvmTxProcessorTest {
                         ccps,
                         blockMetaSource);
 
-        final var hederaEvmOperationTracer = new MockHederaEvmOperationTracer();
+        final var hederaEvmOperationTracer = new DefaultHederaTracer();
         evmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
     }
 
