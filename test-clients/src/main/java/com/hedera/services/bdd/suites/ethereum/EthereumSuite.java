@@ -99,18 +99,14 @@ public class EthereumSuite extends HapiApiSuite {
 
     private static final Logger log = LogManager.getLogger(EthereumSuite.class);
     private static final long depositAmount = 20_000L;
-    private static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
-
     private static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
     private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
-    private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
-    private static final String ERC721_CONTRACT = "NewERC721Contract";
+    private static final String ERC721_CONTRACT_WITH_HTS_CALLS = "ERC721ContractWithHTSCalls";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
     private static final long GAS_LIMIT = 1_000_000;
 
     public static final String ERC20_CONTRACT = "ERC20Contract";
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
-    private static final String ASSOCIATE_CONTRACT = "AssociateDissociate";
 
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
@@ -122,11 +118,28 @@ public class EthereumSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return Stream.concat(
                         Stream.of(setChainId()),
-                        Stream.of(debuggingLocalNodeIssueForSetApproveForAll()))
+                        Stream.concat(
+                                feePaymentMatrix().stream(),
+                                Stream.of(
+                                        invalidTxData(),
+                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        ETX_010_transferToCryptoAccountSucceeds(),
+                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                        ETX_014_contractCreateInheritsSignerProperties(),
+                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
+                                        ETX_009_callsToTokenAddresses(),
+                                        originAndSenderAreEthereumSigner(),
+                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        setApproveForAllUsingLocalNodeSetupPasses())))
                 .toList();
     }
 
-    HapiApiSpec debuggingLocalNodeIssueForSetApproveForAll() {
+    HapiApiSpec setApproveForAllUsingLocalNodeSetupPasses() {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
@@ -135,14 +148,9 @@ public class EthereumSuite extends HapiApiSuite {
         final var createTokenContractNum = new AtomicLong();
         return defaultHapiSpec("DebuggingLocalNodeIssueForSetApproveForAll")
                 .given(
-                        /** Generate random ECDSA keys */
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
-                        /** Create the Relayer account */
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        /** Create the Treasury account */
-
-                        /** Create two ECDSA accounts via account auto-create transactions */
                         cryptoTransfer(
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_MILLION_HBARS))
@@ -152,9 +160,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                 GENESIS, spenderAlias, ONE_HUNDRED_HBARS))
                                 .via("autoAccountSpender"),
                         getAliasedAccountInfo(spenderAlias)
-                                .exposingContractAccountIdTo(
-                                        id -> spenderAutoCreatedAccountId.set(id)),
-                        /** Upload contract bytecodes */
+                                .exposingContractAccountIdTo(spenderAutoCreatedAccountId::set),
                         createLargeFile(
                                 GENESIS,
                                 TOKEN_CREATE_CONTRACT,
@@ -176,7 +182,6 @@ public class EthereumSuite extends HapiApiSuite {
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
-                                    /** Create HTS token via call to TokenCreateContract */
                                     var createNFTPublicFunctionCall =
                                             ethereumCall(
                                                             TOKEN_CREATE_CONTRACT,
@@ -201,17 +206,16 @@ public class EthereumSuite extends HapiApiSuite {
                                                                     .contractCallResult(
                                                                             resultWith()
                                                                                     .exposeCreatedTokenAddress(
-                                                                                            data ->
-                                                                                                    createdTokenAddressString
-                                                                                                            .set(
-                                                                                                                    data))));
+                                                                                            createdTokenAddressString
+                                                                                                    ::set)));
                                     allRunFor(spec, createNFTPublicFunctionCall, setCreatedToken);
 
-                                    var uploadEthereumContract = uploadInitCode(ERC721_CONTRACT);
+                                    var uploadEthereumContract =
+                                            uploadInitCode(ERC721_CONTRACT_WITH_HTS_CALLS);
                                     allRunFor(spec, uploadEthereumContract);
 
                                     var createEthereumContract =
-                                            ethereumContractCreate(ERC721_CONTRACT)
+                                            ethereumContractCreate(ERC721_CONTRACT_WITH_HTS_CALLS)
                                                     .type(EthTxData.EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
@@ -222,7 +226,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .hasKnownStatusFrom(SUCCESS);
 
                                     var exposeEthereumContractAddress =
-                                            getContractInfo(ERC721_CONTRACT)
+                                            getContractInfo(ERC721_CONTRACT_WITH_HTS_CALLS)
                                                     .exposingEvmAddress(
                                                             address ->
                                                                     erc721ContractID.set(
@@ -237,7 +241,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 (spec, opLog) -> {
                                     var associateTokenToERC721 =
                                             ethereumCall(
-                                                            ERC721_CONTRACT,
+                                                            ERC721_CONTRACT_WITH_HTS_CALLS,
                                                             "associateTokenPublic",
                                                             asHeadlongAddress(
                                                                     erc721ContractID.get()),
@@ -278,10 +282,51 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .via("associateTokenTxn")
                                                     .hasKnownStatusFrom(SUCCESS);
 
+                                    var isApprovedForAllBefore =
+                                            ethereumCall(
+                                                            ERC721_CONTRACT_WITH_HTS_CALLS,
+                                                            "ercIsApprovedForAll",
+                                                            asHeadlongAddress(
+                                                                    Bytes.wrap(
+                                                                                    createdTokenAddressString
+                                                                                            .get()
+                                                                                            .toByteArray())
+                                                                            .toHexString()),
+                                                            asHeadlongAddress(
+                                                                    erc721ContractID.get()),
+                                                            asHeadlongAddress(
+                                                                    spenderAutoCreatedAccountId
+                                                                            .get()))
+                                                    .type(EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(4)
+                                                    .gasPrice(10L)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("ercIsApprovedForAllBeforeTxn")
+                                                    .hasKnownStatusFrom(SUCCESS)
+                                                    .logged();
+
+                                    var isApprovedForAllBeforeCheck =
+                                            childRecordsCheck(
+                                                    "ercIsApprovedForAllBeforeTxn",
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .contractCallResult(
+                                                                    resultWith()
+                                                                            .contractCallResult(
+                                                                                    htsPrecompileResult()
+                                                                                            .forFunction(
+                                                                                                    FunctionType
+                                                                                                            .ERC_IS_APPROVED_FOR_ALL)
+                                                                                            .withIsApprovedForAll(
+                                                                                                    false))));
+
                                     var approveForAllCall =
                                             ethereumCall(
-                                                            ERC721_CONTRACT,
-                                                            "setApprovalForAlll",
+                                                            ERC721_CONTRACT_WITH_HTS_CALLS,
+                                                            "ercSetApprovalForAll",
                                                             asHeadlongAddress(
                                                                     Bytes.wrap(
                                                                                     createdTokenAddressString
@@ -295,19 +340,23 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .type(EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
-                                                    .nonce(4)
+                                                    .nonce(5)
                                                     .gasPrice(10L)
                                                     .gasLimit(1_000_000L)
-                                                    .via("setApproveForAllTxn")
+                                                    .via("ercSetApproveForAllTxn")
                                                     .hasKnownStatusFrom(SUCCESS)
                                                     .logged();
 
-                                    var isApprovedForAll =
+                                    var isApprovedForAllAfter =
                                             ethereumCall(
-                                                            ERC721_CONTRACT,
-                                                            "isApprovedForAlll",
+                                                            ERC721_CONTRACT_WITH_HTS_CALLS,
+                                                            "ercIsApprovedForAll",
                                                             asHeadlongAddress(
-                                                                    tokenCreateContractID.get()),
+                                                                    Bytes.wrap(
+                                                                                    createdTokenAddressString
+                                                                                            .get()
+                                                                                            .toByteArray())
+                                                                            .toHexString()),
                                                             asHeadlongAddress(
                                                                     erc721ContractID.get()),
                                                             asHeadlongAddress(
@@ -316,25 +365,38 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .type(EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)
-                                                    .nonce(5)
+                                                    .nonce(6)
                                                     .gasPrice(10L)
                                                     .gasLimit(1_000_000L)
-                                                    .via("isApprovedForAllTxn")
+                                                    .via("ercIsApprovedForAllAfterTxn")
                                                     .hasKnownStatusFrom(SUCCESS)
                                                     .logged();
 
-                                    var isApprovedForAllRecord =
-                                            getTxnRecord("isApprovedForAllTxn")
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                    var isApprovedForAllAfterCheck =
+                                            childRecordsCheck(
+                                                    "ercIsApprovedForAllAfterTxn",
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .contractCallResult(
+                                                                    resultWith()
+                                                                            .contractCallResult(
+                                                                                    htsPrecompileResult()
+                                                                                            .forFunction(
+                                                                                                    FunctionType
+                                                                                                            .ERC_IS_APPROVED_FOR_ALL)
+                                                                                            .withIsApprovedForAll(
+                                                                                                    true))));
 
                                     allRunFor(
                                             spec,
                                             associateTokenToERC721,
                                             associateTokenToSpender,
+                                            isApprovedForAllBefore,
+                                            isApprovedForAllBeforeCheck,
                                             approveForAllCall,
-                                            isApprovedForAll,
-                                            isApprovedForAllRecord);
+                                            isApprovedForAllAfter,
+                                            isApprovedForAllAfterCheck);
                                 }))
                 .then(withOpContext((spec, opLog) -> {}));
     }
@@ -911,27 +973,26 @@ public class EthereumSuite extends HapiApiSuite {
                         contractCreate(ERC20_CONTRACT).adminKey(THRESHOLD))
                 .when(
                         withOpContext(
-                                (spec, opLog) -> {
-                                    allRunFor(
-                                            spec,
-                                            ethereumCallWithFunctionAbi(
-                                                            true,
-                                                            FUNGIBLE_TOKEN,
-                                                            getABIFor(
-                                                                    Utils.FunctionType.FUNCTION,
-                                                                    "totalSupply",
-                                                                    "ERC20ABI"))
-                                                    .type(EthTxData.EthTransactionType.EIP1559)
-                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-                                                    .payingWith(RELAYER)
-                                                    .via("totalSupplyTxn")
-                                                    .nonce(0)
-                                                    .gasPrice(50L)
-                                                    .maxGasAllowance(FIVE_HBARS)
-                                                    .maxPriorityGas(2L)
-                                                    .gasLimit(1_000_000L)
-                                                    .hasKnownStatus(ResponseCodeEnum.SUCCESS));
-                                }))
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                ethereumCallWithFunctionAbi(
+                                                                true,
+                                                                FUNGIBLE_TOKEN,
+                                                                getABIFor(
+                                                                        Utils.FunctionType.FUNCTION,
+                                                                        "totalSupply",
+                                                                        "ERC20ABI"))
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .via("totalSupplyTxn")
+                                                        .nonce(0)
+                                                        .gasPrice(50L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .maxPriorityGas(2L)
+                                                        .gasLimit(1_000_000L)
+                                                        .hasKnownStatus(ResponseCodeEnum.SUCCESS))))
                 .then(
                         childRecordsCheck(
                                 "totalSupplyTxn",

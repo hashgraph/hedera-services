@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-contract ERC721Contract is HederaTokenService{
+contract ERC721ContractWithHTSCalls is HederaTokenService{
 
     event ResponseCode(int responseCode);
 
@@ -34,11 +34,11 @@ contract ERC721Contract is HederaTokenService{
         return IERC721Enumerable(token).totalSupply();
     }
 
-    function setApprovalForAlll(address token, address operator, bool approved) external {
+    function ercSetApprovalForAll(address token, address operator, bool approved) external {
         IERC721(token).setApprovalForAll(operator, approved);
     }
 
-    function isApprovedForAlll(address token, address owner, address operator) public view returns (bool) {
+    function ercIsApprovedForAll(address token, address owner, address operator) public view returns (bool) {
         return IERC721(token).isApprovedForAll(owner, operator);
     }
 
