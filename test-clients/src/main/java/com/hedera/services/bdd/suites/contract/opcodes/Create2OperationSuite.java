@@ -135,6 +135,7 @@ public class Create2OperationSuite extends HapiApiSuite {
             "Returner reported {} when called with mirror address";
     private static final String CONTRACT_REPORTED_LOG_MESSAGE =
             "Contract reported TestContract initcode is {} bytes";
+    public static final String ADMIN_KEY = "adminKey";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -333,8 +334,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -409,7 +409,7 @@ public class Create2OperationSuite extends HapiApiSuite {
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
         final var salt = BigInteger.valueOf(42);
-        final var adminKey = "adminKey";
+        final var adminKey = ADMIN_KEY;
         final var replAdminKey = "replAdminKey";
         final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
@@ -465,8 +465,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -681,9 +680,9 @@ public class Create2OperationSuite extends HapiApiSuite {
     private HapiApiSpec canBlockCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
-        final var creation = "creation";
+        final var creation = CREATION;
         final var salt = BigInteger.valueOf(42);
-        final var adminKey = "adminKey";
+        final var adminKey = ADMIN_KEY;
         final var replAdminKey = "replAdminKey";
         final var entityMemo = "JUST DO IT";
         final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
@@ -722,8 +721,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -1305,7 +1303,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2874
     @SuppressWarnings("java:S5669")
     private HapiApiSpec canDeleteViaAlias() {
-        final var adminKey = "adminKey";
+        final var adminKey = ADMIN_KEY;
         final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
         final var contract = "SaltingCreatorFactory";
