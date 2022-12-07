@@ -272,7 +272,7 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(totalFee * 2, mockBuilderWithEVMAlias.getFee());
+        assertEquals(totalFee * 2 , mockBuilderWithEVMAlias.getFee());
         assertEquals(Pair.of(OK, totalFee * 2), result);
         assertTrue(subject.getTokenAliasMap().isEmpty());
     }
@@ -319,8 +319,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(2 * totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, 2 * totalFee), result);
+        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
     }
 
     @Test
@@ -365,8 +365,8 @@ class AutoCreationLogicTest {
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         DEFAULT_SOURCE_ID, syntheticHollowCreation, mockBuilderWithEVMAlias);
-        assertEquals(2 * totalFee, mockBuilderWithEVMAlias.getFee());
-        assertEquals(Pair.of(OK, 2 * totalFee), result);
+        assertEquals(totalFee, mockBuilderWithEVMAlias.getFee());
+        assertEquals(Pair.of(OK, totalFee), result);
     }
 
     @Test

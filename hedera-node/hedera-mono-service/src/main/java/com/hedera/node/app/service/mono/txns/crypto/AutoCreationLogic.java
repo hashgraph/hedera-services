@@ -250,10 +250,11 @@ public class AutoCreationLogic {
                 .alias(alias);
 
         var fee = autoCreationFeeFor(syntheticCreation);
-        final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         if (isAliasEVMAddress) {
             fee += getLazyCreationFinalizationFee();
         }
+
+        final var newId = ids.newAccountId(syntheticCreation.getTransactionID().getAccountID());
         accountsLedger.create(newId);
         replaceAliasAndSetBalanceOnChange(change, newId);
 

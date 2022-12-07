@@ -40,6 +40,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -62,8 +68,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiApiSpec;
@@ -78,6 +87,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.OptionalLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,6 +111,26 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
     private static final String OWNER = "Owner";
+    private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
+    private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";
+    private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
+    private static final ByteString META1 = ByteStringUtils.wrapUnsafely("meta1".getBytes());
+    private static final ByteString META2 = ByteStringUtils.wrapUnsafely("meta2".getBytes());
+    private static final ByteString META3 = ByteStringUtils.wrapUnsafely("meta3".getBytes());
+    private static final ByteString META4 = ByteStringUtils.wrapUnsafely("meta4".getBytes());
+    private static final ByteString META5 = ByteStringUtils.wrapUnsafely("meta5".getBytes());
+    private static final ByteString META6 = ByteStringUtils.wrapUnsafely("meta6".getBytes());
+    private static final ByteString META7 = ByteStringUtils.wrapUnsafely("meta7".getBytes());
+    private static final ByteString META8 = ByteStringUtils.wrapUnsafely("meta8".getBytes());
+    private static final String NFT_TOKEN_WITH_FIXED_HBAR_FEE = "nftTokenWithFixedHbarFee";
+    private static final String NFT_TOKEN_WITH_FIXED_TOKEN_FEE = "nftTokenWithFixedTokenFee";
+    private static final String NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK =
+            "nftTokenWithRoyaltyFeeWithHbarFallback";
+    private static final String NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK =
+            "nftTokenWithRoyaltyFeeWithTokenFallback";
+    private static final String FUNGIBLE_TOKEN_FEE = "fungibleTokenFee";
+    private static final String RECEIVER_SIGNATURE = "receiverSignature";
+    private static final String APPROVE_TXN = "approveTxn";
 
     public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteAsync();
@@ -124,7 +154,13 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                     repeatedTokenIdsAreAutomaticallyConsolidated(),
                     activeContractInFrameIsVerifiedWithoutNeedForSignature(),
                     hapiTransferFromForFungibleToken(),
-                    hapiTransferFromForNFT()
+                    hapiTransferFromForNFT(),
+                    cryptoTransferNFTsWithCustomFeesMixedScenario(),
+                    hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
+                    hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
+                    hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                    hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
+                    hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender()
                 });
     }
 
@@ -135,7 +171,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var successfulTransferFromTxn2 = "txn2";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         final var revertingTransferFromTxn2 = "revertingTxn";
-        final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("hapiTransferFromForFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -180,7 +215,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // revert
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -202,7 +237,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer allowance/2 amount
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -224,7 +259,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer the rest of the allowance
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -249,7 +284,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // no allowance left, should fail
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFrom,
+                                                                HTS_TRANSFER_FROM,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -409,7 +444,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
         final var theSpender = "spender";
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("hapiTransferFromForNFT")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -425,11 +459,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        mintToken(
-                                NFT_TOKEN,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(
@@ -449,7 +479,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // trying to transfer NFT that is not approved
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -471,7 +501,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 // transfer allowed NFT
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
-                                                                htsTransferFromNFT,
+                                                                HTS_TRANSFER_FROM_NFT,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 spec.registry()
@@ -600,7 +630,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -699,7 +729,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -782,7 +812,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -871,7 +901,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -964,7 +994,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1078,7 +1108,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -1207,7 +1237,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             cryptoUpdate(RECEIVER2).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -1348,7 +1378,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             spec,
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1378,7 +1408,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1409,7 +1439,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1435,7 +1465,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
@@ -1536,6 +1566,1092 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                         .including(
                                                                 NFT_TOKEN, CONTRACT, RECEIVER,
                                                                 2L))));
+    }
+
+    private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
+        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithoutApproveFails")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                                OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, FUNGIBLE_TOKEN_FEE),
+                                                OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta5".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta6".getBytes()))),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                List.of(
+                                        ByteStringUtils.wrapUnsafely("meta7".getBytes()),
+                                        ByteStringUtils.wrapUnsafely("meta8".getBytes()))),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_HBAR_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then();
+    }
+
+    private HapiApiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
+        final var SPENDER_SIGNATURE = "spenderSignature";
+        return defaultHapiSpec("TransferFromForNFTWithCustomFeesWithApproveForAll")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        newKeyNamed(SPENDER_SIGNATURE),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(CONTRACT, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                                OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, FUNGIBLE_TOKEN_FEE),
+                                                OWNER)),
+                        tokenAssociate(
+                                CONTRACT,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                List.of(META5, META6)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                List.of(META7, META8)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                        .between(OWNER, CONTRACT)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                        .between(OWNER, CONTRACT)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L)
+                                        .between(OWNER, CONTRACT)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
+                                        .between(OWNER, CONTRACT)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, CONTRACT)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
+                        cryptoTransfer(TokenMovement.movingHbar(100L).between(OWNER, CONTRACT)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                CONTRACT,
+                                                                TRANSFER_MULTIPLE_TOKENS,
+                                                                tokenTransferLists()
+                                                                        .withTokenTransferList(
+                                                                                tokenTransferList()
+                                                                                        .forToken(
+                                                                                                spec.registry()
+                                                                                                        .getTokenID(
+                                                                                                                NFT_TOKEN_WITH_FIXED_HBAR_FEE))
+                                                                                        .withNftTransfers(
+                                                                                                nftTransfer(
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        CONTRACT),
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        RECEIVER),
+                                                                                                        1L))
+                                                                                        .build(),
+                                                                                tokenTransferList()
+                                                                                        .forToken(
+                                                                                                spec.registry()
+                                                                                                        .getTokenID(
+                                                                                                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE))
+                                                                                        .withNftTransfers(
+                                                                                                nftTransfer(
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        CONTRACT),
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        RECEIVER),
+                                                                                                        1L))
+                                                                                        .build(),
+                                                                                tokenTransferList()
+                                                                                        .forToken(
+                                                                                                spec.registry()
+                                                                                                        .getTokenID(
+                                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK))
+                                                                                        .withNftTransfers(
+                                                                                                nftTransfer(
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        CONTRACT),
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        RECEIVER),
+                                                                                                        1L))
+                                                                                        .build(),
+                                                                                tokenTransferList()
+                                                                                        .forToken(
+                                                                                                spec.registry()
+                                                                                                        .getTokenID(
+                                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK))
+                                                                                        .withNftTransfers(
+                                                                                                nftTransfer(
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        CONTRACT),
+                                                                                                        spec.registry()
+                                                                                                                .getAccountID(
+                                                                                                                        RECEIVER),
+                                                                                                        1L))
+                                                                                        .build())
+                                                                        .build())
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .gas(1_000_000L))))
+                .then();
+    }
+
+    private HapiApiSpec hapiTransferFromForNFTWithCustomFeesWithApproveForAll() {
+        return defaultHapiSpec("HapiTransferFromForNFTWithCustomFeesWithApproveForAll")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                                OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, FUNGIBLE_TOKEN_FEE),
+                                                OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                List.of(META5, META6)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                List.of(META7, META8)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of())
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of())
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of())
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of())
+                                .via(APPROVE_TXN)
+                                .signedBy(DEFAULT_PAYER, SENDER))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_HBAR_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE))))
+                .then();
+    }
+
+    private HapiApiSpec
+            hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+        return defaultHapiSpec(
+                        "HapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(5)
+                                .key(MULTI_KEY),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(NFT_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHbarFeeInheritingRoyaltyCollector(1),
+                                                OWNER)),
+                        tokenCreate(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY)
+                                .adminKey(MULTI_KEY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(
+                                                1,
+                                                2,
+                                                fixedHtsFeeInheritingRoyaltyCollector(
+                                                        1, FUNGIBLE_TOKEN_FEE),
+                                                OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_HBAR_FEE, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, List.of(META3, META4)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                List.of(META5, META6)),
+                        mintToken(
+                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                List.of(META7, META8)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_HBAR_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_FIXED_TOKEN_FEE, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                movingUnique(NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK, 1L)
+                                        .between(OWNER, SENDER)),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, RECEIVER)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of(1L))
+                                .addNftAllowance(
+                                        SENDER,
+                                        NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        true,
+                                        List.of(1L))
+                                .via(APPROVE_TXN)
+                                .signedBy(DEFAULT_PAYER, SENDER))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_HBAR_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_FIXED_TOKEN_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_HBAR_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM_NFT,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                NFT_TOKEN_WITH_ROYALTY_FEE_WITH_TOKEN_FALLBACK))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE))))
+                .then();
+    }
+
+    private HapiApiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
+        final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
+        final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
+        final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
+        return defaultHapiSpec("HapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails")
+                .given(
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fractionalFee(1, 2, 1, OptionalLong.of(10), OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                        .between(OWNER, SENDER)),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then();
+    }
+
+    private HapiApiSpec
+            hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+        final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
+        final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
+        final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
+        return defaultHapiSpec(
+                        "HapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender")
+                .given(
+                        newKeyNamed(RECEIVER_SIGNATURE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS).key(RECEIVER_SIGNATURE),
+                        tokenCreate(FUNGIBLE_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(1000L),
+                        tokenAssociate(SENDER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN_FEE),
+                        tokenAssociate(RECEIVER, FUNGIBLE_TOKEN_FEE),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHbarFee(1, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fixedHtsFee(1, FUNGIBLE_TOKEN_FEE, OWNER)),
+                        tokenCreate(FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(OWNER)
+                                .initialSupply(1000L)
+                                .withCustom(fractionalFee(1, 2, 1, OptionalLong.of(10), OWNER)),
+                        tokenAssociate(
+                                SENDER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        tokenAssociate(
+                                RECEIVER,
+                                List.of(
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_FEE).between(TOKEN_TREASURY, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(1L, FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE)
+                                        .between(OWNER, SENDER)),
+                        cryptoTransfer(
+                                moving(2L, FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE)
+                                        .between(OWNER, SENDER)),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addTokenAllowance(
+                                        SENDER,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        1L)
+                                .addTokenAllowance(
+                                        SENDER,
+                                        FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        1L)
+                                .addTokenAllowance(
+                                        SENDER,
+                                        FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE,
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        2L)
+                                .via(APPROVE_TXN)
+                                .signedBy(DEFAULT_PAYER, SENDER))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS),
+                                                contractCall(
+                                                                HTS_TRANSFER_FROM_CONTRACT,
+                                                                HTS_TRANSFER_FROM,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                SENDER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                RECEIVER))),
+                                                                BigInteger.valueOf(1L))
+                                                        .payingWith(GENESIS)
+                                                        .signingWith(RECEIVER_SIGNATURE))))
+                .then();
     }
 
     @Override
