@@ -69,36 +69,3 @@ tasks.register<Exec>("stopDockerContainers") {
     workingDir("./docker")
     commandLine("docker-compose", "stop")
 }
-
-var loginToGoogleDockerRegistryTask = tasks.register<Exec>("loginToGoogleDockerRegistry") {
-    description = "Does the login to the Google registry"
-    group = "docker"
-
-    workingDir("./docker")
-    commandLine("./google-registry-login.sh", "PRIVATE-JSON-KEY")
-}
-
-tasks.register<Exec>("tagDockerImage") {
-    description = "Creates a new tag for the docker image"
-    group = "docker"
-
-    dependsOn(loginToGoogleDockerRegistryTask)
-    commandLine(
-        "docker",
-        "tag",
-        "services-node:" + project.version,
-        "gcr.io/hedera-registry/services-node:" + project.version
-    )
-}
-
-tasks.register<Exec>("pushDockerImage") {
-    description = "Pushes the current tag of the docker image to the google registry"
-    group = "docker"
-
-    dependsOn(loginToGoogleDockerRegistryTask)
-    commandLine(
-        "docker",
-        "push",
-        "gcr.io/hedera-registry/services-node:" + project.version
-    )
-}
