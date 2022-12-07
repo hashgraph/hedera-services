@@ -28,7 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -240,7 +240,7 @@ public class AutoCreationLogic {
             if (jKey.hasECDSAsecp256k1Key()) {
                 evmAddress =
                         ByteStringUtils.wrapUnsafely(
-                                tryAddressRecovery(jKey, EthTxSigs::recoverAddressFromPubKey));
+                                tryAddressRecovery(jKey, EthSigsUtils::recoverAddressFromPubKey));
             }
 
             syntheticCreation =
