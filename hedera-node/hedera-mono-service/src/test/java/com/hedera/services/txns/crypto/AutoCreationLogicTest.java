@@ -15,12 +15,13 @@
  */
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.context.BasicTransactionContext.EMPTY_KEY;
-import static com.hedera.services.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.AUTO_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.LAZY_MEMO;
-import static com.hedera.services.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
+import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
+import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
+import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -38,30 +39,30 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.context.TransactionContext;
-import com.hedera.services.context.primitives.StateView;
-import com.hedera.services.context.properties.GlobalDynamicProperties;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.ledger.BalanceChange;
-import com.hedera.services.ledger.SigImpactHistorian;
-import com.hedera.services.ledger.TransactionalLedger;
-import com.hedera.services.ledger.accounts.AliasManager;
-import com.hedera.services.ledger.ids.EntityIdSource;
-import com.hedera.services.ledger.properties.AccountProperty;
-import com.hedera.services.legacy.core.jproto.JKey;
-import com.hedera.services.legacy.core.jproto.TxnReceipt;
-import com.hedera.services.records.InProgressChildRecord;
-import com.hedera.services.records.RecordsHistorian;
-import com.hedera.services.state.EntityCreator;
-import com.hedera.services.state.migration.HederaAccount;
-import com.hedera.services.state.submerkle.EntityId;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.state.validation.UsageLimits;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.models.Id;
-import com.hedera.services.utils.EntityNum;
+import com.hedera.node.app.service.mono.context.TransactionContext;
+import com.hedera.node.app.service.mono.context.primitives.StateView;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
+import com.hedera.node.app.service.mono.fees.FeeCalculator;
+import com.hedera.node.app.service.mono.ledger.BalanceChange;
+import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
+import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
+import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
+import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
+import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
+import com.hedera.node.app.service.mono.records.InProgressChildRecord;
+import com.hedera.node.app.service.mono.records.RecordsHistorian;
+import com.hedera.node.app.service.mono.state.EntityCreator;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
+import com.hedera.node.app.service.mono.state.validation.UsageLimits;
+import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -200,8 +201,7 @@ class AutoCreationLogicTest {
         final var key = Key.parseFrom(ecdsaKeyBytes);
         final var evmAddress =
                 ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(
-                                JKey.mapKey(key).getECDSASecp256k1Key()));
+                        recoverAddressFromPubKey(JKey.mapKey(key).getECDSASecp256k1Key()));
 
         given(syntheticTxnFactory.createAccount(ecKeyAlias, key, evmAddress, 0L, 0))
                 .willReturn(syntheticECAliasCreation);
@@ -238,8 +238,7 @@ class AutoCreationLogicTest {
             throws InvalidProtocolBufferException, DecoderException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
-                ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                ByteString.copyFrom(recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -285,8 +284,7 @@ class AutoCreationLogicTest {
     void hollowAccountWithFtChangeWorks() throws InvalidProtocolBufferException, DecoderException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
-                ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                ByteString.copyFrom(recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
@@ -331,8 +329,7 @@ class AutoCreationLogicTest {
     void hollowAccountWithNFTChangeWorks() throws InvalidProtocolBufferException, DecoderException {
         final var jKey = JKey.mapKey(Key.parseFrom(ecdsaKeyBytes));
         final var evmAddressAlias =
-                ByteString.copyFrom(
-                        EthTxSigs.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
+                ByteString.copyFrom(recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
 
         final var mockBuilderWithEVMAlias =
                 ExpirableTxnRecord.newBuilder()
