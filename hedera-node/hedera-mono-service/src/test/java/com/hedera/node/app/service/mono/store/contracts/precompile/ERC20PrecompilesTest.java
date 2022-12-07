@@ -537,7 +537,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1239,7 +1239,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1331,7 +1331,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1418,7 +1418,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1510,7 +1510,7 @@ class ERC20PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1600,7 +1600,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);

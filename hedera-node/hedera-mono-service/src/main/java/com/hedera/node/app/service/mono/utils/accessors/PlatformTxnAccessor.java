@@ -298,23 +298,23 @@ public class PlatformTxnAccessor implements SwirldsTxnAccessor {
     }
 
     @Override
-    public void setNumAutoCreations(final int numAutoCreations) {
-        delegate.setNumAutoCreations(numAutoCreations);
+    public void setNumImplicitCreations(final int numImplicitCreations) {
+        delegate.setNumImplicitCreations(numImplicitCreations);
     }
 
     @Override
-    public int getNumAutoCreations() {
-        return delegate.getNumAutoCreations();
+    public int getNumImplicitCreations() {
+        return delegate.getNumImplicitCreations();
     }
 
     @Override
-    public boolean areAutoCreationsCounted() {
-        return delegate.areAutoCreationsCounted();
+    public boolean areImplicitCreationsCounted() {
+        return delegate.areImplicitCreationsCounted();
     }
 
     @Override
-    public void countAutoCreationsWith(final AliasManager aliasManager) {
-        delegate.countAutoCreationsWith(aliasManager);
+    public void countImplicitCreationsWith(final AliasManager aliasManager) {
+        delegate.countImplicitCreationsWith(aliasManager);
     }
 
     @Override
