@@ -502,18 +502,37 @@ public class HTSTestsUtil {
                                     .build(),
                             payer),
                     /* Simulate an assessed fallback fee */
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(receiver)
-                                    .setAmount(-AMOUNT)
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT),
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
+
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesThatAreAlsoApproved =
+            List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(1L)
                                     .build(),
                             payer),
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(feeCollector)
-                                    .setAmount(+AMOUNT)
-                                    .build(),
-                            payer));
+                    /* Simulate an assessed fallback fee */
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(receiver),
+                            Id.fromGrpcToken(token),
+                            -AMOUNT,
+                            payer,
+                            true,
+                            true),
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(feeCollector),
+                            Id.fromGrpcToken(token),
+                            +AMOUNT,
+                            payer,
+                            true,
+                            true));
 
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(

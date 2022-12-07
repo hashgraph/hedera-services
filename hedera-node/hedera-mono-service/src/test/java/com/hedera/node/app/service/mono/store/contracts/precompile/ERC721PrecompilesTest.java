@@ -68,6 +68,7 @@ import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -1436,6 +1437,8 @@ class ERC721PrecompilesTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
                 .willReturn(true);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))

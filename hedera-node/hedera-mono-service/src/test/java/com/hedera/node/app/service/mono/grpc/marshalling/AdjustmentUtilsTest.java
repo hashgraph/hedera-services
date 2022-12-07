@@ -37,7 +37,7 @@ class AdjustmentUtilsTest {
         final var denom = new Id(2, 3, 4);
         final var chargingToken = new Id(3, 4, 5);
         final var amount = 123L;
-        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+        final var expectedChange = BalanceChange.tokenCustomFeeAdjust(account, denom, amount);
 
         final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
@@ -51,7 +51,7 @@ class AdjustmentUtilsTest {
         final var denom = new Id(2, 3, 4);
         final var chargingToken = new Id(3, 4, 5);
         final var amount = -123L;
-        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+        final var expectedChange = BalanceChange.tokenCustomFeeAdjust(account, denom, amount);
 
         final var change = adjustedChange(account, chargingToken, denom, amount, changeManager);
 
@@ -65,7 +65,7 @@ class AdjustmentUtilsTest {
         final var account = new Id(1, 2, 3);
         final var denom = new Id(2, 3, 4);
         final var amount = -123L;
-        final var expectedChange = BalanceChange.tokenAdjust(account, denom, amount);
+        final var expectedChange = BalanceChange.tokenCustomFeeAdjust(account, denom, amount);
         expectedChange.setExemptFromCustomFees(true);
 
         final var change = adjustedChange(account, denom, denom, amount, changeManager);

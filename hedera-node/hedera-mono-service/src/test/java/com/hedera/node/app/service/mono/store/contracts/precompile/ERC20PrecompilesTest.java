@@ -1487,6 +1487,8 @@ class ERC20PrecompilesTest {
         given(impliedTransfersMarshal.validityWithCurrentProps(cryptoTransferTransactionBody))
                 .willReturn(OK);
         given(sigsVerifier.hasActiveKey(anyBoolean(), any(), any(), any())).willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
         given(infrastructureFactory.newHederaTokenStore(sideEffects, tokens, nfts, tokenRels))
