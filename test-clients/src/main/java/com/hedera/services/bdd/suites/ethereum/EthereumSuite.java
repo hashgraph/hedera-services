@@ -146,7 +146,7 @@ public class EthereumSuite extends HapiApiSuite {
         final AtomicReference<ByteString> createdTokenAddressString = new AtomicReference<>();
         final String spenderAlias = "spenderAlias";
         final var createTokenContractNum = new AtomicLong();
-        return defaultHapiSpec("DebuggingLocalNodeIssueForSetApproveForAll")
+        return defaultHapiSpec("SetApproveForAllUsingLocalNodeSetupPasses")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(spenderAlias).shape(SECP_256K1_SHAPE),
@@ -196,19 +196,10 @@ public class EthereumSuite extends HapiApiSuite {
                                                     .sending(10000000000L)
                                                     .gasLimit(1_000_000L)
                                                     .via("createTokenTxn")
-                                                    .hasKnownStatusFrom(
-                                                            CONTRACT_REVERT_EXECUTED, SUCCESS);
+                                                    .exposingEventDataTo(
+                                                            createdTokenAddressString::set);
 
-                                    final var setCreatedToken =
-                                            getTxnRecord("createTokenTxn")
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .exposeCreatedTokenAddress(
-                                                                                            createdTokenAddressString
-                                                                                                    ::set)));
-                                    allRunFor(spec, createNFTPublicFunctionCall, setCreatedToken);
+                                    allRunFor(spec, createNFTPublicFunctionCall);
 
                                     var uploadEthereumContract =
                                             uploadInitCode(ERC721_CONTRACT_WITH_HTS_CALLS);
@@ -323,7 +314,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                             .withIsApprovedForAll(
                                                                                                     false))));
 
-                                    var approveForAllCall =
+                                    var setApprovalForAll =
                                             ethereumCall(
                                                             ERC721_CONTRACT_WITH_HTS_CALLS,
                                                             "ercSetApprovalForAll",
@@ -394,7 +385,7 @@ public class EthereumSuite extends HapiApiSuite {
                                             associateTokenToSpender,
                                             isApprovedForAllBefore,
                                             isApprovedForAllBeforeCheck,
-                                            approveForAllCall,
+                                            setApprovalForAll,
                                             isApprovedForAllAfter,
                                             isApprovedForAllAfterCheck);
                                 }))
