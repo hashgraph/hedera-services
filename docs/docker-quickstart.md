@@ -155,4 +155,4 @@ all of which would be desirable for a production use case. The image also
 serves the gRPC API only on port 50211, without TLS.
 
 We suggest using the image only in enviroments such as the Docker Compose
-network defined by the [docker-compose.yml](../docker-compose.yml) in this repository.
+network defined by the [docker-compose.yml](../docker/docker-compose.yml) in this repository.
