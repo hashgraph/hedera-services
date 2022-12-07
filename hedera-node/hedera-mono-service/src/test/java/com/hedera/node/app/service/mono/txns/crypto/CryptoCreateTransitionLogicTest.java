@@ -669,19 +669,17 @@ class CryptoCreateTransitionLogicTest {
         assertEquals(false, changes.get(DECLINE_REWARD));
     }
 
-
-
     @Test
     void followsHappyPathECKeyAndEVMAddressAsAlias() throws DecoderException {
         final var captor = ArgumentCaptor.forClass(HederaAccountCustomizer.class);
         final var opBuilder =
-            CryptoCreateTransactionBody.newBuilder()
-                .setKey(ECDSA_KEY)
-                .setMemo(MEMO)
-                .setReceiverSigRequired(false)
-                .setDeclineReward(false)
-                .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
-                .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(ECDSA_KEY)
+                        .setMemo(MEMO)
+                        .setReceiverSigRequired(false)
+                        .setDeclineReward(false)
+                        .setMaxAutomaticTokenAssociations(MAX_AUTO_ASSOCIATIONS)
+                        .setAlias(ByteString.copyFrom(EVM_ADDRESS_BYTES));
         cryptoCreateTxn = TransactionBody.newBuilder().setCryptoCreateAccount(opBuilder).build();
         given(accessor.getTxn()).willReturn(cryptoCreateTxn);
         given(txnCtx.activePayer()).willReturn(ourAccount());
@@ -696,14 +694,14 @@ class CryptoCreateTransitionLogicTest {
         given(dynamicProperties.isLazyCreationEnabled()).willReturn(true);
         final var lazyCreationFinalizationFee = 100L;
         given(autoCreationLogic.getLazyCreationFinalizationFee())
-            .willReturn(lazyCreationFinalizationFee);
+                .willReturn(lazyCreationFinalizationFee);
         given(accountsLedger.get(ourAccount(), AccountProperty.BALANCE))
-            .willReturn(lazyCreationFinalizationFee + 1);
+                .willReturn(lazyCreationFinalizationFee + 1);
 
         subject.doStateTransition();
 
         verify(ledger)
-            .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
+                .create(argThat(PAYER::equals), longThat(ZERO_BALANCE::equals), captor.capture());
         verify(txnCtx).setCreated(CREATED);
         verify(txnCtx).setStatus(SUCCESS);
         verify(sigImpactHistorian).markEntityChanged(CREATED.getAccountNum());
