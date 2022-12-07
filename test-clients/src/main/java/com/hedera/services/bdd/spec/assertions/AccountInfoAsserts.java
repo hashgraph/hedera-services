@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.services.bdd.suites.HapiApiSuite.EMPTY_KEY;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -178,6 +179,13 @@ public class AccountInfoAsserts extends BaseErroringAssertsProvider<AccountInfo>
                             ((AccountInfo) o).getContractAccountID(),
                             "Bad Solidity contract Id!");
                 });
+        return this;
+    }
+
+    public AccountInfoAsserts hasEmptyKey() {
+        registerProvider(
+                (spec, o) ->
+                        assertEquals(((AccountInfo) o).getKey(), EMPTY_KEY, "Has non-empty key!"));
         return this;
     }
 
