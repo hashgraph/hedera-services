@@ -104,7 +104,7 @@ permissions:
 jobs:
   compile:
     name: ${{ inputs.custom-job-label || 'Compiles' }}
-    runs-on: [self-hosted, Linux, services, standard, ephemeral]
+    runs-on: [ self-hosted, Linux, services, standard, ephemeral ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -165,7 +165,10 @@ jobs:
 
       - name: Build Docker Image # build the image for hedera-node
         if: ${{ (inputs.enable-integration-tests || inputs.enable-e2e-tests) && steps.gradle-build.conclusion == 'success' && !cancelled() }}
-        run: bash compose-build.sh
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: ${{ inputs.gradle-version }}
+          arguments: createDockerImage
 
       - name: Integration Testing
         id: gradle-itest
