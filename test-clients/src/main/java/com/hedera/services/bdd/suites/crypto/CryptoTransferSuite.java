@@ -1487,17 +1487,6 @@ public class CryptoTransferSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec royaltyCollectorsCanUseAutoAssociation() {
-        final var uniqueWithRoyalty = "uniqueWithRoyalty";
-        final var firstFungible = "firstFungible";
-        final var secondFungible = "secondFungible";
-        final var firstRoyaltyCollector = "firstRoyaltyCollector";
-        final var secondRoyaltyCollector = "secondRoyaltyCollector";
-        final var plentyOfSlots = 10;
-        final var exchangeAmount = 12 * 15;
-        final var firstRoyaltyAmount = exchangeAmount / 12;
-        final var secondRoyaltyAmount = exchangeAmount / 15;
-        final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
-
         return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
                 .given(uploadDefaultFeeSchedules(GENESIS))
                 .when()

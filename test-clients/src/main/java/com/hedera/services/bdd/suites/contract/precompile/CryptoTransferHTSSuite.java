@@ -150,6 +150,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private static final String ALLOW_AUTO_ASSOCIATIONS_PROPERTY =
             "contracts.allowAutoAssociations";
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
+    private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
+    private static final String FIRST_MEMO = "firstMemo";
+    private static final String SECOND_MEMO = "secondMemo";
 
     public static void main(final String... args) {
         new CryptoTransferHTSSuite().runSuiteSync();
@@ -709,8 +712,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec nonNestedCryptoTransferForFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
-
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
                 .given(
                         overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
@@ -764,17 +765,17 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn)
+                                                    .via(CRYPTO_TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 50),
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
-                                cryptoTransferTxn,
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -790,8 +791,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
-
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleTokenWithMultipleReceivers")
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
@@ -851,9 +850,9 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                     })
                                                     .gas(GAS_TO_OFFER)
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn));
+                                                    .via(CRYPTO_TRANSFER_TXN));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 30),
@@ -861,7 +860,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 150),
                         getTokenInfo(FUNGIBLE_TOKEN).logged(),
                         childRecordsCheck(
-                                cryptoTransferTxn,
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -879,8 +878,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec nonNestedCryptoTransferForNonFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
-
         return defaultHapiSpec("NonNestedCryptoTransferForNonFungibleToken")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -895,8 +892,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
-                        mintToken(
-                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         cryptoTransfer(
                                         TokenMovement.movingUnique(NFT_TOKEN, 1)
@@ -934,10 +930,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn)
+                                                    .via(CRYPTO_TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -946,7 +942,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                "cryptoTransferTxn",
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -962,8 +958,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
-
         return defaultHapiSpec("NonNestedCryptoTransferForMultipleNonFungibleTokens")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -981,8 +975,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(
-                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(NFT_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(movingUnique(NFT_TOKEN, 1).between(TOKEN_TREASURY, SENDER))
@@ -1031,10 +1024,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 .build()
                                                                     })
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn)
+                                                    .via(CRYPTO_TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(NFT_TOKEN).hasTotalSupply(2),
                         getAccountInfo(RECEIVER).hasOwnedNfts(1),
@@ -1047,7 +1040,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                cryptoTransferTxn,
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1065,7 +1058,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleAndNonFungibleToken")
                 .given(
@@ -1088,8 +1080,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(SENDER2, List.of(NFT_TOKEN)),
-                        mintToken(
-                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN)),
                         tokenAssociate(RECEIVER2, List.of(NFT_TOKEN)),
                         cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER))
@@ -1153,10 +1144,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                     .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn)
+                                                    .via(CRYPTO_TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
@@ -1169,7 +1160,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                cryptoTransferTxn,
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1191,8 +1182,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
 
     private HapiApiSpec
             nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
-        final var cryptoTransferTxn = "cryptoTransferTxn";
-
         return defaultHapiSpec(
                         "NonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens")
                 .given(
@@ -1213,8 +1202,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(
-                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(SENDER2, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
@@ -1292,10 +1280,10 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                                                     .build())
                                                                     .build())
                                                     .payingWith(GENESIS)
-                                                    .via(cryptoTransferTxn)
+                                                    .via(CRYPTO_TRANSFER_TXN)
                                                     .gas(GAS_TO_OFFER));
                                 }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
+                        getTxnRecord(CRYPTO_TRANSFER_TXN).andAllChildRecords().logged())
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(TOTAL_SUPPLY),
                         getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 45),
@@ -1314,7 +1302,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountBalance(SENDER2).hasTokenBalance(NFT_TOKEN, 0),
                         getTokenInfo(NFT_TOKEN).logged(),
                         childRecordsCheck(
-                                cryptoTransferTxn,
+                                CRYPTO_TRANSFER_TXN,
                                 SUCCESS,
                                 recordWith()
                                         .status(SUCCESS)
@@ -1373,8 +1361,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyType(TokenSupplyType.INFINITE)
                                 .initialSupply(0)
                                 .treasury(TOKEN_TREASURY),
-                        mintToken(
-                                NFT_TOKEN, List.of(metadata("firstMemo"), metadata("secondMemo"))),
+                        mintToken(NFT_TOKEN, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO))),
                         tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(RECEIVER, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
                         tokenAssociate(CONTRACT, List.of(FUNGIBLE_TOKEN, NFT_TOKEN)),
@@ -2849,16 +2836,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .treasury(SENDER)
                                 .initialSupply(0L)
                                 .supplyKey(MULTI_KEY),
-                        mintToken(
-                                NFT_TOKEN,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
-                        mintToken(
-                                NFT_TOKEN2,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta3".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta4".getBytes()))),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
+                        mintToken(NFT_TOKEN2, List.of(META3, META4)),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
@@ -2961,7 +2940,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     private HapiApiSpec transferFromForFungibleTokenToEVMAddressAlias() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
-        final var htsTransferFrom = "htsTransferFrom";
         return defaultHapiSpec("transferFromForFungibleTokenToEVMAddressAlias")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
@@ -3011,7 +2989,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             // transfer allowance/2 amount
                                             contractCall(
                                                             HTS_TRANSFER_FROM_CONTRACT,
-                                                            htsTransferFrom,
+                                                            HTS_TRANSFER_FROM,
                                                             HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
@@ -3061,7 +3039,6 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     private HapiApiSpec transferFromForNFTToEVMAddressAlias() {
-        final var htsTransferFromNFT = "htsTransferFromNFT";
         return defaultHapiSpec("transferFromForNFTToEVMAddressAlias")
                 .given(
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
@@ -3077,11 +3054,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
                         contractCreate(HTS_TRANSFER_FROM_CONTRACT),
-                        mintToken(
-                                NFT_TOKEN,
-                                List.of(
-                                        ByteStringUtils.wrapUnsafely("meta1".getBytes()),
-                                        ByteStringUtils.wrapUnsafely("meta2".getBytes()))),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
                         cryptoApproveAllowance()
                                 .payingWith(DEFAULT_PAYER)
                                 .addNftAllowance(
@@ -3106,7 +3079,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                             // transfer allowed NFT
                                             contractCall(
                                                             HTS_TRANSFER_FROM_CONTRACT,
-                                                            htsTransferFromNFT,
+                                                            HTS_TRANSFER_FROM_NFT,
                                                             HapiParserUtil.asHeadlongAddress(
                                                                     asAddress(
                                                                             spec.registry()
