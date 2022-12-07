@@ -167,274 +167,32 @@ public class TraceabilitySuite extends HapiApiSuite {
         return Stream.concat(
                         Stream.of(setNeededProps()),
                         Stream.of(
-                                //                                traceabilityE2EScenario1(),
-                                //                                traceabilityE2EScenario2(),
-                                //                                traceabilityE2EScenario3(),
-                                //                                traceabilityE2EScenario4(),
-                                //                                traceabilityE2EScenario5(),
-                                //                                traceabilityE2EScenario6(),
-                                //                                traceabilityE2EScenario7(),
-                                //                                traceabilityE2EScenario8(),
-                                //                                traceabilityE2EScenario9(),
-                                //                                traceabilityE2EScenario10(),
-                                //                                traceabilityE2EScenario11(),
-                                //                                traceabilityE2EScenario12(),
-                                //                                traceabilityE2EScenario13(),
-                                //                                traceabilityE2EScenario14(),
-                                //                                traceabilityE2EScenario15(),
-                                //                                traceabilityE2EScenario16(),
-                                //                                traceabilityE2EScenario17(),
-                                //                                traceabilityE2EScenario18(),
-                                //                                traceabilityE2EScenario19(),
-                                //                                traceabilityE2EScenario20(),
-                                //                                traceabilityE2EScenario21(),
-                                //                                vanillaBytecodeSidecar(),
-                                //                                vanillaBytecodeSidecar2(),
-                                actionsShowPropagatedRevert(), assertSidecars()))
+                                traceabilityE2EScenario1(),
+                                traceabilityE2EScenario2(),
+                                traceabilityE2EScenario3(),
+                                traceabilityE2EScenario4(),
+                                traceabilityE2EScenario5(),
+                                traceabilityE2EScenario6(),
+                                traceabilityE2EScenario7(),
+                                traceabilityE2EScenario8(),
+                                traceabilityE2EScenario9(),
+                                traceabilityE2EScenario10(),
+                                traceabilityE2EScenario11(),
+                                traceabilityE2EScenario12(),
+                                traceabilityE2EScenario13(),
+                                traceabilityE2EScenario14(),
+                                traceabilityE2EScenario15(),
+                                traceabilityE2EScenario16(),
+                                traceabilityE2EScenario17(),
+                                traceabilityE2EScenario18(),
+                                traceabilityE2EScenario19(),
+                                traceabilityE2EScenario20(),
+                                traceabilityE2EScenario21(),
+                                vanillaBytecodeSidecar(),
+                                vanillaBytecodeSidecar2(),
+                                actionsShowPropagatedRevert(),
+                                assertSidecars()))
                 .toList();
-    }
-
-    private HapiApiSpec actionsShowPropagatedRevert() {
-        final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
-        final var badApproval = "BadApproval";
-        final var somebody = "somebody";
-        final var somebodyElse = "somebodyElse";
-        final var tokenInQuestion = "TokenInQuestion";
-        final var someSupplyKey = "someSupplyKey";
-        final AtomicReference<String> tiqMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> somebodyMirrorAddr = new AtomicReference<>();
-        final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
-
-        final String contractCreateTxn = "contractCreate";
-        final var serialNumberId =
-                new BigInteger(
-                        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
-        return defaultHapiSpec("ActionsShowPropagatedRevert")
-                .given(
-                        overriding("contracts.sidecars", "CONTRACT_ACTION"),
-                        uploadInitCode(APPROVE_BY_DELEGATE),
-                        contractCreate(APPROVE_BY_DELEGATE).via(contractCreateTxn),
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final HapiGetTxnRecord txnRecord =
-                                            getTxnRecord(contractCreateTxn);
-                                    allRunFor(
-                                            spec,
-                                            txnRecord,
-                                            expectContractActionSidecarFor(
-                                                    contractCreateTxn,
-                                                    List.of(
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CREATE)
-                                                                    .setCallOperationType(
-                                                                            CallOperationType
-                                                                                    .OP_CREATE)
-                                                                    .setCallingAccount(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            GENESIS))
-                                                                    .setRecipientContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            APPROVE_BY_DELEGATE))
-                                                                    .setGas(197000)
-                                                                    .setGasUsed(214)
-                                                                    .setOutput(EMPTY)
-                                                                    .build())));
-                                }),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(somebody)
-                                .maxAutomaticTokenAssociations(2)
-                                .exposingCreatedIdTo(
-                                        id -> somebodyMirrorAddr.set(asHexedSolidityAddress(id))),
-                        cryptoCreate(somebodyElse)
-                                .maxAutomaticTokenAssociations(2)
-                                .exposingCreatedIdTo(
-                                        id ->
-                                                somebodyElseMirrorAddr.set(
-                                                        asHexedSolidityAddress(id))),
-                        newKeyNamed(someSupplyKey),
-                        tokenCreate(tokenInQuestion)
-                                .supplyKey(someSupplyKey)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                tiqMirrorAddr.set(
-                                                        asHexedSolidityAddress(
-                                                                HapiPropertySource.asToken(
-                                                                        idLit)))),
-                        mintToken(
-                                tokenInQuestion,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A penny for"),
-                                        // 2
-                                        ByteString.copyFromUtf8("the Old Guy"))),
-                        cryptoTransfer(
-                                movingUnique(tokenInQuestion, 1L)
-                                        .between(TOKEN_TREASURY, somebody)))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        APPROVE_BY_DELEGATE,
-                                                        "doIt",
-                                                        asHeadlongAddress(tiqMirrorAddr.get()),
-                                                        asHeadlongAddress(
-                                                                somebodyElseMirrorAddr.get()),
-                                                        serialNumberId)
-                                                .payingWith(somebody)
-                                                .gas(1_000_000)
-                                                .via(badApproval)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final HapiGetTxnRecord txnRecord = getTxnRecord(badApproval);
-                                    allRunFor(
-                                            spec,
-                                            txnRecord,
-                                            expectContractActionSidecarFor(
-                                                    badApproval,
-                                                    List.of(
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallOperationType(
-                                                                            CallOperationType
-                                                                                    .OP_CALL)
-                                                                    .setCallingAccount(
-                                                                            spec.registry()
-                                                                                    .getAccountID(
-                                                                                            somebody))
-                                                                    .setRecipientContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            APPROVE_BY_DELEGATE))
-                                                                    .setInput(
-                                                                            encodeFunctionCall(
-                                                                                    APPROVE_BY_DELEGATE,
-                                                                                    "doIt",
-                                                                                    hexedSolidityAddressToHeadlongAddress(
-                                                                                            asHexedSolidityAddress(
-                                                                                                    spec.registry()
-                                                                                                            .getTokenID(
-                                                                                                                    tokenInQuestion))),
-                                                                                    hexedSolidityAddressToHeadlongAddress(
-                                                                                            asHexedSolidityAddress(
-                                                                                                    spec.registry()
-                                                                                                            .getAccountID(
-                                                                                                                    somebodyElse))),
-                                                                                    serialNumberId))
-                                                                    .setGas(979000)
-                                                                    .setGasUsed(948950)
-                                                                    .setRevertReason(
-                                                                            ByteString.EMPTY)
-                                                                    .build(),
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(CALL)
-                                                                    .setCallOperationType(
-                                                                            CallOperationType
-                                                                                    .OP_DELEGATECALL)
-                                                                    .setCallingContract(
-                                                                            spec.registry()
-                                                                                    .getContractId(
-                                                                                            APPROVE_BY_DELEGATE))
-                                                                    .setRecipientContract(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            spec.registry()
-                                                                                                    .getTokenID(
-                                                                                                            tokenInQuestion)
-                                                                                                    .getTokenNum())
-                                                                                    .build())
-                                                                    .setGas(959347)
-                                                                    .setGasUsed(944446)
-                                                                    .setInput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            Function
-                                                                                                    .parse(
-                                                                                                            "approve(address,uint256)")
-                                                                                                    .encodeCallWithArgs(
-                                                                                                            hexedSolidityAddressToHeadlongAddress(
-                                                                                                                    asHexedSolidityAddress(
-                                                                                                                            spec.registry()
-                                                                                                                                    .getAccountID(
-                                                                                                                                            somebodyElse))),
-                                                                                                            serialNumberId)
-                                                                                                    .array()))
-                                                                    .setRevertReason(
-                                                                            ByteString.EMPTY)
-                                                                    .setCallDepth(1)
-                                                                    .build(),
-                                                            ContractAction.newBuilder()
-                                                                    .setCallType(SYSTEM)
-                                                                    .setCallOperationType(
-                                                                            CallOperationType
-                                                                                    .OP_DELEGATECALL)
-                                                                    .setCallingContract(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            spec.registry()
-                                                                                                    .getTokenID(
-                                                                                                            tokenInQuestion)
-                                                                                                    .getTokenNum())
-                                                                                    .build())
-                                                                    .setRecipientContract(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            359L)
-                                                                                    .build())
-                                                                    .setGas(941693)
-                                                                    .setGasUsed(941693)
-                                                                    .setInput(
-                                                                            ByteStringUtils
-                                                                                    .wrapUnsafely(
-                                                                                            ArrayUtils
-                                                                                                    .addAll(
-                                                                                                            ArrayUtils
-                                                                                                                    .addAll(
-                                                                                                                            Arrays
-                                                                                                                                    .copyOfRange(
-                                                                                                                                            keccak256(
-                                                                                                                                                            Bytes
-                                                                                                                                                                    .of(
-                                                                                                                                                                            "redirectForToken(address,bytes)"
-                                                                                                                                                                                    .getBytes()))
-                                                                                                                                                    .toArrayUnsafe(),
-                                                                                                                                            0,
-                                                                                                                                            4),
-                                                                                                                            Arrays
-                                                                                                                                    .copyOfRange(
-                                                                                                                                            encodeTuple(
-                                                                                                                                                    "(address)",
-                                                                                                                                                    hexedSolidityAddressToHeadlongAddress(
-                                                                                                                                                            asHexedSolidityAddress(
-                                                                                                                                                                    spec.registry()
-                                                                                                                                                                            .getTokenID(
-                                                                                                                                                                                    tokenInQuestion)))),
-                                                                                                                                            12,
-                                                                                                                                            32)),
-                                                                                                            Function
-                                                                                                                    .parse(
-                                                                                                                            "approve(address,uint256)")
-                                                                                                                    .encodeCallWithArgs(
-                                                                                                                            hexedSolidityAddressToHeadlongAddress(
-                                                                                                                                    asHexedSolidityAddress(
-                                                                                                                                            spec.registry()
-                                                                                                                                                    .getAccountID(
-                                                                                                                                                            somebodyElse))),
-                                                                                                                            serialNumberId)
-                                                                                                                    .array())))
-                                                                    .setError(
-                                                                            ByteString.copyFrom(
-                                                                                    "ERROR_DECODING_PRECOMPILE_INPUT"
-                                                                                            .getBytes()))
-                                                                    .setCallDepth(2)
-                                                                    .build())));
-                                }));
     }
 
     HapiApiSpec setNeededProps() {
@@ -7333,6 +7091,249 @@ public class TraceabilitySuite extends HapiApiSuite {
                                                                     .build())));
                                 }),
                         expectContractBytecodeSidecarFor(firstTxn, contract, contract));
+    }
+
+    private HapiApiSpec actionsShowPropagatedRevert() {
+        final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
+        final var badApproval = "BadApproval";
+        final var somebody = "somebody";
+        final var somebodyElse = "somebodyElse";
+        final var tokenInQuestion = "TokenInQuestion";
+        final var someSupplyKey = "someSupplyKey";
+        final AtomicReference<String> tiqMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> somebodyMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
+        final String contractCreateTxn = "contractCreate";
+        final var serialNumberId =
+                new BigInteger(
+                        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
+        return defaultHapiSpec("ActionsShowPropagatedRevert")
+                .given(
+                        overriding("contracts.sidecars", "CONTRACT_ACTION"),
+                        uploadInitCode(APPROVE_BY_DELEGATE),
+                        contractCreate(APPROVE_BY_DELEGATE).via(contractCreateTxn),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord =
+                                            getTxnRecord(contractCreateTxn);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    contractCreateTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CREATE)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CREATE)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            GENESIS))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setGas(197000)
+                                                                    .setGasUsed(214)
+                                                                    .setOutput(EMPTY)
+                                                                    .build())));
+                                }),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(somebody)
+                                .maxAutomaticTokenAssociations(2)
+                                .exposingCreatedIdTo(
+                                        id -> somebodyMirrorAddr.set(asHexedSolidityAddress(id))),
+                        cryptoCreate(somebodyElse)
+                                .maxAutomaticTokenAssociations(2)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                somebodyElseMirrorAddr.set(
+                                                        asHexedSolidityAddress(id))),
+                        newKeyNamed(someSupplyKey),
+                        tokenCreate(tokenInQuestion)
+                                .supplyKey(someSupplyKey)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                tiqMirrorAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))),
+                        mintToken(
+                                tokenInQuestion,
+                                List.of(
+                                        ByteString.copyFromUtf8("A penny for"),
+                                        ByteString.copyFromUtf8("the Old Guy"))),
+                        cryptoTransfer(
+                                movingUnique(tokenInQuestion, 1L)
+                                        .between(TOKEN_TREASURY, somebody)))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        APPROVE_BY_DELEGATE,
+                                                        "doIt",
+                                                        asHeadlongAddress(tiqMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                somebodyElseMirrorAddr.get()),
+                                                        serialNumberId)
+                                                .payingWith(somebody)
+                                                .gas(1_000_000)
+                                                .via(badApproval)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final HapiGetTxnRecord txnRecord = getTxnRecord(badApproval);
+                                    allRunFor(
+                                            spec,
+                                            txnRecord,
+                                            expectContractActionSidecarFor(
+                                                    badApproval,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CALL)
+                                                                    .setCallingAccount(
+                                                                            spec.registry()
+                                                                                    .getAccountID(
+                                                                                            somebody))
+                                                                    .setRecipientContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setInput(
+                                                                            encodeFunctionCall(
+                                                                                    APPROVE_BY_DELEGATE,
+                                                                                    "doIt",
+                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                            asHexedSolidityAddress(
+                                                                                                    spec.registry()
+                                                                                                            .getTokenID(
+                                                                                                                    tokenInQuestion))),
+                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                            asHexedSolidityAddress(
+                                                                                                    spec.registry()
+                                                                                                            .getAccountID(
+                                                                                                                    somebodyElse))),
+                                                                                    serialNumberId))
+                                                                    .setGas(979000)
+                                                                    .setGasUsed(948950)
+                                                                    .setRevertReason(
+                                                                            ByteString.EMPTY)
+                                                                    .build(),
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_DELEGATECALL)
+                                                                    .setCallingContract(
+                                                                            spec.registry()
+                                                                                    .getContractId(
+                                                                                            APPROVE_BY_DELEGATE))
+                                                                    .setRecipientContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            spec.registry()
+                                                                                                    .getTokenID(
+                                                                                                            tokenInQuestion)
+                                                                                                    .getTokenNum())
+                                                                                    .build())
+                                                                    .setGas(959347)
+                                                                    .setGasUsed(944446)
+                                                                    .setInput(
+                                                                            ByteStringUtils
+                                                                                    .wrapUnsafely(
+                                                                                            Function
+                                                                                                    .parse(
+                                                                                                            "approve(address,uint256)")
+                                                                                                    .encodeCallWithArgs(
+                                                                                                            hexedSolidityAddressToHeadlongAddress(
+                                                                                                                    asHexedSolidityAddress(
+                                                                                                                            spec.registry()
+                                                                                                                                    .getAccountID(
+                                                                                                                                            somebodyElse))),
+                                                                                                            serialNumberId)
+                                                                                                    .array()))
+                                                                    .setRevertReason(
+                                                                            ByteString.EMPTY)
+                                                                    .setCallDepth(1)
+                                                                    .build(),
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(SYSTEM)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_DELEGATECALL)
+                                                                    .setCallingContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            spec.registry()
+                                                                                                    .getTokenID(
+                                                                                                            tokenInQuestion)
+                                                                                                    .getTokenNum())
+                                                                                    .build())
+                                                                    .setRecipientContract(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            359L)
+                                                                                    .build())
+                                                                    .setGas(941693)
+                                                                    .setGasUsed(941693)
+                                                                    .setInput(
+                                                                            ByteStringUtils
+                                                                                    .wrapUnsafely(
+                                                                                            ArrayUtils
+                                                                                                    .addAll(
+                                                                                                            ArrayUtils
+                                                                                                                    .addAll(
+                                                                                                                            Arrays
+                                                                                                                                    .copyOfRange(
+                                                                                                                                            keccak256(
+                                                                                                                                                            Bytes
+                                                                                                                                                                    .of(
+                                                                                                                                                                            "redirectForToken(address,bytes)"
+                                                                                                                                                                                    .getBytes()))
+                                                                                                                                                    .toArrayUnsafe(),
+                                                                                                                                            0,
+                                                                                                                                            4),
+                                                                                                                            Arrays
+                                                                                                                                    .copyOfRange(
+                                                                                                                                            encodeTuple(
+                                                                                                                                                    "(address)",
+                                                                                                                                                    hexedSolidityAddressToHeadlongAddress(
+                                                                                                                                                            asHexedSolidityAddress(
+                                                                                                                                                                    spec.registry()
+                                                                                                                                                                            .getTokenID(
+                                                                                                                                                                                    tokenInQuestion)))),
+                                                                                                                                            12,
+                                                                                                                                            32)),
+                                                                                                            Function
+                                                                                                                    .parse(
+                                                                                                                            "approve(address,uint256)")
+                                                                                                                    .encodeCallWithArgs(
+                                                                                                                            hexedSolidityAddressToHeadlongAddress(
+                                                                                                                                    asHexedSolidityAddress(
+                                                                                                                                            spec.registry()
+                                                                                                                                                    .getAccountID(
+                                                                                                                                                            somebodyElse))),
+                                                                                                                            serialNumberId)
+                                                                                                                    .array())))
+                                                                    .setError(
+                                                                            ByteString.copyFrom(
+                                                                                    "ERROR_DECODING_PRECOMPILE_INPUT"
+                                                                                            .getBytes()))
+                                                                    .setCallDepth(2)
+                                                                    .build())));
+                                }),
+                        overriding(
+                                SIDECARS_PROP,
+                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     @SuppressWarnings("java:S5960")

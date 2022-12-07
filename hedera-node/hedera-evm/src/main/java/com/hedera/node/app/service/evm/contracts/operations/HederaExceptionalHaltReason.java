@@ -47,7 +47,7 @@ public class HederaExceptionalHaltReason {
     /** Used when the target of a {@code selfdestruct} has positive balances. */
     public static final ExceptionalHaltReason TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES =
             HederaExceptionalHalt.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-    /** Used when the target of a {@code selfdestruct} has positive balances. */
+    /** Used when а Hedera precompile input is invalid and cannot be decoded. */
     public static final ExceptionalHaltReason ERROR_DECODING_PRECOMPILE_INPUT =
             HederaExceptionalHalt.ERROR_DECODING_PRECOMPILE_INPUT;
 

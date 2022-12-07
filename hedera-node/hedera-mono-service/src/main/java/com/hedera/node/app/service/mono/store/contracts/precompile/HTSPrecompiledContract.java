@@ -134,8 +134,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
-    private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON =
-            Bytes.of("Error decoding precompile input".getBytes());
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR =
             "ERC721Metadata: URI query for nonexistent token";
 
