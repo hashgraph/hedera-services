@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -23,12 +26,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -39,14 +38,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
  * because doing so would cause service modules to have a circular dependency on the app module.
  * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder{
+public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
     protected ResponseCodeEnum status = OK;
 
     protected TransactionBody txn;
     protected final AccountKeyLookup keyLookup;
     protected AccountID payer;
-    public SigTransactionMetadataBuilder(final AccountKeyLookup keyLookup){
+
+    public SigTransactionMetadataBuilder(final AccountKeyLookup keyLookup) {
         this.keyLookup = keyLookup;
     }
 
@@ -89,7 +89,8 @@ public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder
      * @param failureStatus given failure status
      */
     @Override
-    public TransactionMetadataBuilder addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
+    public TransactionMetadataBuilder addNonPayerKey(
+            final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
             return this;
         }
@@ -164,8 +165,8 @@ public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder
 
     /**
      * Given a successful key lookup, adds its key to the required signers. Given a failed key
-     * lookup, sets this {@link SigTransactionMetadata}'s status to either the failure reason of the lookup;
-     * or (if it is non-null), the requested failureStatus parameter.
+     * lookup, sets this {@link SigTransactionMetadata}'s status to either the failure reason of the
+     * lookup; or (if it is non-null), the requested failureStatus parameter.
      *
      * @param result key lookup result
      * @param failureStatus failure reason for the lookup

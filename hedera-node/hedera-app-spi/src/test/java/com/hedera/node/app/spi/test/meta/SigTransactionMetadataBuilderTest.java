@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -23,19 +29,12 @@ import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataBuilderTest {
@@ -80,9 +79,10 @@ class SigTransactionMetadataBuilderTest {
         final var txn = createAccountTransaction();
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
         meta = subject.build();
 
         assertFalse(meta.failed());
@@ -95,10 +95,11 @@ class SigTransactionMetadataBuilderTest {
         final var txn = createAccountTransaction();
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer)
-                .addToReqKeys(payerKey);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addToReqKeys(payerKey);
         meta = subject.build();
 
         assertFalse(meta.failed());
@@ -111,10 +112,11 @@ class SigTransactionMetadataBuilderTest {
         final var txn = createAccountTransaction();
         given(keyLookup.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer)
-                .addToReqKeys(payerKey);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer)
+                        .addToReqKeys(payerKey);
         meta = subject.build();
 
         assertTrue(meta.failed());
@@ -128,9 +130,10 @@ class SigTransactionMetadataBuilderTest {
     void addsToReqKeysCorrectly() {
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
 
         assertEquals(1, subject.build().requiredKeys().size());
         assertTrue(subject.build().requiredKeys().contains(payerKey));
@@ -144,10 +147,11 @@ class SigTransactionMetadataBuilderTest {
     void settersWorkCorrectly() {
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer)
-                .status(INVALID_ACCOUNT_ID);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .status(INVALID_ACCOUNT_ID);
         assertEquals(INVALID_ACCOUNT_ID, subject.build().status());
     }
 
@@ -155,9 +159,10 @@ class SigTransactionMetadataBuilderTest {
     void returnsIfGivenKeyIsPayer() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
         assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
 
         subject.addNonPayerKey(payer);
@@ -172,9 +177,10 @@ class SigTransactionMetadataBuilderTest {
     void returnsIfGivenKeyIsInvalidAccountId() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
         assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
 
         subject.addNonPayerKey(AccountID.getDefaultInstance());
@@ -198,9 +204,10 @@ class SigTransactionMetadataBuilderTest {
     void doesntLookupIfMetaIsFailedAlready() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
 
         assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
         subject.status(INVALID_ACCOUNT_ID);
@@ -218,9 +225,10 @@ class SigTransactionMetadataBuilderTest {
     void looksUpOtherKeysIfMetaIsNotFailedAlready() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
         meta = subject.build();
         assertIterableEquals(List.of(payerKey), meta.requiredKeys());
         assertEquals(OK, meta.status());
@@ -243,9 +251,10 @@ class SigTransactionMetadataBuilderTest {
     void setsDefaultFailureStatusIfFailedStatusIsNull() {
         given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
 
-        subject = new SigTransactionMetadataBuilder(keyLookup)
-                .txnBody(createAccountTransaction())
-                .payerKeyFor(payer);
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
         meta = subject.build();
         assertIterableEquals(List.of(payerKey), meta.requiredKeys());
         assertEquals(OK, meta.status());

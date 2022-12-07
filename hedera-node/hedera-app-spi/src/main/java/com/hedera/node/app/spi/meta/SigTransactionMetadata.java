@@ -19,17 +19,13 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification.
- * NOTE : This class may have subclasses in the future.
+ * verification. NOTE : This class may have subclasses in the future.
  *
  * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
  * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
@@ -53,7 +49,8 @@ public class SigTransactionMetadata implements TransactionMetadata {
         requiredKeys.addAll(otherKeys);
     }
 
-    public SigTransactionMetadata(final TransactionBody txn, final AccountID payer, final ResponseCodeEnum status) {
+    public SigTransactionMetadata(
+            final TransactionBody txn, final AccountID payer, final ResponseCodeEnum status) {
         this(txn, payer, status, Collections.emptyList());
     }
 

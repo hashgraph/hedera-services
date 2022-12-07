@@ -20,7 +20,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification. This class may have subclasses in the future.
@@ -32,7 +31,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  */
 public interface TransactionMetadataBuilder {
     /**
-     * Sets status on {@link TransactionMetadata}. It will be {@link ResponseCodeEnum#OK} if there is no failure.
+     * Sets status on {@link TransactionMetadata}. It will be {@link ResponseCodeEnum#OK} if there
+     * is no failure.
+     *
      * @param status status to be set on {@link TransactionMetadata}
      * @return builder object
      */
@@ -40,6 +41,7 @@ public interface TransactionMetadataBuilder {
 
     /**
      * Fetches the payer key and add to required keys in {@link TransactionMetadata}.
+     *
      * @param payer payer for the transaction
      * @return builder object
      */
@@ -47,6 +49,7 @@ public interface TransactionMetadataBuilder {
 
     /**
      * Adds given key to required keys in {@link TransactionMetadata}.
+     *
      * @param key key to be added
      * @return builder object
      */
@@ -54,6 +57,7 @@ public interface TransactionMetadataBuilder {
 
     /**
      * Adds the {@link TransactionBody} of the transaction on {@link TransactionMetadata}.
+     *
      * @param txn transaction body of the transaction
      * @return builder object
      */
@@ -66,7 +70,7 @@ public interface TransactionMetadataBuilder {
      *
      * @param id given accountId
      */
-    default TransactionMetadataBuilder addNonPayerKey(final AccountID id){
+    default TransactionMetadataBuilder addNonPayerKey(final AccountID id) {
         return addNonPayerKey(id, null);
     }
 
@@ -79,7 +83,8 @@ public interface TransactionMetadataBuilder {
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    TransactionMetadataBuilder addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus);
+    TransactionMetadataBuilder addNonPayerKey(
+            final AccountID id, final ResponseCodeEnum failureStatus);
 
     /**
      * Checks if the accountId is same as payer or the status of the metadata is already failed. If
@@ -91,10 +96,12 @@ public interface TransactionMetadataBuilder {
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    TransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(final AccountID id, final ResponseCodeEnum failureStatus);
+    TransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(
+            final AccountID id, final ResponseCodeEnum failureStatus);
 
     /**
      * Builds {@link TransactionMetadata} object from builder
+     *
      * @return TransactionMetadata object
      */
     TransactionMetadata build();

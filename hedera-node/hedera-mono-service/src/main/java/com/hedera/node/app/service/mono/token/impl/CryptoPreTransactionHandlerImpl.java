@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -24,13 +27,9 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -65,11 +64,13 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var payer = txn.getTransactionID().getAccountID();
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn)
-                .addNonPayerKey(deleteAccountId)
-                .addNonPayerKeyIfReceiverSigRequired(transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .addNonPayerKey(deleteAccountId)
+                        .addNonPayerKeyIfReceiverSigRequired(
+                                transferAccountId, INVALID_TRANSFER_ACCOUNT_ID);
         return meta.build();
     }
 
@@ -78,9 +79,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn) {
         final var op = txn.getCryptoApproveAllowance();
         final var payer = txn.getTransactionID().getAccountID();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.getCryptoAllowancesList()) {
@@ -114,9 +114,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn) {
         final var op = txn.getCryptoDeleteAllowance();
         final var payer = txn.getTransactionID().getAccountID();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.getNftAllowancesList()) {
             meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);
@@ -130,9 +129,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var op = txn.getCryptoUpdateAccount();
         final var payer = txn.getTransactionID().getAccountID();
         final var updateAccountId = op.getAccountIDToUpdate();
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
@@ -181,9 +179,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
             final AccountID payer) {
-        final var meta = new SigTransactionMetadataBuilder(accountStore)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
         if (receiverSigReq && key.isPresent()) {
             meta.addToReqKeys(key.get());
         }
