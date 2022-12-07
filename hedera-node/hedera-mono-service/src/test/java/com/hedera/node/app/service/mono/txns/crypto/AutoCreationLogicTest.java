@@ -416,9 +416,9 @@ class AutoCreationLogicTest {
         givenCollaborators(mockBuilder, AUTO_MEMO);
         given(properties.areTokenAutoCreationsEnabled()).willReturn(true);
         final var cryptoCreateAccount =
-            TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
+                TransactionBody.newBuilder().setCryptoCreateAccount(mockCryptoCreate);
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, null, 0L, 1))
-            .willReturn(cryptoCreateAccount);
+                .willReturn(cryptoCreateAccount);
 
         final var input = wellKnownTokenChange(edKeyAlias);
         final var expectedExpiry = consensusNow.getEpochSecond() + THREE_MONTHS_IN_SECONDS;
@@ -427,38 +427,37 @@ class AutoCreationLogicTest {
 
         final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecords(
-            (txnBody, txnRecord) -> {
-                recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord);
-            },
-            false);
+                (txnBody, txnRecord) -> {
+                    recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord);
+                },
+                false);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
 
         verify(sigImpactHistorian, never()).markAliasChanged(edKeyAlias);
         verify(sigImpactHistorian, never()).markEntityChanged(createdNum.longValue());
         verify(recordsHistorian)
-            .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
+                .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
 
         verify(aliasManager).link(edKeyAlias, createdNum);
         verify(accountsLedger).create(createdNum.toGrpcAccountId());
         verify(accountsLedger)
-            .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_RECEIVER_SIG_REQUIRED, false);
         verify(accountsLedger)
-            .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
+                .set(createdNum.toGrpcAccountId(), AccountProperty.IS_SMART_CONTRACT, false);
         verify(accountsLedger)
-            .set(
-                createdNum.toGrpcAccountId(),
-                AccountProperty.AUTO_RENEW_PERIOD,
-                THREE_MONTHS_IN_SECONDS);
+                .set(
+                        createdNum.toGrpcAccountId(),
+                        AccountProperty.AUTO_RENEW_PERIOD,
+                        THREE_MONTHS_IN_SECONDS);
         verify(accountsLedger)
-            .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
+                .set(createdNum.toGrpcAccountId(), AccountProperty.EXPIRY, expectedExpiry);
         verify(accountsLedger).set(createdNum.toGrpcAccountId(), AccountProperty.MEMO, AUTO_MEMO);
         verify(accountsLedger)
-            .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
+                .set(createdNum.toGrpcAccountId(), AccountProperty.MAX_AUTOMATIC_ASSOCIATIONS, 1);
         assertEquals(totalFee, mockBuilder.getFee());
         assertEquals(Pair.of(OK, totalFee), result);
     }
-
 
     @Test
     void happyPathWithNonFungibleTokenChangeWorks() {
