@@ -27,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 
 import com.google.common.base.MoreObjects;
+import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
@@ -47,6 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Encapsulates the state and operations of a Hedera account.
@@ -85,6 +87,7 @@ public class Account extends HederaEvmAccount {
     }
 
     public Account(final ByteString alias) {
+        super(Address.fromHexString(alias.toStringUtf8()));
         this.alias = alias;
     }
 

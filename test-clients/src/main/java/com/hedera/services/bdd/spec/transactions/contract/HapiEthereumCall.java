@@ -15,6 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions.contract;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
@@ -285,7 +286,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
         final byte[] to;
         if (alias != null) {
-            to = EthTxSigs.recoverAddressFromPubKey(alias.toByteArray());
+            to = recoverAddressFromPubKey(alias.toByteArray());
         } else if (account != null) {
             to = Utils.asAddress(spec.registry().getAccountID(account));
         } else if (isTokenFlow) {

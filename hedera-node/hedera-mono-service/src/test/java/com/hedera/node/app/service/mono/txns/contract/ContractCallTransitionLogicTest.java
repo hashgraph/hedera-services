@@ -76,7 +76,10 @@ class ContractCallTransitionLogicTest {
     private final ContractID target = ContractID.newBuilder().setContractNum(9_999L).build();
     private final ByteString alias =
             ByteStringUtils.wrapUnsafely(
-                    new byte[] {1, 2, 3, 5, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12});
+                    new byte[] {
+                        48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 49,
+                        50
+                    });
     private long gas = 1_234;
     private long sent = 1_234L;
     private static final long maxGas = 666_666L;

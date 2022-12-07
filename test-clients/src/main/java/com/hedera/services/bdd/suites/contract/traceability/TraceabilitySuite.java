@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.traceability;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
