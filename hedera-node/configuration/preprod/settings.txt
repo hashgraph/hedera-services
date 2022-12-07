@@ -17,7 +17,6 @@ reconnect.asyncStreamTimeoutMilliseconds,      60000
 reconnect.reconnectWindowSeconds,              -1
 showDbStats,                                   0
 showInternalStats,                             1
-state.roundsExpired,                           500
 state.saveStatePeriod,                         900
 state.signedStateDisk,                         5
 state.signedStateKeep,                         10
@@ -27,3 +26,4 @@ waitAtStartup,                                 false
 jasperDb.storagePath,                          /opt/hgcapp/services-hedera/HapiApp2.0/data/saved
 jasperDb.iteratorInputBufferBytes,             16777216
 virtualMap.preferredFlushQueueSize,            10000
+prometheusEndpointEnabled,                     true

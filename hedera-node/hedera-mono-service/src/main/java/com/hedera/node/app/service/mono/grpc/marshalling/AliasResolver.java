@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.mono.grpc.marshalling;
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.isSerializedProtoKey;
@@ -24,7 +26,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,6 +42,7 @@ import java.util.function.Consumer;
 public class AliasResolver {
     private int perceivedMissing = 0;
     private int perceivedCreations = 0;
+    private int perceivedLazyCreations = 0;
     private int perceivedInvalidCreations = 0;
     private final Map<ByteString, EntityNum> resolutions = new HashMap<>();
 
@@ -52,8 +54,7 @@ public class AliasResolver {
     private enum Result {
         KNOWN_ALIAS,
         UNKNOWN_ALIAS,
-        REPEATED_UNKNOWN_ALIAS,
-        UNKNOWN_EVM_ADDRESS
+        REPEATED_UNKNOWN_ALIAS
     }
 
     public CryptoTransferTransactionBody resolve(
@@ -80,6 +81,10 @@ public class AliasResolver {
 
     public int perceivedAutoCreations() {
         return perceivedCreations;
+    }
+
+    public int perceivedLazyCreations() {
+        return perceivedLazyCreations;
     }
 
     public int perceivedInvalidCreations() {
@@ -173,24 +178,21 @@ public class AliasResolver {
             final AccountID idOrAlias,
             final Consumer<AccountID> resolvingAction) {
         AccountID resolvedId = idOrAlias;
-        var isEvmAddress = false;
         var result = Result.KNOWN_ALIAS;
         if (isAlias(idOrAlias)) {
             final var alias = idOrAlias.getAlias();
-            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+            if (alias.size() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
+                if (isMirror(evmAddress)) {
                     offerMirrorId(evmAddress, resolvingAction);
                     return Result.KNOWN_ALIAS;
-                } else {
-                    isEvmAddress = true;
                 }
             }
             final var resolution = aliasManager.lookupIdBy(alias);
             if (resolution != MISSING_NUM) {
                 resolvedId = resolution.toGrpcAccountId();
             } else {
-                result = netOf(isEvmAddress, alias, true);
+                result = netOf(alias, true);
             }
             resolutions.put(alias, resolution);
         }
@@ -204,26 +206,23 @@ public class AliasResolver {
             final Consumer<AccountAmount> resolvingAction,
             final boolean isForToken) {
         AccountAmount resolvedAdjust = adjust;
-        var isEvmAddress = false;
         var result = Result.KNOWN_ALIAS;
         if (isAlias(adjust.getAccountID())) {
             final var alias = adjust.getAccountID().getAlias();
-            if (alias.size() == EntityIdUtils.EVM_ADDRESS_SIZE) {
+            if (alias.size() == EVM_ADDRESS_SIZE) {
                 final var evmAddress = alias.toByteArray();
-                if (aliasManager.isMirror(evmAddress)) {
+                if (isMirror(evmAddress)) {
                     offerMirrorId(
                             evmAddress,
                             id ->
                                     resolvingAction.accept(
                                             adjust.toBuilder().setAccountID(id).build()));
                     return Result.KNOWN_ALIAS;
-                } else {
-                    isEvmAddress = true;
                 }
             }
             final var resolution = aliasManager.lookupIdBy(alias);
             if (resolution == MISSING_NUM) {
-                result = netOf(isEvmAddress, alias, !isForToken);
+                result = netOf(alias, !isForToken);
             } else {
                 resolvedAdjust =
                         adjust.toBuilder().setAccountID(resolution.toGrpcAccountId()).build();
@@ -253,6 +252,8 @@ public class AliasResolver {
             if (assetChange > 0) {
                 if (isSerializedProtoKey(alias)) {
                     perceivedCreations++;
+                } else if (alias.size() == EVM_ADDRESS_SIZE) {
+                    perceivedLazyCreations++;
                 } else {
                     perceivedInvalidCreations++;
                 }
@@ -261,16 +262,11 @@ public class AliasResolver {
             }
         } else if (repetitionsAreInvalid && result == Result.REPEATED_UNKNOWN_ALIAS) {
             perceivedInvalidCreations++;
-        } else if (result == Result.UNKNOWN_EVM_ADDRESS) {
-            perceivedMissing++;
         }
     }
 
-    private Result netOf(
-            final boolean isEvmAddress, final ByteString alias, final boolean isForNftOrHbar) {
-        if (isEvmAddress) {
-            return Result.UNKNOWN_EVM_ADDRESS;
-        } else if (isForNftOrHbar) {
+    private Result netOf(final ByteString alias, final boolean isForNftOrHbar) {
+        if (isForNftOrHbar) {
             // Note a REPEATED_UNKNOWN_ALIAS is still valid for the NFT receiver case
             return resolutions.containsKey(alias)
                     ? Result.REPEATED_UNKNOWN_ALIAS

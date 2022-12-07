@@ -58,7 +58,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -423,18 +425,37 @@ public class HTSTestsUtil {
                                     .build(),
                             payer),
                     /* Simulate an assessed fallback fee */
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(receiver)
-                                    .setAmount(-AMOUNT)
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT),
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
+
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesThatAreAlsoApproved =
+            List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(1L)
                                     .build(),
                             payer),
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(feeCollector)
-                                    .setAmount(+AMOUNT)
-                                    .build(),
-                            payer));
+                    /* Simulate an assessed fallback fee */
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(receiver),
+                            Id.fromGrpcToken(token),
+                            -AMOUNT,
+                            payer,
+                            true,
+                            true),
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(feeCollector),
+                            Id.fromGrpcToken(token),
+                            +AMOUNT,
+                            payer,
+                            true,
+                            true));
 
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(

@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.evm.contracts.execution;
+package com.hedera.node.app.workflows.onset;
 
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import org.hyperledger.besu.datatypes.Address;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class MockHederaEvmAccount implements HederaEvmAccount {
-
-    private final Address address;
-
-    public MockHederaEvmAccount(final Address address) {
-        this.address = address;
-    }
-
-    @Override
-    public Address canonicalAddress() {
-        return address;
-    }
-}
+// TODO: Implemented as part of ingest workflow, needs to be merged
+public record OnsetResult(
+        @NonNull TransactionBody txBody,
+        @NonNull SignatureMap signatureMap,
+        @NonNull HederaFunctionality functionality) {}
