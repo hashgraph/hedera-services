@@ -159,6 +159,7 @@ build
 .project
 
 # Docker setup
+!docker/*.sh
 /docker/.env
 .env
 Dockerfile
