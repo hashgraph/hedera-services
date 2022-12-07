@@ -151,7 +151,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
     }
 
-    private record ExpectedChildInfo(String aliasingKey, long pendingRewards) {}
+    private record ExpectedChildInfo(long pendingRewards) {}
 
     private final Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
 
@@ -252,9 +252,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
+    public HapiGetTxnRecord hasNoAliasInChildRecord(final int childIndex) {
         requestChildRecords = true;
-        childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey, 0L));
+        childExpectations.put(childIndex, new ExpectedChildInfo(0L));
         return this;
     }
 
@@ -609,14 +609,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         if (!childExpectations.isEmpty()) {
             for (final var index : childExpectations.entrySet()) {
-                final var expectations = index.getValue();
-                if (expectations.aliasingKey() != null) {
-                    final var childRecord = childRecords.get(index.getKey());
-                    final var literalKey = spec.registry().getKey(expectations.aliasingKey());
-                    assertEquals(
-                            literalKey.toByteString().toStringUtf8(),
-                            childRecord.getAlias().toStringUtf8());
-                }
+                final var childRecord = childRecords.get(index.getKey());
+                assertEquals(ByteString.EMPTY, childRecord.getAlias());
             }
         }
         if (numStakingRewardsPaid != -1) {
@@ -884,8 +878,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 spec.registry()
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                spec.registry()
-                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                try {
+                    spec.registry()
+                            .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                } catch (InvalidProtocolBufferException e) {
+                    LOG.debug(
+                            "Cannot save alias {} as key, since it is an evmAddress alias.",
+                            rec.getAlias()::toStringUtf8);
+                }
                 LOG.info(
                         "{}  Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,

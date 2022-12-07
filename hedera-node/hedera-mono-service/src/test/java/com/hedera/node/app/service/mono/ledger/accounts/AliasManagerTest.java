@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
+import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
@@ -50,6 +50,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class AliasManagerTest {
     private static final ByteString alias = ByteString.copyFromUtf8("aaaa");
@@ -130,6 +132,23 @@ class AliasManagerTest {
     }
 
     @Test
+    void publicKeyCouldNotBeParsed() throws InvalidProtocolBufferException, DecoderException {
+        Key key = Key.parseFrom(ECDSA_PUBLIC_KEY);
+        JKey jKey = JKey.mapKey(key);
+        subject.maybeLinkEvmAddress(jKey, num);
+
+        try (MockedStatic<EthSigsUtils> utilities = Mockito.mockStatic(EthSigsUtils.class)) {
+            utilities
+                    .when(() -> EthSigsUtils.recoverAddressFromPubKey((byte[]) any()))
+                    .thenReturn(new byte[0]);
+            subject.forgetEvmAddress(ByteString.copyFrom(ECDSA_PUBLIC_KEY));
+            assertEquals(
+                    Map.of(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num),
+                    subject.getAliases());
+        }
+    }
+
+    @Test
     void noopOnTryingToForgetMalformattedSecp256k1Key() {
         assertDoesNotThrow(
                 () ->
@@ -148,7 +167,7 @@ class AliasManagerTest {
 
     @Test
     void ignoresNullKeys() {
-        assertFalse(subject.maybeLinkEvmAddress(null, num, EthTxSigs::recoverAddressFromPubKey));
+        assertFalse(subject.maybeLinkEvmAddress(null, num, EthSigsUtils::recoverAddressFromPubKey));
     }
 
     @Test
@@ -157,7 +176,7 @@ class AliasManagerTest {
         final Key key = Key.newBuilder().setEd25519(keyData).build();
         final JKey jKey = JKey.mapKey(key);
         final boolean added =
-                subject.maybeLinkEvmAddress(jKey, num, EthTxSigs::recoverAddressFromPubKey);
+                subject.maybeLinkEvmAddress(jKey, num, EthSigsUtils::recoverAddressFromPubKey);
         assertFalse(added);
         assertEquals(Map.of(), subject.getAliases());
 
@@ -196,6 +215,13 @@ class AliasManagerTest {
         assertFalse(subject.isInUse(nonMirrorAddress));
         subject.link(nonMirrorAddress, mirrorAddress);
         assertTrue(subject.isInUse(nonMirrorAddress));
+    }
+
+    @Test
+    void lookupIdByECDSAKeyAliasShouldReturnNumFromEVMAddressAliasMap()
+            throws InvalidProtocolBufferException, DecoderException {
+        subject.link(ByteString.copyFrom(ECDSA_PUBLIC_KEY_ADDRESS), num);
+        assertEquals(num, subject.lookupIdBy(ByteString.copyFrom(ECDSA_PUBLIC_KEY)));
     }
 
     @Test

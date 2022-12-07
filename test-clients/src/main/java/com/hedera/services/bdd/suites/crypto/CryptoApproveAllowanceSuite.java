@@ -137,6 +137,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                     serialsInAscendingOrder(),
                     feesAsExpected(),
                     cannotHaveMultipleAllowedSpendersForTheSameNFTSerial(),
+                    approveForAllDoesNotSetExplicitNFTSpender(),
                     canGrantNftAllowancesWithTreasuryOwner(),
                     canGrantFungibleAllowancesWithTreasuryOwner(),
                     approveForAllSpenderCanDelegateOnNFT(),
@@ -1861,6 +1862,51 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .payingWith(SECOND_SPENDER)
                                 .signedBy(SECOND_SPENDER)
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
+    }
+
+    private HapiApiSpec approveForAllDoesNotSetExplicitNFTSpender() {
+        return defaultHapiSpec("ApproveForAllSetNFTSpender")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(OWNER)
+                                .balance(ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .maxSupply(10L)
+                                .initialSupply(0)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        tokenAssociate(SPENDER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
+                                .via(NFT_TOKEN_MINT_TXN),
+                        cryptoTransfer(
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                        .between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(
+                                        OWNER, NON_FUNGIBLE_TOKEN, SPENDER, true, List.of())
+                                .signedBy(DEFAULT_PAYER, OWNER),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged(),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(accountWith().nftApprovedForAllAllowancesCount(1)))
+                .then(
+                        cryptoTransfer(
+                                        movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
+                                                .between(OWNER, RECEIVER))
+                                .payingWith(SPENDER),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
     private HapiApiSpec scheduledCryptoApproveAllowanceWorks() {
