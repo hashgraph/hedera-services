@@ -7109,7 +7109,7 @@ public class TraceabilitySuite extends HapiApiSuite {
                         "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
         return defaultHapiSpec("ActionsShowPropagatedRevert")
                 .given(
-                        overriding("contracts.sidecars", "CONTRACT_ACTION"),
+                        overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
                         uploadInitCode(APPROVE_BY_DELEGATE),
                         contractCreate(APPROVE_BY_DELEGATE).via(contractCreateTxn),
                         withOpContext(
