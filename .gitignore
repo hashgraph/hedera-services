@@ -157,3 +157,9 @@ build
 .scannerwork
 
 .project
+
+# Docker setup
+/docker/.env
+.env
+Dockerfile
+.dockerignore
