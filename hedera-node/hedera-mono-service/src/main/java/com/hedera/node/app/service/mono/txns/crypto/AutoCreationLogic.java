@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.txns.crypto;
 import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.ledger.accounts.AliasManager.tryAddressRecovery;
 import static com.hedera.node.app.service.mono.records.TxnAwareRecordsHistorian.DEFAULT_SOURCE_ID;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED;
@@ -142,10 +141,15 @@ public class AutoCreationLogic {
     public boolean reclaimPendingAliases() {
         if (!pendingCreations.isEmpty()) {
             for (final var pendingCreation : pendingCreations) {
-                final var alias = pendingCreation.recordBuilder().getAlias();
-                aliasManager.unlink(alias);
-                if (alias.size() != EVM_ADDRESS_SIZE) {
-                    aliasManager.forgetEvmAddress(alias);
+                final var syntheticTxnBody =
+                        pendingCreation.syntheticBody().getCryptoCreateAccount();
+                final var alias = syntheticTxnBody.getAlias();
+                if (!alias.isEmpty()) {
+                    aliasManager.unlink(alias);
+                }
+                final var evmAddress = syntheticTxnBody.getEvmAddress();
+                if (!evmAddress.isEmpty()) {
+                    aliasManager.forgetEvmAddress(evmAddress);
                 }
             }
             return true;
