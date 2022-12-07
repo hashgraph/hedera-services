@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -29,7 +27,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static java.util.Objects.requireNonNull;
 
@@ -48,14 +45,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Objects;
 
 /** This class preprocess transactions by parsing them and checking for syntax errors. */
 public class OnsetChecker {
 
     private final int maxSignedTxnSize;
     private final RecordCache recordCache;
-    private final AccountID nodeAccountID;
     private final GlobalDynamicProperties dynamicProperties;
     private final HapiOpCounters counters;
 
@@ -64,7 +59,6 @@ public class OnsetChecker {
      *
      * @param maxSignedTxnSize the maximum transaction size
      * @param recordCache the {@link RecordCache}
-     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
      * @param dynamicProperties the {@link GlobalDynamicProperties}
      * @param counters metrics related to workflows
      * @throws NullPointerException if one of the arguments is {@code null}
@@ -72,7 +66,6 @@ public class OnsetChecker {
     public OnsetChecker(
             final int maxSignedTxnSize,
             @NonNull final RecordCache recordCache,
-            @NonNull final AccountID nodeAccountID,
             @NonNull final GlobalDynamicProperties dynamicProperties,
             @NonNull final HapiOpCounters counters) {
         if (maxSignedTxnSize <= 0) {
@@ -80,7 +73,6 @@ public class OnsetChecker {
         }
         this.maxSignedTxnSize = maxSignedTxnSize;
         this.recordCache = requireNonNull(recordCache);
-        this.nodeAccountID = requireNonNull(nodeAccountID);
         this.dynamicProperties = requireNonNull(dynamicProperties);
         this.counters = requireNonNull(counters);
     }
@@ -162,10 +154,6 @@ public class OnsetChecker {
         }
 
         var txnId = txBody.getTransactionID();
-        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
-            throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
-        }
-
         if (recordCache.isReceiptPresent(txnId)) {
             throw new PreCheckException(DUPLICATE_TRANSACTION);
         }
@@ -176,10 +164,6 @@ public class OnsetChecker {
 
         if (!isPlausibleAccount(txnId.getAccountID())) {
             throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
-        }
-
-        if (!isThisNodeAccount(txBody.getNodeAccountID())) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
         checkMemo(txBody.getMemo());
@@ -195,10 +179,6 @@ public class OnsetChecker {
         return accountID.getAccountNum() > 0
                 && accountID.getRealmNum() >= 0
                 && accountID.getShardNum() >= 0;
-    }
-
-    private boolean isThisNodeAccount(final AccountID accountID) {
-        return Objects.equals(nodeAccountID, accountID);
     }
 
     private void checkMemo(final String memo) throws PreCheckException {

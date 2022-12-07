@@ -15,26 +15,21 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
@@ -44,24 +39,16 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.swirlds.common.system.PlatformStatus;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class WorkflowOnsetTest {
-
-    @Mock private NodeInfo nodeInfo;
-
-    @Mock(strictness = LENIENT)
-    private CurrentPlatformStatus currentPlatformStatus;
 
     @Mock private OnsetChecker checker;
 
@@ -91,8 +78,6 @@ class WorkflowOnsetTest {
 
     @BeforeEach
     void setup() throws InvalidProtocolBufferException {
-        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-
         inputBuffer = ByteBuffer.allocate(0);
 
         final var content = ConsensusCreateTopicTransactionBody.newBuilder().build();
@@ -116,18 +101,13 @@ class WorkflowOnsetTest {
         when(txParser.parseFrom(inputBuffer)).thenReturn(tx);
 
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
-        onset = new WorkflowOnset(nodeInfo, currentPlatformStatus, checker);
+        onset = new WorkflowOnset(checker);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
-        assertThatThrownBy(() -> new WorkflowOnset(null, currentPlatformStatus, checker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WorkflowOnset(nodeInfo, null, checker))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WorkflowOnset(nodeInfo, currentPlatformStatus, null))
-                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new WorkflowOnset(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -211,33 +191,6 @@ class WorkflowOnsetTest {
     }
 
     @Test
-    void testParseAndCheckWithZeroStakeFails() {
-        // given
-        when(nodeInfo.isSelfZeroStake()).thenReturn(true);
-
-        // then
-        assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
-                .isInstanceOf(PreCheckException.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_NODE_ACCOUNT);
-    }
-
-    @ParameterizedTest
-    @EnumSource(PlatformStatus.class)
-    void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status) {
-        if (status != PlatformStatus.ACTIVE) {
-            // given
-            final var inactivePlatformStatus = mock(CurrentPlatformStatus.class);
-            when(inactivePlatformStatus.get()).thenReturn(status);
-            onset = new WorkflowOnset(nodeInfo, inactivePlatformStatus, checker);
-
-            // then
-            assertThatThrownBy(() -> onset.parseAndCheck(ctx, inputBuffer))
-                    .isInstanceOf(PreCheckException.class)
-                    .hasFieldOrPropertyWithValue("responseCode", PLATFORM_NOT_ACTIVE);
-        }
-    }
-
-    @Test
     void testParseAndCheckWithTransactionParseFails(@Mock Parser<Transaction> localTxParser)
             throws InvalidProtocolBufferException {
         // given
@@ -259,7 +212,7 @@ class WorkflowOnsetTest {
         doThrow(new PreCheckException(TRANSACTION_OVERSIZE))
                 .when(localChecker)
                 .checkTransaction(tx);
-        final var localOnset = new WorkflowOnset(nodeInfo, currentPlatformStatus, localChecker);
+        final var localOnset = new WorkflowOnset(localChecker);
 
         // then
         assertThatThrownBy(() -> localOnset.parseAndCheck(ctx, inputBuffer))
@@ -290,7 +243,7 @@ class WorkflowOnsetTest {
         doThrow(new PreCheckException(TRANSACTION_HAS_UNKNOWN_FIELDS))
                 .when(localChecker)
                 .checkSignedTransaction(signedTx);
-        final var localOnset = new WorkflowOnset(nodeInfo, currentPlatformStatus, localChecker);
+        final var localOnset = new WorkflowOnset(localChecker);
 
         // then
         assertThatThrownBy(() -> localOnset.parseAndCheck(ctx, inputBuffer))
@@ -320,7 +273,7 @@ class WorkflowOnsetTest {
         doThrow(new PreCheckException(INVALID_TRANSACTION_ID))
                 .when(localChecker)
                 .checkTransactionBody(txBody);
-        final var localOnset = new WorkflowOnset(nodeInfo, currentPlatformStatus, localChecker);
+        final var localOnset = new WorkflowOnset(localChecker);
 
         // then
         assertThatThrownBy(() -> localOnset.parseAndCheck(ctx, inputBuffer))

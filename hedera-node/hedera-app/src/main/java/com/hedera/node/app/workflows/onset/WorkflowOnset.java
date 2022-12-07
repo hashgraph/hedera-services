@@ -15,19 +15,14 @@
  */
 package com.hedera.node.app.workflows.onset;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
-import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
-import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.workflows.common.PreCheckException;
@@ -46,24 +41,15 @@ import java.nio.ByteBuffer;
  */
 public class WorkflowOnset {
 
-    private final NodeInfo nodeInfo;
-    private final CurrentPlatformStatus currentPlatformStatus;
     private final OnsetChecker checker;
 
     /**
      * Constructor of {@code WorkflowOnset}
      *
-     * @param nodeInfo the {@link NodeInfo} of the current node
-     * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param checker the {@link OnsetChecker}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public WorkflowOnset(
-            @NonNull final NodeInfo nodeInfo,
-            @NonNull final CurrentPlatformStatus currentPlatformStatus,
-            @NonNull final OnsetChecker checker) {
-        this.nodeInfo = requireNonNull(nodeInfo);
-        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
+    public WorkflowOnset(@NonNull final OnsetChecker checker) {
         this.checker = requireNonNull(checker);
     }
 
@@ -103,17 +89,10 @@ public class WorkflowOnset {
         return doParseAndCheck(ctx, () -> ctx.txParser().parseFrom(buffer));
     }
 
+    @SuppressWarnings("deprecation")
     private OnsetResult doParseAndCheck(
             @NonNull final SessionContext ctx, @NonNull final TransactionSupplier txSupplier)
             throws PreCheckException {
-
-        // Do some general pre-checks
-        if (nodeInfo.isSelfZeroStake()) {
-            throw new PreCheckException(INVALID_NODE_ACCOUNT);
-        }
-        if (currentPlatformStatus.get() != ACTIVE) {
-            throw new PreCheckException(PLATFORM_NOT_ACTIVE);
-        }
 
         // 1. Parse the transaction object
         final Transaction tx;
@@ -135,9 +114,7 @@ public class WorkflowOnset {
             bodyBytes = signedTransaction.getBodyBytes();
             signatureMap = signedTransaction.getSigMap();
         } else {
-            //noinspection deprecation
             bodyBytes = tx.getBodyBytes();
-            //noinspection deprecation
             signatureMap = tx.getSigMap();
         }
 

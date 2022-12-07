@@ -16,8 +16,10 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BATCH_SIZE_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -27,8 +29,10 @@ import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperti
 import com.hedera.node.app.service.mono.txns.TransitionLogic;
 import com.hedera.node.app.service.mono.txns.TransitionLogicLookup;
 import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Optional;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -46,11 +50,13 @@ class IngestCheckerTest {
     @Test
     void testDefaultCase() {
         // given
+        final var nodeAccountID = AccountID.newBuilder().build();
         final var txBody = TransactionBody.getDefaultInstance();
         when(transitionLogicLookup.lookupFor(HederaFunctionality.NONE, txBody))
                 .thenReturn(Optional.of(transitionLogic));
         when(transitionLogic.semanticCheck()).thenReturn(it -> OK);
-        final IngestChecker checker = new IngestChecker(transitionLogicLookup, dynamicProperties);
+        final IngestChecker checker =
+                new IngestChecker(nodeAccountID, transitionLogicLookup, dynamicProperties);
 
         // then
         assertDoesNotThrow(
@@ -58,12 +64,62 @@ class IngestCheckerTest {
     }
 
     @Test
+    void testCheckTransactionBodyWithDifferentNodeAccountFails() {
+        // given
+        final var selfAccountID = AccountID.newBuilder().build();
+        final var nodeAccountID = AccountID.newBuilder().setAccountNum(42L).build();
+        final var txBody = TransactionBody.newBuilder().setNodeAccountID(nodeAccountID).build();
+        final IngestChecker checker =
+                new IngestChecker(selfAccountID, transitionLogicLookup, dynamicProperties);
+
+        // then
+        assertThatThrownBy(
+                        () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE))
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", INVALID_NODE_ACCOUNT);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithTransactionIDScheduledFails() {
+        // given
+        final var nodeAccountID = AccountID.newBuilder().build();
+        final var transactionID = TransactionID.newBuilder().setScheduled(true).build();
+        final var txBody = TransactionBody.newBuilder().setTransactionID(transactionID).build();
+        final IngestChecker checker =
+                new IngestChecker(nodeAccountID, transitionLogicLookup, dynamicProperties);
+
+        // then
+        assertThatThrownBy(
+                        () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE))
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_ID_FIELD_NOT_ALLOWED);
+    }
+
+    @Test
+    void testCheckTransactionBodyWithTransactionIDIllegalNonceFails() {
+        // given
+        final var nodeAccountID = AccountID.newBuilder().build();
+        final var transactionID = TransactionID.newBuilder().setNonce(42).build();
+        final var txBody = TransactionBody.newBuilder().setTransactionID(transactionID).build();
+        final IngestChecker checker =
+                new IngestChecker(nodeAccountID, transitionLogicLookup, dynamicProperties);
+
+        // then
+        assertThatThrownBy(
+                        () -> checker.checkTransactionSemantics(txBody, HederaFunctionality.NONE))
+                .isInstanceOf(PreCheckException.class)
+                .hasFieldOrPropertyWithValue("responseCode", TRANSACTION_ID_FIELD_NOT_ALLOWED);
+    }
+
+    @Test
     void testUnsupportedFunctionality() {
         // given
+        final var nodeAccountID = AccountID.newBuilder().build();
         final var txBody = TransactionBody.getDefaultInstance();
         when(transitionLogicLookup.lookupFor(HederaFunctionality.NONE, txBody))
                 .thenReturn(Optional.empty());
-        final IngestChecker checker = new IngestChecker(transitionLogicLookup, dynamicProperties);
+        final IngestChecker checker =
+                new IngestChecker(nodeAccountID, transitionLogicLookup, dynamicProperties);
 
         // then
         assertThatThrownBy(
@@ -75,11 +131,13 @@ class IngestCheckerTest {
     @Test
     void testFailedSemanticCheck() {
         // given
+        final var nodeAccountID = AccountID.newBuilder().build();
         final var txBody = TransactionBody.getDefaultInstance();
         when(transitionLogicLookup.lookupFor(HederaFunctionality.NONE, txBody))
                 .thenReturn(Optional.of(transitionLogic));
         when(transitionLogic.semanticCheck()).thenReturn(it -> BATCH_SIZE_LIMIT_EXCEEDED);
-        final IngestChecker checker = new IngestChecker(transitionLogicLookup, dynamicProperties);
+        final IngestChecker checker =
+                new IngestChecker(nodeAccountID, transitionLogicLookup, dynamicProperties);
 
         // then
         assertThatThrownBy(

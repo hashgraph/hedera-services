@@ -16,11 +16,16 @@
 package com.hedera.node.app.workflows.ingest;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.swirlds.common.system.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.state.HederaState;
@@ -40,6 +45,8 @@ import java.util.function.Supplier;
 /** Default implementation of {@link IngestWorkflow} */
 public final class IngestWorkflowImpl implements IngestWorkflow {
 
+    private final NodeInfo nodeInfo;
+    private final CurrentPlatformStatus currentPlatformStatus;
     private final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
     private final WorkflowOnset onset;
     private final IngestChecker checker;
@@ -51,6 +58,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
     /**
      * Constructor of {@code IngestWorkflowImpl}
      *
+     * @param nodeInfo the {@link NodeInfo} of the current node
+     * @param currentPlatformStatus the {@link CurrentPlatformStatus}
      * @param stateAccessor a {@link Supplier} that provides the latest immutable state
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link ByteBuffer} of a
      *     transaction
@@ -60,6 +69,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
      * @param opCounters the {@link HapiOpCounters} with workflow-specific metrics
      */
     public IngestWorkflowImpl(
+            @NonNull final NodeInfo nodeInfo,
+            @NonNull final CurrentPlatformStatus currentPlatformStatus,
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull final WorkflowOnset onset,
             @NonNull final IngestChecker checker,
@@ -67,6 +78,8 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             @NonNull final ThrottleAccumulator throttleAccumulator,
             @NonNull final SubmissionManager submissionManager,
             @NonNull final HapiOpCounters opCounters) {
+        this.nodeInfo = requireNonNull(nodeInfo);
+        this.currentPlatformStatus = requireNonNull(currentPlatformStatus);
         this.stateAccessor = requireNonNull(stateAccessor);
         this.onset = requireNonNull(onset);
         this.checker = requireNonNull(checker);
@@ -84,49 +97,60 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
         ResponseCodeEnum result = OK;
         long estimatedFee = 0L;
-        try (final var wrappedState = stateAccessor.get()) {
-            final var state = wrappedState.get();
 
-            // 1. Parse the TransactionBody and check the syntax
-            final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
-            final var txBody = onsetResult.txBody();
-            final var signatureMap = onsetResult.signatureMap();
-            final var functionality = onsetResult.functionality();
+        // Do some general pre-checks
+        if (nodeInfo.isSelfZeroStake()) {
+            result = INVALID_NODE_ACCOUNT;
+        }
+        if (currentPlatformStatus.get() != ACTIVE) {
+            result = PLATFORM_NOT_ACTIVE;
+        }
 
-            opCounters.countReceived(functionality);
+        if (result == OK) {
+            try (final var wrappedState = stateAccessor.get()) {
+                final var state = wrappedState.get();
 
-            // 2. Check semantics
-            checker.checkTransactionSemantics(txBody, functionality);
+                // 1. Parse the TransactionBody and check the syntax
+                final var onsetResult = onset.parseAndCheck(ctx, requestBuffer);
+                final var txBody = onsetResult.txBody();
+                final var signatureMap = onsetResult.signatureMap();
+                final var functionality = onsetResult.functionality();
 
-            // 3. Get payer account
-            final AccountID payerID = txBody.getTransactionID().getAccountID();
-            final var cryptoStates = state.createReadableStates(cryptoService.getServiceName());
-            final var cryptoQueryHandler = cryptoService.createQueryHandler(cryptoStates);
-            final var payer =
-                    cryptoQueryHandler
-                            .getAccountById(payerID)
-                            .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
+                opCounters.countReceived(functionality);
 
-            // 4. Check payer's signature
-            checker.checkPayerSignature(txBody, signatureMap, payer);
+                // 2. Check semantics
+                checker.checkTransactionSemantics(txBody, functionality);
 
-            // 5. Check account balance
-            checker.checkSolvency(txBody, functionality, payer);
+                // 3. Get payer account
+                final AccountID payerID = txBody.getTransactionID().getAccountID();
+                final var cryptoStates = state.createReadableStates(cryptoService.getServiceName());
+                final var cryptoQueryHandler = cryptoService.createQueryHandler(cryptoStates);
+                final var payer =
+                        cryptoQueryHandler
+                                .getAccountById(payerID)
+                                .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
-            // 6. Check throttles
-            if (throttleAccumulator.shouldThrottle(functionality)) {
-                throw new PreCheckException(BUSY);
+                // 4. Check payer's signature
+                checker.checkPayerSignature(txBody, signatureMap, payer);
+
+                // 5. Check account balance
+                checker.checkSolvency(txBody, functionality, payer);
+
+                // 6. Check throttles
+                if (throttleAccumulator.shouldThrottle(functionality)) {
+                    throw new PreCheckException(BUSY);
+                }
+
+                // 7. Submit to platform
+                submissionManager.submit(ctx, txBody, requestBuffer);
+
+                opCounters.countSubmitted(functionality);
+            } catch (InsufficientBalanceException e) {
+                estimatedFee = e.getEstimatedFee();
+                result = e.responseCode();
+            } catch (PreCheckException e) {
+                result = e.responseCode();
             }
-
-            // 7. Submit to platform
-            submissionManager.submit(ctx, txBody, requestBuffer);
-
-            opCounters.countSubmitted(functionality);
-        } catch (InsufficientBalanceException e) {
-            estimatedFee = e.getEstimatedFee();
-            result = e.responseCode();
-        } catch (PreCheckException e) {
-            result = e.responseCode();
         }
 
         final var transactionResponse =

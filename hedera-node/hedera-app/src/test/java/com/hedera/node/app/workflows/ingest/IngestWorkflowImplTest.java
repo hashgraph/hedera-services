@@ -18,17 +18,20 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusCreateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +39,8 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
 import com.hedera.node.app.SessionContext;
+import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
+import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
 import com.hedera.node.app.service.token.CryptoQueryHandler;
 import com.hedera.node.app.service.token.CryptoService;
@@ -53,6 +58,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import com.swirlds.common.system.PlatformStatus;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -60,6 +66,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -70,6 +78,11 @@ class IngestWorkflowImplTest {
     private static final SignatureMap SIGNATURE_MAP = SignatureMap.getDefaultInstance();
     private static final OnsetResult ONSET_RESULT =
             new OnsetResult(TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic);
+
+    @Mock private NodeInfo nodeInfo;
+
+    @Mock(strictness = LENIENT)
+    private CurrentPlatformStatus currentPlatformStatus;
 
     @Mock(strictness = LENIENT)
     private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
@@ -103,6 +116,8 @@ class IngestWorkflowImplTest {
             @Mock(strictness = LENIENT) CryptoQueryHandler cryptoQueryHandler,
             @Mock Account account)
             throws PreCheckException {
+        when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
+
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
 
         when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
@@ -113,6 +128,8 @@ class IngestWorkflowImplTest {
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         workflow =
                 new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
                         stateAccessor,
                         onset,
                         checker,
@@ -129,6 +146,8 @@ class IngestWorkflowImplTest {
                         () ->
                                 new IngestWorkflowImpl(
                                         null,
+                                        currentPlatformStatus,
+                                        stateAccessor,
                                         onset,
                                         checker,
                                         cryptoService,
@@ -139,6 +158,34 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        null,
+                                        stateAccessor,
+                                        onset,
+                                        checker,
+                                        cryptoService,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
+                                        null,
+                                        onset,
+                                        checker,
+                                        cryptoService,
+                                        throttleAccumulator,
+                                        submissionManager,
+                                        opCounters))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(
+                        () ->
+                                new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         null,
                                         checker,
@@ -150,6 +197,8 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         onset,
                                         null,
@@ -161,6 +210,8 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         onset,
                                         checker,
@@ -172,6 +223,8 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         onset,
                                         checker,
@@ -183,6 +236,8 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         onset,
                                         checker,
@@ -194,6 +249,8 @@ class IngestWorkflowImplTest {
         assertThatThrownBy(
                         () ->
                                 new IngestWorkflowImpl(
+                                        nodeInfo,
+                                        currentPlatformStatus,
                                         stateAccessor,
                                         onset,
                                         checker,
@@ -222,6 +279,59 @@ class IngestWorkflowImplTest {
     }
 
     @Test
+    void testParseAndCheckWithZeroStakeFails()
+            throws InvalidProtocolBufferException, PreCheckException {
+        // given
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+        when(nodeInfo.isSelfZeroStake()).thenReturn(true);
+
+        // when
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(INVALID_NODE_ACCOUNT);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters, never()).countReceived(any());
+        verify(submissionManager, never()).submit(any(), any(), any());
+        verify(opCounters, never()).countSubmitted(any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(PlatformStatus.class)
+    void testParseAndCheckWithInactivePlatformFails(final PlatformStatus status)
+            throws InvalidProtocolBufferException, PreCheckException {
+        if (status != PlatformStatus.ACTIVE) {
+            // given
+            final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+            final var inactivePlatformStatus = mock(CurrentPlatformStatus.class);
+            when(inactivePlatformStatus.get()).thenReturn(status);
+            workflow =
+                    new IngestWorkflowImpl(
+                            nodeInfo,
+                            inactivePlatformStatus,
+                            stateAccessor,
+                            onset,
+                            checker,
+                            cryptoService,
+                            throttleAccumulator,
+                            submissionManager,
+                            opCounters);
+
+            // when
+            workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+
+            // then
+            final TransactionResponse response = parseResponse(responseBuffer);
+            assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PLATFORM_NOT_ACTIVE);
+            assertThat(response.getCost()).isZero();
+            verify(opCounters, never()).countReceived(any());
+            verify(submissionManager, never()).submit(any(), any(), any());
+            verify(opCounters, never()).countSubmitted(any());
+        }
+    }
+
+    @Test
     void testOnsetFails(@Mock WorkflowOnset localOnset)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
@@ -229,6 +339,8 @@ class IngestWorkflowImplTest {
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
         workflow =
                 new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
                         stateAccessor,
                         localOnset,
                         checker,
@@ -280,6 +392,8 @@ class IngestWorkflowImplTest {
         when(localCryptoService.createQueryHandler(any())).thenReturn(cryptoQueryHandler);
         workflow =
                 new IngestWorkflowImpl(
+                        nodeInfo,
+                        currentPlatformStatus,
                         stateAccessor,
                         onset,
                         checker,

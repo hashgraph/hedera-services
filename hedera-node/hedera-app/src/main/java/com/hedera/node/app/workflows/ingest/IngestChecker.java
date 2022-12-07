@@ -15,9 +15,12 @@
  */
 package com.hedera.node.app.workflows.ingest;
 
+import static com.hedera.node.app.service.mono.state.submerkle.TxnId.USER_TRANSACTION_NONCE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -26,11 +29,13 @@ import com.hedera.node.app.service.mono.utils.accessors.TokenWipeAccessor;
 import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.workflows.common.InsufficientBalanceException;
 import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,19 +44,23 @@ public class IngestChecker {
 
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 
+    private final AccountID nodeAccountID;
     private final TransitionLogicLookup transitionLogic;
     private final GlobalDynamicProperties dynamicProperties;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
+     * @param nodeAccountID the {@link AccountID} of the <em>node</em>
      * @param transitionLogic a {@link TransitionLogicLookup}
      * @param dynamicProperties the {@link GlobalDynamicProperties}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public IngestChecker(
+            @NonNull final AccountID nodeAccountID,
             @NonNull final TransitionLogicLookup transitionLogic,
             @NonNull final GlobalDynamicProperties dynamicProperties) {
+        this.nodeAccountID = nodeAccountID;
         this.transitionLogic = requireNonNull(transitionLogic);
         this.dynamicProperties = requireNonNull(dynamicProperties);
     }
@@ -69,6 +78,16 @@ public class IngestChecker {
             @NonNull final TransactionBody txBody, @NonNull final HederaFunctionality functionality)
             throws PreCheckException {
         final ResponseCodeEnum errorCode;
+
+        var txnId = txBody.getTransactionID();
+        if (!Objects.equals(nodeAccountID, txBody.getNodeAccountID())) {
+            throw new PreCheckException(INVALID_NODE_ACCOUNT);
+        }
+
+        if (txnId.getScheduled() || txnId.getNonce() != USER_TRANSACTION_NONCE) {
+            throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
+        }
+
         if (functionality == TokenAccountWipe) {
             errorCode =
                     TokenWipeAccessor.validateSyntax(
