@@ -50,7 +50,7 @@ public interface TransactionMetadata {
      *
      * @return transaction that is being pre-handled
      */
-    TransactionBody getTxn();
+    TransactionBody txnBody();
 
     /**
      * All the keys required for validation signing requirements in pre-handle. This list includes
@@ -58,22 +58,5 @@ public interface TransactionMetadata {
      *
      * @return keys needed for validating signing requirements
      */
-    List<HederaKey> getReqKeys();
-
-    /**
-     * Sets status on the metadata
-     *
-     * @param status given status
-     */
-    void setStatus(final ResponseCodeEnum status);
-
-    /**
-     * Adds a given HederaKey to the list of required keys for signature verification. Throws
-     * NullPointerException if the key is null.
-     *
-     * @param key given key to add for required keys
-     */
-    default void addToReqKeys(final HederaKey key) {
-        getReqKeys().add(key);
-    }
+    List<HederaKey> requiredKeys();
 }
