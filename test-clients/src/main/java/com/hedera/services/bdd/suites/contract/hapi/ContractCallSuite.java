@@ -305,9 +305,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                         asHeadlongAddress(tiqMirrorAddr.get()),
                                                         asHeadlongAddress(
                                                                 somebodyElseMirrorAddr.get()),
-                                                        new BigInteger(
-                                                                "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-                                                                16))
+                                                        MAX_UINT256_VALUE)
                                                 .payingWith(somebody)
                                                 .gas(1_000_000)
                                                 .via(badApproval)

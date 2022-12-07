@@ -43,6 +43,11 @@ import java.util.function.Predicate;
  * runtime.
  */
 public class RecordParsers {
+    // A token that we can use to distinguish sidecar files with names like,
+    //   2022-12-05T14_23_46.192841556Z_01.rcd.gz
+    // from record stream files whose names do *not* include a _XX index
+    // like _01, _02, etc.
+    private static final String SIDECAR_ONLY_TOKEN = "Z_";
     private static final String V6_FILE_EXT = ".rcd.gz";
 
     private RecordParsers() {
@@ -128,14 +133,14 @@ public class RecordParsers {
     private static List<String> orderedRecordFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && !s.contains("Z_"),
+                s -> s.endsWith(V6_FILE_EXT) && !s.contains(SIDECAR_ONLY_TOKEN),
                 comparing(RecordParsers::parseRecordFileConsensusTime));
     }
 
     private static List<String> orderedSidecarFilesFrom(final String streamDir) throws IOException {
         return filteredFilesFrom(
                 streamDir,
-                s -> s.endsWith(V6_FILE_EXT) && s.contains("Z_"),
+                s -> s.endsWith(V6_FILE_EXT) && s.contains(SIDECAR_ONLY_TOKEN),
                 // We index sidecars by consensus time anyways, any sort order is fine
                 Comparator.naturalOrder());
     }
