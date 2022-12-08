@@ -718,7 +718,7 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .gas(GAS_TO_OFFER),
                                             contractCall(
                                                             CONTRACT,
-                                                            TRANSFER_MULTIPLE_TOKENS,
+                                                            "transferMultipleTokens",
                                                             (Object)
                                                                     new Tuple[] {
                                                                         tokenTransferList()
