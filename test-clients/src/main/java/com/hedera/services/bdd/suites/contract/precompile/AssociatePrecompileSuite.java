@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -54,12 +54,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -70,7 +70,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class AssociatePrecompileSuite extends HapiApiSuite {
+public class AssociatePrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AssociatePrecompileSuite.class);
 
     private static final long GAS_TO_OFFER = 4_000_000L;
@@ -103,13 +103,13 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
                     nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
                     invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
@@ -119,7 +119,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
                 });
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
                 nestedAssociateWorksAsExpected(),
                 multipleAssociatePrecompileWithSignatureWorksForFungible(),
@@ -127,7 +127,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
+    private HapiSpec functionCallWithLessThanFourBytesFailsWithinSingleContractCall() {
         return defaultHapiSpec("FunctionCallWithLessThanFourBytesFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -145,7 +145,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
+    private HapiSpec invalidAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("InvalidAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -165,7 +165,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
+    private HapiSpec nonSupportedAbiCallGracefullyFailsWithinSingleContractCall() {
         return defaultHapiSpec("NonSupportedAbiCallGracefullyFailsWithinSingleContractCall")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -182,7 +182,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    private HapiSpec nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -250,7 +250,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    private HapiSpec invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
@@ -328,7 +328,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-006 from HTS Precompile Test Plan -- */
-    private HapiApiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
+    private HapiSpec multipleAssociatePrecompileWithSignatureWorksForFungible() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> unfrozenTokenID = new AtomicReference<>();
@@ -438,7 +438,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-010 from HTS Precompile Test Plan -- */
-    private HapiApiSpec nestedAssociateWorksAsExpected() {
+    private HapiSpec nestedAssociateWorksAsExpected() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -499,7 +499,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    private HapiApiSpec associatePrecompileTokensPerAccountLimitExceeded() {
+    private HapiSpec associatePrecompileTokensPerAccountLimitExceeded() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
@@ -596,7 +596,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    private HapiApiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
+    private HapiSpec invalidSingleAbiCallConsumesAllProvidedGas() {
         return defaultHapiSpec("InvalidSingleAbiCallConsumesAllProvidedGas")
                 .given(
                         uploadInitCode(THE_GRACEFULLY_FAILING_CONTRACT),
@@ -641,7 +641,7 @@ public class AssociatePrecompileSuite extends HapiApiSuite {
 
     @NotNull
     public static String getNestedContractAddress(
-            final String outerContract, final HapiApiSpec spec) {
+            final String outerContract, final HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(
                 spec.registry().getContractId(outerContract));
     }

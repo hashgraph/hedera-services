@@ -27,12 +27,12 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoApproveAllowanceMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.ExtantCryptoContext;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse;
@@ -110,7 +110,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final CryptoGetInfoResponse.AccountInfo info = lookupInfo(spec, effectivePayer(spec));
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -148,11 +148,11 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
                             txn,
                             numPayerKeys);
         } catch (Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
-    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiApiSpec spec, String payer)
+    private CryptoGetInfoResponse.AccountInfo lookupInfo(HapiSpec spec, String payer)
             throws Throwable {
         HapiGetAccountInfo subOp = getAccountInfo(payer).noLogging();
         Optional<Throwable> error = subOp.execFor(spec);
@@ -166,7 +166,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         List<CryptoAllowance> callowances = new ArrayList<>();
         List<TokenAllowance> tallowances = new ArrayList<>();
         List<NftAllowance> nftallowances = new ArrayList<>();
@@ -186,7 +186,7 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     }
 
     private void calculateAllowances(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final List<CryptoAllowance> callowances,
             final List<TokenAllowance> tallowances,
             final List<NftAllowance> nftallowances) {
@@ -232,17 +232,17 @@ public class HapiCryptoApproveAllowance extends HapiTxnOp<HapiCryptoApproveAllow
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::approveAllowances;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

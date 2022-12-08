@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 
 @FunctionalInterface
 public interface ErroringAssertsProvider<T> {
-    ErroringAsserts<T> assertsFor(HapiApiSpec spec);
+    ErroringAsserts<T> assertsFor(HapiSpec spec);
 }

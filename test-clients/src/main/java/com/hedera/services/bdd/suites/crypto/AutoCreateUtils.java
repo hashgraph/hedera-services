@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +50,7 @@ public class AutoCreateUtils {
         return aliasKey;
     }
 
-    public static void updateSpecFor(HapiApiSpec spec, String alias) {
+    public static void updateSpecFor(HapiSpec spec, String alias) {
         var accountIDAtomicReference = new AtomicReference<AccountID>();
         allRunFor(spec, getAliasedAccountInfo(alias).exposingIdTo(accountIDAtomicReference::set));
         final var aliasKey = spec.registry().getKey(alias).toByteString().toStringUtf8();

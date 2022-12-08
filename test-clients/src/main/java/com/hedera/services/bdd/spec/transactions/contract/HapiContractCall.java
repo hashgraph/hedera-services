@@ -19,11 +19,11 @@ import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFu
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -50,7 +50,7 @@ import java.util.function.Supplier;
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
-    private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+    private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
     private Optional<Long> valueSent = Optional.of(0L);
     private boolean convertableToEthCall = true;
@@ -86,7 +86,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         this.contract = contract;
     }
 
-    public HapiContractCall(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
+    public HapiContractCall(String abi, String contract, Function<HapiSpec, Object[]> fn) {
         this(abi, contract);
         paramsFn = Optional.of(fn);
     }
@@ -226,12 +226,12 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::contractCallMethod;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.ContractCall,
@@ -241,7 +241,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (details.isPresent()) {
             ActionableContractCall actionable = spec.registry().getActionableCall(details.get());
             contract = actionable.getContract();
@@ -271,7 +271,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (gasObserver.isPresent()) {
             doGasLookup(
                     gasValue -> gasObserver.get().accept(actualStatus, gasValue),
@@ -297,8 +297,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        final var signers = new ArrayList<Function<HapiApiSpec, Key>>();
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        final var signers = new ArrayList<Function<HapiSpec, Key>>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
         for (final var added : otherSigs) {
             signers.add(spec -> spec.registry().getKey(added));
@@ -308,7 +308,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     static void doGasLookup(
             final LongConsumer gasObserver,
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final Transaction txn,
             final boolean isCreate)
             throws Throwable {
@@ -325,7 +325,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     }
 
     static void doObservedLookup(
-            final HapiApiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
+            final HapiSpec spec, final Transaction txn, Consumer<TransactionRecord> observer)
             throws Throwable {
         final var txnId = extractTxnId(txn);
         final var lookup =

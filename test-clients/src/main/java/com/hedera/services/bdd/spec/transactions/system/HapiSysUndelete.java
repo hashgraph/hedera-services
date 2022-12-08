@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asFileId;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.SystemUndelete;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
@@ -57,7 +57,7 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         if (file.isPresent() && contract.isPresent()) {
             Assertions.fail("Ambiguous SystemUndelete---both file and contract present!");
         }
@@ -73,7 +73,7 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         if (file.isPresent()) {
             return spec.clients().getFileSvcStub(targetNodeFor(spec), useTls)::systemUndelete;
         } else {
@@ -82,7 +82,7 @@ public class HapiSysUndelete extends HapiTxnOp<HapiSysUndelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees().maxFeeTinyBars();
     }
 

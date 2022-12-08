@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
@@ -52,13 +52,13 @@ public class SpecKeyFromMnemonic extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         createAndLinkFromMnemonic(spec, mnemonic, name, linkedId, log);
         return false;
     }
 
     static void createAndLinkFromMnemonic(
-            HapiApiSpec spec,
+            HapiSpec spec,
             String mnemonic,
             String name,
             Optional<String> linkedId,
@@ -70,7 +70,7 @@ public class SpecKeyFromMnemonic extends UtilOp {
     }
 
     static void createAndLinkSimpleKey(
-            HapiApiSpec spec,
+            HapiSpec spec,
             byte[] privateKey,
             String name,
             Optional<String> linkedId,

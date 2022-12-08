@@ -21,10 +21,10 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PerpetualTransfers extends HapiApiSuite {
+public class PerpetualTransfers extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PerpetualTransfers.class);
 
     private AtomicLong duration = new AtomicLong(Long.MAX_VALUE);
@@ -48,15 +48,15 @@ public class PerpetualTransfers extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     canTransferBackAndForthForever(),
                 });
     }
 
-    private HapiApiSpec canTransferBackAndForthForever() {
-        return HapiApiSpec.defaultHapiSpec("CanTransferBackAndForthForever")
+    private HapiSpec canTransferBackAndForthForever() {
+        return HapiSpec.defaultHapiSpec("CanTransferBackAndForthForever")
                 .given()
                 .when()
                 .then(
@@ -65,7 +65,7 @@ public class PerpetualTransfers extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> transfersFactory() {
+    private Function<HapiSpec, OpProvider> transfersFactory() {
         AtomicBoolean fromAtoB = new AtomicBoolean(true);
         return spec ->
                 new OpProvider() {

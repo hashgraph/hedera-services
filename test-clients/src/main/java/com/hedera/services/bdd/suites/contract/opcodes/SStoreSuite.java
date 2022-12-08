@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -32,12 +32,12 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
-public class SStoreSuite extends HapiApiSuite {
+public class SStoreSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
@@ -62,9 +62,9 @@ public class SStoreSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     setupAppProperties(),
                     multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
@@ -74,8 +74,8 @@ public class SStoreSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec setupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Setup")
+    private HapiSpec setupAppProperties() {
+        return HapiSpec.defaultHapiSpec("Setup")
                 .given(
                         withOpContext(
                                 (spec, opLog) -> {
@@ -100,8 +100,8 @@ public class SStoreSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec cleanupAppProperties() {
-        return HapiApiSpec.defaultHapiSpec("Cleanup")
+    private HapiSpec cleanupAppProperties() {
+        return HapiSpec.defaultHapiSpec("Cleanup")
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -111,10 +111,10 @@ public class SStoreSuite extends HapiApiSuite {
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
-    HapiApiSpec multipleSStoreOpsSucceed() {
+    HapiSpec multipleSStoreOpsSucceed() {
         final var contract = "GrowArray";
         final var GAS_TO_OFFER = 6_000_000L;
-        return HapiApiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
+        return HapiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
                 .given(
                         fileUpdate(APP_PROPERTIES)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
@@ -163,7 +163,7 @@ public class SStoreSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec childStorage() {
+    HapiSpec childStorage() {
         // Successfully exceeds deprecated max contract storage of 1 KB
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
@@ -246,7 +246,7 @@ public class SStoreSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec benchmarkSingleSetter() {
+    private HapiSpec benchmarkSingleSetter() {
         final var contract = "Benchmark";
         final var GAS_LIMIT = 1_000_000;
         var value =
@@ -278,7 +278,7 @@ public class SStoreSuite extends HapiApiSuite {
                                                                 }))));
     }
 
-    HapiApiSpec temporarySStoreRefundTest() {
+    HapiSpec temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
         return defaultHapiSpec("TemporarySStoreRefundTest")
                 .given(

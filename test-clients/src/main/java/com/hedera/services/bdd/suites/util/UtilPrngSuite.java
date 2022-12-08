@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.util;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
@@ -25,14 +25,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PRNG_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UtilPrngSuite extends HapiApiSuite {
+public class UtilPrngSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
     private static final String BOB = "bob";
@@ -42,11 +43,11 @@ public class UtilPrngSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveTests());
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return List.of(
                 happyPathWorksForRangeAndBitString(),
                 failsInPreCheckForNegativeRange(),
@@ -54,7 +55,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 featureFlagWorks());
     }
 
-    private HapiApiSpec featureFlagWorks() {
+    private HapiSpec featureFlagWorks() {
         return defaultHapiSpec("featureFlagWorks")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "false")),
@@ -67,7 +68,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec usdFeeAsExpected() {
+    private HapiSpec usdFeeAsExpected() {
         double baseFee = 0.001;
         double plusRangeFee = 0.0010010316;
 
@@ -88,7 +89,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec failsInPreCheckForNegativeRange() {
+    private HapiSpec failsInPreCheckForNegativeRange() {
         return defaultHapiSpec("failsInPreCheckForNegativeRange")
                 .given(
                         overridingAllOf(Map.of(PRNG_IS_ENABLED, "true")),
@@ -103,7 +104,7 @@ public class UtilPrngSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec happyPathWorksForRangeAndBitString() {
+    private HapiSpec happyPathWorksForRangeAndBitString() {
         final var rangeTxn = "prngWithRange";
         final var rangeTxn1 = "prngWithRange1";
         final var prngWithoutRange = "prngWithoutRange";

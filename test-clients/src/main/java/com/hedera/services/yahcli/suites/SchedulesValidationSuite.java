@@ -15,7 +15,7 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
 import static com.hedera.services.bdd.spec.persistence.SpecKey.submitKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -39,15 +39,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREADY_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_IS_IMMUTABLE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SchedulesValidationSuite extends HapiApiSuite {
+public class SchedulesValidationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SchedulesValidationSuite.class);
 
     private final Map<String, String> specConfig;
@@ -57,14 +57,14 @@ public class SchedulesValidationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     validateScheduling(),
                 });
     }
 
-    private HapiApiSpec validateScheduling() {
+    private HapiSpec validateScheduling() {
         String inSpecSchedule = "forImmediateExecution";
         AtomicLong seqNo = new AtomicLong();
 

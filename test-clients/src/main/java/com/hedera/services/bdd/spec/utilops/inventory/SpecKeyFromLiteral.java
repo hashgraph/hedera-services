@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 import static com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic.createAndLinkSimpleKey;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.swirlds.common.utility.CommonUtils;
 import java.util.Optional;
@@ -43,7 +43,7 @@ public class SpecKeyFromLiteral extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         byte[] privateKey = CommonUtils.unhex(hexEncodedPrivateKey);
         createAndLinkSimpleKey(spec, privateKey, name, linkedId, log);
         return false;

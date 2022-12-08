@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -23,15 +23,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue310Suite extends HapiApiSuite {
+public class Issue310Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCreateSuite.class);
 
     public static void main(String... args) {
@@ -39,7 +39,7 @@ public class Issue310Suite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 duplicatedTxnsSameTypeDetected(),
                 duplicatedTxnsDifferentTypesDetected(),
@@ -47,7 +47,7 @@ public class Issue310Suite extends HapiApiSuite {
                 duplicatedTxnsDiffrentTypesDifferentNodesDetected());
     }
 
-    private HapiApiSpec duplicatedTxnsSameTypeDetected() {
+    private HapiSpec duplicatedTxnsSameTypeDetected() {
         long initialBalance = 10_000L;
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDetected")
@@ -63,7 +63,7 @@ public class Issue310Suite extends HapiApiSuite {
                 .then(getTxnRecord("txnId1").logged());
     }
 
-    private HapiApiSpec duplicatedTxnsDifferentTypesDetected() {
+    private HapiSpec duplicatedTxnsDifferentTypesDetected() {
         return defaultHapiSpec("duplicatedTxnsDifferentTypesDetected")
                 .given(
                         cryptoCreate("acct2").via("txnId2"),
@@ -78,7 +78,7 @@ public class Issue310Suite extends HapiApiSuite {
                 .then(getTxnRecord("txnId2").logged());
     }
 
-    private HapiApiSpec duplicatedTxnsSameTypeDifferntNodesDetected() {
+    private HapiSpec duplicatedTxnsSameTypeDifferntNodesDetected() {
 
         return defaultHapiSpec("duplicatedTxnsSameTypeDifferntNodesDetected")
                 .given(
@@ -92,7 +92,7 @@ public class Issue310Suite extends HapiApiSuite {
                 .then(getTxnRecord("txnId1").logged());
     }
 
-    private HapiApiSpec duplicatedTxnsDiffrentTypesDifferentNodesDetected() {
+    private HapiSpec duplicatedTxnsDiffrentTypesDifferentNodesDetected() {
         return defaultHapiSpec("duplicatedTxnsDiffrentTypesDifferentNodesDetected")
                 .given(
                         cryptoCreate("acct4").via("txnId4").setNode("0.0.3"),

@@ -22,7 +22,7 @@ import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenRevokeKycUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -60,7 +60,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
@@ -77,7 +77,7 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenRevokeKycTransactionBody opBody =
@@ -92,20 +92,20 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKycKey(token));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)
                 ::revokeKycFromTokenAccount;
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {}
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {

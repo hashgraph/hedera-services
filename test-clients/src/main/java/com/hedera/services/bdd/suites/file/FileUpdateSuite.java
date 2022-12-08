@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -87,12 +87,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import java.math.BigInteger;
 import java.util.List;
@@ -116,7 +116,7 @@ import org.apache.logging.log4j.Logger;
  * <p>We'll come back to add all missing test scenarios for this and other test suites once we are
  * done with cleaning up old test cases.
  */
-public class FileUpdateSuite extends HapiApiSuite {
+public class FileUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileUpdateSuite.class);
     private static final String CONTRACT = "CreateTrivial";
     private static final String CREATE_TXN = "create";
@@ -159,9 +159,9 @@ public class FileUpdateSuite extends HapiApiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     vanillaUpdateSucceeds(),
                     updateFeesCompatibleWithCreates(),
                     apiPermissionsChangeDynamically(),
@@ -182,7 +182,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec associateHasExpectedSemantics() {
+    private HapiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
                 .given(flattened(TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
@@ -234,7 +234,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    public HapiApiSpec autoCreationIsDynamic() {
+    public HapiSpec autoCreationIsDynamic() {
         final var aliasKey = "autoCreationKey";
 
         return defaultHapiSpec("AutoCreationIsDynamic")
@@ -252,7 +252,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         resetToDefault(AUTO_CREATION_PROP));
     }
 
-    public HapiApiSpec notTooManyFeeScheduleCanBeCreated() {
+    public HapiSpec notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
         return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
@@ -274,7 +274,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                         Map.of(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES)));
     }
 
-    private HapiApiSpec optimisticSpecialFileUpdate() {
+    private HapiSpec optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
         final var specialFileContents = ByteString.copyFrom(randomUtf8Bytes(64 * BYTES_4K));
@@ -292,7 +292,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .hasContents(ignore -> specialFileContents.toByteArray()));
     }
 
-    private HapiApiSpec apiPermissionsChangeDynamically() {
+    private HapiSpec apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
                 .given(
@@ -312,7 +312,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 
-    private HapiApiSpec updateFeesCompatibleWithCreates() {
+    private HapiSpec updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
         final byte[] old2k = randomUtf8Bytes(BYTES_4K / 2);
@@ -366,7 +366,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec vanillaUpdateSucceeds() {
+    private HapiSpec vanillaUpdateSucceeds() {
         final byte[] old4K = randomUtf8Bytes(BYTES_4K);
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
         final String firstMemo = "Originally";
@@ -385,7 +385,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         getFileInfo("test").hasMemo(secondMemo));
     }
 
-    private HapiApiSpec cannotUpdateExpirationPastMaxLifetime() {
+    private HapiSpec cannotUpdateExpirationPastMaxLifetime() {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
                 .when()
@@ -395,7 +395,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec maxRefundIsEnforced() {
+    private HapiSpec maxRefundIsEnforced() {
         return defaultHapiSpec("MaxRefundIsEnforced")
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "5"),
@@ -409,7 +409,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         resetToDefault(MAX_REFUND_GAS_PROP));
     }
 
-    private HapiApiSpec allUnusedGasIsRefundedIfSoConfigured() {
+    private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
         return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "100"),
@@ -423,7 +423,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         resetToDefault(MAX_REFUND_GAS_PROP));
     }
 
-    private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+    private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
                         uploadInitCode(CONTRACT),
@@ -438,7 +438,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                         resetToDefault(CONS_MAX_GAS_PROP));
     }
 
-    private HapiApiSpec kvLimitsEnforced() {
+    private HapiSpec kvLimitsEnforced() {
         final var contract = "User";
         final var gasToOffer = 1_000_000;
 
@@ -522,7 +522,7 @@ public class FileUpdateSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec serviceFeeRefundedIfConsGasExhausted() {
+    private HapiSpec serviceFeeRefundedIfConsGasExhausted() {
         final var contract = "User";
         final var gasToOffer = Long.parseLong(DEFAULT_MAX_CONS_GAS);
         final var civilian = "payer";
@@ -592,7 +592,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec chainIdChangesDynamically() {
+    private HapiSpec chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;
         final var firstCallTxn = "firstCallTxn";
@@ -640,7 +640,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                 .then(resetToDefault(CHAIN_ID_PROP));
     }
 
-    private HapiApiSpec entitiesNotCreatableAfterUsageLimitsReached() {
+    private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
         return defaultHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
                 .given(
@@ -679,7 +679,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 "topics.maxNumber"));
     }
 
-    private HapiApiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
+    private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
         final var slotUser = "SlotUser";
         final var creation = "creation";
         final var aSet = "aSet";
@@ -788,7 +788,7 @@ public class FileUpdateSuite extends HapiApiSuite {
                                 "staking.fees.stakingRewardPercentage", "10"));
     }
 
-    private HapiApiSpec messageSubmissionSizeChange() {
+    private HapiSpec messageSubmissionSizeChange() {
         final var defaultMaxBytesAllowed = 1024;
         final var longMessage = TxnUtils.randomUtf8Bytes(defaultMaxBytesAllowed);
 

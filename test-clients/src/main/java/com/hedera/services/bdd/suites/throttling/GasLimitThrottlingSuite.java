@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -26,29 +26,29 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GasLimitThrottlingSuite extends HapiApiSuite {
+public class GasLimitThrottlingSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(GasLimitThrottlingSuite.class);
     private static final String CONTRACT = "Benchmark";
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {txsUnderGasLimitAllowed(), txOverGasLimitThrottled()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {txsUnderGasLimitAllowed(), txOverGasLimitThrottled()});
     }
 
     public static void main(String... args) {
         new GasLimitThrottlingSuite().runSuiteSync();
     }
 
-    private HapiApiSpec txsUnderGasLimitAllowed() {
+    private HapiSpec txsUnderGasLimitAllowed() {
         final var NUM_CALLS = 10;
         return defaultHapiSpec("TXsUnderGasLimitAllowed")
                 .given(
@@ -82,7 +82,7 @@ public class GasLimitThrottlingSuite extends HapiApiSuite {
                                 "contracts.throttle.throttleByGas", "contracts.maxGasPerSec"));
     }
 
-    private HapiApiSpec txOverGasLimitThrottled() {
+    private HapiSpec txOverGasLimitThrottled() {
 
         return defaultHapiSpec("TXOverGasLimitThrottled")
                 .given(

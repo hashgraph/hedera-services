@@ -20,7 +20,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NetworkGetVersionInfoQuery;
@@ -67,7 +67,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         SemanticVersion actualProto = response.getNetworkGetVersionInfo().getHapiProtoVersion();
         SemanticVersion actualServices =
                 response.getNetworkGetVersionInfo().getHederaServicesVersion();
@@ -86,7 +86,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getVersionInfoQuery(payment, false);
         response =
                 spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);
@@ -129,7 +129,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getVersionInfoQuery(payment, true);
         Response response =
                 spec.clients().getNetworkSvcStub(targetNodeFor(spec), useTls).getVersionInfo(query);

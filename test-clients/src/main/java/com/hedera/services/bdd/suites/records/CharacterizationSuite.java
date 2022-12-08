@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -27,14 +27,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CharacterizationSuite extends HapiApiSuite {
+public class CharacterizationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CharacterizationSuite.class);
 
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
@@ -48,13 +48,13 @@ public class CharacterizationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 /* Stateful specs from ScheduleDeleteSpecs */
                 expiredBeforeDeletion(), suiteCleanup());
     }
 
-    public HapiApiSpec expiredBeforeDeletion() {
+    public HapiSpec expiredBeforeDeletion() {
         final int FAST_EXPIRATION = 0;
         return defaultHapiSpec("ExpiredBeforeDeletion")
                 .given(
@@ -81,7 +81,7 @@ public class CharacterizationSuite extends HapiApiSuite {
                                 "" + SCHEDULE_EXPIRY_TIME_SECS));
     }
 
-    private HapiApiSpec suiteCleanup() {
+    private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()

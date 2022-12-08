@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -62,11 +62,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -88,7 +88,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RecordCreationSuite extends HapiApiSuite {
+public class RecordCreationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
     private static final long SLEEP_MS = 1_000L;
@@ -101,9 +101,9 @@ public class RecordCreationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     ensureSystemStateAsExpected(),
                     confirmNftToggleIsWorksThenReenable(),
                     payerRecordCreationSanityChecks(),
@@ -126,7 +126,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec confirmNftToggleIsWorksThenReenable() {
+    private HapiSpec confirmNftToggleIsWorksThenReenable() {
         final var acceptedTokenAttempt = "someSuch";
         final var blockedTokenAttempt = "neverToBe";
         final var supplyKey = "supplyKey";
@@ -190,7 +190,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                                 .hasTokenBalance(acceptedTokenAttempt, 1L));
     }
 
-    private HapiApiSpec ensureSystemStateAsExpected() {
+    private HapiSpec ensureSystemStateAsExpected() {
         final var EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
         final var snapshot800 = "800startBalance";
         final var snapshot801 = "801startBalance";
@@ -307,7 +307,7 @@ public class RecordCreationSuite extends HapiApiSuite {
         }
     }
 
-    private HapiApiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
+    private HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
         final String comfortingMemo = "This is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -402,7 +402,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                                                 .logged()));
     }
 
-    private HapiApiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
+    private HapiSpec submittingNodeChargedNetworkFeeForLackOfDueDiligence() {
         final String comfortingMemo = "This is ok, it's fine, it's whatever.";
         final String disquietingMemo = "\u0000his is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
@@ -493,7 +493,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                                                 .logged()));
     }
 
-    private HapiApiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
+    private HapiSpec submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness() {
         final String comfortingMemo = "This is ok, it's fine, it's whatever.";
         final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
 
@@ -590,7 +590,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                                                 .logged()));
     }
 
-    private HapiApiSpec payerRecordCreationSanityChecks() {
+    private HapiSpec payerRecordCreationSanityChecks() {
         return defaultHapiSpec("PayerRecordCreationSanityChecks")
                 .given(cryptoCreate("payer"))
                 .when(
@@ -624,7 +624,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                 .sum();
     }
 
-    private HapiApiSpec accountsGetPayerRecordsIfSoConfigured() {
+    private HapiSpec accountsGetPayerRecordsIfSoConfigured() {
         final var txn = "ofRecord";
 
         return defaultHapiSpec("AccountsGetPayerRecordsIfSoConfigured")
@@ -636,7 +636,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                 .then(getAccountRecords("payer").has(inOrder(recordWith().txnId(txn))));
     }
 
-    private HapiApiSpec calledContractNoLongerGetsRecord() {
+    private HapiSpec calledContractNoLongerGetsRecord() {
         return defaultHapiSpec("CalledContractNoLongerGetsRecord")
                 .given(uploadInitCode(PAY_RECEIVABLE_NAME))
                 .when(contractCreate(PAY_RECEIVABLE_NAME).via("createTxn"))
@@ -646,7 +646,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                                 .sending(1_000L));
     }
 
-    private HapiApiSpec thresholdRecordsDontExistAnymore() {
+    private HapiSpec thresholdRecordsDontExistAnymore() {
         final var lowSendThreshold = "lowSendThreshold";
         final var lowReceiveThreshold = "lowReceiveThreshold";
         return defaultHapiSpec("OnlyNetAdjustmentIsComparedToThresholdWhenCreating")
@@ -664,7 +664,7 @@ public class RecordCreationSuite extends HapiApiSuite {
                         getAccountRecords(lowReceiveThreshold).has(inOrder()));
     }
 
-    private HapiApiSpec recordsTtlChangesAsExpected() {
+    private HapiSpec recordsTtlChangesAsExpected() {
         final int abbrevCacheTtl = 3;
         final String brieflyAvailMemo = "I can't stay for long...";
         final AtomicReference<byte[]> origPropContents = new AtomicReference<>();

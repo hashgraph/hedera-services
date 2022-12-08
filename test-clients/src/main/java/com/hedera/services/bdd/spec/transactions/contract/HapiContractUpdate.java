@@ -25,7 +25,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
@@ -160,7 +160,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -173,7 +173,7 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         Optional<Key> key = newKey.map(spec.registry()::getKey);
         ContractUpdateTransactionBody opBody =
                 spec.txns()
@@ -248,8 +248,8 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
-        List<Function<HapiApiSpec, Key>> signers = new ArrayList<>(oldDefaults());
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        List<Function<HapiSpec, Key>> signers = new ArrayList<>(oldDefaults());
         if (!useDeprecatedAdminKey && newKey.isPresent()) {
             signers.add(spec -> spec.registry().getKey(newKey.get()));
         }
@@ -257,19 +257,19 @@ public class HapiContractUpdate extends HapiTxnOp<HapiContractUpdate> {
         return signers;
     }
 
-    private List<Function<HapiApiSpec, Key>> oldDefaults() {
+    private List<Function<HapiSpec, Key>> oldDefaults() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(contract));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::updateContract;
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         Timestamp newExpiry =
                 TxnFactory.expiryGiven(newExpirySecs.orElse(spec.setup().defaultExpirationSecs()));
         Timestamp oldExpiry = TxnUtils.currContractExpiry(contract, spec);

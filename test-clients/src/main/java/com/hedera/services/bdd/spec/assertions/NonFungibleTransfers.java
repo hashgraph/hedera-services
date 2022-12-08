@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.assertions;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -45,7 +45,7 @@ public class NonFungibleTransfers implements ErroringAssertsProvider<List<TokenT
     }
 
     @Override
-    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiApiSpec spec) {
+    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
         final List<Throwable> wrongNFTChanges = new ArrayList<>();
 
         final Map<TokenID, String> tokenNameLookup = new HashMap<>();

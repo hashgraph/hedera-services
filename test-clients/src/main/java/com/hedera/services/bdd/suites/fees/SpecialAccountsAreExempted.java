@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
@@ -27,16 +27,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SpecialAccountsAreExempted extends HapiApiSuite {
+public class SpecialAccountsAreExempted extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SpecialAccountsAreExempted.class);
 
     public static void main(String... args) {
@@ -49,14 +49,14 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     feeScheduleControlAccountIsntCharged(), exchangeRateControlAccountIsntCharged(),
                 });
     }
 
-    public static HapiApiSpec exchangeRateControlAccountIsntCharged() {
+    public static HapiSpec exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
                 .given(
                         cryptoTransfer(
@@ -73,7 +73,7 @@ public class SpecialAccountsAreExempted extends HapiApiSuite {
                                 .hasTinyBars(changeFromSnapshot("pre", 0)));
     }
 
-    public static HapiApiSpec feeScheduleControlAccountIsntCharged() {
+    public static HapiSpec feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 
         return defaultHapiSpec("FeeScheduleControlAccountIsntCharged")

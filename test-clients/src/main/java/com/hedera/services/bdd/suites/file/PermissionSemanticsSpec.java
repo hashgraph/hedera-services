@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -36,18 +36,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PermissionSemanticsSpec extends HapiApiSuite {
+public class PermissionSemanticsSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PermissionSemanticsSpec.class);
 
     public static void main(String... args) {
@@ -60,16 +61,16 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     allowsDeleteWithOneTopLevelSig(),
                     supportsImmutableFiles(),
                     addressBookAdminExemptFromFeesGivenAuthorizedOps(),
                 });
     }
 
-    private HapiApiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
+    private HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
         long amount = 100 * 100_000_000L;
         AtomicReference<byte[]> origContents = new AtomicReference<>();
         return defaultHapiSpec("AddressBookAdminExemptFromFeesGivenAuthorizedOps")
@@ -93,7 +94,7 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
                         getTxnRecord("authorizedTxn").hasPriority(recordWith().fee(0L)));
     }
 
-    private HapiApiSpec supportsImmutableFiles() {
+    private HapiSpec supportsImmutableFiles() {
         long extensionSecs = 666L;
         AtomicLong approxExpiry = new AtomicLong();
 
@@ -138,7 +139,7 @@ public class PermissionSemanticsSpec extends HapiApiSuite {
                                         l -> Math.abs(l - approxExpiry.get() - extensionSecs) < 5));
     }
 
-    private HapiApiSpec allowsDeleteWithOneTopLevelSig() {
+    private HapiSpec allowsDeleteWithOneTopLevelSig() {
         KeyShape wacl = KeyShape.listOf(KeyShape.SIMPLE, KeyShape.listOf(2));
 
         var deleteSig = wacl.signedWith(sigs(ON, sigs(OFF, OFF)));

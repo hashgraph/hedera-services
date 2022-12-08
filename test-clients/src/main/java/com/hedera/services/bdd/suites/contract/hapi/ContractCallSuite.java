@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -99,7 +99,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -109,7 +109,7 @@ import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -126,7 +126,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class ContractCallSuite extends HapiApiSuite {
+public class ContractCallSuite extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(ContractCallSuite.class);
 
     private static final String ALICE = "Alice";
@@ -202,7 +202,7 @@ public class ContractCallSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 resultSizeAffectsFees(),
                 payableSuccess(),
@@ -251,7 +251,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 lpFarmSimulation());
     }
 
-    private HapiApiSpec whitelistingAliasedContract() {
+    private HapiSpec whitelistingAliasedContract() {
         final var creationTxn = "creationTxn";
         final var mirrorWhitelistCheckTxn = "mirrorWhitelistCheckTxn";
         final var evmWhitelistCheckTxn = "evmWhitelistCheckTxn";
@@ -340,7 +340,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
+    private HapiSpec cannotUseMirrorAddressOfAliasedContractInPrecompileMethod() {
         final var creationTxn = "creationTxn";
         final var ASSOCIATOR = "Associator";
 
@@ -412,7 +412,7 @@ public class ContractCallSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec contractCreationStoragePriceMatchesFinalExpiry() {
+    private HapiSpec contractCreationStoragePriceMatchesFinalExpiry() {
         final var toyMaker = "ToyMaker";
         final var createIndirectly = "CreateIndirectly";
         final var normalPayer = "normalPayer";
@@ -470,7 +470,7 @@ public class ContractCallSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec bitcarbonTestStillPasses() {
+    private HapiSpec bitcarbonTestStillPasses() {
         final var addressBook = "AddressBook";
         final var jurisdictions = "Jurisdictions";
         final var minters = "Minters";
@@ -611,7 +611,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .gas(1_000_000)));
     }
 
-    private HapiApiSpec deletedContractsCannotBeUpdated() {
+    private HapiSpec deletedContractsCannotBeUpdated() {
         final var contract = "SelfDestructCallable";
 
         return defaultHapiSpec("DeletedContractsCannotBeUpdated")
@@ -623,7 +623,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
-    private HapiApiSpec workingHoursDemo() {
+    private HapiSpec workingHoursDemo() {
         final var gasToOffer = 4_000_000;
         final var contract = "WorkingHours";
         final var ticketToken = "ticketToken";
@@ -709,7 +709,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getTxnRecord(ticketWorking).andAllChildRecords().logged());
     }
 
-    private HapiApiSpec canMintAndTransferInSameContractOperation() {
+    private HapiSpec canMintAndTransferInSameContractOperation() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final var nfToken = "nfToken";
@@ -783,7 +783,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .alsoSigningWithFullPrefix(multiKey, aCivilian)));
     }
 
-    private HapiApiSpec exchangeRatePrecompileWorks() {
+    private HapiSpec exchangeRatePrecompileWorks() {
         final var valueToTinycentCall = "recoverUsd";
         final var rateAware = "ExchangeRatePrecompile";
         // Must send $6.66 USD to access the gated method
@@ -854,7 +854,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
-    private HapiApiSpec imapUserExercise() {
+    private HapiSpec imapUserExercise() {
         final var contract = "User";
         final var insert1To4 = "insert1To10";
         final var insert2To8 = "insert2To8";
@@ -887,7 +887,7 @@ public class ContractCallSuite extends HapiApiSuite {
     // For this test we use refusingEthConversion() for the Eth Call isomer,
     // since we should modify the expected balances and change the test itself in order to pass with
     // Eth Calls
-    HapiApiSpec ocToken() {
+    HapiSpec ocToken() {
         final var contract = "OcToken";
 
         return defaultHapiSpec("ocToken")
@@ -1256,7 +1256,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
-    private <T> T getValueFromRegistry(HapiApiSpec spec, String from, Function function) {
+    private <T> T getValueFromRegistry(HapiSpec spec, String from, Function function) {
         byte[] value = spec.registry().getBytes(from);
 
         T decodedReturnedValue;
@@ -1273,7 +1273,7 @@ public class ContractCallSuite extends HapiApiSuite {
         return decodedReturnedValue;
     }
 
-    HapiApiSpec smartContractInlineAssemblyCheck() {
+    HapiSpec smartContractInlineAssemblyCheck() {
         final var inlineTestContract = "InlineTest";
 
         return defaultHapiSpec("smartContractInlineAssemblyCheck")
@@ -1365,7 +1365,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec multipleSelfDestructsAreSafe() {
+    private HapiSpec multipleSelfDestructsAreSafe() {
         final var contract = "Fuse";
         return defaultHapiSpec("MultipleSelfDestructsAreSafe")
                 .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
@@ -1373,7 +1373,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 .then(getTxnRecord("lightTxn").logged());
     }
 
-    HapiApiSpec depositSuccess() {
+    HapiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1392,7 +1392,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .contractCallResult(resultWith().logs(inOrder()))));
     }
 
-    HapiApiSpec multipleDepositSuccess() {
+    HapiSpec multipleDepositSuccess() {
         return defaultHapiSpec("MultipleDepositSuccess")
                 .given(
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
@@ -1423,7 +1423,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec depositDeleteSuccess() {
+    HapiSpec depositDeleteSuccess() {
         final var initBalance = 7890L;
         return defaultHapiSpec("DepositDeleteSuccess")
                 .given(
@@ -1442,7 +1442,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountBalance(BENEFICIARY).hasTinyBars(initBalance + DEPOSIT_AMOUNT));
     }
 
-    HapiApiSpec payableSuccess() {
+    HapiSpec payableSuccess() {
         return defaultHapiSpec("PayableSuccess")
                 .given(
                         UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "1000000"),
@@ -1464,7 +1464,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
-    HapiApiSpec callingDestructedContractReturnsStatusDeleted() {
+    HapiSpec callingDestructedContractReturnsStatusDeleted() {
         return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
                 .given(
                         UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "1000000"),
@@ -1494,7 +1494,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
-    HapiApiSpec insufficientGas() {
+    HapiSpec insufficientGas() {
         return defaultHapiSpec("InsufficientGas")
                 .given(
                         uploadInitCode(SIMPLE_STORAGE_CONTRACT),
@@ -1510,7 +1510,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getTxnRecord("simpleStorageTxn").logged());
     }
 
-    HapiApiSpec insufficientFee() {
+    HapiSpec insufficientFee() {
         final var contract = CREATE_TRIVIAL;
 
         return defaultHapiSpec("InsufficientFee")
@@ -1526,7 +1526,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .hasPrecheck(INSUFFICIENT_TX_FEE));
     }
 
-    HapiApiSpec nonPayable() {
+    HapiSpec nonPayable() {
         final var contract = CREATE_TRIVIAL;
 
         return defaultHapiSpec("NonPayable")
@@ -1543,7 +1543,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .contractCallResult(resultWith().logs(inOrder()))));
     }
 
-    HapiApiSpec invalidContract() {
+    HapiSpec invalidContract() {
         final var function = getABIFor(FUNCTION, "getIndirect", CREATE_TRIVIAL);
 
         return defaultHapiSpec("InvalidContract")
@@ -1558,7 +1558,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
-    private HapiApiSpec resultSizeAffectsFees() {
+    private HapiSpec resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
         BiConsumer<TransactionRecord, Logger> resultSizeFormatter =
@@ -1649,7 +1649,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 "contracts.throttle.throttleByGas"));
     }
 
-    HapiApiSpec smartContractFailFirst() {
+    HapiSpec smartContractFailFirst() {
         final var civilian = "civilian";
         return defaultHapiSpec("smartContractFailFirst")
                 .given(
@@ -1776,7 +1776,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getTxnRecord(FAIL_INVALID_INITIAL_BALANCE));
     }
 
-    HapiApiSpec payTestSelfDestructCall() {
+    HapiSpec payTestSelfDestructCall() {
         final var contract = "PayTestSelfDestruct";
 
         return defaultHapiSpec("payTestSelfDestructCall")
@@ -1858,7 +1858,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(2_000L));
     }
 
-    private HapiApiSpec contractTransferToSigReqAccountWithKeySucceeds() {
+    private HapiSpec contractTransferToSigReqAccountWithKeySucceeds() {
         return defaultHapiSpec("ContractTransferToSigReqAccountWithKeySucceeds")
                 .given(
                         cryptoCreate(CONTRACT_CALLER).balance(1_000_000_000_000L),
@@ -1911,7 +1911,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec contractTransferToSigReqAccountWithoutKeyFails() {
+    private HapiSpec contractTransferToSigReqAccountWithoutKeyFails() {
         return defaultHapiSpec("ContractTransferToSigReqAccountWithoutKeyFails")
                 .given(
                         cryptoCreate(RECEIVABLE_SIG_REQ_ACCOUNT)
@@ -1940,7 +1940,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
+    private HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
                 .given(
                         UtilVerbs.overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "5"),
@@ -1972,7 +1972,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    private HapiApiSpec minChargeIsTXGasUsedByContractCall() {
+    private HapiSpec minChargeIsTXGasUsedByContractCall() {
         return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
                 .given(
                         UtilVerbs.overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
@@ -2004,7 +2004,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    private HapiApiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
+    private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
         return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
@@ -2022,7 +2022,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
     }
 
-    private HapiApiSpec hscsEvm006ContractHBarTransferToAccount() {
+    private HapiSpec hscsEvm006ContractHBarTransferToAccount() {
 
         return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
                 .given(
@@ -2053,7 +2053,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 .then(getAccountBalance(RECEIVER).hasTinyBars(10_000L + 10));
     }
 
-    private HapiApiSpec hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
+    private HapiSpec hscsEvm005TransfersWithSubLevelCallsBetweenContracts() {
         final var topLevelContract = "TopLevelTransferring";
         final var subLevelContract = "SubLevelTransferring";
         final var INITIAL_CONTRACT_BALANCE = 100;
@@ -2129,7 +2129,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 .hasTinyBars(20L + INITIAL_CONTRACT_BALANCE));
     }
 
-    private HapiApiSpec hscsEvm005TransferOfHBarsWorksBetweenContracts() {
+    private HapiSpec hscsEvm005TransferOfHBarsWorksBetweenContracts() {
         final var to = "To";
 
         return defaultHapiSpec("HSCS_EVM_005_TransferOfHBarsWorksBetweenContracts")
@@ -2165,7 +2165,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountBalance(TRANSFERRING_CONTRACT + to).hasTinyBars(10_000 + 10L));
     }
 
-    private HapiApiSpec hscsEvm010ReceiverMustSignContractTx() {
+    private HapiSpec hscsEvm010ReceiverMustSignContractTx() {
         final var ACC = "acc";
         final var RECEIVER_KEY = "receiverKey";
         return defaultHapiSpec("HSCS_EVM_010_ReceiverMustSignContractTx")
@@ -2212,7 +2212,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec hscsEvm010MultiSignatureAccounts() {
+    private HapiSpec hscsEvm010MultiSignatureAccounts() {
         final var ACC = "acc";
         final var PAYER_KEY = "pkey";
         final var OTHER_KEY = "okey";
@@ -2272,7 +2272,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec sendHbarsToAddressesMultipleTimes() {
+    private HapiSpec sendHbarsToAddressesMultipleTimes() {
         return defaultHapiSpec("sendHbarsToAddressesMultipleTimes")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2305,7 +2305,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 127L))));
     }
 
-    private HapiApiSpec sendHbarsToDifferentAddresses() {
+    private HapiSpec sendHbarsToDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToDifferentAddresses")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2355,7 +2355,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 35L))));
     }
 
-    private HapiApiSpec sendHbarsFromDifferentAddressessToAddress() {
+    private HapiSpec sendHbarsFromDifferentAddressessToAddress() {
         return defaultHapiSpec("sendHbarsFromDifferentAddressessToAddress")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2412,7 +2412,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 20L))));
     }
 
-    private HapiApiSpec sendHbarsToOuterContractFromDifferentAddresses() {
+    private HapiSpec sendHbarsToOuterContractFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToOuterContractFromDifferentAddresses")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2463,7 +2463,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 50L))));
     }
 
-    private HapiApiSpec sendHbarsToCallerFromDifferentAddresses() {
+    private HapiSpec sendHbarsToCallerFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToCallerFromDifferentAddresses")
                 .given(
                         withOpContext(
@@ -2582,7 +2582,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L))));
     }
 
-    private HapiApiSpec sendHbarsFromAndToDifferentAddressess() {
+    private HapiSpec sendHbarsFromAndToDifferentAddressess() {
         return defaultHapiSpec("sendHbarsFromAndToDifferentAddressess")
                 .given(
                         cryptoCreate(ACCOUNT).balance(200 * ONE_HUNDRED_HBARS),
@@ -2656,7 +2656,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000 - 60L))));
     }
 
-    private HapiApiSpec transferNegativeAmountOfHbars() {
+    private HapiSpec transferNegativeAmountOfHbars() {
         return defaultHapiSpec("transferNegativeAmountOfHbarsFails")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2698,7 +2698,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L))));
     }
 
-    private HapiApiSpec transferToCaller() {
+    private HapiSpec transferToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec(TRANSFER_TO_CALLER)
                 .given(
@@ -2764,7 +2764,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 10L))));
     }
 
-    private HapiApiSpec transferZeroHbarsToCaller() {
+    private HapiSpec transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec("transferZeroHbarsToCaller")
                 .given(
@@ -2831,7 +2831,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec transferZeroHbars() {
+    private HapiSpec transferZeroHbars() {
         return defaultHapiSpec("transferZeroHbars")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2876,7 +2876,7 @@ public class ContractCallSuite extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(10_000L));
     }
 
-    private HapiApiSpec lpFarmSimulation() {
+    private HapiSpec lpFarmSimulation() {
         final var adminKey = "adminKey";
         final var gasToOffer = 4_000_000;
         final var farmInitcodeLoc = "src/main/resource/contract/bytecodes/farmInitcode.bin";
@@ -3039,7 +3039,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .gas(gasToOffer)));
     }
 
-    private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+    private String getNestedContractAddress(final String contract, final HapiSpec spec) {
         return HapiPropertySource.asHexedSolidityAddress(spec.registry().getContractId(contract));
     }
 

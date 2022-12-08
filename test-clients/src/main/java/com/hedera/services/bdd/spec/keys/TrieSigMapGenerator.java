@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -78,7 +78,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
 
     @Override
     public SignatureMap forPrimitiveSigs(
-            final HapiApiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
+            final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
         List<byte[]> keys = keySigs.stream().map(Map.Entry::getKey).collect(toList());
         ByteTrie trie = new ByteTrie(keys);
 
@@ -112,7 +112,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
                                 toList(), l -> SignatureMap.newBuilder().addAllSigPair(l).build()));
     }
 
-    private Set<ByteString> fullPrefixSetFor(final HapiApiSpec spec) {
+    private Set<ByteString> fullPrefixSetFor(final HapiSpec spec) {
         final var registry = spec.registry();
         final var fullPrefixSet = new HashSet<ByteString>();
         for (final var key : fullPrefixKeys) {

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -41,16 +41,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SubmitMessageSuite extends HapiApiSuite {
+public class SubmitMessageSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SubmitMessageSuite.class);
 
     public static void main(String... args) {
@@ -63,7 +63,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 topicIdIsValidated(),
                 messageIsValidated(),
@@ -76,7 +76,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 feeAsExpected());
     }
 
-    private HapiApiSpec topicIdIsValidated() {
+    private HapiSpec topicIdIsValidated() {
         return defaultHapiSpec("topicIdIsValidated")
                 .given(cryptoCreate("nonTopicId"))
                 .when()
@@ -95,7 +95,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_ID));
     }
 
-    private HapiApiSpec messageIsValidated() {
+    private HapiSpec messageIsValidated() {
         return defaultHapiSpec("messageIsValidated")
                 .given(createTopic("testTopic"))
                 .when()
@@ -110,7 +110,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_TOPIC_MESSAGE));
     }
 
-    private HapiApiSpec messageSubmissionSimple() {
+    private HapiSpec messageSubmissionSimple() {
         return defaultHapiSpec("messageSubmissionSimple")
                 .given(
                         newKeyNamed("submitKey"),
@@ -126,7 +126,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    private HapiApiSpec messageSubmissionIncreasesSeqNo() {
+    private HapiSpec messageSubmissionIncreasesSeqNo() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         return defaultHapiSpec("messageSubmissionIncreasesSeqNo")
@@ -139,7 +139,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 .then(getTopicInfo("testTopic").hasSeqNo(1));
     }
 
-    private HapiApiSpec messageSubmissionWithSubmitKey() {
+    private HapiSpec messageSubmissionWithSubmitKey() {
         KeyShape submitKeyShape = threshOf(2, SIMPLE, SIMPLE, listOf(2));
 
         SigControl validSig = submitKeyShape.signedWith(sigs(ON, OFF, sigs(ON, ON)));
@@ -161,7 +161,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    private HapiApiSpec messageSubmissionMultiple() {
+    private HapiSpec messageSubmissionMultiple() {
         final int numMessages = 10;
 
         return defaultHapiSpec("messageSubmissionMultiple")
@@ -177,7 +177,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 .then(sleepFor(1000), getTopicInfo("testTopic").hasSeqNo(numMessages));
     }
 
-    private HapiApiSpec messageSubmissionOverSize() {
+    private HapiSpec messageSubmissionOverSize() {
         final byte[] messageBytes = new byte[8192]; // 8k
         Arrays.fill(messageBytes, (byte) 0b1);
 
@@ -194,7 +194,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                                 .hasPrecheckFrom(TRANSACTION_OVERSIZE, BUSY));
     }
 
-    private HapiApiSpec feeAsExpected() {
+    private HapiSpec feeAsExpected() {
         final byte[] messageBytes = new byte[100]; // 4k
         Arrays.fill(messageBytes, (byte) 0b1);
         return defaultHapiSpec("feeAsExpected")
@@ -211,7 +211,7 @@ public class SubmitMessageSuite extends HapiApiSuite {
                 .then(sleepFor(1000), validateChargedUsd("submitMessage", 0.0001));
     }
 
-    private HapiApiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
+    private HapiSpec messageSubmissionCorrectlyUpdatesRunningHash() {
         String topic = "testTopic";
         String message1 = "Hello world!";
         String message2 = "Hello world again!";

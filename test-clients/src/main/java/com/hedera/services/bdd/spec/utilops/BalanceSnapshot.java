@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.spec.utilops;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import java.util.Optional;
@@ -29,7 +29,7 @@ public class BalanceSnapshot extends UtilOp {
 
     private String account;
     private String snapshot;
-    private Optional<Function<HapiApiSpec, String>> snapshotFn = Optional.empty();
+    private Optional<Function<HapiSpec, String>> snapshotFn = Optional.empty();
     private Optional<String> payer = Optional.empty();
     private boolean aliased = false;
 
@@ -38,7 +38,7 @@ public class BalanceSnapshot extends UtilOp {
         this.snapshot = snapshot;
     }
 
-    public BalanceSnapshot(String account, Function<HapiApiSpec, String> fn) {
+    public BalanceSnapshot(String account, Function<HapiSpec, String> fn) {
         this.account = account;
         this.snapshotFn = Optional.of(fn);
     }
@@ -54,7 +54,7 @@ public class BalanceSnapshot extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         snapshot = snapshotFn.map(fn -> fn.apply(spec)).orElse(snapshot);
 
         HapiGetAccountBalance delegate =

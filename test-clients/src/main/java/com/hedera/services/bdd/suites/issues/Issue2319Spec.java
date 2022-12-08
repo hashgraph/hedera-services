@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -27,16 +27,16 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTHORIZATION_FAILED;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue2319Spec extends HapiApiSuite {
+public class Issue2319Spec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue2319Spec.class);
 
     public static void main(String... args) {
@@ -44,9 +44,9 @@ public class Issue2319Spec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     sysFileSigReqsWaivedForMasterAndTreasury(),
                     sysAccountSigReqsWaivedForMasterAndTreasury(),
                     propsPermissionsSigReqsWaivedForAddressBookAdmin(),
@@ -54,7 +54,7 @@ public class Issue2319Spec extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
+    private HapiSpec propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         var pemLoc = "<PEM>";
 
         return defaultHapiSpec("PropsPermissionsSigReqsWaivedForAddressBookAdmin")
@@ -82,7 +82,7 @@ public class Issue2319Spec extends HapiApiSuite {
                         fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
-    private HapiApiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
+    private HapiSpec sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
                         cryptoCreate("civilian"),
@@ -101,7 +101,7 @@ public class Issue2319Spec extends HapiApiSuite {
                                 .signedBy(GENESIS));
     }
 
-    private HapiApiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
+    private HapiSpec sysAccountSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
 
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
@@ -129,7 +129,7 @@ public class Issue2319Spec extends HapiApiSuite {
                                 .receiverSigRequired(false));
     }
 
-    private HapiApiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
+    private HapiSpec sysFileSigReqsWaivedForMasterAndTreasury() {
         var pemLoc = "<PEM>";
         var validRates = new AtomicReference<ByteString>();
 

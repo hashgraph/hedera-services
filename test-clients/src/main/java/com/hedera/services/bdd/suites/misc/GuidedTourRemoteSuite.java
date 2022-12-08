@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customFailingHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customFailingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.*;
@@ -30,12 +30,12 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +44,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 @SuppressWarnings("java:S1144")
-public class GuidedTourRemoteSuite extends HapiApiSuite {
+public class GuidedTourRemoteSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(GuidedTourRemoteSuite.class);
     public static final String TODO = "<TODO>";
     public static final String HOST = "<DESIRED-HOST>";
@@ -57,11 +57,11 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(guidedTour());
     }
 
-    private List<HapiApiSpec> guidedTour() {
+    private List<HapiSpec> guidedTour() {
         return Arrays.asList(
                 //				transferChangesBalance()
                 //				updateWithInvalidKeyFailsInPrecheck()
@@ -80,7 +80,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
      *
      * @return the example spec
      */
-    private HapiApiSpec rekeyAccountWith2Of3Choice() {
+    private HapiSpec rekeyAccountWith2Of3Choice() {
         // The account to re-key
         final var target = "0.0.1234";
         // The PEM files with the involved keys
@@ -124,7 +124,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
                                 .signedBy(DEFAULT_PAYER, extantKey));
     }
 
-    private HapiApiSpec balanceLookupContractWorks() {
+    private HapiSpec balanceLookupContractWorks() {
         final long ACTUAL_BALANCE = 1_234L;
         final var contract = "BalanceLookup";
 
@@ -158,7 +158,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
                                                                 }))));
     }
 
-    private HapiApiSpec topLevelHederaKeyMustBeActive() {
+    private HapiSpec topLevelHederaKeyMustBeActive() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl updateSigControl = waclShape.signedWith(sigs(ON, sigs(ON, OFF, OFF)));
 
@@ -180,7 +180,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
       NOTE: KeyLists lower in the key hierarchy still require all child keys
       to have active signatures.
     */
-    private HapiApiSpec topLevelListBehavesAsRevocationService() {
+    private HapiSpec topLevelListBehavesAsRevocationService() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl deleteSigControl = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
 
@@ -193,7 +193,7 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
                                 .sigControl(ControlForKey.forKey(TARGET, deleteSigControl)));
     }
 
-    private HapiApiSpec updateWithInvalidatedKeyFailsInHandle() {
+    private HapiSpec updateWithInvalidatedKeyFailsInHandle() {
         return customHapiSpec("UpdateWithInvalidatedKeyFailsIHandle")
                 .withProperties(Map.of("host", HOST))
                 .given(
@@ -209,10 +209,10 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec updateWithInvalidKeyFailsInPrecheck() {
+    private HapiSpec updateWithInvalidKeyFailsInPrecheck() {
         KeyShape keyShape = listOf(3);
 
-        return HapiApiSpec.customHapiSpec("UpdateWithInvalidKeyFailsInPrecheck")
+        return HapiSpec.customHapiSpec("UpdateWithInvalidKeyFailsInPrecheck")
                 .withProperties(Map.of("host", HOST))
                 .given(newKeyNamed("invalidPayerKey").shape(keyShape))
                 .when()
@@ -223,10 +223,10 @@ public class GuidedTourRemoteSuite extends HapiApiSuite {
                                 .hasPrecheck(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec transferChangesBalance() {
+    private HapiSpec transferChangesBalance() {
         final long AMOUNT = 1_000L;
 
-        return HapiApiSpec.customHapiSpec("TransferChangesBalance")
+        return HapiSpec.customHapiSpec("TransferChangesBalance")
                 .withProperties(Map.of("host", HOST))
                 .given(cryptoCreate(TARGET_ACCOUNT).balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, TARGET_ACCOUNT, AMOUNT)))

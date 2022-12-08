@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -39,7 +39,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
@@ -76,7 +76,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runTokenTransferBasicLoadTest());
     }
 
@@ -84,7 +84,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
         return "TestToken" + id;
     }
 
-    private Function<HapiApiSpec, OpProvider> tokenCreatesFactory(PerfTestLoadSettings settings) {
+    private Function<HapiSpec, OpProvider> tokenCreatesFactory(PerfTestLoadSettings settings) {
         int numTotalTokens = settings.getTotalTokens();
         int totalClients = settings.getTotalClients();
         int numActiveTokens = (totalClients >= 1) ? numTotalTokens / totalClients : numTotalTokens;
@@ -131,7 +131,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> activeTokenAssociatesFactory(
+    private Function<HapiSpec, OpProvider> activeTokenAssociatesFactory(
             PerfTestLoadSettings settings) {
         int numTotalTokens = settings.getTotalTokens();
         int numActiveTokenAccounts = settings.getTotalTestTokenAccounts();
@@ -201,7 +201,7 @@ public class TokenTransferBasicLoadTest extends LoadTest {
                 };
     }
 
-    private HapiApiSpec runTokenTransferBasicLoadTest() {
+    private HapiSpec runTokenTransferBasicLoadTest() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         Supplier<HapiSpecOperation[]> tokenTransferBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};

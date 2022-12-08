@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.ethereum;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -57,9 +57,9 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HelloWorldEthereumSuite extends HapiApiSuite {
+public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
     private static final long depositAmount = 20_000L;
 
@@ -84,13 +84,13 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(setChainId(), ethereumCalls(), ethereumCreates());
     }
 
-    List<HapiApiSpec> ethereumCalls() {
+    List<HapiSpec> ethereumCalls() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     relayerFeeAsExpectedIfSenderCoversGas(),
                     depositSuccess(),
                     badRelayClient(),
@@ -98,14 +98,14 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                 });
     }
 
-    List<HapiApiSpec> ethereumCreates() {
+    List<HapiSpec> ethereumCreates() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate()
                 });
     }
 
-    List<HapiApiSpec> setChainId() {
+    List<HapiSpec> setChainId() {
         return List.of(
                 defaultHapiSpec("SetChainId")
                         .given()
@@ -113,7 +113,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         .then(overriding(CHAIN_ID_PROP, "298")));
     }
 
-    HapiApiSpec badRelayClient() {
+    HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
         final var exploitContract = "BadRelayClient";
@@ -214,7 +214,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
-    HapiApiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
         return defaultHapiSpec("RelayerFeeAsExpected")
@@ -254,7 +254,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    HapiApiSpec depositSuccess() {
+    HapiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
                         UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
@@ -345,7 +345,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
     }
 
-    HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
+    HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
                 .given(
@@ -402,7 +402,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    HapiApiSpec smallContractCreate() {
+    HapiSpec smallContractCreate() {
         return defaultHapiSpec("SmallContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -460,7 +460,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiApiSpec bigContractCreate() {
+    private HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("BigContractCreate")
                 .given(
@@ -520,7 +520,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiApiSpec contractCreateWithConstructorArgs() {
+    private HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("ContractCreateWithConstructorArgs")
                 .given(

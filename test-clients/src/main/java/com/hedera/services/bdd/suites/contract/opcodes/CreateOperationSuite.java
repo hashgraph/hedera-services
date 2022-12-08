@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -38,11 +38,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Longs;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractGetInfoResponse;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -54,7 +54,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
-public class CreateOperationSuite extends HapiApiSuite {
+public class CreateOperationSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CreateOperationSuite.class);
     private static final String CONTRACT = "FactoryContract";
@@ -64,9 +64,9 @@ public class CreateOperationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     simpleFactoryWorks(),
                     stackedFactoryWorks(),
                     resetOnFactoryFailureWorks(),
@@ -80,7 +80,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec factoryAndSelfDestructInConstructorContract() {
+    private HapiSpec factoryAndSelfDestructInConstructorContract() {
         final var contract = "FactorySelfDestructConstructor";
 
         return defaultHapiSpec("FactoryAndSelfDestructInConstructorContract")
@@ -89,7 +89,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                 .then(getContractBytecode(contract).hasCostAnswerPrecheck(CONTRACT_DELETED));
     }
 
-    private HapiApiSpec factoryQuickSelfDestructContract() {
+    private HapiSpec factoryQuickSelfDestructContract() {
         final var contract = "FactoryQuickSelfDestruct";
 
         return defaultHapiSpec("FactoryQuickSelfDestructContract")
@@ -120,7 +120,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                                                                                                         "ChildDeleted()"))))))));
     }
 
-    private HapiApiSpec inheritanceOfNestedCreatedContracts() {
+    private HapiSpec inheritanceOfNestedCreatedContracts() {
         final var contract = "NestedChildren";
         return defaultHapiSpec("InheritanceOfNestedCreatedContracts")
                 .given(
@@ -137,7 +137,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 "ctorChildCreateResult", 3, "parentInfo"));
     }
 
-    HapiApiSpec simpleFactoryWorks() {
+    HapiSpec simpleFactoryWorks() {
         return defaultHapiSpec("ContractFactoryWorksHappyPath")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -170,7 +170,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec stackedFactoryWorks() {
+    HapiSpec stackedFactoryWorks() {
         return defaultHapiSpec("StackedFactoryWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -207,7 +207,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec resetOnFactoryFailureWorks() {
+    HapiSpec resetOnFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -253,7 +253,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec resetOnFactoryFailureAfterDeploymentWorks() {
+    HapiSpec resetOnFactoryFailureAfterDeploymentWorks() {
         return defaultHapiSpec("ResetOnFactoryFailureAfterDeploymentWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -299,7 +299,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec resetOnStackedFactoryFailureWorks() {
+    HapiSpec resetOnStackedFactoryFailureWorks() {
         return defaultHapiSpec("ResetOnStackedFactoryFailureWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when(
@@ -346,7 +346,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec contractCreateWithNewOpInConstructor() {
+    private HapiSpec contractCreateWithNewOpInConstructor() {
         final var contract = "AbandoningParent";
         return defaultHapiSpec("ContractCreateWithNewOpInConstructorAbandoningParent")
                 .given(
@@ -364,7 +364,7 @@ public class CreateOperationSuite extends HapiApiSuite {
                                 "AbandoningParentCreateResult", 6, "AbandoningParentParentInfo"));
     }
 
-    HapiApiSpec childContractStorageWorks() {
+    HapiSpec childContractStorageWorks() {
         final var contract = "CreateTrivial";
         final var CREATED_TRIVIAL_CONTRACT_RETURNS = 7;
 

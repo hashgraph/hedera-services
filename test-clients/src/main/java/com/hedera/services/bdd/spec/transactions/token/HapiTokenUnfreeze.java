@@ -23,7 +23,7 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -58,7 +58,7 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
@@ -79,7 +79,7 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final var aId = TxnUtils.asId(account, spec);
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenUnfreezeAccountTransactionBody opBody =
@@ -96,19 +96,19 @@ public class HapiTokenUnfreeze extends HapiTxnOp<HapiTokenUnfreeze> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getFreezeKey(token));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::unfreezeTokenAccount;
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {}
+    protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {

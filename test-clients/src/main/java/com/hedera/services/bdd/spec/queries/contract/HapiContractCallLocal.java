@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
@@ -58,7 +58,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private Optional<String> details = Optional.empty();
     private Optional<String> saveResultToEntry = Optional.empty();
     private Optional<ContractFnResultAsserts> expectations = Optional.empty();
-    private Optional<Function<HapiApiSpec, Object[]>> paramsFn = Optional.empty();
+    private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
     private Optional<Consumer<Object[]>> typedResultsObs = Optional.empty();
 
     @Override
@@ -80,7 +80,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         this.params = params;
     }
 
-    public HapiContractCallLocal(String abi, String contract, Function<HapiApiSpec, Object[]> fn) {
+    public HapiContractCallLocal(String abi, String contract, Function<HapiSpec, Object[]> fn) {
         this(abi, contract);
         paramsFn = Optional.of(fn);
     }
@@ -117,7 +117,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expectations.isPresent()) {
             ContractFunctionResult actual = response.getContractCallLocal().getFunctionResult();
             if (!loggingOff) {
@@ -136,7 +136,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractCallLocal(spec, payment, false);
         response =
                 spec.clients()
@@ -165,7 +165,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractCallLocal(spec, payment, true);
         Response response =
                 spec.clients()
@@ -174,7 +174,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         return costFrom(response);
     }
 
-    private Query getContractCallLocal(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractCallLocal(HapiSpec spec, Transaction payment, boolean costOnly) {
         if (details.isPresent()) {
             ActionableContractCallLocal actionable =
                     spec.registry().getActionableLocalCall(details.get());
@@ -207,7 +207,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return spec.fees()
                 .forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIDOnly());
     }

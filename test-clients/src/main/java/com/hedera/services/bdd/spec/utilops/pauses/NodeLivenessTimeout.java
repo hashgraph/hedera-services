@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +54,7 @@ public class NodeLivenessTimeout extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         log.info("Requiring node {} to be available in {} {}", node, duration, unit);
 
         int numSleeps = 0;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
@@ -30,21 +30,22 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferLis
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
+public class ContractRecordsSanityCheckSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractRecordsSanityCheckSuite.class);
     private static final String BALANCE_LOOKUP = "BalanceLookup";
     public static final String PAYABLE_CONTRACT = "PayReceivable";
@@ -54,9 +55,9 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     contractCallWithSendRecordSanityChecks(),
                     //						circularTransfersRecordSanityChecks(),
                     contractCreateRecordSanityChecks(),
@@ -65,7 +66,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec contractDeleteRecordSanityChecks() {
+    private HapiSpec contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(
                         flattened(
@@ -93,7 +94,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec contractCreateRecordSanityChecks() {
+    private HapiSpec contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(
                         flattened(
@@ -114,7 +115,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec contractCallWithSendRecordSanityChecks() {
+    private HapiSpec contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(
                         flattened(
@@ -144,7 +145,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    private HapiApiSpec circularTransfersRecordSanityChecks() {
+    private HapiSpec circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int NUM_ALTRUISTS = 3;
         Function<String, Long> INIT_BALANCE_FN = ignore -> 1_000_000L;
@@ -244,7 +245,7 @@ public class ContractRecordsSanityCheckSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec contractUpdateRecordSanityChecks() {
+    private HapiSpec contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(
                         flattened(

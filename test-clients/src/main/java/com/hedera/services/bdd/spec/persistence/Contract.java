@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.spec.persistence.SpecKey.adminKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import java.util.Optional;
@@ -34,7 +34,7 @@ public class Contract {
     private String bytecodeFile = UNSPECIFIED_BYTECODE_FILE;
     private SpecKey adminKey = UNUSED_KEY;
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (bytecodeFile == UNSPECIFIED_BYTECODE_FILE) {
             throw new IllegalStateException(
                     String.format("Contract '%s' has no given bytecode file!", name));

@@ -15,22 +15,22 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoAccountCreationsBeforeReconnect extends HapiApiSuite {
+public class AutoAccountCreationsBeforeReconnect extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(AutoAccountCreationsBeforeReconnect.class);
 
@@ -42,7 +42,7 @@ public class AutoAccountCreationsBeforeReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(createAccountsUsingAlias());
     }
 
@@ -50,7 +50,7 @@ public class AutoAccountCreationsBeforeReconnect extends HapiApiSuite {
         new AutoAccountCreationsBeforeReconnect().runSuiteSync();
     }
 
-    private HapiApiSpec createAccountsUsingAlias() {
+    private HapiSpec createAccountsUsingAlias() {
         return defaultHapiSpec("createAccountsUsingAlias")
                 .given()
                 .when()

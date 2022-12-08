@@ -15,19 +15,19 @@
  */
 package com.hedera.services.bdd.suites.perf.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractCallLocalPerfSuite extends HapiApiSuite {
+public class ContractCallLocalPerfSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCallLocalPerfSuite.class);
 
     public static void main(String... args) {
@@ -35,7 +35,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(contractCallLocalPerf());
     }
 
@@ -44,7 +44,7 @@ public class ContractCallLocalPerfSuite extends HapiApiSuite {
         return false;
     }
 
-    HapiApiSpec contractCallLocalPerf() {
+    HapiSpec contractCallLocalPerf() {
         final int NUM_CALLS = 1_000;
         final var contract = "BalanceLookup";
 

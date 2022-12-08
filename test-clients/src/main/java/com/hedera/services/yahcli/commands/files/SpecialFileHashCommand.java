@@ -15,7 +15,7 @@
  */
 package com.hedera.services.yahcli.commands.files;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.PASSED;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.PASSED;
 import static com.hedera.services.yahcli.config.ConfigUtils.configFrom;
 
 import com.hedera.services.yahcli.suites.SpecialFileHashSuite;

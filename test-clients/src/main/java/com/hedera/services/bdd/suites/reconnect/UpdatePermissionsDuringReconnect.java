@@ -15,37 +15,38 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
+public class UpdatePermissionsDuringReconnect extends HapiSuite {
     private static final Logger log =
-            LogManager.getLogger(UpdateApiPermissionsDuringReconnect.class);
+            LogManager.getLogger(UpdatePermissionsDuringReconnect.class);
 
     public static void main(String... args) {
-        new UpdateApiPermissionsDuringReconnect().runSuiteSync();
+        new UpdatePermissionsDuringReconnect().runSuiteSync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(updateApiPermissionsDuringReconnect());
     }
 
-    private HapiApiSpec updateApiPermissionsDuringReconnect() {
+    private HapiSpec updateApiPermissionsDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         return defaultHapiSpec("updateApiPermissionsDuringReconnect")
                 .given(

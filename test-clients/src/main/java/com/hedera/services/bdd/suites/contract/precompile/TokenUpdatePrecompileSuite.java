@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -62,11 +62,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -78,7 +78,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenUpdatePrecompileSuite extends HapiApiSuite {
+public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenUpdatePrecompileSuite.class);
 
@@ -135,11 +135,11 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveCases(), negativeCases());
     }
 
-    List<HapiApiSpec> positiveCases() {
+    List<HapiSpec> positiveCases() {
         return List.of(
                 updateTokenWithKeysHappyPath(),
                 updateNftTreasuryWithAndWithoutAdminKey(),
@@ -147,7 +147,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 updateOnlyKeysForNonFungibleToken());
     }
 
-    List<HapiApiSpec> negativeCases() {
+    List<HapiSpec> negativeCases() {
         return List.of(
                 updateWithTooLongNameAndSymbol(),
                 updateTokenWithKeysNegative(),
@@ -156,7 +156,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 getTokenKeyForNonFungibleNegative());
     }
 
-    private HapiApiSpec updateTokenWithKeysHappyPath() {
+    private HapiSpec updateTokenWithKeysHappyPath() {
 
         return defaultHapiSpec("updateTokenWithKeysHappyPath")
                 .given(
@@ -299,7 +299,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 .hasPauseKey(TOKEN_UPDATE_AS_KEY)));
     }
 
-    public HapiApiSpec updateNftTreasuryWithAndWithoutAdminKey() {
+    public HapiSpec updateNftTreasuryWithAndWithoutAdminKey() {
         final var newTokenTreasury = "newTokenTreasury";
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
         final AtomicReference<TokenID> noAdminKeyToken = new AtomicReference<>();
@@ -379,7 +379,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                         getTokenNftInfo(VANILLA_TOKEN, 1).hasAccountID(newTokenTreasury).logged());
     }
 
-    public HapiApiSpec updateWithTooLongNameAndSymbol() {
+    public HapiSpec updateWithTooLongNameAndSymbol() {
         final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
         final var tooLongSymbolTxn = "tooLongSymbolTxn";
         return defaultHapiSpec("updateWithTooLongNameAndSymbol")
@@ -458,7 +458,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                 .status(TOKEN_SYMBOL_TOO_LONG)))));
     }
 
-    private HapiApiSpec updateTokenWithKeysNegative() {
+    private HapiSpec updateTokenWithKeysNegative() {
         final var updateTokenWithKeysFunc = "updateTokenWithKeys";
         final var NO_FEE_SCHEDULE_KEY_TXN = "NO_FEE_SCHEDULE_KEY_TXN";
         final var NO_PAUSE_KEY_TXN = "NO_PAUSE_KEY_TXN";
@@ -760,7 +760,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                 .status(TOKEN_HAS_NO_KYC_KEY)))));
     }
 
-    private HapiApiSpec updateTokenWithInvalidKeyValues() {
+    private HapiSpec updateTokenWithInvalidKeyValues() {
 
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
@@ -822,7 +822,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                 .then(sourcing(() -> emptyChildRecordsCheck(UPDATE_TXN, CONTRACT_REVERT_EXECUTED)));
     }
 
-    private HapiApiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
+    private HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
         return defaultHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
                 .given(
@@ -1109,7 +1109,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                                                                         TOKEN_UPDATE_AS_KEY))))))));
     }
 
-    public HapiApiSpec updateOnlyKeysForNonFungibleToken() {
+    public HapiSpec updateOnlyKeysForNonFungibleToken() {
         return defaultHapiSpec("updateOnlyKeysForNonFungibleToken")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -1190,7 +1190,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
     }
 
-    public HapiApiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdmin() {
+    public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdmin() {
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -1283,7 +1283,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                 .status(TOKEN_IS_IMMUTABLE)))));
     }
 
-    public HapiApiSpec getTokenKeyForNonFungibleNegative() {
+    public HapiSpec getTokenKeyForNonFungibleNegative() {
 
         return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(

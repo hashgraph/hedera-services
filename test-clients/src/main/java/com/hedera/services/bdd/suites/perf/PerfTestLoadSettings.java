@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_APPENDS_PER_BURST;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_DELAY;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAULT_UPGRADE_FILE_ID;

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -62,13 +62,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MISSING_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -88,7 +88,7 @@ import org.apache.logging.log4j.Logger;
 // since they use admin keys, which are held by the txn payer.
 // In the case of an eth txn, we revoke the payers keys and the txn would fail.
 // The only way an eth account to create a token is the admin key to be of a contractId type.
-public class CreatePrecompileSuite extends HapiApiSuite {
+public class CreatePrecompileSuite extends HapiSuite {
     public static final String ACCOUNT_2 = "account2";
     public static final String CONTRACT_ADMIN_KEY = "contractAdminKey";
     public static final String ACCOUNT_TO_ASSOCIATE = "account3";
@@ -128,13 +128,13 @@ public class CreatePrecompileSuite extends HapiApiSuite {
 
     // TODO: Fix contract name in TokenCreateContract.sol
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     fungibleTokenCreateHappyPath(),
                     fungibleTokenCreateWithFeesHappyPath(),
                     nonFungibleTokenCreateHappyPath(),
@@ -147,9 +147,9 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                 });
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     tokenCreateWithEmptyKeysReverts(),
                     tokenCreateWithKeyWithMultipleKeyValuesReverts(),
                     tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
@@ -165,7 +165,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-001
-    private HapiApiSpec fungibleTokenCreateHappyPath() {
+    private HapiSpec fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         return defaultHapiSpec("fungibleTokenCreateHappyPath")
@@ -311,7 +311,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-002
-    private HapiApiSpec fungibleTokenCreateWithFeesHappyPath() {
+    private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
         return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
@@ -423,7 +423,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                         resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
-    private HapiApiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
+    private HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
         final var createdNftTokenNum = new AtomicLong();
         return defaultHapiSpec("inheritsSenderAutoRenewAccountIfAnyForNftCreate")
                 .given(
@@ -508,7 +508,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
+    private HapiSpec inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
                 .given(
@@ -607,7 +607,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-003 & TEST-019
-    private HapiApiSpec nonFungibleTokenCreateHappyPath() {
+    private HapiSpec nonFungibleTokenCreateHappyPath() {
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("nonFungibleTokenCreateHappyPath")
                 .given(
@@ -742,7 +742,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-004
-    private HapiApiSpec nonFungibleTokenCreateWithFeesHappyPath() {
+    private HapiSpec nonFungibleTokenCreateWithFeesHappyPath() {
         final var createTokenNum = new AtomicLong();
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
@@ -865,7 +865,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-005
-    private HapiApiSpec fungibleTokenCreateThenQueryAndTransfer() {
+    private HapiSpec fungibleTokenCreateThenQueryAndTransfer() {
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("fungibleTokenCreateThenQueryAndTransfer")
                 .given(
@@ -976,7 +976,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-006
-    private HapiApiSpec nonFungibleTokenCreateThenQuery() {
+    private HapiSpec nonFungibleTokenCreateThenQuery() {
         final var createdTokenNum = new AtomicLong();
         return defaultHapiSpec("nonFungibleTokenCreateThenQuery")
                 .given(
@@ -1070,7 +1070,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-007 & TEST-016
-    private HapiApiSpec tokenCreateWithEmptyKeysReverts() {
+    private HapiSpec tokenCreateWithEmptyKeysReverts() {
         return defaultHapiSpec("tokenCreateWithEmptyKeysReverts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -1143,7 +1143,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-008
-    private HapiApiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
+    private HapiSpec tokenCreateWithKeyWithMultipleKeyValuesReverts() {
         return defaultHapiSpec("tokenCreateWithKeyWithMultipleKeyValuesReverts")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -1178,7 +1178,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-009
-    private HapiApiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
+    private HapiSpec tokenCreateWithFixedFeeWithMultiplePaymentsReverts() {
         return defaultHapiSpec("tokenCreateWithFixedFeeWithMultiplePaymentsReverts")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -1223,7 +1223,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-010 & TEST-017
-    private HapiApiSpec createTokenWithEmptyTokenStruct() {
+    private HapiSpec createTokenWithEmptyTokenStruct() {
         return defaultHapiSpec("createTokenWithEmptyTokenStruct")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
@@ -1299,7 +1299,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-011
-    private HapiApiSpec createTokenWithInvalidExpiry() {
+    private HapiSpec createTokenWithInvalidExpiry() {
         return defaultHapiSpec("createTokenWithInvalidExpiry")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -1341,7 +1341,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-012
-    private HapiApiSpec createTokenWithInvalidRoyaltyFee() {
+    private HapiSpec createTokenWithInvalidRoyaltyFee() {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
@@ -1424,7 +1424,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-013
-    private HapiApiSpec createTokenWithInvalidTreasury() {
+    private HapiSpec createTokenWithInvalidTreasury() {
         return defaultHapiSpec("createTokenWithInvalidTreasury")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -1479,7 +1479,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-014
-    private HapiApiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
+    private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
         return defaultHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
                 .given(
@@ -1546,7 +1546,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-015
-    private HapiApiSpec createTokenWithInvalidFeeCollector() {
+    private HapiSpec createTokenWithInvalidFeeCollector() {
         return defaultHapiSpec("createTokenWithInvalidFeeCollector")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
@@ -1612,7 +1612,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-018
-    private HapiApiSpec createTokenWithInsufficientValueSent() {
+    private HapiSpec createTokenWithInsufficientValueSent() {
         return defaultHapiSpec("createTokenWithInsufficientValueSent")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -1702,7 +1702,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     }
 
     // TEST-020
-    private HapiApiSpec delegateCallTokenCreateFails() {
+    private HapiSpec delegateCallTokenCreateFails() {
         return defaultHapiSpec("delegateCallTokenCreateFails")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
@@ -1747,7 +1747,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .error(INSUFFICIENT_TX_FEE.name()))));
     }
 
-    private HapiApiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
+    private HapiSpec createTokenWithDefaultExpiryAndEmptyKeys() {
         final var tokenCreateContractAsKeyDelegate = "createTokenWithDefaultExpiryAndEmptyKeys";
         final var createTokenNum = new AtomicLong();
         return defaultHapiSpec(tokenCreateContractAsKeyDelegate)

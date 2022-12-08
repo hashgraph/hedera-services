@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -88,7 +88,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<String> expectedAutoRenewAccount = Optional.empty();
     private OptionalLong expectedAutoRenewPeriod = OptionalLong.empty();
     private Optional<Boolean> expectedExpiry = Optional.empty();
-    private List<BiConsumer<HapiApiSpec, List<CustomFee>>> expectedFees = new ArrayList<>();
+    private List<BiConsumer<HapiSpec, List<CustomFee>>> expectedFees = new ArrayList<>();
 
     @Override
     public HederaFunctionality type() {
@@ -225,7 +225,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
-    public HapiGetTokenInfo hasCustom(BiConsumer<HapiApiSpec, List<CustomFee>> feeAssertion) {
+    public HapiGetTokenInfo hasCustom(BiConsumer<HapiSpec, List<CustomFee>> feeAssertion) {
         expectedFees.add(feeAssertion);
         return this;
     }
@@ -237,7 +237,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) {
+    protected void assertExpectationsGiven(HapiSpec spec) {
         var actualInfo = response.getTokenGetInfo().getTokenInfo();
 
         expectedTokenType.ifPresent(
@@ -384,7 +384,7 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         Query query = getTokenInfoQuery(spec, payment, false);
         response = spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
         if (verboseLoggingOn) {
@@ -393,14 +393,14 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getTokenInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenInfo(query);
         return costFrom(response);
     }
 
-    private Query getTokenInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getTokenInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         var id = TxnUtils.asTokenId(token, spec);
         TokenGetInfoQuery getTokenQuery =
                 TokenGetInfoQuery.newBuilder()

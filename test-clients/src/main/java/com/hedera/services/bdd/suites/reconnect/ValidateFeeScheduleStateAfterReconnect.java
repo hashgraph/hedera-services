@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -25,8 +25,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoGetInfo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
+public class ValidateFeeScheduleStateAfterReconnect extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(ValidateFeeScheduleStateAfterReconnect.class);
 
@@ -43,11 +43,11 @@ public class ValidateFeeScheduleStateAfterReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(validateFeeScheduleStateAfterReconnect());
     }
 
-    private HapiApiSpec validateFeeScheduleStateAfterReconnect() {
+    private HapiSpec validateFeeScheduleStateAfterReconnect() {
         return customHapiSpec("validateFeeScheduleStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(

@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec;
 public interface HapiSpecOpFinisher extends Comparable<HapiSpecOpFinisher> {
     long submitTime();
 
-    void finishFor(HapiApiSpec spec) throws Throwable;
+    void finishFor(HapiSpec spec) throws Throwable;
 
     @Override
     default int compareTo(HapiSpecOpFinisher o) {

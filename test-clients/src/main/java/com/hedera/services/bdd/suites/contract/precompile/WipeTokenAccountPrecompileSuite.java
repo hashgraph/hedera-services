@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
@@ -50,9 +50,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
+public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(WipeTokenAccountPrecompileSuite.class);
     private static final String WIPE_CONTRACT = "WipeTokenAccount";
     private static final String ADMIN_ACCOUNT = "admin";
@@ -82,11 +82,11 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios()));
     }
 
-    private HapiApiSpec wipeFungibleTokenScenarios() {
+    private HapiSpec wipeFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<AccountID> secondAccountID = new AtomicReference<>();
@@ -234,7 +234,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
 
-    private HapiApiSpec wipeNonFungibleTokenScenarios() {
+    private HapiSpec wipeNonFungibleTokenScenarios() {
         final AtomicReference<AccountID> adminAccountID = new AtomicReference<>();
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();

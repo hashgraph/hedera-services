@@ -15,7 +15,7 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -28,8 +28,8 @@ import static com.hedera.services.yahcli.suites.Utils.isSpecialFile;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.File;
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SysFileUploadSuite extends HapiApiSuite {
+public class SysFileUploadSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SysFileUploadSuite.class);
 
     private static final int NOT_APPLICABLE = -1;
@@ -90,12 +90,12 @@ public class SysFileUploadSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         uploadData = appropriateContents(sysFileId);
         return isDryRun ? Collections.emptyList() : List.of(uploadSysFiles());
     }
 
-    private HapiApiSpec uploadSysFiles() {
+    private HapiSpec uploadSysFiles() {
         final var name = String.format("UploadSystemFile-%s", sysFileId);
         final var fileId = String.format("0.0.%d", sysFileId);
         final var isSpecial = isSpecialFile(sysFileId);

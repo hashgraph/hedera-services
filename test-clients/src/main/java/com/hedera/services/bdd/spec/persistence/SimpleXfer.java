@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.spec.persistence;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.FUNDING;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 public class SimpleXfer {
     static final long DEFAULT_TINYBARS = 1L;

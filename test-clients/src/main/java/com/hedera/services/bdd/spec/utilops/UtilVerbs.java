@@ -38,13 +38,13 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FEE_SCHEDULE;
-import static com.hedera.services.bdd.suites.HapiApiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -107,7 +107,7 @@ import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
 import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
 import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
@@ -296,7 +296,7 @@ public class UtilVerbs {
     }
 
     public static BalanceSnapshot balanceSnapshot(
-            Function<HapiApiSpec, String> nameFn, String forAccount) {
+            Function<HapiSpec, String> nameFn, String forAccount) {
         return new BalanceSnapshot(forAccount, nameFn);
     }
 
@@ -344,11 +344,11 @@ public class UtilVerbs {
         return new LogMessage(msg);
     }
 
-    public static LogMessage logIt(Function<HapiApiSpec, String> messageFn) {
+    public static LogMessage logIt(Function<HapiSpec, String> messageFn) {
         return new LogMessage(messageFn);
     }
 
-    public static ProviderRun runWithProvider(Function<HapiApiSpec, OpProvider> provider) {
+    public static ProviderRun runWithProvider(Function<HapiSpec, OpProvider> provider) {
         return new ProviderRun(provider);
     }
 
@@ -446,7 +446,7 @@ public class UtilVerbs {
                         HapiCryptoTransfer subOp =
                                 cryptoTransfer(
                                         tinyBarsFromTo(
-                                                GENESIS, account, HapiApiSuite.ADEQUATE_FUNDS));
+                                                GENESIS, account, HapiSuite.ADEQUATE_FUNDS));
                         CustomSpecAssert.allRunFor(spec, subOp);
                     }
                 });
@@ -857,7 +857,7 @@ public class UtilVerbs {
             final int numBursts,
             final String fileName,
             final String payer,
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final UploadProgress uploadProgress,
             final int appendsSkipped,
             final Logger opLog)
@@ -1121,7 +1121,7 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation[] takeBalanceSnapshots(String... entities) {
-        return HapiApiSuite.flattened(
+        return HapiSuite.flattened(
                 cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L))
                         .noLogging(),
                 Stream.of(entities)
@@ -1387,7 +1387,7 @@ public class UtilVerbs {
         return convertedOps;
     }
 
-    public static byte[] getPrivateKeyFromSpec(final HapiApiSpec spec, final String privateKeyRef) {
+    public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
         var key = spec.registry().getKey(privateKeyRef);
         final var privateKey =
                 spec.keys()

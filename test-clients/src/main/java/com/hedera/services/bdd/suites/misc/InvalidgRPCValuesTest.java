@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -27,13 +27,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class InvalidgRPCValuesTest extends HapiApiSuite {
+public class InvalidgRPCValuesTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(InvalidgRPCValuesTest.class);
 
     public static void main(String... args) throws Exception {
@@ -41,11 +41,11 @@ public class InvalidgRPCValuesTest extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {invalidIdCheck()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {invalidIdCheck()});
     }
 
-    private HapiApiSpec invalidIdCheck() {
+    private HapiSpec invalidIdCheck() {
         final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
         final String invalidMaxId = MAX_NUM_ALLOWED + 1 + ".2.3";
         return defaultHapiSpec("TransferWithInvalidAccount")

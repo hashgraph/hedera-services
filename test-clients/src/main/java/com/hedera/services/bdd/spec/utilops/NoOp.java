@@ -15,11 +15,11 @@
  */
 package com.hedera.services.bdd.spec.utilops;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 
 public class NoOp extends UtilOp {
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         return false;
     }
 }

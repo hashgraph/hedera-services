@@ -31,10 +31,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +48,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenRelStatusChanges extends HapiApiSuite {
+public class TokenRelStatusChanges extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenRelStatusChanges.class);
 
     private AtomicLong duration = new AtomicLong(5);
@@ -60,15 +60,15 @@ public class TokenRelStatusChanges extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runTokenRelStatusChanges(),
                 });
     }
 
-    private HapiApiSpec runTokenRelStatusChanges() {
-        return HapiApiSpec.defaultHapiSpec("RunTokenRelStatusChanges")
+    private HapiSpec runTokenRelStatusChanges() {
+        return HapiSpec.defaultHapiSpec("RunTokenRelStatusChanges")
                 .given(stdMgmtOf(duration, unit, maxOpsPerSec))
                 .when()
                 .then(
@@ -77,7 +77,7 @@ public class TokenRelStatusChanges extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> statusChangesFactory() {
+    private Function<HapiSpec, OpProvider> statusChangesFactory() {
         var nowAssociating = new AtomicBoolean(Boolean.FALSE);
         var relatableTokens = new AtomicInteger();
         var relatableAccounts = new AtomicInteger();

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
 import static com.hedera.services.bdd.spec.keys.SigControl.ON;
@@ -36,15 +36,16 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AutoAccountUpdateSuite extends HapiApiSuite {
+public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
     private static final long initialBalance = 1000L;
 
@@ -64,9 +65,9 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     updateKeyOnAutoCreatedAccount(),
                     accountCreatedAfterAliasAccountExpires(),
                     modifySigRequiredAfterAutoAccountCreation(),
@@ -74,7 +75,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec modifySigRequiredAfterAutoAccountCreation() {
+    private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
                 .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
                 .when(
@@ -127,7 +128,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                                         (2 * ONE_HUNDRED_HBARS), 0, 0)));
     }
 
-    private HapiApiSpec accountCreatedAfterAliasAccountExpires() {
+    private HapiSpec accountCreatedAfterAliasAccountExpires() {
         final var briefAutoRenew = 3L;
         return defaultHapiSpec("AccountCreatedAfterAliasAccountExpires")
                 .given(
@@ -174,7 +175,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
                                 .overridingProps(disablingAutoRenewWithDefaults()));
     }
 
-    private HapiApiSpec updateKeyOnAutoCreatedAccount() {
+    private HapiSpec updateKeyOnAutoCreatedAccount() {
         final var complexKey = "complexKey";
 
         SigControl ENOUGH_UNIQUE_SIGS =
@@ -217,7 +218,7 @@ public class AutoAccountUpdateSuite extends HapiApiSuite {
 
     // Can't be done without property change, since auto-renew period can't be reduced from 3 months
     // after create.
-    private HapiApiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
+    private HapiSpec accountCreatedAfterAliasAccountExpiresAndDelete() {
         final var briefAutoRenew = 3L;
         return defaultHapiSpec("AccountCreatedAfterAliasAccountExpiresAndDelete")
                 .given(

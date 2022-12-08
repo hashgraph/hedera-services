@@ -15,7 +15,7 @@
  */
 import com.hedera.services.bdd.junit.HederaContainer;
 import com.hedera.services.bdd.junit.TestBase;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import java.io.File;
 import java.nio.file.Path;
@@ -57,7 +57,7 @@ public abstract class IntegrationTestBase extends TestBase {
         NODE_0.waitUntilActive(Duration.ofSeconds(30));
 
         final var defaultProperties = JutilPropertySource.getDefaultInstance();
-        HapiApiSpec.runInCiMode(
+        HapiSpec.runInCiMode(
                 "" + NODE_0.getFirstMappedPort(),
                 defaultProperties.get("default.payer"),
                 defaultProperties.get("default.node").split("\\.")[2],

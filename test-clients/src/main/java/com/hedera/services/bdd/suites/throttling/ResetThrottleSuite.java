@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -23,14 +23,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class ResetThrottleSuite extends HapiApiSuite {
+public final class ResetThrottleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ResetThrottleSuite.class);
 
     public static void main(String... args) {
@@ -38,11 +38,11 @@ public final class ResetThrottleSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(resetThrottle());
     }
 
-    private HapiApiSpec resetThrottle() {
+    private HapiSpec resetThrottle() {
         final var devThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("ResetThrottle")
                 .given()

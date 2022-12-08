@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.mixedops;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -55,7 +55,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.LoadTest;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
@@ -96,11 +96,11 @@ public class MixedOpsLoadTest extends LoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runMixedOps());
     }
 
-    protected HapiApiSpec runMixedOps() {
+    protected HapiSpec runMixedOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         Random r = new Random();
         AtomicInteger tokenId = new AtomicInteger(0);

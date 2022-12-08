@@ -15,20 +15,20 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHash;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileId;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class PrepareUpgrade extends HapiApiSuite {
+public final class PrepareUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PrepareUpgrade.class);
 
     public static void main(String... args) {
@@ -41,11 +41,11 @@ public final class PrepareUpgrade extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {prepareUpgrade()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {prepareUpgrade()});
     }
 
-    private HapiApiSpec prepareUpgrade() {
+    private HapiSpec prepareUpgrade() {
         return defaultHapiSpec("PrepareUpgrade")
                 .given(initializeSettings())
                 .when(

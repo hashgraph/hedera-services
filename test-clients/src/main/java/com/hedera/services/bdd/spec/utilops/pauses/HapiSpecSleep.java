@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.spec.utilops.pauses;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,7 +31,7 @@ public class HapiSpecSleep extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         log.info("Sleeping for " + timeMs + "ms now...");
         Thread.sleep(timeMs);
         return false;

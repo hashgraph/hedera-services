@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -96,11 +96,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -116,7 +116,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-public class Create2OperationSuite extends HapiApiSuite {
+public class Create2OperationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
@@ -152,7 +152,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 create2FactoryWorksAsExpected(),
                 canBlockCreate2ChildWithHollowAccount(),
@@ -171,7 +171,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec allLogOpcodesResolveExpectedContractId() {
+    private HapiSpec allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
         final AtomicLong outerCreatorNum = new AtomicLong();
@@ -221,7 +221,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
-    private HapiApiSpec inlineCreate2CanFailSafely() {
+    private HapiSpec inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
         final var foo = BigInteger.valueOf(22);
@@ -296,7 +296,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec inlineCreateCanFailSafely() {
+    private HapiSpec inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;
         final var contract = "RevertingCreateFactory";
@@ -370,7 +370,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                                 + 1))));
     }
 
-    private HapiApiSpec canAssociateInConstructor() {
+    private HapiSpec canAssociateInConstructor() {
         final var token = "token";
         final var contract = "SelfAssociating";
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
@@ -404,7 +404,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec create2FactoryWorksAsExpected() {
+    private HapiSpec create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
@@ -677,7 +677,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec canBlockCreate2ChildWithHollowAccount() {
+    private HapiSpec canBlockCreate2ChildWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
         final var creation = CREATION;
@@ -843,7 +843,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
+    private HapiSpec eip1014AliasIsPriorityInErcOwnerPrecompile() {
         final var ercContract = "ERC721Contract";
         final var pc2User = "Create2PrecompileUser";
         final var nft = "nonFungibleToken";
@@ -929,7 +929,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                                                                 .get())))))));
     }
 
-    private HapiApiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
+    private HapiSpec childInheritanceOfAdminKeyAuthorizesParentAssociationInConstructor() {
         final var ft = "fungibleToken";
         final var multiKey = SWISS;
         final var creationAndAssociation = "creationAndAssociation";
@@ -967,7 +967,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec canUseAliasesInPrecompilesAndContractKeys() {
+    private HapiSpec canUseAliasesInPrecompilesAndContractKeys() {
         final var creation2 = CREATE_2_TXN;
         final var contract = "Create2PrecompileUser";
         final var userContract = "Create2User";
@@ -1235,7 +1235,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2874
     // https://github.com/hashgraph/hedera-services/issues/2925
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec cannotSelfDestructToMirrorAddress() {
+    private HapiSpec cannotSelfDestructToMirrorAddress() {
         final var creation2 = CREATE_2_TXN;
         final var messyCreation2 = "messyCreate2Txn";
         final var contract = "CreateDonor";
@@ -1302,7 +1302,7 @@ public class Create2OperationSuite extends HapiApiSuite {
 
     // https://github.com/hashgraph/hedera-services/issues/2874
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec canDeleteViaAlias() {
+    private HapiSpec canDeleteViaAlias() {
         final var adminKey = ADMIN_KEY;
         final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
@@ -1430,7 +1430,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
+    private HapiSpec create2InputAddressIsStableWithTopLevelCallWhetherMirrorOrAliasIsUsed() {
         final var creation2 = CREATE_2_TXN;
         final var innerCreation2 = "innerCreate2Txn";
         final var delegateCreation2 = "delegateCreate2Txn";
@@ -1541,7 +1541,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
+    private HapiSpec priorityAddressIsCreate2ForStaticHapiCalls() {
         final var contract = "AddressValueRet";
 
         final AtomicReference<String> aliasAddr = new AtomicReference<>();
@@ -1621,7 +1621,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
+    private HapiSpec canInternallyCallAliasedAddressesOnlyViaCreate2Address() {
         final var contract = "AddressValueRet";
         final var aliasCall = "aliasCall";
         final var mirrorCall = "mirrorCall";

@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
@@ -60,13 +60,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -77,7 +77,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractHTSSuite extends HapiApiSuite {
+public class ContractHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractHTSSuite.class);
 
     public static final String VERSATILE_TRANSFERS = "VersatileTransfers";
@@ -111,20 +111,20 @@ public class ContractHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     HSCS_PREC_017_rollback_after_insufficient_balance(), nonZeroTransfersFail()
                 });
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     distributeMultipleTokens(),
                     depositAndWithdrawFungibleTokens(),
                     transferNft(),
@@ -135,7 +135,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec HSCS_PREC_017_rollback_after_insufficient_balance() {
+    private HapiSpec HSCS_PREC_017_rollback_after_insufficient_balance() {
         final var alice = "alice";
         final var bob = "bob";
         final var treasuryForToken = "treasuryForToken";
@@ -232,7 +232,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                 .has(AccountInfoAsserts.accountWith().balance(0L)));
     }
 
-    private HapiApiSpec depositAndWithdrawFungibleTokens() {
+    private HapiSpec depositAndWithdrawFungibleTokens() {
         final var theContract = "ZenosBank";
 
         return defaultHapiSpec("depositAndWithdrawFungibleTokens")
@@ -323,7 +323,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                         .including(A_TOKEN, RECEIVER, 25L))));
     }
 
-    private HapiApiSpec distributeMultipleTokens() {
+    private HapiSpec distributeMultipleTokens() {
         final var theSecondReceiver = "somebody2";
 
         return defaultHapiSpec("DistributeMultipleTokens")
@@ -407,7 +407,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                                 A_TOKEN, theSecondReceiver, 5L))));
     }
 
-    private HapiApiSpec tokenTransferFromFeeCollector() {
+    private HapiSpec tokenTransferFromFeeCollector() {
         return defaultHapiSpec("TokenTransferFromFeeCollector")
                 .given(
                         cryptoCreate(ACCOUNT)
@@ -615,7 +615,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                         getAccountBalance(FEE_COLLECTOR).hasTokenBalance(FEE_TOKEN, 0));
     }
 
-    private HapiApiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
+    private HapiSpec tokenTransferFromFeeCollectorStaticNestedCall() {
         return defaultHapiSpec("TokenTransferFromFeeCollectorStaticNestedCall")
                 .given(
                         cryptoCreate(ACCOUNT)
@@ -828,7 +828,7 @@ public class ContractHTSSuite extends HapiApiSuite {
      * Contract that otherwise wouldn't have enough balance for a .transfer of hbars can perform the transfer after
      * collecting the custom hbar fees from a nested token transfer through the HTS precompile
      * */
-    private HapiApiSpec hbarTransferFromFeeCollector() {
+    private HapiSpec hbarTransferFromFeeCollector() {
         final var outerContract = "HbarFeeCollector";
         final var innerContract = "NestedHTSTransferrer";
 
@@ -938,7 +938,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                         getAccountBalance(SECOND_RECEIVER).hasTinyBars(CUSTOM_HBAR_FEE_AMOUNT));
     }
 
-    private HapiApiSpec transferNft() {
+    private HapiSpec transferNft() {
         return defaultHapiSpec("TransferNft")
                 .given(
                         overriding("contracts.allowAutoAssociations", "true"),
@@ -1021,7 +1021,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                         .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
-    private HapiApiSpec transferMultipleNfts() {
+    private HapiSpec transferMultipleNfts() {
         return defaultHapiSpec("TransferMultipleNfts")
                 .given(
                         newKeyNamed(UNIVERSAL_KEY),
@@ -1109,7 +1109,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(NFT, 0));
     }
 
-    private HapiApiSpec nonZeroTransfersFail() {
+    private HapiSpec nonZeroTransfersFail() {
         final var theSecondReceiver = "somebody2";
         return defaultHapiSpec("NonZeroTransfersFail")
                 .given(
@@ -1186,7 +1186,7 @@ public class ContractHTSSuite extends HapiApiSuite {
                                                                                 TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)))));
     }
 
-    private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+    private String getNestedContractAddress(final String contract, final HapiSpec spec) {
         return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
     }
 

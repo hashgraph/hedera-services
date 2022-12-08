@@ -15,12 +15,12 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.perf.crypto.CryptoTransferLoadTest;
@@ -39,11 +39,11 @@ public class CryptoTransferThenFreezeTest extends CryptoTransferLoadTest {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCryptoTransfers(), freezeAfterTransfers());
     }
 
-    private HapiApiSpec freezeAfterTransfers() {
+    private HapiSpec freezeAfterTransfers() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("FreezeAfterTransfers")
                 .given(

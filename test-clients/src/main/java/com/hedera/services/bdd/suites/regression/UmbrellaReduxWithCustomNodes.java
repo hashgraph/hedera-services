@@ -25,13 +25,13 @@ import static com.hedera.services.bdd.suites.regression.RegressionProviderFactor
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
+public class UmbrellaReduxWithCustomNodes extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 
     public static final String DEFAULT_PROPERTIES = "regression-file_ops.properties";
@@ -84,13 +84,13 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
+                new HapiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
     }
 
-    private HapiApiSpec messageSubmissionSimple() {
-        return HapiApiSpec.customHapiSpec("messageSubmissionSimple")
+    private HapiSpec messageSubmissionSimple() {
+        return HapiSpec.customHapiSpec("messageSubmissionSimple")
                 .withProperties(
                         Map.of(
                                 "default.topic.runningHash.version", topic_running_hash_version,
@@ -115,8 +115,8 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                                                         topic_running_hash_version)));
     }
 
-    private HapiApiSpec UmbrellaReduxWithCustomNodes() {
-        return HapiApiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
+    private HapiSpec UmbrellaReduxWithCustomNodes() {
+        return HapiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
                 .withProperties(
                         Map.of(
                                 "status.wait.timeout.ms",
@@ -138,7 +138,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiApiSuite {
                                 .backoffSleepSecs(backoffSleepSecs::get));
     }
 
-    private void configureFromCi(HapiApiSpec spec) {
+    private void configureFromCi(HapiSpec spec) {
         HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
         if (ciProps.has("duration")) {
             duration.set(ciProps.getLong("duration"));

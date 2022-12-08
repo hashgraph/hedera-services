@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -53,10 +53,10 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
+public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(FreezeUnfreezeTokenPrecompileSuite.class);
     private static final String FREEZE_CONTRACT = "FreezeUnfreezeContract";
@@ -97,7 +97,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 freezeUnfreezeFungibleWithNegativeCases(),
                 freezeUnfreezeNftsWithNegativeCases(),
@@ -105,7 +105,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                 noTokenIdReverts());
     }
 
-    private HapiApiSpec noTokenIdReverts() {
+    private HapiSpec noTokenIdReverts() {
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -160,7 +160,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
-    private HapiApiSpec freezeUnfreezeFungibleWithNegativeCases() {
+    private HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
 
         return defaultHapiSpec("freezeUnfreezeFungibleWithNegativeCases")
@@ -305,7 +305,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_HAS_NO_FREEZE_KEY)))));
     }
 
-    private HapiApiSpec freezeUnfreezeNftsWithNegativeCases() {
+    private HapiSpec freezeUnfreezeNftsWithNegativeCases() {
         return defaultHapiSpec("freezeUnfreezeNftsWithNegativeCases")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -417,7 +417,7 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiApiSuite {
                                                                         .withIsFrozen(false)))));
     }
 
-    private HapiApiSpec isFrozenHappyPathWithLocalCall() {
+    private HapiSpec isFrozenHappyPathWithLocalCall() {
         return defaultHapiSpec("isFrozenHappyPathWithLocalCall")
                 .given(
                         newKeyNamed(FREEZE_KEY),

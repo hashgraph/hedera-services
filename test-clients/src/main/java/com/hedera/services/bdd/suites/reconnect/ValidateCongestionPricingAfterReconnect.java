@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -34,11 +34,11 @@ import static com.hedera.services.bdd.suites.reconnect.AutoRenewEntitiesForRecon
 import static com.hedera.services.bdd.suites.reconnect.ValidateTokensStateAfterReconnect.reconnectingNode;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -55,7 +56,7 @@ import org.junit.jupiter.api.Assertions;
  * 0.0.8 is disconnected from the network. Once the node is reconnected validate that the congestion
  * pricing is in affect on reconnected node
  */
-public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
+public class ValidateCongestionPricingAfterReconnect extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(ValidateCongestionPricingAfterReconnect.class);
     private static final String defaultCongestionMultipliers =
@@ -68,14 +69,14 @@ public class ValidateCongestionPricingAfterReconnect extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runTransfersBeforeReconnect(), validateCongestionPricing(),
                 });
     }
 
-    private HapiApiSpec validateCongestionPricing() {
+    private HapiSpec validateCongestionPricing() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-6N.json");
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         String tmpMinCongestionPeriodInSecs = "5";

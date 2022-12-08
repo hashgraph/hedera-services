@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -64,12 +64,12 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -82,7 +82,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class TokenPauseSpecs extends HapiApiSuite {
+public final class TokenPauseSpecs extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
 
@@ -119,7 +119,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 cannotPauseWithInvalidPauseKey(),
                 cannotChangePauseStatusIfMissingPauseKey(),
@@ -133,7 +133,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                 cannotAssociateMoreThanTheLimit());
     }
 
-    private HapiApiSpec cannotAssociateMoreThanTheLimit() {
+    private HapiSpec cannotAssociateMoreThanTheLimit() {
         final String treasury1 = "treasury1";
         final String treasury2 = "treasury2";
         final String user1 = "user1";
@@ -197,7 +197,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                         overriding("tokens.maxPerAccount", "1000"));
     }
 
-    private HapiApiSpec cannotAddPauseKeyViaTokenUpdate() {
+    private HapiSpec cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
@@ -208,7 +208,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    private HapiApiSpec cannotPauseWithInvalidPauseKey() {
+    private HapiSpec cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("CannotPauseWithInvlaidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -218,7 +218,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec pausedTokenInCustomFeeCaseStudy() {
+    private HapiSpec pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -263,7 +263,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_IS_PAUSED));
     }
 
-    private HapiApiSpec unpauseWorks() {
+    private HapiSpec unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -297,7 +297,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                         getAccountInfo(firstUser).logged());
     }
 
-    private HapiApiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    private HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -386,7 +386,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
-    private HapiApiSpec pausedFungibleTokenCannotBeUsed() {
+    private HapiSpec pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -465,7 +465,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasToken(relationshipWith(otherToken).balance(500)));
     }
 
-    private HapiApiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    private HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -498,7 +498,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY));
     }
 
-    private HapiApiSpec basePauseAndUnpauseHaveExpectedPrices() {
+    private HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";
@@ -530,7 +530,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
                         validateChargedUsd(tokenUnpauseTransaction, expectedBaseFee));
     }
 
-    public HapiApiSpec canDissociateFromMultipleExpiredTokens() {
+    public HapiSpec canDissociateFromMultipleExpiredTokens() {
         final var civilian = "civilian";
         final long initialSupply = 100L;
         final long nonZeroXfer = 10L;
@@ -602,7 +602,7 @@ public final class TokenPauseSpecs extends HapiApiSuite {
 
         @Override
         @SuppressWarnings("java:S5960")
-        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiApiSpec spec) {
+        public ErroringAsserts<List<TokenTransferList>> assertsFor(final HapiSpec spec) {
             return tokenTransfers -> {
                 final var registry = spec.registry();
                 try {

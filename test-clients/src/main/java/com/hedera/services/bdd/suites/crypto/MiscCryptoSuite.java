@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -34,14 +34,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MiscCryptoSuite extends HapiApiSuite {
+public class MiscCryptoSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(MiscCryptoSuite.class);
 
     public static void main(String... args) {
@@ -49,14 +49,14 @@ public class MiscCryptoSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(
                 positiveTests()
                 //				negativeTests()
                 );
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return Arrays.asList(
                 //				transferChangesBalance()
                 //				getsGenesisBalance()
@@ -64,11 +64,11 @@ public class MiscCryptoSuite extends HapiApiSuite {
                 sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign());
     }
 
-    private List<HapiApiSpec> negativeTests() {
+    private List<HapiSpec> negativeTests() {
         return List.of(updateWithOutOfDateKeyFails());
     }
 
-    private HapiApiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
+    private HapiSpec sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.977";
         String randomAccountA = "randomAccountA";
         String randomAccountB = "randomAccountB";
@@ -100,7 +100,7 @@ public class MiscCryptoSuite extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    private HapiApiSpec reduceTransferFee() {
+    private HapiSpec reduceTransferFee() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
@@ -129,21 +129,21 @@ public class MiscCryptoSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    public static HapiApiSpec getsGenesisBalance() {
+    public static HapiSpec getsGenesisBalance() {
         return defaultHapiSpec("GetsGenesisBalance")
                 .given()
                 .when()
                 .then(getAccountBalance(GENESIS).logged());
     }
 
-    public static HapiApiSpec transferChangesBalance() {
+    public static HapiSpec transferChangesBalance() {
         return defaultHapiSpec("TransferChangesBalance")
                 .given(cryptoCreate("newPayee").balance(0L))
                 .when(cryptoTransfer(tinyBarsFromTo(GENESIS, "newPayee", 1_000_000_000L)))
                 .then(getAccountBalance("newPayee").hasTinyBars(1_000_000_000L).logged());
     }
 
-    private HapiApiSpec updateWithOutOfDateKeyFails() {
+    private HapiSpec updateWithOutOfDateKeyFails() {
         return defaultHapiSpec("UpdateWithOutOfDateKeyFails")
                 .given(
                         newKeyNamed("originalKey"),

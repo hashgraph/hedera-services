@@ -15,22 +15,22 @@
  */
 package com.hedera.services.bdd.suites.file.negative;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AppendFailuresSpec extends HapiApiSuite {
+public class AppendFailuresSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AppendFailuresSpec.class);
 
     public static void main(String... args) {
@@ -38,14 +38,14 @@ public class AppendFailuresSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     handleRejectsOversized(),
                 });
     }
 
-    private HapiApiSpec handleRejectsOversized() {
+    private HapiSpec handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
         Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
         byte[] BYTES_1 = new byte[] {(byte) 0xAB};

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.freeze;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.initializeSettings;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
@@ -23,10 +23,10 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFilePath;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -34,7 +34,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class UpdateFileForUpgrade extends HapiApiSuite {
+public final class UpdateFileForUpgrade extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdateFileForUpgrade.class);
 
     public static void main(String... args) {
@@ -47,11 +47,11 @@ public final class UpdateFileForUpgrade extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {updateFileForUpgrade()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {updateFileForUpgrade()});
     }
 
-    private HapiApiSpec updateFileForUpgrade() {
+    private HapiSpec updateFileForUpgrade() {
         return defaultHapiSpec("UpdateFileForUpgrade")
                 .given(initializeSettings())
                 .when(

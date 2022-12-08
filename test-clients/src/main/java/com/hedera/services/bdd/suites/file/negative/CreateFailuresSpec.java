@@ -15,12 +15,12 @@
  */
 package com.hedera.services.bdd.suites.file.negative;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -29,7 +29,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateFailuresSpec extends HapiApiSuite {
+public class CreateFailuresSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateFailuresSpec.class);
 
     public static void main(String... args) {
@@ -37,15 +37,15 @@ public class CreateFailuresSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //						handleRejectsMissingWacl(),
                     precheckRejectsBadEffectiveAutoRenewPeriod(),
                 });
     }
 
-    private HapiApiSpec handleRejectsMissingWacl() {
+    private HapiSpec handleRejectsMissingWacl() {
         return defaultHapiSpec("handleRejectsMissingWacl")
                 .given(
                         withOpContext(
@@ -67,7 +67,7 @@ public class CreateFailuresSpec extends HapiApiSuite {
                                 .hasKnownStatus(ResponseCodeEnum.NO_WACL_KEY));
     }
 
-    private HapiApiSpec precheckRejectsBadEffectiveAutoRenewPeriod() {
+    private HapiSpec precheckRejectsBadEffectiveAutoRenewPeriod() {
         var now = Instant.now();
         System.out.println(now.getEpochSecond());
 

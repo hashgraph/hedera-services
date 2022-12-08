@@ -30,10 +30,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
+public class SimpleXfersAvoidingHotspot extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SimpleXfersAvoidingHotspot.class);
 
     private static final int NUM_ACCOUNTS = 100;
@@ -62,15 +62,15 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runSimpleXfers(),
                 });
     }
 
-    private HapiApiSpec runSimpleXfers() {
-        return HapiApiSpec.customHapiSpec("RunTokenTransfers")
+    private HapiSpec runSimpleXfers() {
+        return HapiSpec.customHapiSpec("RunTokenTransfers")
                 .withProperties(
                         Map.of(
                                 //				"default.keyAlgorithm", "SECP256K1"
@@ -83,7 +83,7 @@ public class SimpleXfersAvoidingHotspot extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> avoidantXfersFactory() {
+    private Function<HapiSpec, OpProvider> avoidantXfersFactory() {
         final var nextSender = new AtomicInteger();
         final IntFunction<String> nameFn = i -> "account" + i;
 

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -48,8 +48,8 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
+public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
     private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
@@ -91,7 +91,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 pauseFungibleTokenHappyPath(),
                 unpauseFungibleTokenHappyPath(),
@@ -101,7 +101,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 noAccountKeyReverts());
     }
 
-    private HapiApiSpec noTokenIdReverts() {
+    private HapiSpec noTokenIdReverts() {
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -148,7 +148,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
-    private HapiApiSpec noAccountKeyReverts() {
+    private HapiSpec noAccountKeyReverts() {
         return defaultHapiSpec("noKeyReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -217,7 +217,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_HAS_NO_PAUSE_KEY)))));
     }
 
-    HapiApiSpec pauseFungibleTokenHappyPath() {
+    HapiSpec pauseFungibleTokenHappyPath() {
         return defaultHapiSpec("PauseFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -300,7 +300,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    HapiApiSpec unpauseFungibleTokenHappyPath() {
+    HapiSpec unpauseFungibleTokenHappyPath() {
         return defaultHapiSpec("UnpauseFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
@@ -357,7 +357,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
-    HapiApiSpec pauseNonFungibleTokenHappyPath() {
+    HapiSpec pauseNonFungibleTokenHappyPath() {
         return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -442,7 +442,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    HapiApiSpec unpauseNonFungibleTokenHappyPath() {
+    HapiSpec unpauseNonFungibleTokenHappyPath() {
         return defaultHapiSpec("UnpauseNonFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),

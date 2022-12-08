@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.spec.transactions.contract;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
-import static com.hedera.services.bdd.suites.HapiApiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.swirlds.common.utility.CommonUtils;

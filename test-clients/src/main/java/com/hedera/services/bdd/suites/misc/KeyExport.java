@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -25,10 +25,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -38,7 +38,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class KeyExport extends HapiApiSuite {
+public class KeyExport extends HapiSuite {
     private static final Logger log = LogManager.getLogger(KeyExport.class);
 
     private static final String PEM_FILE_NAME = "dev-testnet-account2.pem";
@@ -48,9 +48,9 @@ public class KeyExport extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     updateTreasuryKey(),
                     //						exportCurrentTreasuryKey(),
                     //						exportGenesisKey(),
@@ -58,7 +58,7 @@ public class KeyExport extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec updateTreasuryKey() {
+    private HapiSpec updateTreasuryKey() {
         return customHapiSpec("UpdateTreasuryKey")
                 .withProperties(Map.of("nodes", "34.74.191.8"))
                 .given(
@@ -80,7 +80,7 @@ public class KeyExport extends HapiApiSuite {
                         );
     }
 
-    private HapiApiSpec validateNewKey() {
+    private HapiSpec validateNewKey() {
         return defaultHapiSpec("validateNewKey")
                 .given(
                         keyFromPem(PEM_FILE_NAME)
@@ -91,7 +91,7 @@ public class KeyExport extends HapiApiSuite {
                 .then(fileCreate("testFile").key("newKey"));
     }
 
-    private HapiApiSpec exportCurrentTreasuryKey() {
+    private HapiSpec exportCurrentTreasuryKey() {
         KeyFactory.PEM_PASSPHRASE = "passphrase";
 
         return defaultHapiSpec("ExportCurrentTreasuryKeyAsPem")
@@ -104,7 +104,7 @@ public class KeyExport extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec exportGenesisKey() {
+    private HapiSpec exportGenesisKey() {
         final var r = new Random();
         final int passphraseLength = 24;
         final char[] choices =

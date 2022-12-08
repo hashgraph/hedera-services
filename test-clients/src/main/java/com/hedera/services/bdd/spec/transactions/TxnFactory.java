@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.UTF8Mode.TRUE;
+import static com.hedera.services.bdd.spec.HapiSpec.UTF8Mode.TRUE;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimestampPlusSecs;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;

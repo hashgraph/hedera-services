@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
@@ -67,8 +67,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -77,7 +77,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoApproveAllowanceSuite extends HapiApiSuite {
+public class CryptoApproveAllowanceSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoApproveAllowanceSuite.class);
 
@@ -116,9 +116,9 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
 
     @Override
     @SuppressWarnings("java:S3878")
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     canHaveMultipleOwners(),
                     noOwnerDefaultsToPayer(),
                     invalidSpenderFails(),
@@ -149,7 +149,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
+    private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
         return defaultHapiSpec("duplicateKeysAndSerialsInSameTxnDoesntThrow")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -250,7 +250,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
-    private HapiApiSpec approveForAllSpenderCanDelegateOnNFT() {
+    private HapiSpec approveForAllSpenderCanDelegateOnNFT() {
         final String delegatingSpender = "delegatingSpender";
         final String newSpender = "newSpender";
         return defaultHapiSpec("ApproveForAllSpenderCanDelegateOnNFTs")
@@ -342,7 +342,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(newSpender));
     }
 
-    private HapiApiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
+    private HapiSpec canGrantFungibleAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantFungibleAllowancesWithTreasuryOwner")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -386,7 +386,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec canGrantNftAllowancesWithTreasuryOwner() {
+    private HapiSpec canGrantNftAllowancesWithTreasuryOwner() {
         return defaultHapiSpec("canGrantNftAllowancesWithTreasuryOwner")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -443,7 +443,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec invalidOwnerFails() {
+    private HapiSpec invalidOwnerFails() {
         return defaultHapiSpec("invalidOwnerFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -511,7 +511,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec invalidSpenderFails() {
+    private HapiSpec invalidSpenderFails() {
         return defaultHapiSpec("invalidSpenderFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -571,7 +571,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec noOwnerDefaultsToPayer() {
+    private HapiSpec noOwnerDefaultsToPayer() {
         return defaultHapiSpec("noOwnerDefaultsToPayer")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -639,7 +639,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                         FUNGIBLE_TOKEN, SPENDER, 100L)));
     }
 
-    private HapiApiSpec canHaveMultipleOwners() {
+    private HapiSpec canHaveMultipleOwners() {
         return defaultHapiSpec("canHaveMultipleOwners")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -768,7 +768,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                         SPENDER, 2 * ONE_HBAR)));
     }
 
-    private HapiApiSpec feesAsExpected() {
+    private HapiSpec feesAsExpected() {
         return defaultHapiSpec("feesAsExpected")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -911,7 +911,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                         FUNGIBLE_TOKEN, SECOND_SPENDER, 200L)));
     }
 
-    private HapiApiSpec serialsInAscendingOrder() {
+    private HapiSpec serialsInAscendingOrder() {
         return defaultHapiSpec("serialsInAscendingOrder")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -968,7 +968,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                         NON_FUNGIBLE_TOKEN, SPENDER)));
     }
 
-    private HapiApiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
+    private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         return defaultHapiSpec("succeedsWhenTokenPausedFrozenKycRevoked")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -1085,7 +1085,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 .tokenAllowancesCount(4)));
     }
 
-    private HapiApiSpec exceedsTransactionLimit() {
+    private HapiSpec exceedsTransactionLimit() {
         return defaultHapiSpec("exceedsTransactionLimit")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1178,7 +1178,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100")));
     }
 
-    private HapiApiSpec exceedsAccountLimit() {
+    private HapiSpec exceedsAccountLimit() {
         return defaultHapiSpec("exceedsAccountLimit")
                 .given(
                         fileUpdate(APP_PROPERTIES)
@@ -1258,7 +1258,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100")));
     }
 
-    private HapiApiSpec tokenExceedsMaxSupplyFails() {
+    private HapiSpec tokenExceedsMaxSupplyFails() {
         return defaultHapiSpec("tokenExceedsMaxSupplyFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1287,7 +1287,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec validatesSerialNums() {
+    private HapiSpec validatesSerialNums() {
         return defaultHapiSpec("validatesSerialNums")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1347,7 +1347,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec invalidTokenTypeFails() {
+    private HapiSpec invalidTokenTypeFails() {
         return defaultHapiSpec("invalidTokenTypeFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1399,7 +1399,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec emptyAllowancesRejected() {
+    private HapiSpec emptyAllowancesRejected() {
         return defaultHapiSpec("emptyAllowancesRejected")
                 .given(
                         cryptoCreate(OWNER)
@@ -1409,7 +1409,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec tokenNotAssociatedToAccountFails() {
+    private HapiSpec tokenNotAssociatedToAccountFails() {
         return defaultHapiSpec("tokenNotAssociatedToAccountFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1464,7 +1464,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 .tokenAllowancesCount(0)));
     }
 
-    private HapiApiSpec spenderSameAsOwnerFails() {
+    private HapiSpec spenderSameAsOwnerFails() {
         return defaultHapiSpec("spenderSameAsOwnerFails")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1528,7 +1528,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 .tokenAllowancesCount(0)));
     }
 
-    private HapiApiSpec negativeAmountFailsForFungible() {
+    private HapiSpec negativeAmountFailsForFungible() {
         return defaultHapiSpec("negativeAmountFailsForFungible")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1587,7 +1587,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                                 .tokenAllowancesCount(0)));
     }
 
-    private HapiApiSpec happyPathWorks() {
+    private HapiSpec happyPathWorks() {
         return defaultHapiSpec("happyPathWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1658,7 +1658,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasSpenderID(SPENDER));
     }
 
-    private HapiApiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
+    private HapiSpec duplicateEntriesGetsReplacedWithDifferentTxn() {
         return defaultHapiSpec("duplicateEntriesGetsReplacedWithDifferentTxn")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1762,7 +1762,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 3L).hasSpenderID(SPENDER));
     }
 
-    private HapiApiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
+    private HapiSpec cannotHaveMultipleAllowedSpendersForTheSameNFTSerial() {
         return defaultHapiSpec("CannotHaveMultipleAllowedSpendersForTheSameNFTSerial")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1864,7 +1864,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                                 .hasKnownStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE));
     }
 
-    private HapiApiSpec approveForAllDoesNotSetExplicitNFTSpender() {
+    private HapiSpec approveForAllDoesNotSetExplicitNFTSpender() {
         return defaultHapiSpec("ApproveForAllSetNFTSpender")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -1909,7 +1909,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged());
     }
 
-    private HapiApiSpec scheduledCryptoApproveAllowanceWorks() {
+    private HapiSpec scheduledCryptoApproveAllowanceWorks() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWorks")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
@@ -2004,7 +2004,7 @@ public class CryptoApproveAllowanceSuite extends HapiApiSuite {
                         getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));
     }
 
-    private HapiApiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
+    private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
                 .given(
                         overriding(SCHEDULING_LONG_TERM_ENABLED, "true"),

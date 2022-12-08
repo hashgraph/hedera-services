@@ -88,6 +88,7 @@ import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.parallel.Execution;
@@ -96,9 +97,92 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 /** The set of BDD tests that we can execute in parallel. */
 @Execution(ExecutionMode.CONCURRENT)
 public class ParallelIntegrationTests extends IntegrationTestBase {
-
     @Tag("integration")
     @TestFactory
+    List<DynamicTest> concurrentSpecs() {
+        return List.of(extractedSpecsFromConcurrentSuites(
+                AutoAccountCreationSuite::new,
+                TokenAssociationSpecs::new,
+                TokenCreateSpecs::new,
+                TokenUpdateSpecs::new,
+                TokenDeleteSpecs::new,
+                TokenManagementSpecs::new,
+                TokenTransactSpecs::new,
+                FileCreateSuite::new,
+                PermissionSemanticsSpec::new,
+                SysDelSysUndelSpec::new,
+                UpdateFailuresSpec::new,
+                SignedTransactionBytesRecordsSuite::new,
+                TopicCreateSuite::new,
+                TopicDeleteSuite::new,
+                SubmitMessageSuite::new,
+                ChunkingSuite::new,
+                CryptoTransferSuite::new,
+                CannotDeleteSystemEntitiesSuite::new,
+                ScheduleDeleteSpecs::new,
+                ScheduleExecutionSpecs::new,
+                ScheduleRecordSpecs::new,
+                // contract.hapi
+                ContractCallLocalSuite::new,
+                ContractCallSuite::new,
+                ContractCreateSuite::new,
+                ContractDeleteSuite::new,
+                ContractGetBytecodeSuite::new,
+                ContractGetInfoSuite::new,
+                ContractMusicalChairsSuite::new,
+                ContractUpdateSuite::new,
+                // contract.opcode
+                BalanceOperationSuite::new,
+                CallCodeOperationSuite::new,
+                CallOperationSuite::new,
+                Create2OperationSuite::new,
+                CreateOperationSuite::new,
+                DelegateCallOperationSuite::new,
+                ExtCodeCopyOperationSuite::new,
+                ExtCodeHashOperationSuite::new,
+                ExtCodeSizeOperationSuite::new,
+                GlobalPropertiesSuite::new,
+                SelfDestructSuite::new,
+                SStoreSuite::new,
+                StaticCallOperationSuite::new,
+                // contract.openzeppelin
+                ERC20ContractInteractions::new,
+                ERC721ContractInteractions::new,
+                ERC1155ContractInteractions::new,
+                // contract.precompile
+                ApproveAllowanceSuite::new,
+                AssociatePrecompileSuite::new,
+                ContractBurnHTSSuite::new,
+                ContractHTSSuite::new,
+                ContractKeysHTSSuite::new,
+                ContractMintHTSSuite::new,
+                CreatePrecompileSuite::new,
+                CryptoTransferHTSSuite::new,
+                DefaultTokenStatusSuite::new,
+                DelegatePrecompileSuite::new,
+                DeleteTokenPrecompileSuite::new,
+                DissociatePrecompileSuite::new,
+                ERCPrecompileSuite::new,
+                FreezeUnfreezeTokenPrecompileSuite::new,
+                GrantRevokeKycSuite::new,
+                MixedHTSPrecompileTestsSuite::new,
+                PauseUnpauseTokenAccountPrecompileSuite::new,
+                PrngPrecompileSuite::new,
+                TokenAndTypeCheckSuite::new,
+                TokenExpiryInfoSuite::new,
+                TokenInfoHTSSuite::new,
+                TokenUpdatePrecompileSuite::new,
+                WipeTokenAccountPrecompileSuite::new,
+                // contract.records
+                LogsSuite::new,
+                RecordsSuite::new,
+                // contract.ethereum
+                EthereumSuite::new,
+                HelloWorldEthereumSuite::new));
+    }
+
+//    @Tag("integration")
+//    @TestFactory
     Collection<DynamicContainer> parallel() {
         return List.of(
                 extractSpecsFromSuite(AutoAccountCreationSuite::new),

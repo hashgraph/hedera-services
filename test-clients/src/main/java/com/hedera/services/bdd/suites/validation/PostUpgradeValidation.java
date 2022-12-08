@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.validation;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
+import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
 
 import java.io.IOException;
 import java.nio.file.Files;

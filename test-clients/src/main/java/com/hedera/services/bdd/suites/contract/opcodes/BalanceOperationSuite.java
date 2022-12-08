@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -34,16 +34,16 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class BalanceOperationSuite extends HapiApiSuite {
+public class BalanceOperationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(BalanceOperationSuite.class);
     private static final String BALANCE_OF = "balanceOf";
 
@@ -52,11 +52,11 @@ public class BalanceOperationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {verifiesExistenceOfAccountsAndContracts()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(new HapiSpec[] {verifiesExistenceOfAccountsAndContracts()});
     }
 
-    HapiApiSpec verifiesExistenceOfAccountsAndContracts() {
+    HapiSpec verifiesExistenceOfAccountsAndContracts() {
         final var contract = "BalanceChecker";
         final var BALANCE = 10L;
         final var ACCOUNT = "test";

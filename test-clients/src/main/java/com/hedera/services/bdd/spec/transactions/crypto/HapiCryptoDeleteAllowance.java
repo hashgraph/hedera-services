@@ -23,11 +23,11 @@ import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoDeleteAllowanceMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -67,7 +67,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             FeeCalculator.ActivityMetrics metricsCalc =
                     (_txn, svo) -> {
@@ -90,12 +90,12 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
                             txn,
                             numPayerKeys);
         } catch (Throwable ignore) {
-            return HapiApiSuite.ONE_HBAR;
+            return HapiSuite.ONE_HBAR;
         }
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         List<NftRemoveAllowance> nftallowances = new ArrayList<>();
         calculateAllowances(spec, nftallowances);
         CryptoDeleteAllowanceTransactionBody opBody =
@@ -111,7 +111,7 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     }
 
     private void calculateAllowances(
-            final HapiApiSpec spec, final List<NftRemoveAllowance> nftallowances) {
+            final HapiSpec spec, final List<NftRemoveAllowance> nftallowances) {
         for (var entry : nftAllowances) {
             final var builder =
                     NftRemoveAllowance.newBuilder()
@@ -125,17 +125,17 @@ public class HapiCryptoDeleteAllowance extends HapiTxnOp<HapiCryptoDeleteAllowan
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::deleteAllowances;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

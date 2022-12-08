@@ -15,14 +15,14 @@
  */
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.COMPARE;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiApiSpec.SpecStatus.*;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
+import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static java.util.concurrent.CompletableFuture.allOf;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -76,14 +76,15 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class HapiApiSpec implements Runnable {
+public class HapiSpec implements Runnable {
     private static final String CI_PROPS_FLAG_FOR_NO_UNRECOVERABLE_NETWORK_FAILURES =
             "suppressNetworkFailures";
     private static final ThreadPoolExecutor THREAD_POOL =
             new ThreadPoolExecutor(0, 10_000, 250, MILLISECONDS, new SynchronousQueue<>());
 
-    static final Logger log = LogManager.getLogger(HapiApiSpec.class);
+    static final Logger log = LogManager.getLogger(HapiSpec.class);
 
     public enum SpecStatus {
         PENDING,
@@ -143,6 +144,13 @@ public class HapiApiSpec implements Runnable {
             new EnumMap<>(ResponseCodeEnum.class);
 
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
+
+    /**
+     * When the final status is {@code FAILED}, contains the exception thrown
+     * by the failed assertion that terminated {@code exec()}.
+     */
+    @Nullable
+    private Throwable failure = null;
 
     public static ThreadPoolExecutor getCommonThreadPool() {
         return THREAD_POOL;
@@ -235,15 +243,16 @@ public class HapiApiSpec implements Runnable {
         return setup().expectedFinalStatus();
     }
 
-    public void setSuitePrefix(String suitePrefix) {
+    public HapiSpec setSuitePrefix(String suitePrefix) {
         this.suitePrefix = suitePrefix;
+        return this;
     }
 
-    public static boolean ok(HapiApiSpec spec) {
+    public static boolean ok(HapiSpec spec) {
         return spec.getStatus() == spec.getExpectedFinalStatus();
     }
 
-    public static boolean notOk(HapiApiSpec spec) {
+    public static boolean notOk(HapiSpec spec) {
         return !ok(spec);
     }
 
@@ -275,8 +284,12 @@ public class HapiApiSpec implements Runnable {
             compareWithSnapshot();
         }
 
-        markSpecAsBeenExecuted(this);
         nullOutInfrastructure();
+    }
+
+    @Nullable
+    public Throwable getCause() {
+        return failure;
     }
 
     public long getNonce(final String privateKey) {
@@ -382,6 +395,7 @@ public class HapiApiSpec implements Runnable {
             Optional<Throwable> error = op.execFor(this);
             if (error.isPresent() || finishingError.get().isPresent()) {
                 status = FAILED;
+                failure = error.orElse(finishingError.get().get());
                 break;
             } else {
                 log.info("'{}' finished initial execution of {}", name, op);
@@ -628,15 +642,15 @@ public class HapiApiSpec implements Runnable {
 
     public static Def.Setup hapiSpec(String name) {
         return setup ->
-                given -> when -> then -> new HapiApiSpec(name, false, setup, given, when, then);
+                given -> when -> then -> new HapiSpec(name, false, setup, given, when, then);
     }
 
     public static Def.Setup onlyHapiSpec(String name) {
         return setup ->
-                given -> when -> then -> new HapiApiSpec(name, true, setup, given, when, then);
+                given -> when -> then -> new HapiSpec(name, true, setup, given, when, then);
     }
 
-    private HapiApiSpec(
+    private HapiSpec(
             String name,
             boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
@@ -689,7 +703,7 @@ public class HapiApiSpec implements Runnable {
 
         @FunctionalInterface
         interface Then {
-            HapiApiSpec then(HapiSpecOperation... ops);
+            HapiSpec then(HapiSpecOperation... ops);
         }
     }
 

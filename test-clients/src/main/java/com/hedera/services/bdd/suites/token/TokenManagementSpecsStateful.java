@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -32,16 +32,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenManagementSpecsStateful extends HapiApiSuite {
+public class TokenManagementSpecsStateful extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenManagementSpecsStateful.class);
 
     private static final String defaultMaxNftMints =
@@ -52,15 +52,15 @@ public class TokenManagementSpecsStateful extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     /* Stateful specs from TokenManagementSpecs */
                     freezeMgmtFailureCasesWork(),
                 });
     }
 
-    public HapiApiSpec freezeMgmtFailureCasesWork() {
+    public HapiSpec freezeMgmtFailureCasesWork() {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
@@ -99,7 +99,7 @@ public class TokenManagementSpecsStateful extends HapiApiSuite {
                 .then(getTokenInfo(unfreezableToken).hasRegisteredId(unfreezableToken).logged());
     }
 
-    private HapiApiSpec nftMintingCapIsEnforced() {
+    private HapiSpec nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
                         newKeyNamed("supplyKey"),

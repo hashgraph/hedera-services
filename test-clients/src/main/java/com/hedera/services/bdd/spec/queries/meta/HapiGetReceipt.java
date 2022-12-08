@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
@@ -114,7 +114,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) {
+    protected void submitWith(HapiSpec spec, Transaction payment) {
         TransactionID txnId =
                 explicitTxnId.orElseGet(
                         () -> useDefaultTxnId ? defaultTxnId : spec.registry().getTxnId(txn));
@@ -138,7 +138,7 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) {
+    protected void assertExpectationsGiven(HapiSpec spec) {
         var receipt = response.getTransactionGetReceipt().getReceipt();
         if (expectedPriorityStatus.isPresent()) {
             ResponseCodeEnum actualStatus = receipt.getStatus();
@@ -181,12 +181,12 @@ public class HapiGetReceipt extends HapiQueryOp<HapiGetReceipt> {
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiApiSpec spec) {
+    protected long costOnlyNodePayment(HapiSpec spec) {
         return 0L;
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) {
         return 0L;
     }
 

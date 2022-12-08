@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCal
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
@@ -88,14 +88,14 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return (omitAdminKey || useDeprecatedAdminKey)
                 ? super.defaultSigners()
                 : List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> adminKey);
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             if (gasObserver.isPresent()) {
                 doGasLookup(
@@ -149,7 +149,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         }
     }
 
-    protected void generateAdminKey(HapiApiSpec spec) {
+    protected void generateAdminKey(HapiSpec spec) {
         if (key.isPresent()) {
             adminKey = spec.registry().getKey(key.get());
         } else {
@@ -167,7 +167,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         }
     }
 
-    protected void setBytecodeToDefaultContract(HapiApiSpec spec) throws Throwable {
+    protected void setBytecodeToDefaultContract(HapiSpec spec) throws Throwable {
         String implicitBytecodeFile = contract + "Bytecode";
         HapiFileCreate fileCreate =
                 TxnVerbs.fileCreate(implicitBytecodeFile).path(spec.setup().defaultContractPath());

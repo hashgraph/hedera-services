@@ -15,10 +15,10 @@
  */
 package com.hedera.services.bdd.suites;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_FAILED;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
+import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_FAILED;
+import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.Logger;
 
-public abstract class HapiApiSuite {
+public abstract class HapiSuite {
 
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
@@ -52,7 +52,7 @@ public abstract class HapiApiSuite {
 
     protected abstract Logger getResultsLogger();
 
-    public abstract List<HapiApiSpec> getSpecsInSuite();
+    public abstract List<HapiSpec> getSpecsInSuite();
 
     public static final Key EMPTY_KEY =
             Key.newBuilder().setKeyList(KeyList.newBuilder().build()).build();
@@ -127,7 +127,7 @@ public abstract class HapiApiSuite {
 
     private boolean deferResultsSummary = false;
     private boolean tearDownClientsAfter = true;
-    private List<HapiApiSpec> finalSpecs = Collections.emptyList();
+    private List<HapiSpec> finalSpecs = Collections.emptyList();
     private int suiteRunnerCounter = 0;
 
     public String name() {
@@ -140,7 +140,7 @@ public abstract class HapiApiSuite {
         return simpleName;
     }
 
-    public List<HapiApiSpec> getFinalSpecs() {
+    public List<HapiSpec> getFinalSpecs() {
         return finalSpecs;
     }
 
@@ -168,25 +168,25 @@ public abstract class HapiApiSuite {
     }
 
     public FinalOutcome runSuiteAsync() {
-        return runSuite(this::runAsync);
+        return runSuite(HapiSuite::runConcurrentSpecs);
     }
 
     public FinalOutcome runSuiteSync() {
-        return runSuite(this::runSync);
+        return runSuite(HapiSuite::runSequentialSpecs);
     }
 
-    protected FinalOutcome finalOutcomeFor(List<HapiApiSpec> completedSpecs) {
-        return completedSpecs.stream().allMatch(HapiApiSpec::ok) ? SUITE_PASSED : SUITE_FAILED;
+    protected FinalOutcome finalOutcomeFor(final List<HapiSpec> completedSpecs) {
+        return completedSpecs.stream().allMatch(HapiSpec::ok) ? SUITE_PASSED : SUITE_FAILED;
     }
 
     @SuppressWarnings("java:S2629")
-    private FinalOutcome runSuite(Consumer<List<HapiApiSpec>> runner) {
+    private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
         suiteRunnerCounter++;
         if (!getDeferResultsSummary()) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
-        List<HapiApiSpec> specs = getSpecsInSuite();
+        List<HapiSpec> specs = getSpecsInSuite();
         for (final var spec : specs) {
             if (spec.isOnlySpecToRunInSuite()) {
                 specs = List.of(spec);
@@ -219,7 +219,7 @@ public abstract class HapiApiSuite {
     }
 
     @SafeVarargs
-    protected final List<HapiApiSpec> allOf(final List<HapiApiSpec>... specLists) {
+    protected final List<HapiSpec> allOf(final List<HapiSpec>... specLists) {
         return Arrays.stream(specLists).flatMap(List::stream).toList();
     }
 
@@ -234,20 +234,19 @@ public abstract class HapiApiSuite {
         }
         log.info(STARTING_SUITE, name());
         log.info("-------------- RESULTS OF {} SUITE --------------", name());
-        for (HapiApiSpec spec : finalSpecs) {
+        for (HapiSpec spec : finalSpecs) {
             log.info(spec);
         }
     }
 
-    private void runSync(Iterable<HapiApiSpec> specs) {
-        StreamSupport.stream(specs.spliterator(), false).forEach(Runnable::run);
+    private static void runSequentialSpecs(final List<HapiSpec> specs) {
+        specs.forEach(Runnable::run);
     }
 
-    private void runAsync(Iterable<HapiApiSpec> specs) {
-        final CompletableFuture[] futures =
-                StreamSupport.stream(specs.spliterator(), false)
-                        .map(r -> CompletableFuture.runAsync(r, HapiApiSpec.getCommonThreadPool()))
-                        .toArray(CompletableFuture[]::new);
+    public static void runConcurrentSpecs(final List<HapiSpec> specs) {
+        final var futures = specs.stream()
+                        .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool()))
+                        .<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
     }
 

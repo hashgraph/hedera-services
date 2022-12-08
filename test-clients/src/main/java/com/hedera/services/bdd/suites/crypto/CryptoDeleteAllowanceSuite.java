@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
@@ -50,8 +50,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
@@ -59,7 +59,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
+public class CryptoDeleteAllowanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoDeleteAllowanceSuite.class);
 
     public static void main(String... args) {
@@ -67,9 +67,9 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     happyPathWorks(),
                     approvedForAllNotAffectedOnDelete(),
                     noOwnerDefaultsToPayerInDeleteAllowance(),
@@ -86,7 +86,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec duplicateEntriesDoesntThrow() {
+    private HapiSpec duplicateEntriesDoesntThrow() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -166,7 +166,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(nft, 3L).hasNoSpender());
     }
 
-    private HapiApiSpec invalidOwnerFails() {
+    private HapiSpec invalidOwnerFails() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -225,7 +225,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(ACCOUNT_DELETED));
     }
 
-    private HapiApiSpec feesAsExpected() {
+    private HapiSpec feesAsExpected() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -318,7 +318,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                         validateChargedUsdWithin("twoDeleteNft", 0.08124, 0.01));
     }
 
-    private HapiApiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
+    private HapiSpec succeedsWhenTokenPausedFrozenKycRevoked() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -425,7 +425,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                                                 "hedera.allowances.maxAccountLimit", "100")));
     }
 
-    private HapiApiSpec exceedsTransactionLimit() {
+    private HapiSpec exceedsTransactionLimit() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -504,7 +504,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                                         Map.of("hedera.allowances.maxTransactionLimit", "20")));
     }
 
-    private HapiApiSpec validatesSerialNums() {
+    private HapiSpec validatesSerialNums() {
         final String owner = "owner";
         final String spender = "spender";
         final String nft = "nft";
@@ -563,7 +563,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec invalidTokenTypeFailsInDeleteAllowance() {
+    private HapiSpec invalidTokenTypeFailsInDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -594,7 +594,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                                 .hasPrecheck(FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES));
     }
 
-    private HapiApiSpec emptyAllowancesDeleteRejected() {
+    private HapiSpec emptyAllowancesDeleteRejected() {
         final String owner = "owner";
         return defaultHapiSpec("emptyAllowancesDeleteRejected")
                 .given(
@@ -605,7 +605,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
+    private HapiSpec tokenNotAssociatedToAccountFailsOnDeleteAllowance() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -657,7 +657,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                                                 .tokenAllowancesCount(0)));
     }
 
-    private HapiApiSpec canDeleteMultipleOwners() {
+    private HapiSpec canDeleteMultipleOwners() {
         final String owner1 = "owner1";
         final String owner2 = "owner2";
         final String spender = "spender";
@@ -754,7 +754,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(nft, 5L).hasNoSpender());
     }
 
-    private HapiApiSpec noOwnerDefaultsToPayerInDeleteAllowance() {
+    private HapiSpec noOwnerDefaultsToPayerInDeleteAllowance() {
         final String payer = "payer";
         final String spender = "spender";
         final String spender1 = "spender1";
@@ -819,7 +819,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
-    private HapiApiSpec approvedForAllNotAffectedOnDelete() {
+    private HapiSpec approvedForAllNotAffectedOnDelete() {
         final String owner = "owner";
         final String spender = "spender";
         final String token = "token";
@@ -898,7 +898,7 @@ public class CryptoDeleteAllowanceSuite extends HapiApiSuite {
                         getTokenNftInfo(nft, 1L).hasNoSpender());
     }
 
-    private HapiApiSpec happyPathWorks() {
+    private HapiSpec happyPathWorks() {
         final String owner = "owner";
         final String spender = "spender";
         final String spender1 = "spender1";

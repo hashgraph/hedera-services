@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.utilops.grouping;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 
@@ -29,7 +29,7 @@ public class InBlockingOrder extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         allRunFor(spec, ops);
         return false;
     }

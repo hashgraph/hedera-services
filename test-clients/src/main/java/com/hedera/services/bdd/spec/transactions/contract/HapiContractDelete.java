@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions.contract;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.SupportedContract;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -71,7 +71,7 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.ContractDelete,
@@ -81,7 +81,7 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         ContractDeleteTransactionBody opBody =
                 spec.txns()
                         .<ContractDeleteTransactionBody, ContractDeleteTransactionBody.Builder>body(
@@ -101,7 +101,7 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) throws Throwable {
+    protected void updateStateOf(HapiSpec spec) throws Throwable {
         if (actualStatus != SUCCESS) {
             return;
         }
@@ -135,12 +135,12 @@ public class HapiContractDelete extends HapiTxnOp<HapiContractDelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::deleteContract;
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(contract));
