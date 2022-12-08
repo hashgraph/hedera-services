@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.failResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.fungibleTokenAddr;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.invalidFullPrefix;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfo;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
@@ -186,6 +187,8 @@ class TokenUpdatePrecompileTest {
         givenFrameContext();
         given(frame.getBlockValues())
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
@@ -211,6 +214,8 @@ class TokenUpdatePrecompileTest {
         givenFrameContext();
         given(frame.getBlockValues())
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
@@ -236,6 +241,8 @@ class TokenUpdatePrecompileTest {
         givenFrameContext();
         given(frame.getBlockValues())
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
@@ -258,6 +265,8 @@ class TokenUpdatePrecompileTest {
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
@@ -272,6 +281,36 @@ class TokenUpdatePrecompileTest {
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(failResult, result);
+    }
+
+    @Test
+    void failsWithInvalidFullPrefixForMissingTreasurySig() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        givenFrameContext();
+        givenMinimalContextForSuccessfulCall();
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(false);
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(updateWrapper);
+        given(syntheticTxnFactory.createTokenUpdate(updateWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        // when
+        subject.prepareFields(frame);
+        subject.prepareComputation(input, a -> a);
+        final var result = subject.computeInternal(frame);
+        // then
+        assertEquals(invalidFullPrefix, result);
     }
 
     @Test

@@ -28,6 +28,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -42,6 +43,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -113,6 +115,23 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateOp.tokenID());
         type = UPDATE_TOKEN_INFO;
+
+        if (updateOp.treasury() != null) {
+            final var treasuryId = Id.fromGrpcAccount(updateOp.treasury());
+            final var treasuryHasSigned =
+                    KeyActivationUtils.validateKey(
+                            frame,
+                            treasuryId.asEvmAddress(),
+                            sigsVerifier::hasActiveKey,
+                            ledgers,
+                            aliases);
+
+            validateTrue(
+                    treasuryHasSigned,
+                    INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                    "Token update");
+        }
+
         super.run(frame);
     }
 
@@ -179,6 +198,12 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
         final var tokenKeys = decodeTokenKeys(hederaTokenStruct.get(7), aliasResolver);
         final var tokenExpiry = decodeTokenExpiry(hederaTokenStruct.get(8), aliasResolver);
         return new TokenUpdateWrapper(
-                tokenID, tokenName, tokenSymbol, tokenTreasury, tokenMemo, tokenKeys, tokenExpiry);
+                tokenID,
+                tokenName,
+                tokenSymbol,
+                tokenTreasury.getAccountNum() == 0 ? null : tokenTreasury,
+                tokenMemo,
+                tokenKeys,
+                tokenExpiry);
     }
 }
