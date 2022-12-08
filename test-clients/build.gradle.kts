@@ -62,6 +62,11 @@ dependencies {
     implementation(libs.hapi) {
         exclude("javax.annotation", "javax.annotation-api")
     }
+
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.netty)
+
     implementation(libs.headlong)
     implementation(libs.log4j.core)
     implementation(testLibs.json)

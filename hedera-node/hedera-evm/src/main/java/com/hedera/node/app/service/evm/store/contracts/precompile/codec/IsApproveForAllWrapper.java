@@ -13,6 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
+package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-public record OwnerOfAndTokenURIWrapper(long serialNo) {}
+public record IsApproveForAllWrapper<T, U, V>(T token, U owner, V operator) {}

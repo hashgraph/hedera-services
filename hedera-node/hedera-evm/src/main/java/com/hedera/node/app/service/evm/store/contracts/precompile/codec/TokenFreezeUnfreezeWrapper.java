@@ -13,26 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
+package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
+public record TokenFreezeUnfreezeWrapper<T, U>(T token, U account) {
 
-public record TokenFreezeUnfreezeWrapper(TokenID token, AccountID account) {
-
-    public static TokenFreezeUnfreezeWrapper forIsFrozen(TokenID token, AccountID account) {
+    public static <T, U> TokenFreezeUnfreezeWrapper<T, U> forIsFrozen(T token, U account) {
         return createWrapper(token, account);
     }
 
-    public static TokenFreezeUnfreezeWrapper forFreeze(TokenID token, AccountID account) {
+    public static <T, U> TokenFreezeUnfreezeWrapper<T, U> forFreeze(T token, U account) {
         return createWrapper(token, account);
     }
 
-    public static TokenFreezeUnfreezeWrapper forUnfreeze(TokenID token, AccountID account) {
+    public static <T, U> TokenFreezeUnfreezeWrapper<T, U> forUnfreeze(T token, U account) {
         return createWrapper(token, account);
     }
 
-    private static TokenFreezeUnfreezeWrapper createWrapper(TokenID token, AccountID account) {
-        return new TokenFreezeUnfreezeWrapper(token, account);
+    private static <T, U> TokenFreezeUnfreezeWrapper<T, U> createWrapper(T token, U account) {
+        return new TokenFreezeUnfreezeWrapper<>(token, account);
     }
 }
