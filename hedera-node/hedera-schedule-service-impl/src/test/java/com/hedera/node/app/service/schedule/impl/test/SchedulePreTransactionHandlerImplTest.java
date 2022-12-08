@@ -32,6 +32,7 @@ import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerIm
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
+import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
@@ -53,6 +54,7 @@ class SchedulePreTransactionHandlerImplTest {
     @Mock private PreHandleTxnAccessor accessor;
     @Mock private HederaKey payerKey;
     @Mock private SigTransactionMetadata scheduledMeta;
+    @Mock private PreHandleDispatcher dispatcher;
 
     private AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
     private AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
@@ -68,20 +70,8 @@ class SchedulePreTransactionHandlerImplTest {
     @BeforeEach
     void setUp() {
         given(accessor.getAccountKeyLookup()).willReturn(keyLookup);
-        subject = new SchedulePreTransactionHandlerImpl(accessor);
+        subject = new SchedulePreTransactionHandlerImpl(keyLookup);
     }
-
-    @Test
-    void preHandleDelegatesCorrectly() {
-        final var txn = scheduleCreateTransaction(scheduler);
-        final var subject = mock(SchedulePreTransactionHandlerImpl.class);
-
-        willCallRealMethod().given(subject).preHandle(any(), any());
-
-        subject.preHandle(txn, payer);
-        verify(subject).preHandleCreateSchedule(txn, payer);
-    }
-
     @Test
     void preHandleScheduleCreateVanilla() {
         final var txn = scheduleCreateTransaction(scheduler);
@@ -93,16 +83,16 @@ class SchedulePreTransactionHandlerImplTest {
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         given(accessor.getPreTxnHandler(HederaFunctionality.CryptoDelete))
                 .willReturn(scheduledTxnHandler);
-        given(scheduledTxnHandler.preHandle(scheduledTxn, scheduler)).willReturn(scheduledMeta);
+        given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
         given(scheduledMeta.failed()).willReturn(false);
 
-        final var meta = subject.preHandleCreateSchedule(txn, payer);
+        final var meta = subject.preHandleCreateSchedule(txn, payer, dispatcher);
 
         basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(List.of(payerKey, adminKey), meta.getReqKeys());
-        assertEquals(scheduledMeta, meta.getScheduledMeta());
+        assertEquals(List.of(payerKey, adminKey), meta.requiredKeys());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
 
-        verify(scheduledTxnHandler).preHandle(scheduledTxn, scheduler);
+        verify(dispatcher).dispatch(scheduledTxn, scheduler);
     }
 
     @Test
@@ -112,28 +102,28 @@ class SchedulePreTransactionHandlerImplTest {
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
         given(scheduledMeta.failed()).willReturn(false);
 
-        final var meta = subject.preHandleCreateSchedule(txn, payer);
+        final var meta = subject.preHandleCreateSchedule(txn, payer, dispatcher);
 
         basicMetaAssertions(meta, 1, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(List.of(adminKey), meta.getReqKeys());
-        assertEquals(scheduledMeta, meta.getScheduledMeta());
+        assertEquals(List.of(adminKey), meta.requiredKeys());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
 
-        verify(scheduledTxnHandler).preHandle(scheduledTxn, scheduler);
+        verify(dispatcher).dispatch(scheduledTxn, scheduler);
     }
 
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() {
         givenSetup(null);
-        given(scheduledTxnHandler.preHandle(scheduledTxn, payer)).willReturn(scheduledMeta);
+        given(dispatcher.dispatch(scheduledTxn, payer)).willReturn(scheduledMeta);
         given(scheduledMeta.failed()).willReturn(false);
 
-        final var meta = subject.preHandleCreateSchedule(txn, payer);
+        final var meta = subject.preHandleCreateSchedule(txn, payer, dispatcher);
 
         basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(List.of(payerKey, adminKey), meta.getReqKeys());
-        assertEquals(scheduledMeta, meta.getScheduledMeta());
+        assertEquals(List.of(payerKey, adminKey), meta.requiredKeys());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
 
-        verify(scheduledTxnHandler).preHandle(scheduledTxn, payer);
+        verify(dispatcher).dispatch(scheduledTxn, payer);
     }
 
     @Test
@@ -146,15 +136,15 @@ class SchedulePreTransactionHandlerImplTest {
 
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
 
-        final var meta = subject.preHandleCreateSchedule(txn, payer);
+        final var meta = subject.preHandleCreateSchedule(txn, payer, dispatcher);
 
         basicMetaAssertions(meta, 1, false, OK);
         basicMetaAssertions(
-                meta.getScheduledMeta(), 1, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
-        assertEquals(List.of(payerKey), meta.getReqKeys());
-        assertEquals(List.of(payerKey), meta.getScheduledMeta().getReqKeys());
+                meta.scheduledMeta(), 1, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        assertEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(List.of(payerKey), meta.scheduledMeta().requiredKeys());
 
-        verify(scheduledTxnHandler, never()).preHandle(scheduledTxn, payer);
+        verify(dispatcher, never()).dispatch(scheduledTxn, payer);
     }
 
     @Test
@@ -162,15 +152,15 @@ class SchedulePreTransactionHandlerImplTest {
         givenSetup(scheduler);
         given(scheduledMeta.failed()).willReturn(true);
 
-        final var meta = subject.preHandleCreateSchedule(txn, payer);
+        final var meta = subject.preHandleCreateSchedule(txn, payer, dispatcher);
 
         basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(List.of(payerKey, adminKey), meta.getReqKeys());
+        assertEquals(List.of(payerKey, adminKey), meta.requiredKeys());
 
-        verify(invalidScheduledPreTxnHandler, never()).preHandle(scheduledTxn, payer);
-        verify(scheduledMeta).setStatus(UNRESOLVABLE_REQUIRED_SIGNERS);
+        verify(dispatcher, never()).dispatch(scheduledTxn, payer);
+        verify(scheduledMeta).copy(keyLookup).status(UNRESOLVABLE_REQUIRED_SIGNERS);
 
-        assertEquals(scheduledMeta, meta.getScheduledMeta());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
     }
 
     private void givenSetup(final AccountID scheduler) {
@@ -184,7 +174,7 @@ class SchedulePreTransactionHandlerImplTest {
         given(accessor.getPreTxnHandler(HederaFunctionality.CryptoDelete))
                 .willReturn(scheduledTxnHandler);
         lenient()
-                .when(scheduledTxnHandler.preHandle(scheduledTxn, scheduler))
+                .when(dispatcher.dispatch(scheduledTxn, scheduler))
                 .thenReturn(scheduledMeta);
     }
 
@@ -193,7 +183,7 @@ class SchedulePreTransactionHandlerImplTest {
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.getReqKeys().size());
+        assertEquals(keysSize, meta.requiredKeys().size());
         assertTrue(failed ? meta.failed() : !meta.failed());
         assertEquals(failureStatus, meta.status());
     }

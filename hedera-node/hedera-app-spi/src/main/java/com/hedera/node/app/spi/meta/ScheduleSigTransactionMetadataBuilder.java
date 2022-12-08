@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -29,21 +28,21 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * because doing so would cause service modules to have a circular dependency on the app module.
  * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
-        implements ScheduleTransactionMetadata {
+public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
     private TransactionMetadata scheduledTxnMeta;
 
-    public ScheduleSigTransactionMetadata(
-            final TransactionBody topLevelTxn,
-            final AccountID payer,
-            final ResponseCodeEnum status,
-            final TransactionMetadata scheduledTxnMeta) {
-        super(topLevelTxn, payer, status);
-        this.scheduledTxnMeta = scheduledTxnMeta;
+    public ScheduleSigTransactionMetadataBuilder(
+            final AccountKeyLookup keyLookup) {
+        super(keyLookup);
+    }
+
+    public ScheduleSigTransactionMetadataBuilder scheduledMeta(final TransactionMetadata meta) {
+        this.scheduledTxnMeta = meta;
+        return this;
     }
 
     @Override
-    public TransactionMetadata scheduledMeta() {
-        return scheduledTxnMeta;
+    public ScheduleSigTransactionMetadata build(){
+        return new ScheduleSigTransactionMetadata(txn, payer, status, scheduledTxnMeta);
     }
 }

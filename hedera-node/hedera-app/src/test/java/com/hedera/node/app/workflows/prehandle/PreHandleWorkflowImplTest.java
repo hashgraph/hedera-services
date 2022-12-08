@@ -32,6 +32,7 @@ import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
@@ -88,7 +89,8 @@ class PreHandleWorkflowImplTest {
             @Mock TokenService tokenService,
             @Mock UtilService utilService,
             @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers) {
+            @Mock HederaFileNumbers hederaFileNumbers,
+            @Mock AccountKeyLookup keyLookup) {
         servicesAccessor =
                 new ServicesAccessor(
                         consensusService,
@@ -101,7 +103,7 @@ class PreHandleWorkflowImplTest {
                         tokenService,
                         utilService);
 
-        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
+        context = new PreHandleContext(accountNumbers, hederaFileNumbers, keyLookup);
 
         workflow =
                 new PreHandleWorkflowImpl(
@@ -177,7 +179,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any(), eq(accessor));
+        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any());
     }
 
     @Test
@@ -192,7 +194,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state2, event);
 
         // then
-        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any(), eq(accessor));
+        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any());
     }
 
     @Test
@@ -220,9 +222,9 @@ class PreHandleWorkflowImplTest {
         final HederaFunctionality functionality = HederaFunctionality.CryptoCreate;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
-        when(cryptoService.createPreTransactionHandler(any(), eq(context), eq(accessor)))
+        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(preTransactionHandler);
-        when(preTransactionHandler.preHandle(eq(txBody), any())).thenReturn(metadata);
+        when(preTransactionHandler.preHandleCryptoCreate(eq(txBody), any())).thenReturn(metadata);
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);

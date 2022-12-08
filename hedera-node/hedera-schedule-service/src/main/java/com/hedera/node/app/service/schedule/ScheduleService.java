@@ -16,11 +16,11 @@
 package com.hedera.node.app.service.schedule;
 
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.ServiceLoader;
 
 /**
@@ -39,8 +39,7 @@ public interface ScheduleService extends Service {
     @Override
     SchedulePreTransactionHandler createPreTransactionHandler(
             @NonNull States states,
-            @NonNull PreHandleContext ctx,
-            @NonNull PreHandleTxnAccessor accessor);
+            @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

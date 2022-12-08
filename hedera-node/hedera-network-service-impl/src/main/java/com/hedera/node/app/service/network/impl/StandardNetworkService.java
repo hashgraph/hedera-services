@@ -30,8 +30,7 @@ public final class StandardNetworkService implements NetworkService {
     @Override
     public NetworkPreTransactionHandler createPreTransactionHandler(
             @NonNull States states,
-            @NonNull PreHandleContext ctx,
-            @NonNull PreHandleTxnAccessor accessor) {
+            @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

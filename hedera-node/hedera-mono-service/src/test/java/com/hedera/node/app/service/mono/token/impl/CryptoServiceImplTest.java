@@ -36,7 +36,6 @@ class CryptoServiceImplTest {
     @Mock private InMemoryStateImpl accounts;
     @Mock States states;
     @Mock PreHandleContext ctx;
-    @Mock PreHandleTxnAccessor accessor;
 
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
@@ -49,8 +48,8 @@ class CryptoServiceImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        final var serviceImpl = subject.createPreTransactionHandler(states, ctx, accessor);
-        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx, accessor);
+        final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
+        final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 

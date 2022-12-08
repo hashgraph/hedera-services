@@ -15,27 +15,9 @@
  */
 package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-
 /**
  * Marks a type able to "pre-handle" transactions, extracting the metadata needed to set the stage
  * for efficient processing of the transaction at consensus.
  */
 public interface PreTransactionHandler {
-    /**
-     * pre-handles a transaction given the type of transaction based on the {@link
-     * HederaFunctionality} function. This is a generic way to delegate to different service
-     * pre-transaction handlers for schedule transactions. Payer for the transaction can be easily
-     * found from {@link com.hederahashgraph.api.proto.java.TransactionID}, but payer is explicitly
-     * given as an input because schedule transactions can have a custom payer in top level
-     * transaction.
-     *
-     * @param tx given transaction
-     * @param payer payer for the transaction
-     * @return metadata after pre-handling the transaction
-     */
-    TransactionMetadata preHandle(final TransactionBody tx, AccountID payer);
 }

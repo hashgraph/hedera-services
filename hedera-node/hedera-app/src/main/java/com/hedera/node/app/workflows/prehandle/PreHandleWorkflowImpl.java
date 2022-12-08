@@ -57,10 +57,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     private final ServicesAccessor servicesAccessor;
     private final WorkflowOnset onset;
     private final PreHandleContext context;
-    private final PreHandleTxnAccessor preHandleTxnAccessor;
-
     private HederaState lastUsedState;
-    private PreHandleDispatcher dispatcher;
+    private PreHandleDispatcherImpl dispatcher;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
@@ -81,7 +79,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.context = requireNonNull(context);
         this.onset = requireNonNull(onset);
-        this.preHandleTxnAccessor = requireNonNull(preHandleTxnAccessor);
     }
 
     @Override
@@ -92,8 +89,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher =
-                    new PreHandleDispatcher(state, servicesAccessor, context, preHandleTxnAccessor);
+            dispatcher = new PreHandleDispatcherImpl(state, servicesAccessor, context);
             lastUsedState = state;
         }
 
@@ -110,7 +106,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private TransactionMetadata preHandle(
-            final PreHandleDispatcher dispatcher,
+            final PreHandleDispatcherImpl dispatcher,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
         try {
@@ -123,7 +119,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var metadata = dispatcher.dispatch(txBody);
+            final var metadata = dispatcher.dispatch(txBody, txBody.getTransactionID().getAccountID());
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented

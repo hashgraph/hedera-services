@@ -27,11 +27,5 @@ public interface ScheduleTransactionMetadata extends TransactionMetadata {
      * Gets the scheduled transaction metadata
      * @return scheduled transaction metadata
      */
-    TransactionMetadata getScheduledMeta();
-
-    /**
-     * Sets the scheduled transaction metadata
-     * @param metadata scheduled transaction metadata
-     */
-    void setScheduledMeta(TransactionMetadata metadata);
+    TransactionMetadata scheduledMeta();
 }

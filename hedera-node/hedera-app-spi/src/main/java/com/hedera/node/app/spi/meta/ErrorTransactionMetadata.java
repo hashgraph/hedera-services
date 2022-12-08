@@ -17,6 +17,7 @@ package com.hedera.node.app.spi.meta;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -65,25 +66,18 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
 
     @Nullable
     @Override
-    public TransactionBody getTxn() {
+    public TransactionBody txnBody() {
         return txBody;
     }
 
     @NonNull
     @Override
-    public List<HederaKey> getReqKeys() {
+    public List<HederaKey> requiredKeys() {
         return List.of();
     }
 
     @Override
-    public void setStatus(final ResponseCodeEnum status) {
-        throw new UnsupportedOperationException(
-                "This operation is not supported after an error occurred");
-    }
-
-    @Override
-    public void addToReqKeys(final HederaKey key) {
-        throw new UnsupportedOperationException(
-                "This operation is not supported after an error occurred");
+    public SigTransactionMetadataBuilder copy(AccountKeyLookup lookup) {
+        throw new UnsupportedOperationException("Copy of Error metadata is not supported");
     }
 }

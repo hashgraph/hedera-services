@@ -18,9 +18,9 @@ package com.hedera.node.app.service.schedule.impl;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Objects;
 
 public class ScheduleServiceImpl implements ScheduleService {
@@ -28,10 +28,9 @@ public class ScheduleServiceImpl implements ScheduleService {
     @Override
     public SchedulePreTransactionHandler createPreTransactionHandler(
             @NonNull States states,
-            @NonNull PreHandleContext ctx,
-            @NonNull PreHandleTxnAccessor accessor) {
+            @NonNull PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        return new SchedulePreTransactionHandlerImpl(accessor);
+        return new SchedulePreTransactionHandlerImpl(ctx.keyLookup());
     }
 }

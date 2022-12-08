@@ -39,13 +39,12 @@ class ScheduleServiceImplTest {
     @Mock private States states;
     @Mock private HederaAccountNumbers numbers;
     @Mock private HederaFileNumbers fileNumbers;
-    @Mock private PreHandleTxnAccessor accessor;
     @Mock private AccountKeyLookup keyLookup;
     public PreHandleContext preHandleCtx;
 
     @BeforeEach
     void setUp() {
-        preHandleCtx = new PreHandleContext(numbers, fileNumbers);
+        preHandleCtx = new PreHandleContext(numbers, fileNumbers, keyLookup);
     }
 
     @Test
@@ -60,11 +59,10 @@ class ScheduleServiceImplTest {
 
     @Test
     void createsNewInstance() {
-        given(accessor.getAccountKeyLookup()).willReturn(keyLookup);
         final ScheduleService service = ScheduleService.getInstance();
-        final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx, accessor);
+        final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx);
         final var serviceImpl1 =
-                service.createPreTransactionHandler(states, preHandleCtx, accessor);
+                service.createPreTransactionHandler(states, preHandleCtx);
         assertNotEquals(serviceImpl1, serviceImpl);
     }
 
@@ -73,12 +71,12 @@ class ScheduleServiceImplTest {
         final ScheduleService service = ScheduleService.getInstance();
         assertThrows(
                 NullPointerException.class,
-                () -> service.createPreTransactionHandler(null, preHandleCtx, accessor));
+                () -> service.createPreTransactionHandler(null, preHandleCtx));
         assertThrows(
                 NullPointerException.class,
-                () -> service.createPreTransactionHandler(states, null, accessor));
+                () -> service.createPreTransactionHandler(states, null));
         assertThrows(
                 NullPointerException.class,
-                () -> service.createPreTransactionHandler(states, preHandleCtx, null));
+                () -> service.createPreTransactionHandler(states, preHandleCtx));
     }
 }

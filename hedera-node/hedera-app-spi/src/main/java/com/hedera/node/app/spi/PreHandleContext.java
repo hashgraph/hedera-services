@@ -31,9 +31,12 @@ import java.util.Objects;
  *     transactions
  */
 public record PreHandleContext(
-        @NonNull HederaAccountNumbers accountNumbers, @NonNull HederaFileNumbers fileNumbers) {
+        @NonNull HederaAccountNumbers accountNumbers,
+        @NonNull HederaFileNumbers fileNumbers,
+        @NonNull AccountKeyLookup keyLookup) {
     public PreHandleContext {
         Objects.requireNonNull(accountNumbers);
         Objects.requireNonNull(fileNumbers);
+        Objects.requireNonNull(keyLookup);
     }
 }
