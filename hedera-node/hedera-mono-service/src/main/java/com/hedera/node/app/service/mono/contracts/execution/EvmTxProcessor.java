@@ -121,48 +121,41 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         super.setupFields(contractCreation);
 
         final var chargingResult =
-            chargeForGas(
-                gasCost,
-                upfrontCost,
-                value,
-                maxGasAllowanceInTinybars,
-                intrinsicGas,
-                gasPrice,
-                gasLimit,
-                isStatic,
-                userOfferedGasPrice,
-                sender.getId().asEvmAddress(),
-                relayer == null ? null : relayer.getId().asEvmAddress(),
-                (HederaWorldState.Updater) updater);
+                chargeForGas(
+                        gasCost,
+                        upfrontCost,
+                        value,
+                        maxGasAllowanceInTinybars,
+                        intrinsicGas,
+                        gasPrice,
+                        gasLimit,
+                        isStatic,
+                        userOfferedGasPrice,
+                        sender.getId().asEvmAddress(),
+                        relayer == null ? null : relayer.getId().asEvmAddress(),
+                        (HederaWorldState.Updater) updater);
 
         // Enable tracing of contract actions if action sidecars are enabled and this is not a
         // static call
         final HederaTracer hederaTracer =
-            new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
         super.setOperationTracer(hederaTracer);
 
         try {
             super.execute(
-                sender,
-                receiver,
-                gasPrice,
-                gasLimit,
-                value,
-                payload,
-                isStatic,
-                mirrorReceiver);
+                    sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
         } catch (final ResourceLimitException e) {
             handleResourceLimitExceeded(
-                sender,
-                gasPrice,
-                gasLimit,
-                value,
-                isStatic,
-                userOfferedGasPrice,
-                maxGasAllowanceInTinybars,
-                relayer,
-                gasCost,
-                upfrontCost);
+                    sender,
+                    gasPrice,
+                    gasLimit,
+                    value,
+                    isStatic,
+                    userOfferedGasPrice,
+                    maxGasAllowanceInTinybars,
+                    relayer,
+                    gasCost,
+                    upfrontCost);
             return createResourceLimitExceededResult(gasPrice, gasLimit, e);
         }
 

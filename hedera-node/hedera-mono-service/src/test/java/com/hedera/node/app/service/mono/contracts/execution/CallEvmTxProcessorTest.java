@@ -738,8 +738,8 @@ class CallEvmTxProcessorTest {
 
         assertFalse(result.isSuccessful());
         assertEquals(result.getGasUsed(), gasLimit);
-        verify(mutableSenderAccount, times(1)).decrementBalance(Wei.of(offeredGasPrice * gasLimit));
-        verify(mutableRelayerAccount, times(1))
+        verify(mutableSenderAccount, times(2)).decrementBalance(Wei.of(offeredGasPrice * gasLimit));
+        verify(mutableRelayerAccount, times(2))
                 .decrementBalance(Wei.of(gasPrice * gasLimit - offeredGasPrice * gasLimit));
         verify(mutableRelayerAccount, never()).incrementBalance(any());
         verify(mutableSenderAccount, never()).incrementBalance(any());
