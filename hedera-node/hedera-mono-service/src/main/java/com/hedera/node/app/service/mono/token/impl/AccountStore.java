@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +44,7 @@ import java.util.Optional;
  */
 public final class AccountStore {
     /** The underlying data storage class that holds the account data. */
-    private final State<Long, MerkleAccount> accountState;
+    private final State<Long, HederaAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final State<ByteString, Long> aliases;
 
@@ -91,10 +92,12 @@ public final class AccountStore {
             return withFailureReason(INVALID_ACCOUNT_ID);
         }
 
-        if (!account.get().isReceiverSigRequired()) {
+        final var responseIgnoringSigReq = validateKey(account.get().getAccountKey());
+        if (responseIgnoringSigReq.failed() || account.get().isReceiverSigRequired()) {
+            return responseIgnoringSigReq;
+        } else {
             return PRESENT_BUT_NOT_REQUIRED;
         }
-        return validateKey(account.get().getAccountKey());
     }
 
     /**
@@ -104,7 +107,7 @@ public final class AccountStore {
      * @param id given account number
      * @return merkle leaf for the given account number
      */
-    private Optional<MerkleAccount> getAccountLeaf(final AccountID id) {
+    private Optional<HederaAccount> getAccountLeaf(final AccountID id) {
         final var accountNum = getAccountNum(id);
         if (accountNum.equals(MISSING_NUM)) {
             return Optional.empty();

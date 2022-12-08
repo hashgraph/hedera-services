@@ -205,6 +205,7 @@ class AccountStoreTest {
     void getsNullKeyIfAndReceiverSigNotRequired() {
         given(aliases.get(payerAlias.getAlias())).willReturn(Optional.of(payerNum));
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
         final var result = subject.getKeyIfReceiverSigRequired(payerAlias);
@@ -217,6 +218,7 @@ class AccountStoreTest {
     @Test
     void getsNullKeyFromAccountIfReceiverKeyNotRequired() {
         given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
         given(account.isReceiverSigRequired()).willReturn(false);
 
         final var result = subject.getKeyIfReceiverSigRequired(payer);
@@ -232,8 +234,6 @@ class AccountStoreTest {
         given(account.getAccountKey()).willReturn(null);
 
         assertThrows(IllegalArgumentException.class, () -> subject.getKey(payer));
-
-        given(account.isReceiverSigRequired()).willReturn(true);
         assertThrows(
                 IllegalArgumentException.class, () -> subject.getKeyIfReceiverSigRequired(payer));
     }
@@ -249,7 +249,6 @@ class AccountStoreTest {
         assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
-        given(account.isReceiverSigRequired()).willReturn(true);
         result = subject.getKeyIfReceiverSigRequired(payer);
 
         assertTrue(result.failed());

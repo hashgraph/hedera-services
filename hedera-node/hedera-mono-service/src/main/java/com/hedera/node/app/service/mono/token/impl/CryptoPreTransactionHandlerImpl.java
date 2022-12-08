@@ -44,6 +44,8 @@ import org.apache.commons.lang3.NotImplementedException;
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each crypto operation.
+ *
+ * <b>GOOD TO KNOW:</b> this class intentionally changes some error response codes.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
@@ -228,8 +230,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                         meta.addNonPayerKeyIfReceiverSigRequired(
                                 nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                     } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
-                            && nftTransfer.hasReceiverAccountID()
-                            && !receivesFungibleValue(nftTransfer.getReceiverAccountID(), op)) {
+                            && !receivesFungibleValue(nftTransfer.getSenderAccountID(), op)) {
                         // Fallback situation; but we still need to check if the treasury is
                         // the sender or receiver, since in neither case will the fallback
                         // fee actually be charged
@@ -241,7 +242,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                     }
                 } else {
                     final var isMissingAcc =
-                            receiverKeyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID)
+                            INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
                                     && isAlias(nftTransfer.getReceiverAccountID());
                     if (!isMissingAcc) {
                         meta.setStatus(receiverKeyOrFailure.failureReason());
