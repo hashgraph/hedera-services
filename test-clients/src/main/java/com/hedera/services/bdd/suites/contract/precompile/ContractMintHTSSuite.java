@@ -153,7 +153,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
-        return defaultHapiSpec("FungibleMint")
+        return defaultHapiSpec("happyPathZeroUnitFungibleTokenMint")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).payingWith(GENESIS),
