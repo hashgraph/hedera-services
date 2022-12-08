@@ -128,10 +128,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(
-                positiveSpecs()
-                //                negativeSpecs()
-                );
+        return allOf(positiveSpecs(), negativeSpecs());
     }
 
     List<HapiApiSpec> negativeSpecs() {
@@ -143,13 +140,12 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-                //                helloWorldFungibleMint(),
-                helloWorldNftMint()
-                //                happyPathFungibleTokenMint(),
-                //                happyPathNonFungibleTokenMint()
-                //                transferNftAfterNestedMint(),
-                //                happyPathZeroUnitFungibleTokenMint()
-                );
+                helloWorldFungibleMint(),
+                helloWorldNftMint(),
+                happyPathFungibleTokenMint(),
+                happyPathNonFungibleTokenMint(),
+                transferNftAfterNestedMint(),
+                happyPathZeroUnitFungibleTokenMint());
     }
 
     private HapiApiSpec happyPathZeroUnitFungibleTokenMint() {
