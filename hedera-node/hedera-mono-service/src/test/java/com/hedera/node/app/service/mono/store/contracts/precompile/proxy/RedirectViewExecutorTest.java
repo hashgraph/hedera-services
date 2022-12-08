@@ -136,7 +136,7 @@ class RedirectViewExecutorTest {
         final var result = "name";
 
         given(worldLedgers.nameOf(fungible)).willReturn(result);
-        given(encodingFacade.encodeName(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeName(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -148,7 +148,7 @@ class RedirectViewExecutorTest {
         final var result = "symbol";
 
         given(worldLedgers.symbolOf(fungible)).willReturn(result);
-        given(encodingFacade.encodeSymbol(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeSymbol(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -162,7 +162,7 @@ class RedirectViewExecutorTest {
                 .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
-        given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
+        given(evmEncodingFacade.encodeAllowance(123L)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -178,7 +178,7 @@ class RedirectViewExecutorTest {
         given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
                 .willReturn(Address.ALTBN128_ADD);
         given(worldLedgers.canonicalAddress(Address.ALTBN128_ADD)).willReturn(Address.ALTBN128_ADD);
-        given(encodingFacade.encodeGetApproved(Address.ALTBN128_ADD)).willReturn(answer);
+        given(evmEncodingFacade.encodeGetApproved(Address.ALTBN128_ADD)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -194,7 +194,7 @@ class RedirectViewExecutorTest {
                 .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(isApproveForAll);
         given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
-        given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
+        given(evmEncodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -222,7 +222,7 @@ class RedirectViewExecutorTest {
 
         given(worldLedgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(worldLedgers.decimalsOf(fungible)).willReturn(result);
-        given(encodingFacade.encodeDecimals(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeDecimals(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -234,7 +234,7 @@ class RedirectViewExecutorTest {
         final var result = 1L;
 
         given(worldLedgers.totalSupplyOf(fungible)).willReturn(result);
-        given(encodingFacade.encodeTotalSupply(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeTotalSupply(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -250,7 +250,7 @@ class RedirectViewExecutorTest {
                 .thenReturn(balanceOfWrapper);
         given(balanceOfWrapper.account()).willReturn(account);
         given(worldLedgers.balanceOf(account, fungible)).willReturn(result);
-        given(encodingFacade.encodeBalance(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeBalance(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -268,7 +268,7 @@ class RedirectViewExecutorTest {
         given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
         given(worldLedgers.ownerOf(nonfungible)).willReturn(result);
         given(worldLedgers.canonicalAddress(result)).willReturn(result);
-        given(encodingFacade.encodeOwner(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeOwner(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }
@@ -285,7 +285,7 @@ class RedirectViewExecutorTest {
                 .thenReturn(ownerOfAndTokenURIWrapper);
         given(ownerOfAndTokenURIWrapper.serialNo()).willReturn(serialNum);
         given(worldLedgers.metadataOf(nonfungible)).willReturn(result);
-        given(encodingFacade.encodeTokenUri(result)).willReturn(answer);
+        given(evmEncodingFacade.encodeTokenUri(result)).willReturn(answer);
 
         assertEquals(Pair.of(gas, answer), subject.computeCosted());
     }

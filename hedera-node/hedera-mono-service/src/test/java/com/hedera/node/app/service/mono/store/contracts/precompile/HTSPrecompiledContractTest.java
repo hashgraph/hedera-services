@@ -365,7 +365,7 @@ class HTSPrecompiledContractTest {
 
         final var name = "name";
         given(wrappedLedgers.nameOf(fungible)).willReturn(name);
-        given(encoder.encodeName(name)).willReturn(Bytes.of(1));
+        given(evmEncoder.encodeName(name)).willReturn(Bytes.of(1));
 
         final var result = subject.computeCosted(input, messageFrame);
 
