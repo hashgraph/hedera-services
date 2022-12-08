@@ -310,7 +310,9 @@ class RedirectViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
-        this.subject = new RedirectViewExecutor(input, frame, encodingFacade, evmEncodingFacade, viewGasCalculator);
+        this.subject =
+                new RedirectViewExecutor(
+                        input, frame, encodingFacade, evmEncodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }
