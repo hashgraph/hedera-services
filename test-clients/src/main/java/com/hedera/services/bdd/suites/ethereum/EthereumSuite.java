@@ -56,6 +56,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -149,6 +150,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords())
                 .when(
                         balanceSnapshot(aliasBalanceSnapshot, SECP_256K1_SOURCE_KEY)
@@ -364,6 +366,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         cryptoCreate(PROXY))
                 .when(
@@ -494,6 +497,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -562,6 +566,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -632,6 +637,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(HELLO_WORLD_MINT_CONTRACT),
                         tokenCreate(fungibleToken)
@@ -755,6 +761,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         tinyBarsFromAccountToAlias(
                                                 GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
                                 .via("autoAccount"),
+                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
                         getTxnRecord("autoAccount").andAllChildRecords(),
                         uploadInitCode(EMIT_SENDER_ORIGIN_CONTRACT),
                         contractCreate(EMIT_SENDER_ORIGIN_CONTRACT))

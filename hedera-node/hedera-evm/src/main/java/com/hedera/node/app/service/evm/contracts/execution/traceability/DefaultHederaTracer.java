@@ -13,21 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.evm.contracts.execution;
+package com.hedera.node.app.service.evm.contracts.execution.traceability;
 
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import org.hyperledger.besu.datatypes.Address;
-
-public class MockHederaEvmAccount implements HederaEvmAccount {
-
-    private final Address address;
-
-    public MockHederaEvmAccount(final Address address) {
-        this.address = address;
-    }
-
-    @Override
-    public Address canonicalAddress() {
-        return address;
-    }
-}
+public class DefaultHederaTracer implements HederaEvmOperationTracer {}
