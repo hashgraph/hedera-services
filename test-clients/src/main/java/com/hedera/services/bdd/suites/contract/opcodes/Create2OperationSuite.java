@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -31,9 +32,11 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocalWithFunctionAbi;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedContractBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getLiteralAliasAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -56,6 +59,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -66,6 +70,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.aliasDelegateContrac
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
@@ -99,6 +105,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +135,7 @@ public class Create2OperationSuite extends HapiApiSuite {
             "Returner reported {} when called with mirror address";
     private static final String CONTRACT_REPORTED_LOG_MESSAGE =
             "Contract reported TestContract initcode is {} bytes";
+    public static final String ADMIN_KEY = "adminKey";
 
     public static void main(String... args) {
         new Create2OperationSuite().runSuiteSync();
@@ -147,6 +155,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     public List<HapiApiSpec> getSpecsInSuite() {
         return List.of(
                 create2FactoryWorksAsExpected(),
+                canBlockCreate2ChildWithHollowAccount(),
                 canDeleteViaAlias(),
                 cannotSelfDestructToMirrorAddress(),
                 priorityAddressIsCreate2ForStaticHapiCalls(),
@@ -325,8 +334,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -401,7 +409,7 @@ public class Create2OperationSuite extends HapiApiSuite {
         final var contract = "Create2Factory";
         final var testContract = "TestContract";
         final var salt = BigInteger.valueOf(42);
-        final var adminKey = "adminKey";
+        final var adminKey = ADMIN_KEY;
         final var replAdminKey = "replAdminKey";
         final var entityMemo = "JUST DO IT";
         final var customAutoRenew = 7776001L;
@@ -457,8 +465,7 @@ public class Create2OperationSuite extends HapiApiSuite {
                                                                     (byte[]) results[0];
                                                             testContractInitcode.set(tcInitcode);
                                                             LOG.info(
-                                                                    "Contract reported TestContract"
-                                                                        + " initcode is {} bytes",
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
                                                                     tcInitcode.length);
                                                         })
                                                 .payingWith(GENESIS)
@@ -667,6 +674,172 @@ public class Create2OperationSuite extends HapiApiSuite {
                                 () ->
                                         getContractInfo(expectedCreate2Address.get())
                                                 .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
+    }
+
+    @SuppressWarnings("java:S5960")
+    private HapiApiSpec canBlockCreate2ChildWithHollowAccount() {
+        final var tcValue = 1_234L;
+        final var contract = "Create2Factory";
+        final var creation = CREATION;
+        final var salt = BigInteger.valueOf(42);
+        final var adminKey = ADMIN_KEY;
+        final var replAdminKey = "replAdminKey";
+        final var entityMemo = "JUST DO IT";
+        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
+        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
+        final AtomicReference<String> blockedAliasAddr = new AtomicReference<>();
+        final AtomicReference<String> blockedMirrorAddr = new AtomicReference<>();
+        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
+
+        return onlyDefaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
+                .given(
+                        overriding(LAZY_CREATION_ENABLED, TRUE),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(replAdminKey),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .payingWith(GENESIS)
+                                .adminKey(adminKey)
+                                .entityMemo(entityMemo)
+                                .via(CREATE_2_TXN)
+                                .exposingNumTo(
+                                        num ->
+                                                factoryEvmAddress.set(
+                                                        asHexedSolidityAddress(0, 0, num))))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCallLocal(
+                                                        contract,
+                                                        GET_BYTECODE,
+                                                        asHeadlongAddress(factoryEvmAddress.get()),
+                                                        salt)
+                                                .exposingTypedResultsTo(
+                                                        results -> {
+                                                            final var tcInitcode =
+                                                                    (byte[]) results[0];
+                                                            testContractInitcode.set(tcInitcode);
+                                                            LOG.info(
+                                                                    CONTRACT_REPORTED_LOG_MESSAGE,
+                                                                    tcInitcode.length);
+                                                        })
+                                                .payingWith(GENESIS)
+                                                .nodePayment(ONE_HBAR)),
+                        sourcing(
+                                () ->
+                                        contractCallLocal(
+                                                        contract,
+                                                        "getAddress",
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .exposingTypedResultsTo(
+                                                        results -> {
+                                                            LOG.info(
+                                                                    "Contract reported address"
+                                                                            + " results {}",
+                                                                    results);
+                                                            final var expectedAddrBytes =
+                                                                    (Address) results[0];
+                                                            final var hexedAddress =
+                                                                    hex(
+                                                                            Bytes.fromHexString(
+                                                                                            expectedAddrBytes
+                                                                                                    .toString())
+                                                                                    .toArray());
+                                                            LOG.info(
+                                                                    "  --> Expected CREATE2 address"
+                                                                            + " is {}",
+                                                                    hexedAddress);
+                                                            expectedCreate2Address.set(
+                                                                    hexedAddress);
+                                                        })
+                                                .payingWith(GENESIS)),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        DEPLOY,
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)),
+                        sourcing(
+                                () ->
+                                        contractDelete(expectedCreate2Address.get())
+                                                .signedBy(DEFAULT_PAYER, adminKey)),
+                        logIt("Deleted the deployed CREATE2 contract using HAPI"),
+                        // Now create a hollow account at the desired address
+                        cryptoTransfer(
+                                        (spec, b) -> {
+                                            final var defaultPayerId =
+                                                    spec.registry().getAccountID(DEFAULT_PAYER);
+                                            b.setTransfers(
+                                                    TransferList.newBuilder()
+                                                            .addAccountAmounts(
+                                                                    aaWith(
+                                                                            ByteString.copyFrom(
+                                                                                    CommonUtils
+                                                                                            .unhex(
+                                                                                                    expectedCreate2Address
+                                                                                                            .get())),
+                                                                            +ONE_HBAR))
+                                                            .addAccountAmounts(
+                                                                    aaWith(
+                                                                            defaultPayerId,
+                                                                            -ONE_HBAR)));
+                                        })
+                                .signedBy(DEFAULT_PAYER)
+                                .fee(ONE_HBAR)
+                                .via(creation),
+                        getTxnRecord(creation)
+                                .andAllChildRecords()
+                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
+                        sourcing(() -> getAccountInfo(hollowCreationAddress.get()).logged()),
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        DEPLOY,
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                .sending(tcValue)
+                                                .via(CREATE_2_TXN)),
+                        captureOneChildCreate2MetaFor(
+                                "Blocked contract",
+                                CREATE_2_TXN,
+                                blockedMirrorAddr,
+                                blockedAliasAddr),
+                        logIt(
+                                "FIXME - Re-deployed the CREATE2 contract, should have been"
+                                        + " blocked!"),
+                        // Notice the hollow account is still linked to the address, not the
+                        // re-redeployed
+                        // CREATE2 contract
+                        sourcing(
+                                () ->
+                                        getLiteralAliasAccountInfo(blockedAliasAddr.get())
+                                                .nodePayment(ONE_HBAR)
+                                                .logged()))
+                .then(
+                        // IMPORTANT CLUE - but now CREATE2 *does* fail to redeploy the contract.
+                        // Seems
+                        // like existence of code is the deciding factor?
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        contract,
+                                                        DEPLOY,
+                                                        testContractInitcode.get(),
+                                                        salt)
+                                                .payingWith(GENESIS)
+                                                .gas(4_000_000L)
+                                                /* Cannot repeat CREATE2 with same args without destroying the existing contract */
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                        resetToDefault(LAZY_CREATION_ENABLED));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1130,7 +1303,7 @@ public class Create2OperationSuite extends HapiApiSuite {
     // https://github.com/hashgraph/hedera-services/issues/2874
     @SuppressWarnings("java:S5669")
     private HapiApiSpec canDeleteViaAlias() {
-        final var adminKey = "adminKey";
+        final var adminKey = ADMIN_KEY;
         final var creation2 = CREATE_2_TXN;
         final var deletion = "deletion";
         final var contract = "SaltingCreatorFactory";
