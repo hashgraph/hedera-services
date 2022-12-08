@@ -124,7 +124,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MintPrecompilesTest {
+class MintPrecompileTest {
     @Mock private AccountStore accountStore;
     @Mock private TypedTokenStore tokenStore;
     @Mock private GlobalDynamicProperties dynamicProperties;
