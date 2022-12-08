@@ -38,6 +38,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
@@ -129,6 +130,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
+    @Nullable private Consumer<List<String>> createdIdsObserver = null;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -151,7 +153,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 noThrowSha384HashOf(transaction.getSignedTransactionBytes().toByteArray()));
     }
 
-    private record ExpectedChildInfo(String aliasingKey, long pendingRewards) {}
+    private record ExpectedChildInfo(long pendingRewards) {}
 
     private final Map<Integer, ExpectedChildInfo> childExpectations = new HashMap<>();
 
@@ -175,6 +177,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
         this.observer = Optional.of(observer);
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
+        this.createdIdsObserver = creationObserver;
         return this;
     }
 
@@ -252,9 +259,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord hasAliasInChildRecord(final String aliasingKey, final int childIndex) {
+    public HapiGetTxnRecord hasNoAliasInChildRecord(final int childIndex) {
         requestChildRecords = true;
-        childExpectations.put(childIndex, new ExpectedChildInfo(aliasingKey, 0L));
+        childExpectations.put(childIndex, new ExpectedChildInfo(0L));
         return this;
     }
 
@@ -609,14 +616,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
         if (!childExpectations.isEmpty()) {
             for (final var index : childExpectations.entrySet()) {
-                final var expectations = index.getValue();
-                if (expectations.aliasingKey() != null) {
-                    final var childRecord = childRecords.get(index.getKey());
-                    final var literalKey = spec.registry().getKey(expectations.aliasingKey());
-                    assertEquals(
-                            literalKey.toByteString().toStringUtf8(),
-                            childRecord.getAlias().toStringUtf8());
-                }
+                final var childRecord = childRecords.get(index.getKey());
+                assertEquals(ByteString.EMPTY, childRecord.getAlias());
             }
         }
         if (numStakingRewardsPaid != -1) {
@@ -879,19 +880,32 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         assertEquals(count, observedCount, "Wrong # of non-staking records");
                     }
                 });
+        final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
+            if (rec.getReceipt().hasAccountID() && creations != null) {
+                creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+            }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
                         .saveAccountId(
                                 rec.getAlias().toStringUtf8(), rec.getReceipt().getAccountID());
-                spec.registry()
-                        .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                try {
+                    spec.registry()
+                            .saveKey(rec.getAlias().toStringUtf8(), Key.parseFrom(rec.getAlias()));
+                } catch (InvalidProtocolBufferException e) {
+                    LOG.debug(
+                            "Cannot save alias {} as key, since it is an evmAddress alias.",
+                            rec.getAlias()::toStringUtf8);
+                }
                 LOG.info(
                         "{}  Saving alias {} to registry for Account ID {}",
                         spec::logPrefix,
                         rec.getAlias()::toStringUtf8,
                         rec.getReceipt()::getAccountID);
             }
+        }
+        if (createdIdsObserver != null) {
+            createdIdsObserver.accept(creations);
         }
 
         if (verboseLoggingOn) {

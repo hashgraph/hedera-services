@@ -69,7 +69,7 @@ class HbarFeeAssessorTest {
     @Test
     void addsNewChangesIfNotPresent() {
         // given:
-        final var expectedPayerChange = BalanceChange.hbarAdjust(payer, -amountOfHbarFee);
+        final var expectedPayerChange = BalanceChange.hbarCustomFeeAdjust(payer, -amountOfHbarFee);
         expectedPayerChange.setCodeForInsufficientBalance(
                 INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
 
@@ -79,7 +79,7 @@ class HbarFeeAssessorTest {
         // then:
         verify(balanceChangeManager).includeChange(expectedPayerChange);
         verify(balanceChangeManager)
-                .includeChange(BalanceChange.hbarAdjust(feeCollector, +amountOfHbarFee));
+                .includeChange(BalanceChange.hbarCustomFeeAdjust(feeCollector, +amountOfHbarFee));
     }
 
     private final long amountOfHbarFee = 100_000L;

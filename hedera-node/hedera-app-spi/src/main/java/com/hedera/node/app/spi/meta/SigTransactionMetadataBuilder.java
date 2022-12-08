@@ -30,9 +30,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds {@link SigTransactionMetadata} by collecting needed information collected when transactions are
- * handled as part of "pre-handle" needed for signature verification. This class will be subclassed.
- *
+ * Builds {@link SigTransactionMetadata} by collecting needed information collected when
+ * transactions are handled as part of "pre-handle" needed for signature verification. This class
+ * will be subclassed For e.g., we need a {@link TransactionMetadata} with an inner {@link
+ * TransactionMetadata} for schedule transactions.
  */
 public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuilder<T>> {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
@@ -122,8 +123,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    public T addNonPayerKey(
-            final AccountID id, final ResponseCodeEnum failureStatus) {
+    public T addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
             return self();
         }
@@ -151,6 +151,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
         failOrAddToKeys(result, failureStatus);
         return self();
     }
+
     public SigTransactionMetadata build() {
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
     }

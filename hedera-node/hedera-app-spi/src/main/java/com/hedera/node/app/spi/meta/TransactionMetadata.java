@@ -61,5 +61,13 @@ public interface TransactionMetadata {
      */
     List<HederaKey> requiredKeys();
 
-    SigTransactionMetadataBuilder copy(AccountKeyLookup lookup);
+    /**
+     * Copies existing metadata and returns builder object.
+     *
+     * @param lookup key lookup needed for the builder
+     * @return builder object
+     */
+    default SigTransactionMetadataBuilder copy(AccountKeyLookup lookup) {
+        throw new UnsupportedOperationException("Copy operation is not supported");
+    }
 }
