@@ -116,7 +116,7 @@ class HederaMessageCallProcessorTest {
         verify(frame).decrementRemainingGas(GAS_ONE);
         verify(frame).setOutputData(Bytes.of(1));
         verify(frame).setState(COMPLETED_SUCCESS);
-        verify(frame, times(2)).getState();
+        verify(frame, times(1)).getState();
         verifyNoMoreInteractions(nonHtsPrecompile, frame, hederaTracer);
     }
 
@@ -132,7 +132,7 @@ class HederaMessageCallProcessorTest {
 
         subject.start(frame, hederaTracer);
 
-        verify(frame, times(2)).getState();
+        verify(frame, times(1)).getState();
         verify(hederaTracer).tracePrecompileCall(frame, GAS_ONE, Bytes.of(1));
         verify(hederaTracer).tracePrecompileResult(frame, ContractActionType.SYSTEM);
         verify(frame).decrementRemainingGas(GAS_ONE);
@@ -149,7 +149,6 @@ class HederaMessageCallProcessorTest {
         given(frame.getSenderAddress()).willReturn(SENDER_ADDRESS);
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaTracer);
 
@@ -171,7 +170,6 @@ class HederaMessageCallProcessorTest {
         given(updater.getSenderAccount(frame)).willReturn(sender);
         given(updater.getOrCreate(RECIPIENT_ADDRESS)).willReturn(receiver);
         doCallRealMethod().when(frame).setState(CODE_EXECUTING);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaTracer);
 
@@ -188,7 +186,6 @@ class HederaMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(Address.fromHexString("0x1"));
         given(updater.isTokenAddress(RECIPIENT_ADDRESS)).willReturn(true);
         doCallRealMethod().when(frame).setState(EXCEPTIONAL_HALT);
-        doCallRealMethod().when(frame).getState();
 
         subject.start(frame, hederaTracer);
 
@@ -209,7 +206,6 @@ class HederaMessageCallProcessorTest {
         given(frame.getContractAddress()).willReturn(precompile);
         given(precompiles.get(precompile))
                 .willReturn(AltBN128AddPrecompiledContract.byzantium(null));
-        given(frame.getState()).willReturn(CODE_SUCCESS);
 
         subject.start(frame, hederaTracer);
 

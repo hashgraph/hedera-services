@@ -146,7 +146,7 @@ public class SetApprovalForAllPrecompile extends AbstractWritePrecompile {
                 transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
                 transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
                 transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
-                EntityIdUtils.accountIdFromEvmAddress(frame.getSenderAddress()));
+                EntityIdUtils.accountIdFromEvmAddress(senderAddress));
 
         final var tokenAddress = asTypedEvmAddress(setApprovalForAllWrapper.tokenId());
         frame.addLog(getLogForSetApprovalForAll(tokenAddress));

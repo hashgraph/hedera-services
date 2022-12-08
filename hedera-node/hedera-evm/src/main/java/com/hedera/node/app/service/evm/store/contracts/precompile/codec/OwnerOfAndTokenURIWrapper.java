@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.store.contracts.precompile.codec;
+package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-
-public record TokenAllowanceWrapper(TokenID tokenID, AccountID owner, AccountID spender) {}
+public record OwnerOfAndTokenURIWrapper(long serialNo) {}

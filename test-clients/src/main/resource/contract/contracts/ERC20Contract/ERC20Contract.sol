@@ -9,6 +9,12 @@ contract ERC20Contract {
         IERC20Metadata(token).name();
     }
 
+    function nameNTimes(address token, uint times) public view {
+        for (uint i = 0; i < times; i++) {
+            IERC20Metadata(token).name();
+        }
+    }
+
     function symbol(address token) public view {
         IERC20Metadata(token).symbol();
     }

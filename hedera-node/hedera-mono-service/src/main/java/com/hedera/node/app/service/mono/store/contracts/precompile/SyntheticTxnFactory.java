@@ -15,12 +15,15 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.mono.context.BasicTransactionContext.EMPTY_KEY;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_MAX_DAILY_STAKE_REWARD_THRESH_PER_HBAR;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_PERIOD_MINS;
 import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract.HTS_PRECOMPILE_MIRROR_ID;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.AUTO_MEMO;
+import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.LAZY_MEMO;
 import static com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
@@ -28,6 +31,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -39,12 +44,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Associa
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
@@ -503,8 +506,17 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createAccount(
-            final Key alias, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(alias, balance);
+            final ByteString alias,
+            final Key key,
+            @Nullable final ByteString evmAddress,
+            final long balance,
+            final int maxAutoAssociations) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(key).setAlias(alias).setMemo(AUTO_MEMO);
+
+        if (evmAddress != null) {
+            baseBuilder.setEvmAddress(evmAddress);
+        }
 
         if (maxAutoAssociations > 0) {
             baseBuilder.setMaxAutomaticTokenAssociations(maxAutoAssociations);
@@ -513,11 +525,14 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
     }
 
-    private CryptoCreateTransactionBody.Builder createAccountBase(
-            final Key alias, final long balance) {
+    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance) {
+        final var baseBuilder = createAccountBase(balance);
+        baseBuilder.setKey(asKeyUnchecked(EMPTY_KEY)).setEvmAddress(alias).setMemo(LAZY_MEMO);
+        return TransactionBody.newBuilder().setCryptoCreateAccount(baseBuilder.build());
+    }
+
+    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance) {
         return CryptoCreateTransactionBody.newBuilder()
-                .setKey(alias)
-                .setMemo(AUTO_MEMO)
                 .setInitialBalance(balance)
                 .setAutoRenewPeriod(Duration.newBuilder().setSeconds(THREE_MONTHS_IN_SECONDS));
     }
@@ -562,7 +577,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createGrantKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenGrantKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -572,7 +587,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createRevokeKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenRevokeKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -607,7 +622,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
+    public TransactionBody.Builder createFreeze(
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
         builder.setAccount(freezeWrapper.account());
@@ -615,7 +631,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createUnFreeze(
-            final TokenFreezeUnfreezeWrapper unFreezeWrapper) {
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> unFreezeWrapper) {
         final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());
