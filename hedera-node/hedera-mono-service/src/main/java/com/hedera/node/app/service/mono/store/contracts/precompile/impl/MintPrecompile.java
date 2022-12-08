@@ -186,7 +186,7 @@ public class MintPrecompile extends AbstractWritePrecompile {
         for (final var meta : metadataList) {
             wrappedMetadata.add(ByteStringUtils.wrapUnsafely(meta));
         }
-        if (fungibleAmount > 0) {
+        if (fungibleAmount >= 0) {
             return MintWrapper.forFungible(tokenID, fungibleAmount);
         } else {
             return MintWrapper.forNonFungible(tokenID, wrappedMetadata);
