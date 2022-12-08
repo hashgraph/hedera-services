@@ -38,8 +38,7 @@ public interface ScheduleService extends Service {
     @NonNull
     @Override
     SchedulePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx);
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service

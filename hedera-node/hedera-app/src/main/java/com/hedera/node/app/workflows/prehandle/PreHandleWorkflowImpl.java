@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
@@ -73,8 +72,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             @NonNull final ExecutorService exe,
             @NonNull final ServicesAccessor servicesAccessor,
             @NonNull final PreHandleContext context,
-            @NonNull final WorkflowOnset onset,
-            @NonNull final PreHandleTxnAccessor preHandleTxnAccessor) {
+            @NonNull final WorkflowOnset onset) {
         this.exe = requireNonNull(exe);
         this.servicesAccessor = requireNonNull(servicesAccessor);
         this.context = requireNonNull(context);

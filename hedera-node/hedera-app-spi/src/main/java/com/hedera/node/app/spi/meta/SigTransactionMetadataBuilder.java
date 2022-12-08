@@ -77,7 +77,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
     public T payerKeyFor(AccountID payer) {
         this.payer = payer;
         addPayerKey();
-        return (T) this;
+        return self();
     }
 
     /**

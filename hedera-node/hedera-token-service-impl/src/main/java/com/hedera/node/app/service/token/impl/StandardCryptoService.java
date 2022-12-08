@@ -17,7 +17,6 @@ package com.hedera.node.app.service.token.impl;
 
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -27,14 +26,7 @@ public final class StandardCryptoService implements CryptoService {
     @NonNull
     @Override
     public CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @NonNull
-    @Override
-    public AccountKeyLookup createAccountKeyLookupFor(States states) {
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

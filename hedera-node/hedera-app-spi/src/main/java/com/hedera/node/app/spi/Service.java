@@ -30,8 +30,7 @@ public interface Service {
      */
     @NonNull
     PreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx);
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Creates and returns a new {@link TransactionHandler}

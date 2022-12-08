@@ -23,7 +23,6 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

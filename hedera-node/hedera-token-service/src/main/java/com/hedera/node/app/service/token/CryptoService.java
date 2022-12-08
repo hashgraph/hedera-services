@@ -15,7 +15,9 @@
  */
 package com.hedera.node.app.service.token;
 
-import com.hedera.node.app.spi.*;
+import com.hedera.node.app.spi.PreHandleContext;
+import com.hedera.node.app.spi.Service;
+import com.hedera.node.app.spi.ServiceFactory;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ServiceLoader;
@@ -43,8 +45,7 @@ public interface CryptoService extends Service {
     @Override
     @NonNull
     CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx);
+            @NonNull States states, @NonNull PreHandleContext ctx);
 
     /**
      * Returns the concrete implementation instance of the service
@@ -56,15 +57,4 @@ public interface CryptoService extends Service {
         return ServiceFactory.loadService(
                 CryptoService.class, ServiceLoader.load(CryptoService.class));
     }
-
-    /**
-     * Creates {@link AccountKeyLookup} object for other modules to uset during pre-txn handle
-     * phase. NOTE: This class can be modified to return other Account's fields as needed in the
-     * future.
-     *
-     * @param states states to use for looking up accounts
-     * @return lookup for account's keys
-     */
-    @NonNull
-    AccountKeyLookup createAccountKeyLookupFor(States states);
 }

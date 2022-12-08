@@ -19,13 +19,11 @@ import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.node.app.service.mono.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULED_TRANSACTION_NOT_IN_WHITELIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static com.hederahashgraph.api.proto.java.TransactionBody.DataCase.*;
 
 import com.hedera.node.app.service.mono.exceptions.UnknownHederaFunctionality;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.*;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

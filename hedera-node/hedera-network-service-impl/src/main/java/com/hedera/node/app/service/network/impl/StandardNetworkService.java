@@ -18,7 +18,6 @@ package com.hedera.node.app.service.network.impl;
 import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -29,8 +28,7 @@ public final class StandardNetworkService implements NetworkService {
     @NonNull
     @Override
     public NetworkPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx) {
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

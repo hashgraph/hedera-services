@@ -28,8 +28,7 @@ public final class StandardContractService implements ContractService {
     @NonNull
     @Override
     public ContractPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states,
-            @NonNull PreHandleContext ctx) {
+            @NonNull States states, @NonNull PreHandleContext ctx) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

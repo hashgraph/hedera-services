@@ -15,43 +15,37 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
-import static org.mockito.Mockito.*;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
-import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleDispatcher;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
+import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 class SchedulePreTransactionHandlerImplTest {
     private SchedulePreTransactionHandler subject;
-    @Mock private CryptoPreTransactionHandler scheduledTxnHandler;
-    @Mock private SchedulePreTransactionHandler invalidScheduledPreTxnHandler;
     @Mock private AccountKeyLookup keyLookup;
-    @Mock private PreHandleTxnAccessor accessor;
     @Mock private HederaKey payerKey;
     @Mock private SigTransactionMetadata scheduledMeta;
     @Mock private PreHandleDispatcher dispatcher;
@@ -69,7 +63,6 @@ class SchedulePreTransactionHandlerImplTest {
 
     @BeforeEach
     void setUp() {
-        given(accessor.getAccountKeyLookup()).willReturn(keyLookup);
         subject = new SchedulePreTransactionHandlerImpl(keyLookup);
     }
     @Test
@@ -81,8 +74,6 @@ class SchedulePreTransactionHandlerImplTest {
                         txn.getTransactionID());
 
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-        given(accessor.getPreTxnHandler(HederaFunctionality.CryptoDelete))
-                .willReturn(scheduledTxnHandler);
         given(dispatcher.dispatch(scheduledTxn, scheduler)).willReturn(scheduledMeta);
         given(scheduledMeta.failed()).willReturn(false);
 
@@ -171,8 +162,6 @@ class SchedulePreTransactionHandlerImplTest {
                         txn.getTransactionID());
 
         given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-        given(accessor.getPreTxnHandler(HederaFunctionality.CryptoDelete))
-                .willReturn(scheduledTxnHandler);
         lenient()
                 .when(dispatcher.dispatch(scheduledTxn, scheduler))
                 .thenReturn(scheduledMeta);

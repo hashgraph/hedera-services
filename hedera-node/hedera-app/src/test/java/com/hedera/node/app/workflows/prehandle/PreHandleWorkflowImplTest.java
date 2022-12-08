@@ -16,7 +16,9 @@
 package com.hedera.node.app.workflows.prehandle;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.hedera.node.app.ServicesAccessor;
@@ -28,13 +30,11 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.network.NetworkService;
 import com.hedera.node.app.service.schedule.ScheduleService;
-import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.util.UtilService;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.PreHandleTxnAccessor;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
@@ -42,7 +42,10 @@ import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.system.events.Event;
 import com.swirlds.common.system.transaction.Transaction;
 import com.swirlds.common.system.transaction.internal.SwirldTransaction;
@@ -66,12 +69,11 @@ import org.mockito.stubbing.Answer;
 class PreHandleWorkflowImplTest {
 
     @Mock private ExecutorService executorService;
-    @Mock private CryptoService cryptoService;
+    @Mock private ConsensusService consensusService;
     @Mock private WorkflowOnset onset;
 
     @Mock private HederaState state;
     @Mock private Event event;
-    @Mock private PreHandleTxnAccessor accessor;
 
     private ServicesAccessor servicesAccessor;
     private PreHandleContext context;
@@ -81,7 +83,7 @@ class PreHandleWorkflowImplTest {
     @BeforeEach
     void setup(
             @Mock ContractService contractService,
-            @Mock ConsensusService consensusService,
+            @Mock CryptoService cryptoService,
             @Mock FileService fileService,
             @Mock FreezeService freezeService,
             @Mock NetworkService networkService,
@@ -105,32 +107,24 @@ class PreHandleWorkflowImplTest {
 
         context = new PreHandleContext(accountNumbers, hederaFileNumbers, keyLookup);
 
-        workflow =
-                new PreHandleWorkflowImpl(
-                        executorService, servicesAccessor, context, onset, accessor);
+        workflow = new PreHandleWorkflowImpl(executorService, servicesAccessor, context, onset);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        null, servicesAccessor, context, onset, accessor))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, servicesAccessor, context, onset))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, context, onset))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new PreHandleWorkflowImpl(
-                                        executorService, null, context, onset, accessor))
+                                        executorService, servicesAccessor, null, onset))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(
                         () ->
                                 new PreHandleWorkflowImpl(
-                                        executorService, servicesAccessor, null, onset, accessor))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(
-                        () ->
-                                new PreHandleWorkflowImpl(
-                                        executorService, servicesAccessor, context, null, accessor))
+                                        executorService, servicesAccessor, context, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -179,7 +173,7 @@ class PreHandleWorkflowImplTest {
         workflow.start(state, event);
 
         // then
-        verify(cryptoService, times(1)).createPreTransactionHandler(any(), any());
+        verify(consensusService, times(1)).createPreTransactionHandler(any(), any());
     }
 
     @Test
@@ -194,12 +188,12 @@ class PreHandleWorkflowImplTest {
         workflow.start(state2, event);
 
         // then
-        verify(cryptoService, times(2)).createPreTransactionHandler(any(), any());
+        verify(consensusService, times(2)).createPreTransactionHandler(any(), any());
     }
 
     @Test
     void testPreHandleSuccess(
-            @Mock CryptoPreTransactionHandler preTransactionHandler,
+            @Mock ConsensusPreTransactionHandler preTransactionHandler,
             @Mock TransactionMetadata metadata,
             @Mock SwirldTransaction transaction)
             throws PreCheckException {
@@ -214,17 +208,18 @@ class PreHandleWorkflowImplTest {
                                                                 .getArgument(0, Callable.class)
                                                                 .call()));
 
-        final CryptoCreateTransactionBody content =
-                CryptoCreateTransactionBody.newBuilder().build();
+        final ConsensusCreateTopicTransactionBody content =
+                ConsensusCreateTopicTransactionBody.newBuilder().build();
         final TransactionBody txBody =
-                TransactionBody.newBuilder().setCryptoCreateAccount(content).build();
+                TransactionBody.newBuilder().setConsensusCreateTopic(content).build();
         final SignatureMap signatureMap = SignatureMap.newBuilder().build();
-        final HederaFunctionality functionality = HederaFunctionality.CryptoCreate;
+        final HederaFunctionality functionality = HederaFunctionality.ConsensusCreateTopic;
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
-        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
+
+        when(preTransactionHandler.preHandleCreateTopic(txBody, txBody.getTransactionID().getAccountID())).thenReturn(metadata);
+        when(consensusService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(preTransactionHandler);
-        when(preTransactionHandler.preHandleCryptoCreate(eq(txBody), any())).thenReturn(metadata);
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
