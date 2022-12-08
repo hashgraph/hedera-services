@@ -64,11 +64,12 @@ public class SigTransactionMetadata implements TransactionMetadata {
     public ResponseCodeEnum status() {
         return status;
     }
+
     @Override
-    public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup){
-            return new SigTransactionMetadataBuilder(lookup)
-                    .txnBody(txn)
-                    .status(status)
-                    .addAllReqKeys(requiredKeys);
-        }
+    public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup) {
+        return new SigTransactionMetadataBuilder(lookup)
+                .txnBody(txn)
+                .status(status)
+                .addAllReqKeys(requiredKeys);
+    }
 }
