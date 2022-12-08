@@ -34,6 +34,10 @@ configurations.all {
 
 dependencies {
 
+    annotationProcessor(libs.dagger.compiler)
+
+    api(libs.dagger.compiler)
+
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.swirlds.common)

@@ -37,6 +37,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
@@ -76,6 +77,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RedirectViewExecutorTest {
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
+    @Mock private EvmEncodingFacade evmEncodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
@@ -308,7 +310,7 @@ class RedirectViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         given(frame.getWorldUpdater()).willReturn(stackedWorldStateUpdater);
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
-        this.subject = new RedirectViewExecutor(input, frame, encodingFacade, viewGasCalculator);
+        this.subject = new RedirectViewExecutor(input, frame, encodingFacade, evmEncodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }

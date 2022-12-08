@@ -65,11 +65,12 @@ public class RedirectViewExecutor {
             final Bytes input,
             final MessageFrame frame,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final ViewGasCalculator gasCalculator) {
         this.input = input;
         this.frame = frame;
         this.encoder = encoder;
-        this.evmEncoder = new EvmEncodingFacade();
+        this.evmEncoder = evmEncoder;
         this.gasCalculator = gasCalculator;
 
         this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();

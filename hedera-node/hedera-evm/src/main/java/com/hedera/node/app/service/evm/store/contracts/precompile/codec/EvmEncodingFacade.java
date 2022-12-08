@@ -27,12 +27,18 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FunctionType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+@Singleton
 public class EvmEncodingFacade {
 
-    public EvmEncodingFacade() {}
+    @Inject
+    public EvmEncodingFacade() {
+        /* For Dagger2 */
+    }
 
     public Bytes encodeDecimals(final int decimals) {
         return functionResultBuilder()

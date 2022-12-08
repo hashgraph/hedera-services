@@ -102,6 +102,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -183,6 +184,7 @@ class HTSPrecompiledContractTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SyntheticTxnFactory syntheticTxnFactory;
     @Mock private ExpiringCreations creator;
     @Mock private FeeCalculator feeCalculator;
@@ -346,6 +348,7 @@ class HTSPrecompiledContractTest {
                         input,
                         messageFrame,
                         encoder,
+                        evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas);
         given(infrastructureFactory.newRedirectExecutor(any(), any(), any()))
                 .willReturn(redirectViewExecutor);
