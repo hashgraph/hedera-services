@@ -71,6 +71,7 @@ public class RedirectViewExecutor {
         this.encoder = encoder;
         this.evmEncoder = new EvmEncodingFacade();
         this.gasCalculator = gasCalculator;
+
         this.updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         this.ledgers = updater.trackingLedgers();
     }

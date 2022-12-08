@@ -64,6 +64,7 @@ import static org.mockito.Mockito.when;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -1702,7 +1703,9 @@ class CreatePrecompileTest {
         assertNull(result.getOutput());
 
         // and
-        verify(frame).setRevertReason(any());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         verifyNoInteractions(createLogic);
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never())

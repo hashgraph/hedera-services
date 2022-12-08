@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -446,7 +447,7 @@ class BurnPrecompilesTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.contractAddress);
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
-        doCallRealMethod().when(frame).setRevertReason(any());
+        doCallRealMethod().when(frame).setExceptionalHaltReason(any());
         burnPrecompile
                 .when(() -> decodeBurn(pretendArguments))
                 .thenReturn(HTSTestsUtil.fungibleBurnAmountOversize);
@@ -454,6 +455,9 @@ class BurnPrecompilesTest {
         final var result = subject.computePrecompile(pretendArguments, frame);
         // then:
         assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
         verify(wrappedLedgers, never()).commit();
         verify(worldUpdater, never())
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
