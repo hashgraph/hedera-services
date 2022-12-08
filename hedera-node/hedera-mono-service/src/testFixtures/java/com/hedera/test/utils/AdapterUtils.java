@@ -59,6 +59,19 @@ public class AdapterUtils {
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
 
+    private AdapterUtils() {
+        throw new UnsupportedOperationException("Utility Class");
+    }
+
+    /**
+     * Returns the {@link AccountStore} containing the "well-known" accounts and aliases
+     * that exist in a {@code SigRequirementsTest} scenario. This allows us to re-use
+     * these scenarios in unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler}
+     * implementations that require an {@link AccountStore}.
+     *
+     * @param mockLastModified the mock last modified time for the store to assume
+     * @return the well-known account store
+     */
     public static AccountStore wellKnownAccountStoreAt(final Instant mockLastModified) {
         return new AccountStore(
                 mockStates(
@@ -67,6 +80,15 @@ public class AdapterUtils {
                                 ACCOUNTS_KEY, wellKnownAccountsState(mockLastModified))));
     }
 
+    /**
+     * Returns the {@link TokenStore} containing the "well-known" tokens that exist in a
+     * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
+     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler}  implementations
+     * that require a {@link TokenStore}.
+     *
+     * @param mockLastModified the mock last modified time for the store to assume
+     * @return the well-known token store
+     */
     public static TokenStore wellKnownTokenStoreAt(final Instant mockLastModified) {
         final var source = sigReqsMockTokenStore();
         final MerkleMap<EntityNum, MerkleToken> destination = new MerkleMap<>();
