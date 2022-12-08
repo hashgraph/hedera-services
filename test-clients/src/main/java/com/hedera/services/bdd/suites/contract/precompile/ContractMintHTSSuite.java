@@ -52,11 +52,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
@@ -689,7 +685,6 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                                                 RECIPIENT))),
                                                                 20L)
                                                         .payingWith(GENESIS)
-                                                        .alsoSigningWithFullPrefix(MULTI_KEY)
                                                         .via(failedMintTxn)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 getTxnRecord(failedMintTxn)
@@ -711,7 +706,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                                 FunctionType
                                                                                         .HAPI_MINT)
                                                                         .withStatus(
-                                                                                INSUFFICIENT_GAS)
+                                                                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
                                                                         .withTotalSupply(0L)
                                                                         .withSerialNumbers()))));
     }
