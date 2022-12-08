@@ -38,7 +38,6 @@ import com.hedera.node.app.service.mono.state.submerkle.NftAdjustments;
 import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
 import com.hedera.node.app.service.mono.state.submerkle.TxnId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.spi.state.State;
 import com.hedera.test.factories.keys.KeyTree;
 import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.hederahashgraph.api.proto.java.*;

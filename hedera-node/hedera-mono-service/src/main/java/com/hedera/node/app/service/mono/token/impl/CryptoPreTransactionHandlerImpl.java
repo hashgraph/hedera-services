@@ -45,7 +45,7 @@ import org.apache.commons.lang3.NotImplementedException;
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each crypto operation.
  *
- * <b>GOOD TO KNOW:</b> this class intentionally changes some error response codes.
+ * <p><b>GOOD TO KNOW:</b> this class intentionally changes some error response codes.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;

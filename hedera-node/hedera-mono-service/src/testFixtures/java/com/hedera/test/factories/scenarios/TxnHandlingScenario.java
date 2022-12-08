@@ -102,10 +102,9 @@ public interface TxnHandlingScenario {
                     .withAccount(
                             SECOND_TOKEN_SENDER_ID,
                             newAccount().balance(10_000L).accountKeys(SECOND_TOKEN_SENDER_KT).get())
-                    .withAccount(TOKEN_RECEIVER_ID, newAccount()
-                            .accountKeys(TOKEN_WIPE_KT)
-                            .balance(0L)
-                            .get())
+                    .withAccount(
+                            TOKEN_RECEIVER_ID,
+                            newAccount().accountKeys(TOKEN_WIPE_KT).balance(0L).get())
                     .withAccount(
                             DEFAULT_NODE_ID,
                             newAccount().balance(0L).accountKeys(DEFAULT_PAYER_KT).get())
@@ -115,7 +114,8 @@ public interface TxnHandlingScenario {
                                     .balance(DEFAULT_PAYER_BALANCE)
                                     .accountKeys(DEFAULT_PAYER_KT)
                                     .get())
-                    .withAccount(STAKING_FUND_ID, newAccount().balance(0).accountKeys(EMPTY_KEY).get())
+                    .withAccount(
+                            STAKING_FUND_ID, newAccount().balance(0).accountKeys(EMPTY_KEY).get())
                     .withAccount(
                             MASTER_PAYER_ID,
                             newAccount()
@@ -147,7 +147,10 @@ public interface TxnHandlingScenario {
                             newAccount().balance(DEFAULT_BALANCE).accountKeys(SYS_ACCOUNT_KT).get())
                     .withAccount(
                             MISC_ACCOUNT_ID,
-                            newAccount().balance(DEFAULT_BALANCE).accountKeys(MISC_ACCOUNT_KT).get())
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(MISC_ACCOUNT_KT)
+                                    .get())
                     .withAccount(
                             CUSTOM_PAYER_ACCOUNT_ID,
                             newAccount()
@@ -180,7 +183,10 @@ public interface TxnHandlingScenario {
                                     .get())
                     .withAccount(
                             TOKEN_TREASURY_ID,
-                            newAccount().balance(DEFAULT_BALANCE).accountKeys(TOKEN_TREASURY_KT).get())
+                            newAccount()
+                                    .balance(DEFAULT_BALANCE)
+                                    .accountKeys(TOKEN_TREASURY_KT)
+                                    .get())
                     .withAccount(
                             DILIGENT_SIGNING_PAYER_ID,
                             newAccount()
@@ -201,7 +207,8 @@ public interface TxnHandlingScenario {
                                     .balance(DEFAULT_BALANCE)
                                     .accountKeys(DILIGENT_SIGNING_PAYER_KT)
                                     .get())
-                    .withContract(IMMUTABLE_CONTRACT_ID, newContract().balance(DEFAULT_BALANCE).get())
+                    .withContract(
+                            IMMUTABLE_CONTRACT_ID, newContract().balance(DEFAULT_BALANCE).get())
                     .withContract(
                             MISC_CONTRACT_ID,
                             newContract().balance(DEFAULT_BALANCE).accountKeys(MISC_ADMIN_KT).get())

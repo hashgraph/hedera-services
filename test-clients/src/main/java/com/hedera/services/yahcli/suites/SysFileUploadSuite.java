@@ -186,7 +186,10 @@ public class SysFileUploadSuite extends HapiApiSuite {
         do {
             i++;
             if (i % numBetweenLogs == 0) {
-                log.info("Considering skipping appends ending at {} (consideration #{})", position, i);
+                log.info(
+                        "Considering skipping appends ending at {} (consideration #{})",
+                        position,
+                        i);
             }
             final var hashSoFar = hexedPrefixHash(position);
             if (hashSoFar.equals(hexedCurrentHash)) {
