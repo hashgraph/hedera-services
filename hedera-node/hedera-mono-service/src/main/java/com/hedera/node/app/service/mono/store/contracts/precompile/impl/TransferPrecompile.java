@@ -121,7 +121,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final ImpliedTransfersMarshal impliedTransfersMarshal;
     private ResponseCodeEnum impliedValidity;
     private ImpliedTransfers impliedTransfers;
-    private List<BalanceChange> explicitChanges;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
 
@@ -206,8 +205,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             throw new InvalidTransactionException(impliedValidity);
         }
 
-        /* We remember this size to know to ignore receiverSigRequired=true for custom fee payments */
-        final var numExplicitChanges = explicitChanges.size();
         final var assessmentStatus = impliedTransfers.getMeta().code();
         validateTrue(assessmentStatus == OK, assessmentStatus);
         final var changes = impliedTransfers.getAllBalanceChanges();
@@ -226,7 +223,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final var change = changes.get(i);
             final var units = change.getAggregatedUnits();
             if (change.isForNft() || units < 0) {
-                if (change.isApprovedAllowance()) {
+                if (change.isApprovedAllowance() || change.isForCustomFee()) {
                     // Signing requirements are skipped for changes to be authorized via an
                     // allowance
                     continue;
@@ -240,7 +237,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                                 updater.aliases());
                 validateTrue(hasSenderSig, INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE, TRANSFER);
             }
-            if (i < numExplicitChanges) {
+            if (!change.isForCustomFee()) {
                 /* Only process receiver sig requirements for that are not custom fee payments (custom fees are never
                 NFT exchanges) */
                 var hasReceiverSigIfReq = true;
@@ -288,11 +285,12 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         if (impliedValidity != ResponseCodeEnum.OK) {
             return;
         }
-        explicitChanges = constructBalanceChanges();
+        final var explicitChanges = constructBalanceChanges();
         final var hbarOnly = transferOp.transferWrapper().hbarTransfers().size();
         impliedTransfers =
                 impliedTransfersMarshal.assessCustomFeesAndValidate(
                         hbarOnly,
+                        0,
                         0,
                         explicitChanges,
                         NO_ALIASES,

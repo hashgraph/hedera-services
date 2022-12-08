@@ -961,7 +961,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetTokenInfo(GET_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(10).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 
@@ -975,7 +975,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetFungibleTokenInfo(GET_FUNGIBLE_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(11).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 
@@ -989,7 +989,7 @@ class GetTokenInfoPrecompilesTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeGetNonFungibleTokenInfo(GET_NON_FUNGIBLE_TOKEN_INFO_INPUT);
 
-        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(12).build(), decodedInput.token());
         assertEquals(1, decodedInput.serialNumber());
     }
 

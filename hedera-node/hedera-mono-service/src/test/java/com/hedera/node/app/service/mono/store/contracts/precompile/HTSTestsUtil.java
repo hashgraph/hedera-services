@@ -18,6 +18,14 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.ledger.BalanceChange;
 import com.hedera.node.app.service.mono.legacy.core.jproto.TxnReceipt;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -27,18 +35,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWra
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.CryptoTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.MintWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenGetCustomFeesWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
@@ -58,7 +58,9 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
@@ -158,15 +160,15 @@ public class HTSTestsUtil {
     public static final Long serialNumber = 1L;
     public static final OwnerOfAndTokenURIWrapper ownerOfAndTokenUriWrapper =
             new OwnerOfAndTokenURIWrapper(serialNumber);
-    public static final GetTokenDefaultFreezeStatusWrapper defaultFreezeStatusWrapper =
-            new GetTokenDefaultFreezeStatusWrapper(fungible);
-    public static final GetTokenDefaultKycStatusWrapper defaultKycStatusWrapper =
-            new GetTokenDefaultKycStatusWrapper(fungible);
-    public static final GrantRevokeKycWrapper grantRevokeKycWrapper =
-            new GrantRevokeKycWrapper(fungible, account);
+    public static final GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper =
+            new GetTokenDefaultFreezeStatusWrapper<>(fungible);
+    public static final GetTokenDefaultKycStatusWrapper<TokenID> defaultKycStatusWrapper =
+            new GetTokenDefaultKycStatusWrapper<>(fungible);
+    public static final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper =
+            new GrantRevokeKycWrapper<>(fungible, account);
 
-    public static final TokenFreezeUnfreezeWrapper tokenFreezeUnFreezeWrapper =
-            new TokenFreezeUnfreezeWrapper(fungible, account);
+    public static final TokenFreezeUnfreezeWrapper<TokenID, AccountID> tokenFreezeUnFreezeWrapper =
+            new TokenFreezeUnfreezeWrapper<>(fungible, account);
 
     public static final DeleteWrapper tokenDeleteWrapper = new DeleteWrapper(fungible);
 
@@ -217,10 +219,10 @@ public class HTSTestsUtil {
             "Invalid operation for ERC-20 token!";
     public static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
-    public static final TokenGetCustomFeesWrapper customFeesWrapper =
-            new TokenGetCustomFeesWrapper(token);
-    public static final GetTokenExpiryInfoWrapper getTokenExpiryInfoWrapper =
-            new GetTokenExpiryInfoWrapper(token);
+    public static final TokenGetCustomFeesWrapper<TokenID> customFeesWrapper =
+            new TokenGetCustomFeesWrapper<>(token);
+    public static final GetTokenExpiryInfoWrapper<TokenID> getTokenExpiryInfoWrapper =
+            new GetTokenExpiryInfoWrapper<>(token);
     public static final TokenUpdateExpiryInfoWrapper tokenUpdateExpiryInfoWrapper =
             new TokenUpdateExpiryInfoWrapper(token, new TokenExpiryWrapper(442L, payer, 555L));
     public static final TokenUpdateExpiryInfoWrapper
@@ -423,18 +425,37 @@ public class HTSTestsUtil {
                                     .build(),
                             payer),
                     /* Simulate an assessed fallback fee */
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(receiver)
-                                    .setAmount(-AMOUNT)
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(receiver), Id.fromGrpcToken(token), -AMOUNT),
+                    BalanceChange.tokenCustomFeeAdjust(
+                            Id.fromGrpcAccount(feeCollector), Id.fromGrpcToken(token), +AMOUNT));
+
+    public static final List<BalanceChange> nftTransferChangesWithCustomFeesThatAreAlsoApproved =
+            List.of(
+                    BalanceChange.changingNftOwnership(
+                            Id.fromGrpcToken(token),
+                            token,
+                            NftTransfer.newBuilder()
+                                    .setSenderAccountID(sender)
+                                    .setReceiverAccountID(receiver)
+                                    .setSerialNumber(1L)
                                     .build(),
                             payer),
-                    BalanceChange.changingHbar(
-                            AccountAmount.newBuilder()
-                                    .setAccountID(feeCollector)
-                                    .setAmount(+AMOUNT)
-                                    .build(),
-                            payer));
+                    /* Simulate an assessed fallback fee */
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(receiver),
+                            Id.fromGrpcToken(token),
+                            -AMOUNT,
+                            payer,
+                            true,
+                            true),
+                    BalanceChange.tokenAdjust(
+                            Id.fromGrpcAccount(feeCollector),
+                            Id.fromGrpcToken(token),
+                            +AMOUNT,
+                            payer,
+                            true,
+                            true));
 
     public static final List<BalanceChange> nftsTransferChanges =
             List.of(
@@ -584,11 +605,11 @@ public class HTSTestsUtil {
                 new TokenExpiryWrapper(0L, null, 0L));
     }
 
-    public static TokenInfoWrapper createTokenInfoWrapperForToken(final TokenID tokenId) {
+    public static TokenInfoWrapper<TokenID> createTokenInfoWrapperForToken(final TokenID tokenId) {
         return TokenInfoWrapper.forToken(tokenId);
     }
 
-    public static TokenInfoWrapper createTokenInfoWrapperForNonFungibleToken(
+    public static TokenInfoWrapper<TokenID> createTokenInfoWrapperForNonFungibleToken(
             final TokenID tokenId, final long serialNumber) {
         return TokenInfoWrapper.forNonFungibleToken(tokenId, serialNumber);
     }

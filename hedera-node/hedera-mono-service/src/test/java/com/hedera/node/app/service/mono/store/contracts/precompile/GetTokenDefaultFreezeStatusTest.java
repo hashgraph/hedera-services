@@ -163,7 +163,7 @@ class GetTokenDefaultFreezeStatusTest {
         final var decodedInput =
                 decodeTokenDefaultFreezeStatus(GET_TOKEN_DEFAULT_FREEZE_STATUS_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

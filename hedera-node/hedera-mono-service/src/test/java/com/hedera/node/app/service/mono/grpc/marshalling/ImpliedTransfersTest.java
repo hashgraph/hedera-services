@@ -63,14 +63,15 @@ class ImpliedTransfersTest {
                     + " maxExplicitHbarAdjusts=5, maxExplicitTokenAdjusts=50,"
                     + " maxExplicitOwnershipChanges=12, maxNestedCustomFees=1,"
                     + " maxXferBalanceChanges=20, areNftsEnabled=true, isAutoCreationEnabled=true,"
-                    + " tokenFeeSchedules=[], areAllowancesEnabled=true}, changes=[],"
-                    + " tokenFeeSchedules=[], assessedCustomFees=[], resolvedAliases={},"
-                    + " numAutoCreations=0}";
+                    + " isLazyCreationEnabled=true, tokenFeeSchedules=[],"
+                    + " areAllowancesEnabled=true}, changes=[], tokenFeeSchedules=[],"
+                    + " assessedCustomFees=[], resolvedAliases={}, numAutoCreations=0,"
+                    + " numLazyCreations=0}";
         final var twoRepr =
                 "ImpliedTransfers{meta=ImpliedTransfersMeta{code=OK, maxExplicitHbarAdjusts=5,"
                     + " maxExplicitTokenAdjusts=50, maxExplicitOwnershipChanges=12,"
                     + " maxNestedCustomFees=1, maxXferBalanceChanges=20, areNftsEnabled=true,"
-                    + " isAutoCreationEnabled=true,"
+                    + " isAutoCreationEnabled=true, isLazyCreationEnabled=true,"
                     + " tokenFeeSchedules=[CustomFeeMeta[tokenId=0.0.123, treasuryId=2.3.4,"
                     + " customFees=[]]], areAllowancesEnabled=true},"
                     + " changes=[BalanceChange{token=1.2.3, account=4.5.6, alias=, units=7,"
@@ -78,7 +79,8 @@ class ImpliedTransfersTest {
                     + " treasuryId=2.3.4, customFees=[]]],"
                     + " assessedCustomFees=[FcAssessedCustomFee{token=EntityId{shard=0, realm=0,"
                     + " num=123}, account=EntityId{shard=0, realm=0, num=124}, units=123, effective"
-                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0}";
+                    + " payer accounts=[123]}], resolvedAliases={}, numAutoCreations=0,"
+                    + " numLazyCreations=0}";
 
         // expect:
         assertNotEquals(oneImpliedXfers, twoImpliedXfers);
@@ -100,6 +102,7 @@ class ImpliedTransfersTest {
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(lazyCreationEnabled);
         given(customFeeSchedules.lookupMetaFor(any())).willReturn(entityCustomFees.get(0));
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
 
@@ -156,6 +159,9 @@ class ImpliedTransfersTest {
         given(dynamicProperties.areAllowancesEnabled()).willReturn(!areAllowancesEnabled);
         given(dynamicProperties.isAutoCreationEnabled()).willReturn(autoCreationEnabled);
         assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
+
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(!lazyCreationEnabled);
+        assertFalse(meta.wasDerivedFrom(dynamicProperties, customFeeSchedules, aliasManager));
     }
 
     private final int maxExplicitHbarAdjusts = 5;
@@ -165,6 +171,7 @@ class ImpliedTransfersTest {
     private final int maxBalanceChanges = 20;
     private final boolean areNftsEnabled = true;
     private final boolean autoCreationEnabled = true;
+    private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesEnabled = true;
     private final ImpliedTransfersMeta.ValidationProps props =
             new ImpliedTransfersMeta.ValidationProps(
@@ -175,6 +182,7 @@ class ImpliedTransfersTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesEnabled);
     private final EntityId customFeeToken = new EntityId(0, 0, 123);
     private final EntityId customFeeCollector = new EntityId(0, 0, 124);

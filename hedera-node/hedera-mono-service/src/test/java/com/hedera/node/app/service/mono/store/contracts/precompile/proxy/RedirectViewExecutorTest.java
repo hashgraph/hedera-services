@@ -36,16 +36,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetApprovedWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.IsApproveForAllWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
@@ -80,7 +80,7 @@ class RedirectViewExecutorTest {
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
     @Mock private WorldLedgers worldLedgers;
     @Mock private BlockValues blockValues;
-    @Mock private BalanceOfWrapper balanceOfWrapper;
+    @Mock private BalanceOfWrapper<AccountID> balanceOfWrapper;
     @Mock private OwnerOfAndTokenURIWrapper ownerOfAndTokenURIWrapper;
 
     public static final AccountID account = IdUtils.asAccount("0.0.777");
@@ -155,12 +155,9 @@ class RedirectViewExecutorTest {
     void computeAllowanceOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedInput), eq(fungible), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible)).willReturn(123L);
         given(encodingFacade.encodeAllowance(123L)).willReturn(answer);
@@ -172,9 +169,9 @@ class RedirectViewExecutorTest {
     void computeApprovedSpenderOf() {
         final var nestedInput = prerequisites(ABI_ID_ERC_GET_APPROVED, nonfungibleTokenAddress);
 
-        final var getApprovedWrapper = new GetApprovedWrapper(nonfungibletoken, 123L);
+        final var getApprovedWrapper = new GetApprovedWrapper<>(nonfungibletoken, 123L);
         getApprovedPrecompile
-                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedInput, nonfungibletoken))
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(getApprovedWrapper);
         given(worldLedgers.staticApprovedSpenderOf(NftId.fromGrpc(nonfungibletoken, 123L)))
                 .willReturn(Address.ALTBN128_ADD);
@@ -189,12 +186,10 @@ class RedirectViewExecutorTest {
         final var nestedInput =
                 prerequisites(ABI_ID_ERC_IS_APPROVED_FOR_ALL, nonfungibleTokenAddress);
 
-        final var isApproveForAll = new IsApproveForAllWrapper(nonfungibletoken, account, spender);
+        final var isApproveForAll =
+                new IsApproveForAllWrapper<>(nonfungibletoken, account, spender);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        eq(nestedInput), eq(nonfungibletoken), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(isApproveForAll);
         given(worldLedgers.staticIsOperator(account, spender, nonfungibletoken)).willReturn(true);
         given(encodingFacade.encodeIsApprovedForAll(true)).willReturn(answer);
@@ -206,12 +201,9 @@ class RedirectViewExecutorTest {
     void revertsFrameAndReturnsNullOnRevertingException() {
         final var nestedInput = prerequisites(ABI_ID_ERC_ALLOWANCE, fungibleTokenAddress);
 
-        final var allowanceWrapper = new TokenAllowanceWrapper(fungible, account, spender);
+        final var allowanceWrapper = new TokenAllowanceWrapper<>(fungible, account, spender);
         allowancePrecompile
-                .when(
-                        () ->
-                                AllowancePrecompile.decodeTokenAllowance(
-                                        eq(nestedInput), eq(fungible), any()))
+                .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(allowanceWrapper);
         given(worldLedgers.staticAllowanceOf(account, spender, fungible))
                 .willThrow(new InvalidTransactionException(INVALID_ALLOWANCE_OWNER_ID, true));
@@ -254,7 +246,7 @@ class RedirectViewExecutorTest {
         balanceOfPrecompile
                 .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedInput), any()))
                 .thenReturn(balanceOfWrapper);
-        given(balanceOfWrapper.accountId()).willReturn(account);
+        given(balanceOfWrapper.account()).willReturn(account);
         given(worldLedgers.balanceOf(account, fungible)).willReturn(result);
         given(encodingFacade.encodeBalance(result)).willReturn(answer);
 
