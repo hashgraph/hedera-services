@@ -149,7 +149,7 @@ public class AutoCreationLogic {
                 }
                 final var evmAddress = syntheticTxnBody.getEvmAddress();
                 if (!evmAddress.isEmpty()) {
-                    aliasManager.forgetEvmAddress(evmAddress);
+                    aliasManager.unlink(evmAddress);
                 }
             }
             return true;

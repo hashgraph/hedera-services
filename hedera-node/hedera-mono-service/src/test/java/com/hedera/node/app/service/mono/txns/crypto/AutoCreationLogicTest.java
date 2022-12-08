@@ -568,8 +568,7 @@ class AutoCreationLogicTest {
 
         subject.reclaimPendingAliases();
 
-        verify(aliasManager, never()).unlink(evmAddress);
-        verify(aliasManager).forgetEvmAddress(evmAddress);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     @Test
@@ -588,7 +587,6 @@ class AutoCreationLogicTest {
         subject.reclaimPendingAliases();
 
         verify(aliasManager).unlink(alias);
-        verify(aliasManager, never()).forgetEvmAddress(alias);
     }
 
     @Test
@@ -610,7 +608,7 @@ class AutoCreationLogicTest {
         subject.reclaimPendingAliases();
 
         verify(aliasManager).unlink(alias);
-        verify(aliasManager).forgetEvmAddress(evmAddress);
+        verify(aliasManager).unlink(evmAddress);
     }
 
     private final TransactionBody.Builder syntheticEDAliasCreation =
