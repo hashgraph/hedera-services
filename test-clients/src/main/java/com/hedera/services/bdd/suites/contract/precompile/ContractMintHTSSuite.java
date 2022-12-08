@@ -128,9 +128,10 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     @Override
     public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs()
-//                negativeSpecs()
-        );
+        return allOf(
+                positiveSpecs()
+                //                negativeSpecs()
+                );
     }
 
     List<HapiApiSpec> negativeSpecs() {
@@ -142,14 +143,15 @@ public class ContractMintHTSSuite extends HapiApiSuite {
 
     List<HapiApiSpec> positiveSpecs() {
         return List.of(
-//                helloWorldFungibleMint(),
+                //                helloWorldFungibleMint(),
                 helloWorldNftMint()
-//                happyPathFungibleTokenMint(),
-//                happyPathNonFungibleTokenMint()
-//                transferNftAfterNestedMint(),
-//                happyPathZeroUnitFungibleTokenMint()
-        );
+                //                happyPathFungibleTokenMint(),
+                //                happyPathNonFungibleTokenMint()
+                //                transferNftAfterNestedMint(),
+                //                happyPathZeroUnitFungibleTokenMint()
+                );
     }
+
     private HapiApiSpec happyPathZeroUnitFungibleTokenMint() {
         final var amount = 0L;
         final var gasUsed = 14085L;
@@ -176,9 +178,9 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                         asAddress(fungible.get())))))
                 .when(
                         contractCall(
-                                MINT_CONTRACT,
-                                "mintFungibleTokenWithEvent",
-                                BigInteger.valueOf(amount))
+                                        MINT_CONTRACT,
+                                        "mintFungibleTokenWithEvent",
+                                        BigInteger.valueOf(amount))
                                 .via(FIRST_MINT_TXN)
                                 .payingWith(ACCOUNT)
                                 .alsoSigningWithFullPrefix(MULTI_KEY),
@@ -200,8 +202,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                         .withTotalSupply(0)
                                                                         .withSerialNumbers())
                                                         .gasUsed(gasUsed))
-                                        .newTotalSupply(0))
-                );
+                                        .newTotalSupply(0)));
     }
 
     private HapiApiSpec helloWorldFungibleMint() {
@@ -386,8 +387,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                                                                 parsedToByteString(
                                                                                                                         amount),
                                                                                                                 parsedToByteString(
-                                                                                                                        0)))))))
-                )
+                                                                                                                        0))))))))
                 .then(
                         getTokenInfo(FUNGIBLE_TOKEN).hasTotalSupply(amount),
                         getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, amount),
@@ -407,8 +407,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                         .withTotalSupply(10)
                                                                         .withSerialNumbers())
                                                         .gasUsed(gasUsed))
-                                        .newTotalSupply(10))
-                );
+                                        .newTotalSupply(10)));
     }
 
     private HapiApiSpec happyPathNonFungibleTokenMint() {

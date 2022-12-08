@@ -105,8 +105,7 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
         return List.of(
                 HSCS_PREC_004_token_burn_of_fungible_token_units(),
                 HSCS_PREC_005_token_burn_of_NFT(),
-                HSCS_PREC_011_burn_after_nested_mint()
-        );
+                HSCS_PREC_011_burn_after_nested_mint());
     }
 
     private HapiApiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
@@ -137,14 +136,13 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                                         .payingWith(ALICE)
                                                         .via(CREATION_TX)
                                                         .gas(GAS_TO_OFFER))),
-                        getTxnRecord(CREATION_TX).logged()
-                )
+                        getTxnRecord(CREATION_TX).logged())
                 .when(
                         contractCall(
-                                THE_CONTRACT,
-                                "burnTokenWithEvent",
-                                BigInteger.ZERO,
-                                new long[0])
+                                        THE_CONTRACT,
+                                        "burnTokenWithEvent",
+                                        BigInteger.ZERO,
+                                        new long[0])
                                 .payingWith(ALICE)
                                 .alsoSigningWithFullPrefix(MULTI_KEY)
                                 .gas(GAS_TO_OFFER)
@@ -246,10 +244,8 @@ public class ContractBurnHTSSuite extends HapiApiSuite {
                                         .newTotalSupply(48)
                                         .tokenTransfers(
                                                 changingFungibleBalances()
-                                                        .including(TOKEN, TOKEN_TREASURY, -1)))
-                )
-                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48)
-                );
+                                                        .including(TOKEN, TOKEN_TREASURY, -1))))
+                .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
     }
 
     private HapiApiSpec HSCS_PREC_005_token_burn_of_NFT() {

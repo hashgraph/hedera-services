@@ -747,21 +747,21 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                     .via(cryptoTransferTxn)
                                                     .gas(GAS_TO_OFFER),
                                             contractCall(
-                                                    CONTRACT,
-                                                    TRANSFER_MULTIPLE_TOKENS,
-                                                    (Object)
-                                                            new Tuple[] {
-                                                                    tokenTransferList()
-                                                                            .forToken(token)
-                                                                            .withAccountAmounts(
-                                                                                    accountAmount(
-                                                                                            sender,
-                                                                                            -0L),
-                                                                                    accountAmount(
-                                                                                            receiver,
-                                                                                            0L))
-                                                                            .build()
-                                                            })
+                                                            CONTRACT,
+                                                            TRANSFER_MULTIPLE_TOKENS,
+                                                            (Object)
+                                                                    new Tuple[] {
+                                                                        tokenTransferList()
+                                                                                .forToken(token)
+                                                                                .withAccountAmounts(
+                                                                                        accountAmount(
+                                                                                                sender,
+                                                                                                -0L),
+                                                                                        accountAmount(
+                                                                                                receiver,
+                                                                                                0L))
+                                                                                .build()
+                                                                    })
                                                     .payingWith(GENESIS)
                                                     .via("cryptoTransferZero")
                                                     .gas(GAS_TO_OFFER));
@@ -782,7 +782,8 @@ public class CryptoTransferHTSSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)).gasUsed(14085L))
+                                                                        .withStatus(SUCCESS))
+                                                        .gasUsed(14085L))
                                         .tokenTransfers(
                                                 SomeFungibleTransfers.changingFungibleBalances()
                                                         .including(FUNGIBLE_TOKEN, SENDER, -50)
