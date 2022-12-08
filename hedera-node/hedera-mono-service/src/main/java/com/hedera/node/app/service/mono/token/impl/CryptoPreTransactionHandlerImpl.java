@@ -45,7 +45,13 @@ import org.apache.commons.lang3.NotImplementedException;
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each crypto operation.
  *
- * <p><b>GOOD TO KNOW:</b> this class intentionally changes some error response codes.
+ * <p><b>NOTE:</b> this class intentionally changes some error response codes.
+ * <ol>
+ *     <li>When an immutable account (i.e., {@code 0.0.800} or {@code 0.0.801}) is put in
+ *     any role other than exactly an hbar receiver, fails with
+ *     {@code ACCOUNT_IS_IMMUTABLE} rather than {@code INVALID_ACCOUNT_ID}.</li>
+ * </ol>
+ * EET expectations will need to be updated accordingly.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
