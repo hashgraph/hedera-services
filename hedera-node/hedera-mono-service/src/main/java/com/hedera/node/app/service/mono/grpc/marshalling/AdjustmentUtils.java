@@ -48,7 +48,7 @@ public final class AdjustmentUtils {
         final var extantChange = manager.changeFor(account, denom);
         if (extantChange == null) {
             if (denom == MISSING_ID) {
-                final var newHbarChange = BalanceChange.hbarAdjust(account, amount);
+                final var newHbarChange = BalanceChange.hbarCustomFeeAdjust(account, amount);
                 manager.includeChange(newHbarChange);
                 return newHbarChange;
             } else {
@@ -105,7 +105,7 @@ public final class AdjustmentUtils {
             final Id denom,
             final long amount,
             final BalanceChangeManager manager) {
-        final var newHtsChange = BalanceChange.tokenAdjust(account, denom, amount);
+        final var newHtsChange = BalanceChange.tokenCustomFeeAdjust(account, denom, amount);
         manager.includeChange(newHtsChange);
         return newHtsChange;
     }
