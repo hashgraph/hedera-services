@@ -44,6 +44,17 @@ import org.apache.commons.lang3.NotImplementedException;
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each crypto operation.
+ *
+ * <p><b>NOTE:</b> this class intentionally changes two error response codes relative to
+ * {@link com.hedera.node.app.service.mono.sigs.order.SigRequirements}.
+ * <ol>
+ *     <li>When an immutable account (i.e., {@code 0.0.800} or {@code 0.0.801}) is put in
+ *     any role other than exactly an hbar receiver, fails with
+ *     {@code ACCOUNT_IS_IMMUTABLE} rather than {@code INVALID_ACCOUNT_ID}.</li>
+ *     <li>When a missing account is used as an NFT sender, fails with {@code INVALID_ACCOUNT_ID}
+ *     rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.</li>
+ * </ol>
+ * EET expectations may need to be updated accordingly.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
     private final AccountStore accountStore;
@@ -228,8 +239,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                         meta.addNonPayerKeyIfReceiverSigRequired(
                                 nftTransfer.getReceiverAccountID(), INVALID_TRANSFER_ACCOUNT_ID);
                     } else if (tokenMeta.metadata().hasRoyaltyWithFallback()
-                            && nftTransfer.hasReceiverAccountID()
-                            && !receivesFungibleValue(nftTransfer.getReceiverAccountID(), op)) {
+                            && !receivesFungibleValue(nftTransfer.getSenderAccountID(), op)) {
                         // Fallback situation; but we still need to check if the treasury is
                         // the sender or receiver, since in neither case will the fallback
                         // fee actually be charged
@@ -241,7 +251,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                     }
                 } else {
                     final var isMissingAcc =
-                            receiverKeyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID)
+                            INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
                                     && isAlias(nftTransfer.getReceiverAccountID());
                     if (!isMissingAcc) {
                         meta.setStatus(receiverKeyOrFailure.failureReason());

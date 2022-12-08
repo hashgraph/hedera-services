@@ -202,6 +202,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
         given(accounts.get(transferAccountNum)).willReturn(Optional.of(transferAccount));
+        given(transferAccount.getAccountKey()).willReturn(keyUsed);
         given(deleteAccount.getAccountKey()).willReturn(keyUsed);
         given(transferAccount.isReceiverSigRequired()).willReturn(false);
 
@@ -642,7 +643,7 @@ class CryptoPreTransactionHandlerImplTest {
     void cryptoTransferDoesntReachTreasuryIfFungible() {
         final var cryptoTransfer =
                 AccountAmount.newBuilder()
-                        .setAccountID(nftReceiverAccountId)
+                        .setAccountID(nftSenderAccountId)
                         .setAmount(134)
                         .build();
         final var negativeHbarTransfer =
@@ -652,7 +653,7 @@ class CryptoPreTransactionHandlerImplTest {
                         .build();
         final var hbarTransfer =
                 AccountAmount.newBuilder()
-                        .setAccountID(nftReceiverAccountId)
+                        .setAccountID(nftSenderAccountId)
                         .setAmount(134)
                         .build();
         final var nftTransfer =

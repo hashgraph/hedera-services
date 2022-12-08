@@ -97,7 +97,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-
     CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -124,8 +123,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-
-    CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_SCENARIO {
+    CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
                     from(
@@ -140,7 +138,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-
     CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -156,7 +153,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-
     CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -168,7 +164,6 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-
     CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO {
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -498,7 +493,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-    TOKEN_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+    TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
@@ -510,7 +505,7 @@ public enum CryptoTransferScenarios implements TxnHandlingScenario {
                                     .get()));
         }
     },
-    NFT_TRNASFER_ALLOWANCE_SPENDER_SCENARIO {
+    NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO {
         @Override
         public PlatformTxnAccessor platformTxn() throws Throwable {
             return PlatformTxnAccessor.from(
