@@ -30,15 +30,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification. This class may have subclasses in the future.
+ * Builds {@link SigTransactionMetadata} by collecting needed information collected when transactions are
+ * handled as part of "pre-handle" needed for signature verification. This class will be subclassed
+ * For e.g., we need a {@link TransactionMetadata} with an inner {@link TransactionMetadata} for schedule
+ * transactions.
  *
- * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
- * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
- * because doing so would cause service modules to have a circular dependency on the app module.
- * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder {
+public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuilder<T>> {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
     protected ResponseCodeEnum status = OK;
 
@@ -50,33 +48,71 @@ public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder
         this.keyLookup = keyLookup;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public TransactionMetadataBuilder status(final ResponseCodeEnum status) {
+    /**
+     * Sets status on {@link TransactionMetadata}. It will be {@link ResponseCodeEnum#OK} if there
+     * is no failure.
+     *
+     * @param status status to be set on {@link TransactionMetadata}
+     * @return builder object
+     */
+    public T status(final ResponseCodeEnum status) {
         this.status = status;
-        return this;
+        return self();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public TransactionMetadataBuilder payerKeyFor(AccountID payer) {
+    public T payer(final AccountID status) {
+        this.payer = status;
+        return self();
+    }
+
+    public T addAllReqKeys(final List<HederaKey> keys) {
+        this.requiredKeys.addAll(keys);
+        return self();
+    }
+
+    /**
+     * Fetches the payer key and add to required keys in {@link TransactionMetadata}.
+     *
+     * @param payer payer for the transaction
+     * @return builder object
+     */
+    public T payerKeyFor(AccountID payer) {
         this.payer = payer;
         addPayerKey();
-        return this;
+        return self();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public TransactionMetadataBuilder addToReqKeys(HederaKey key) {
+    /**
+     * Adds given key to required keys in {@link TransactionMetadata}.
+     *
+     * @param key key to be added
+     * @return builder object
+     */
+    public T addToReqKeys(HederaKey key) {
         requiredKeys.add(key);
-        return this;
+        return self();
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public TransactionMetadataBuilder txnBody(TransactionBody txn) {
+    /**
+     * Adds the {@link TransactionBody} of the transaction on {@link TransactionMetadata}.
+     *
+     * @param txn transaction body of the transaction
+     * @return builder object
+     */
+    public T txnBody(TransactionBody txn) {
         this.txn = txn;
-        return this;
+        return self();
+    }
+
+    /**
+     * Checks if the accountId is same as payer or the status of the metadata is already failed. If
+     * either of the above is true, doesn't look up the keys for given account. Else, looks up the
+     * keys for account. If the lookup fails, sets the default failureReason given in the result.
+     *
+     * @param id given accountId
+     */
+    public T addNonPayerKey(final AccountID id) {
+        return addNonPayerKey(id, null);
     }
 
     /**
@@ -88,15 +124,14 @@ public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    @Override
-    public TransactionMetadataBuilder addNonPayerKey(
+    public T addNonPayerKey(
             final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
-            return this;
+            return self();
         }
         final var result = keyLookup.getKey(id);
         failOrAddToKeys(result, failureStatus);
-        return this;
+        return self();
     }
 
     /**
@@ -109,20 +144,22 @@ public class SigTransactionMetadataBuilder implements TransactionMetadataBuilder
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    @Override
-    public TransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(
+    public T addNonPayerKeyIfReceiverSigRequired(
             final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
-            return this;
+            return self();
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         failOrAddToKeys(result, failureStatus);
-        return this;
+        return self();
     }
-
-    @Override
     public SigTransactionMetadata build() {
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
+    }
+
+    @SuppressWarnings("unchecked")
+    final T self() {
+        return (T) this;
     }
 
     /* ---------- Helper methods ---------- */

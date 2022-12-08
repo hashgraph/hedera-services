@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -26,11 +27,6 @@ import java.util.List;
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification. NOTE : This class may have subclasses in the future.
- *
- * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
- * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
- * because doing so would cause service modules to have a circular dependency on the app module.
- * Maybe we need some kind of base module from which services can extend and put it there?
  */
 public class SigTransactionMetadata implements TransactionMetadata {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
@@ -68,4 +64,11 @@ public class SigTransactionMetadata implements TransactionMetadata {
     public ResponseCodeEnum status() {
         return status;
     }
+    @Override
+    public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup){
+            return new SigTransactionMetadataBuilder(lookup)
+                    .txnBody(txn)
+                    .status(status)
+                    .addAllReqKeys(requiredKeys);
+        }
 }

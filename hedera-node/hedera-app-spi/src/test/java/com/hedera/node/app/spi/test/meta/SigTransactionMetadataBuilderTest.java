@@ -27,7 +27,6 @@ import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.meta.TransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +67,7 @@ class SigTransactionMetadataBuilderTest {
     final AccountID otherAccountId = AccountID.newBuilder().setAccountNum(12345L).build();
     @Mock private HederaKey otherKey;
     @Mock private AccountKeyLookup keyLookup;
-    private TransactionMetadataBuilder subject;
+    private SigTransactionMetadataBuilder subject;
     private TransactionMetadata meta;
 
     @BeforeEach

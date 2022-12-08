@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -59,4 +60,13 @@ public interface TransactionMetadata {
      * @return keys needed for validating signing requirements
      */
     List<HederaKey> requiredKeys();
+
+    /**
+     * Copies existing metadata and returns builder object.
+     * @param lookup key lookup needed for the builder
+     * @return builder object
+     */
+    default SigTransactionMetadataBuilder copy(AccountKeyLookup lookup){
+        throw new UnsupportedOperationException("Copy operation is not supported");
+    }
 }
