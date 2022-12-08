@@ -479,7 +479,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                         .withStatus(SUCCESS)
                                                                         .withTotalSupply(2L)
                                                                         .withSerialNumbers(1L, 2L))
-                                                        .gasUsed(14085L))
+                                                        .gasUsed(704226L))
                                         .newTotalSupply(2)
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
