@@ -105,7 +105,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
         }
         return tokenId == null
                 ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
-                : encoder.encodeIsApprovedForAll(answer);
+                : evmEncoder.encodeIsApprovedForAll(answer);
     }
 
     public static IsApproveForAllWrapper<TokenID, AccountID, AccountID> decodeIsApprovedForAll(

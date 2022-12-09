@@ -38,6 +38,6 @@ public class SymbolPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var symbol = ledgers.symbolOf(tokenId);
-        return encoder.encodeSymbol(symbol);
+        return evmEncoder.encodeSymbol(symbol);
     }
 }

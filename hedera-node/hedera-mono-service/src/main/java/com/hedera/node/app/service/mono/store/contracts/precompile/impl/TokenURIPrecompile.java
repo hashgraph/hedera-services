@@ -64,7 +64,7 @@ public class TokenURIPrecompile extends AbstractReadOnlyPrecompile
                 nftId, "`body` method should be called before `getSuccessResultsFor`");
 
         final var metadata = ledgers.metadataOf(nftId);
-        return encoder.encodeTokenUri(metadata);
+        return evmEncoder.encodeTokenUri(metadata);
     }
 
     public static OwnerOfAndTokenURIWrapper decodeTokenUriNFT(final Bytes input) {

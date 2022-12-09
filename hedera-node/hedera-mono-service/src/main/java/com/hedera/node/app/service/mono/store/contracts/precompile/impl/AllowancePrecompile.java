@@ -104,7 +104,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
         return tokenId == null
                 ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
-                : encoder.encodeAllowance(value);
+                : evmEncoder.encodeAllowance(value);
     }
 
     public static TokenAllowanceWrapper<TokenID, AccountID, AccountID> decodeTokenAllowance(

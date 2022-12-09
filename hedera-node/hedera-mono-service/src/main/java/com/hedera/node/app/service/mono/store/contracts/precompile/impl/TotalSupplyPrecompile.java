@@ -38,6 +38,6 @@ public class TotalSupplyPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(ExpirableTxnRecord.Builder childRecord) {
         final var totalSupply = ledgers.totalSupplyOf(tokenId);
-        return encoder.encodeTotalSupply(totalSupply);
+        return evmEncoder.encodeTotalSupply(totalSupply);
     }
 }

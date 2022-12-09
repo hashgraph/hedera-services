@@ -38,6 +38,6 @@ public class NamePrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var name = ledgers.nameOf(tokenId);
-        return encoder.encodeName(name);
+        return evmEncoder.encodeName(name);
     }
 }

@@ -61,7 +61,7 @@ public class BalanceOfPrecompile extends AbstractReadOnlyPrecompile
                 balanceWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var balance = ledgers.balanceOf(balanceWrapper.account(), tokenId);
-        return encoder.encodeBalance(balance);
+        return evmEncoder.encodeBalance(balance);
     }
 
     public static BalanceOfWrapper<AccountID> decodeBalanceOf(

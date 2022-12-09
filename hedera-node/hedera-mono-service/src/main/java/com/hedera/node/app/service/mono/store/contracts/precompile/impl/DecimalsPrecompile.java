@@ -38,6 +38,6 @@ public class DecimalsPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var decimals = ledgers.decimalsOf(tokenId);
-        return encoder.encodeDecimals(decimals);
+        return evmEncoder.encodeDecimals(decimals);
     }
 }

@@ -69,7 +69,7 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile implements Evm
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var owner = ledgers.ownerOf(nftId);
         final var priorityAddress = ledgers.canonicalAddress(owner);
-        return encoder.encodeOwner(priorityAddress);
+        return evmEncoder.encodeOwner(priorityAddress);
     }
 
     public static OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {

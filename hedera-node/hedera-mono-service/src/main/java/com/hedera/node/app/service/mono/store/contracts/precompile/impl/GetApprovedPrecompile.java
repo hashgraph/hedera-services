@@ -94,7 +94,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
         return tokenId == null
                 ? encoder.encodeGetApproved(SUCCESS.getNumber(), canonicalSpender)
-                : encoder.encodeGetApproved(canonicalSpender);
+                : evmEncoder.encodeGetApproved(canonicalSpender);
     }
 
     public static GetApprovedWrapper<TokenID> decodeGetApproved(
