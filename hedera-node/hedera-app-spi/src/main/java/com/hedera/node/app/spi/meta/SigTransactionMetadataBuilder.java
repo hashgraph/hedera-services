@@ -36,7 +36,7 @@ import java.util.List;
  * TransactionMetadata} for schedule transactions.
  */
 public class SigTransactionMetadataBuilder {
-    protected List<HederaKey> requiredKeys = new ArrayList<>();
+    protected final List<HederaKey> requiredKeys = new ArrayList<>();
     protected ResponseCodeEnum status = OK;
 
     protected TransactionBody txn;
@@ -133,15 +133,15 @@ public class SigTransactionMetadataBuilder {
      * failureReason is null, sets the default failureReason given in the result.
      *
      * @param id given accountId
-     * @param failureStatus given failure status
+     * @param failureStatusToUse failure status to be set if there is failure
      */
     public SigTransactionMetadataBuilder addNonPayerKey(
-            final AccountID id, final ResponseCodeEnum failureStatus) {
+            final AccountID id, final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(id)) {
             return this;
         }
         final var result = keyLookup.getKey(id);
-        failOrAddToKeys(result, failureStatus);
+        addToKeysOrFail(result, failureStatusToUse);
         return this;
     }
 
@@ -153,15 +153,15 @@ public class SigTransactionMetadataBuilder {
      * failureReason given in the result.
      *
      * @param id given accountId
-     * @param failureStatus given failure status
+     * @param failureStatusToUse failure status to be set if there is failure
      */
     public SigTransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(
-            final AccountID id, final ResponseCodeEnum failureStatus) {
+            final AccountID id, final ResponseCodeEnum failureStatusToUse) {
         if (isNotNeeded(id)) {
             return this;
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
-        failOrAddToKeys(result, failureStatus);
+        addToKeysOrFail(result, failureStatusToUse);
         return this;
     }
 
@@ -177,7 +177,7 @@ public class SigTransactionMetadataBuilder {
      */
     private void addPayerKey() {
         final var result = keyLookup.getKey(payer);
-        failOrAddToKeys(result, INVALID_PAYER_ACCOUNT_ID);
+        addToKeysOrFail(result, INVALID_PAYER_ACCOUNT_ID);
     }
 
     /**
@@ -215,7 +215,7 @@ public class SigTransactionMetadataBuilder {
      * @param result key lookup result
      * @param failureStatus failure reason for the lookup
      */
-    private void failOrAddToKeys(
+    private void addToKeysOrFail(
             final KeyOrLookupFailureReason result, @Nullable final ResponseCodeEnum failureStatus) {
         if (result.failed()) {
             this.status = failureStatus != null ? failureStatus : result.failureReason();

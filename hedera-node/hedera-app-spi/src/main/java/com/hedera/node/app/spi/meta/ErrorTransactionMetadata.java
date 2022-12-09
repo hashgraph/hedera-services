@@ -76,9 +76,10 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
         return List.of();
     }
 
+    @Nullable
     @Override
     public AccountID payer() {
-        throw new UnsupportedOperationException(
-                "This operation is not supported after an error occurred");
+        return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
+        // method.
     }
 }

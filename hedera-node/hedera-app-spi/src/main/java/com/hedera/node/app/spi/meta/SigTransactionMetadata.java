@@ -29,10 +29,10 @@ import java.util.List;
  * verification. NOTE : This class may have subclasses in the future.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
-    protected List<HederaKey> requiredKeys = new ArrayList<>();
-    protected TransactionBody txn;
-    protected AccountID payer;
-    protected ResponseCodeEnum status;
+    protected final List<HederaKey> requiredKeys = new ArrayList<>();
+    protected final TransactionBody txn;
+    protected final AccountID payer;
+    protected final ResponseCodeEnum status;
 
     public SigTransactionMetadata(
             final TransactionBody txn,
@@ -52,7 +52,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
 
     @Override
     public List<HederaKey> requiredKeys() {
-        return requiredKeys;
+        return Collections.unmodifiableList(requiredKeys);
     }
 
     @Override
