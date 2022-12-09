@@ -15,19 +15,20 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ErrorTransactionMetadataTest {
     final ResponseCodeEnum responseCode = ResponseCodeEnum.INVALID_SIGNATURE;
     final Throwable throwable = new Throwable("Invalid signature");
     final TransactionBody txBody = createAccountTransaction();
 
-    private ErrorTransactionMetadata subject = new ErrorTransactionMetadata(responseCode, throwable, txBody);
+    private ErrorTransactionMetadata subject =
+            new ErrorTransactionMetadata(responseCode, throwable, txBody);
 
     @Test
     public void testCause() {
