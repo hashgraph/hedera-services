@@ -62,7 +62,6 @@ import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
-import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
@@ -131,8 +130,8 @@ public class ConcurrentSuites {
                     ExtCodeCopyOperationSuite::new,
                     ExtCodeHashOperationSuite::new,
                     ExtCodeSizeOperationSuite::new,
-//                    // FIXME!
-//                    //                        GlobalPropertiesSuite::new,
+                    //                    // FIXME!
+                    //                    //                        GlobalPropertiesSuite::new,
                     SStoreSuite::new,
                     StaticCallOperationSuite::new,
                     // contract.openzeppelin

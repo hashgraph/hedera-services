@@ -40,7 +40,8 @@ public class LogsSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LogsSuite.class);
     private static final String CONTRACT = "Logs";
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT = "contracts.maxRefundPercentOfGasLimit";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
+            "contracts.maxRefundPercentOfGasLimit";
 
     public static void main(String... args) {
         new LogsSuite().runSuiteSync();

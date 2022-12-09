@@ -404,9 +404,7 @@ public class HapiSpec implements Runnable {
             Failure asyncFailure = null;
             if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
                 status = FAILED;
-                failure = error
-                        .map(t -> new Failure(t, op.toString()))
-                        .orElse(asyncFailure);
+                failure = error.map(t -> new Failure(t, op.toString())).orElse(asyncFailure);
                 break;
             } else {
                 log.info("'{}' finished initial execution of {}", name, op);
@@ -464,8 +462,10 @@ public class HapiSpec implements Runnable {
                                                                                     op);
                                                                             finishingError.set(
                                                                                     Optional.of(
-                                                                                            new Failure(t, op.toString()))
-                                                                            );
+                                                                                            new Failure(
+                                                                                                    t,
+                                                                                                    op
+                                                                                                            .toString())));
                                                                         }
                                                                     }
                                                                 } else {

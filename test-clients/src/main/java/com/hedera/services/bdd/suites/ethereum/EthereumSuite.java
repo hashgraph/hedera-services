@@ -58,7 +58,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -75,7 +74,6 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -121,22 +119,22 @@ public class EthereumSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return Stream.concat(
-                                feePaymentMatrix().stream(),
-                                Stream.of(
-                                        invalidTxData(),
-                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        ETX_010_transferToCryptoAccountSucceeds(),
-                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                        ETX_014_contractCreateInheritsSignerProperties(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        originAndSenderAreEthereumSigner(),
-                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
-                                        setApproveForAllUsingLocalNodeSetupPasses()))
+                        feePaymentMatrix().stream(),
+                        Stream.of(
+                                invalidTxData(),
+                                ETX_007_fungibleTokenCreateWithFeesHappyPath(),
+                                ETX_008_contractCreateExecutesWithExpectedRecord(),
+                                ETX_009_callsToTokenAddresses(),
+                                ETX_010_transferToCryptoAccountSucceeds(),
+                                ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                ETX_014_contractCreateInheritsSignerProperties(),
+                                ETX_009_callsToTokenAddresses(),
+                                originAndSenderAreEthereumSigner(),
+                                ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
+                                ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                setApproveForAllUsingLocalNodeSetupPasses()))
                 .toList();
     }
 

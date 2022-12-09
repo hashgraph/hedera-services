@@ -322,7 +322,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 20,
                                                 fixedHbarFeeInheritingRoyaltyCollector(1),
                                                 firstRoyaltyCollector))
-                                .hasKnownStatus(INVALID_ADMIN_KEY)
                                 .via(NFT_CREATE),
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,
@@ -1458,8 +1457,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .initialSupply(0)
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY)
-                                .hasKnownStatus(INVALID_ADMIN_KEY),
+                                .supplyKey(MULTI_KEY),
                         mintToken(
                                 nonFungibleToken,
                                 List.of(copyFromUtf8("Test transfer nft to EVM address alias."))),

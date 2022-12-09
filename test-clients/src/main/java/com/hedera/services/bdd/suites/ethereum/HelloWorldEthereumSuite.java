@@ -92,15 +92,15 @@ public class HelloWorldEthereumSuite extends HapiSuite {
 
     List<HapiSpec> ethereumCalls() {
         return List.of(
-                    relayerFeeAsExpectedIfSenderCoversGas(),
-                    depositSuccess(),
-                    badRelayClient(),
-                    ethereumCallWithCalldataBiggerThanMaxSucceeds());
+                relayerFeeAsExpectedIfSenderCoversGas(),
+                depositSuccess(),
+                badRelayClient(),
+                ethereumCallWithCalldataBiggerThanMaxSucceeds());
     }
 
     List<HapiSpec> ethereumCreates() {
         return List.of(
-                    smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
+                smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
     HapiSpec badRelayClient() {

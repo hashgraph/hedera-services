@@ -130,7 +130,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
     HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
         final String ACCOUNT = "account";
         return defaultHapiSpec(
-                "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),

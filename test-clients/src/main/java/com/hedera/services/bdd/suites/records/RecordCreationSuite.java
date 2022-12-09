@@ -209,13 +209,20 @@ public class RecordCreationSuite extends HapiSuite {
                                     .contents(serde.toValidatedRawFile(stylized121)),
                             overridingAllOf(
                                     Map.of(
-                                            CHAIN_ID_PROP, "298",
-                                            "staking.fees.nodeRewardPercentage", "10",
-                                            "staking.fees.stakingRewardPercentage", "10",
-                                            "staking.isEnabled", "true",
-                                            "staking.maxDailyStakeRewardThPerH", "100",
-                                            "staking.rewardRate", "100_000_000_000",
-                                            "staking.startThreshold", "100_000_000")))
+                                            CHAIN_ID_PROP,
+                                            "298",
+                                            "staking.fees.nodeRewardPercentage",
+                                            "10",
+                                            "staking.fees.stakingRewardPercentage",
+                                            "10",
+                                            "staking.isEnabled",
+                                            "true",
+                                            "staking.maxDailyStakeRewardThPerH",
+                                            "100",
+                                            "staking.rewardRate",
+                                            "100_000_000_000",
+                                            "staking.startThreshold",
+                                            "100_000_000")))
                     .when(
                             cryptoCreate(civilian),
                             balanceSnapshot(snapshot800, STAKING_REWARD),
