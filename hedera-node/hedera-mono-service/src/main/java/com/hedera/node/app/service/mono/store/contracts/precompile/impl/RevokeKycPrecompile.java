@@ -28,18 +28,20 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.txns.token.RevokeKycLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -94,7 +96,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         return pricingUtils.getMinimumPriceInTinybars(REVOKE_KYC, consensusTime);
     }
 
-    public static GrantRevokeKycWrapper decodeRevokeTokenKyc(
+    public static GrantRevokeKycWrapper<TokenID, AccountID> decodeRevokeTokenKyc(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final Tuple decodedArguments =
                 decodeFunctionCall(
@@ -106,7 +108,7 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
         final var accountID =
                 convertLeftPaddedAddressToAccountId(decodedArguments.get(1), aliasResolver);
 
-        return new GrantRevokeKycWrapper(tokenID, accountID);
+        return new GrantRevokeKycWrapper<>(tokenID, accountID);
     }
 
     private void executeForRevoke(RevokeKycLogic revokeKycLogic, Id tokenId, Id accountId) {

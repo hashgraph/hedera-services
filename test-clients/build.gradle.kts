@@ -62,6 +62,11 @@ dependencies {
     implementation(libs.hapi) {
         exclude("javax.annotation", "javax.annotation-api")
     }
+
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.netty)
+
     implementation(libs.headlong)
     implementation(libs.log4j.core)
     implementation(testLibs.json)
@@ -132,6 +137,8 @@ tasks.eet {
 tasks.shadowJar {
     dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
 
+    mergeServiceFiles()
+
     archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
@@ -152,6 +159,7 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
     group = "shadow"
     from(sourceSets.main.get().output)
     configurations = listOf(project.configurations["runtimeClasspath"])
+    mergeServiceFiles()
 
     exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 

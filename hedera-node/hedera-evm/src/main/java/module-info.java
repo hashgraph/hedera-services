@@ -15,6 +15,7 @@ module com.hedera.node.app.service.evm {
     requires static com.github.spotbugs.annotations;
     requires org.apache.commons.lang3;
     requires org.hyperledger.besu.secp256k1;
+    requires headlong;
 
     exports com.hedera.node.app.service.evm.store.contracts.utils;
     exports com.hedera.node.app.service.evm.contracts.execution;
@@ -25,4 +26,6 @@ module com.hedera.node.app.service.evm {
     exports com.hedera.node.app.service.evm.contracts.operations;
     exports com.hedera.node.app.service.evm.contracts.execution.traceability;
     exports com.hedera.node.app.service.evm.utils;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile.codec;
+    exports com.hedera.node.app.service.evm.store.contracts.precompile.impl;
 }

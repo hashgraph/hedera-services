@@ -31,6 +31,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractCustomizer;
@@ -42,12 +44,10 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Associa
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BurnWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DeleteWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.Dissociation;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.MintWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.PauseWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenTransferWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateExpiryInfoWrapper;
@@ -586,7 +586,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createGrantKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenGrantKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -596,7 +596,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createRevokeKyc(
-            final GrantRevokeKycWrapper grantRevokeKycWrapper) {
+            final GrantRevokeKycWrapper<TokenID, AccountID> grantRevokeKycWrapper) {
         final var builder = TokenRevokeKycTransactionBody.newBuilder();
 
         builder.setToken(grantRevokeKycWrapper.token());
@@ -631,7 +631,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenWipe(builder);
     }
 
-    public TransactionBody.Builder createFreeze(final TokenFreezeUnfreezeWrapper freezeWrapper) {
+    public TransactionBody.Builder createFreeze(
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> freezeWrapper) {
         final var builder = TokenFreezeAccountTransactionBody.newBuilder();
         builder.setToken(freezeWrapper.token());
         builder.setAccount(freezeWrapper.account());
@@ -639,7 +640,7 @@ public class SyntheticTxnFactory {
     }
 
     public TransactionBody.Builder createUnFreeze(
-            final TokenFreezeUnfreezeWrapper unFreezeWrapper) {
+            final TokenFreezeUnfreezeWrapper<TokenID, AccountID> unFreezeWrapper) {
         final var builder = TokenUnfreezeAccountTransactionBody.newBuilder();
         builder.setToken(unFreezeWrapper.token());
         builder.setAccount(unFreezeWrapper.account());

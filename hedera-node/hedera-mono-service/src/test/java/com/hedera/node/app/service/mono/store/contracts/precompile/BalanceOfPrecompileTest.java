@@ -34,6 +34,6 @@ class BalanceOfPrecompileTest {
     void decodeBalanceInput() {
         final var decodedInput = decodeBalanceOf(BALANCE_INPUT, identity());
 
-        assertTrue(decodedInput.accountId().getAccountNum() > 0);
+        assertTrue(decodedInput.account().getAccountNum() > 0);
     }
 }
