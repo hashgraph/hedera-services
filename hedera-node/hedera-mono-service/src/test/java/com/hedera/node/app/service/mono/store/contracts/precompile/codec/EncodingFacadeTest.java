@@ -634,6 +634,7 @@ class EncodingFacadeTest {
         final var decodedResult = subject.encodeCreateFailure(INVALID_EXPIRATION_TIME);
         assertEquals(CREATE_FAILURE_FROM_INVALID_EXPIRATION_TIME, decodedResult);
     }
+
     @Test
     void decodeReturnResultForTransfer() {
         final var decodedResult = subject.encodeEcFungibleTransfer(true);
