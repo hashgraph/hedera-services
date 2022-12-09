@@ -77,38 +77,6 @@ public class EncodingFacade {
         return UInt256.valueOf(status.getNumber());
     }
 
-    public Bytes encodeTokenUri(final String tokenUri) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_TOKEN_URI)
-                .withTokenUri(tokenUri)
-                .build();
-    }
-
-    public Bytes encodeSymbol(final String symbol) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_SYMBOL)
-                .withSymbol(symbol)
-                .build();
-    }
-
-    public Bytes encodeName(final String name) {
-        return functionResultBuilder().forFunction(FunctionType.ERC_NAME).withName(name).build();
-    }
-
-    public Bytes encodeOwner(final Address address) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_OWNER)
-                .withOwner(address)
-                .build();
-    }
-
-    public Bytes encodeGetApproved(final Address approved) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_GET_APPROVED)
-                .withApproved(approved)
-                .build();
-    }
-
     public Bytes encodeGetApproved(final int status, final Address approved) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_APPROVED)
@@ -117,25 +85,11 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeBalance(final long balance) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_BALANCE)
-                .withBalance(balance)
-                .build();
-    }
-
     public Bytes encodeIsFrozen(final boolean isFrozen) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_FROZEN)
                 .withStatus(SUCCESS.getNumber())
                 .withIsFrozen(isFrozen)
-                .build();
-    }
-
-    public Bytes encodeAllowance(final long allowance) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_ALLOWANCE)
-                .withAllowance(allowance)
                 .build();
     }
 
@@ -166,20 +120,6 @@ public class EncodingFacade {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_APPROVE_NFT)
                 .withStatus(responseCode)
-                .build();
-    }
-
-    public Bytes encodeDecimals(final int decimals) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_DECIMALS)
-                .withDecimals(decimals)
-                .build();
-    }
-
-    public Bytes encodeTotalSupply(final long totalSupply) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_TOTAL_SUPPLY)
-                .withTotalSupply(totalSupply)
                 .build();
     }
 
@@ -237,13 +177,6 @@ public class EncodingFacade {
                 .forFunction(FunctionType.HAPI_CREATE)
                 .withStatus(status.getNumber())
                 .withNewTokenAddress(Address.ZERO)
-                .build();
-    }
-
-    public Bytes encodeIsApprovedForAll(final boolean isApprovedForAllStatus) {
-        return functionResultBuilder()
-                .forFunction(FunctionType.ERC_IS_APPROVED_FOR_ALL)
-                .withIsApprovedForAllStatus(isApprovedForAllStatus)
                 .build();
     }
 
