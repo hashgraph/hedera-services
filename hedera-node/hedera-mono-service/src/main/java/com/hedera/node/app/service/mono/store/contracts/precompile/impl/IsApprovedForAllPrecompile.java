@@ -62,7 +62,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-        final EvmEncodingFacade evmEncoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }

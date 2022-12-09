@@ -432,12 +432,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils));
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> new GetTokenDefaultFreezeStatus(
-                            syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
-                            syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_IS_KYC -> new IsKycPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_GRANT_TOKEN_KYC -> new GrantKycPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -474,7 +487,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_IS_FROZEN -> new IsFrozenPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_FREEZE -> new FreezeTokenPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -521,7 +539,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();
@@ -754,7 +777,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, evmEncoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
                             null,

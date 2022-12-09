@@ -41,7 +41,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-        final EvmEncodingFacade evmEncoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
         super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }

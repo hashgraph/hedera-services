@@ -62,9 +62,9 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
-        final EvmEncodingFacade evmEncoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder,pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     public GetApprovedPrecompile(
@@ -72,7 +72,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
             final PrecompilePricingUtils pricingUtils) {
-        this(null, syntheticTxnFactory, ledgers, encoder, null,pricingUtils);
+        this(null, syntheticTxnFactory, ledgers, encoder, null, pricingUtils);
     }
 
     @Override

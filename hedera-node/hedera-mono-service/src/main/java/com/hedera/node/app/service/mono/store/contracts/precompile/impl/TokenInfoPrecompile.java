@@ -44,7 +44,7 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils,
             final StateView stateView) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder,pricingUtils, stateView);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils, stateView);
     }
 
     @Override
