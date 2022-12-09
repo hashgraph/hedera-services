@@ -21,7 +21,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
-public class EvmEncodingFacadeTest {
+class EvmEncodingFacadeTest {
 
     private final EvmEncodingFacade subject = new EvmEncodingFacade();
 

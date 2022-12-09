@@ -293,16 +293,10 @@ public class EncodingFacade {
         private boolean tokenDefaultKycStatus;
         private boolean isKyc;
         private long totalSupply;
-        private long balance;
         private long allowance;
         private boolean approve;
         private long[] serialNumbers;
-        private int decimals;
-        private Address owner;
         private Address approved;
-        private String name;
-        private String symbol;
-        private String metadata;
         private TokenInfo tokenInfo;
         private TokenNftInfo nonFungibleTokenInfo;
         private boolean isFrozen;
@@ -366,16 +360,6 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withDecimals(final int decimals) {
-            this.decimals = decimals;
-            return this;
-        }
-
-        private FunctionResultBuilder withBalance(final long balance) {
-            this.balance = balance;
-            return this;
-        }
-
         private FunctionResultBuilder withIsFrozen(final boolean isFrozen) {
             this.isFrozen = isFrozen;
             return this;
@@ -391,28 +375,8 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withOwner(final Address address) {
-            this.owner = address;
-            return this;
-        }
-
         private FunctionResultBuilder withApproved(final Address approved) {
             this.approved = approved;
-            return this;
-        }
-
-        private FunctionResultBuilder withName(final String name) {
-            this.name = name;
-            return this;
-        }
-
-        private FunctionResultBuilder withSymbol(final String symbol) {
-            this.symbol = symbol;
-            return this;
-        }
-
-        private FunctionResultBuilder withTokenUri(final String tokenUri) {
-            this.metadata = tokenUri;
             return this;
         }
 
@@ -504,12 +468,6 @@ public class EncodingFacade {
                                 status, BigInteger.valueOf(totalSupply), serialNumbers);
                         case HAPI_BURN -> Tuple.of(status, BigInteger.valueOf(totalSupply));
                         case ERC_TOTAL_SUPPLY -> Tuple.of(BigInteger.valueOf(totalSupply));
-                        case ERC_DECIMALS -> Tuple.of(decimals);
-                        case ERC_BALANCE -> Tuple.of(BigInteger.valueOf(balance));
-                        case ERC_OWNER -> Tuple.of(convertBesuAddressToHeadlongAddress(owner));
-                        case ERC_NAME -> Tuple.of(name);
-                        case ERC_SYMBOL -> Tuple.of(symbol);
-                        case ERC_TOKEN_URI -> Tuple.of(metadata);
                         case ERC_TRANSFER -> Tuple.of(ercFungibleTransferStatus);
                         case ERC_ALLOWANCE -> Tuple.of(BigInteger.valueOf(allowance));
                         case ERC_APPROVE -> Tuple.of(approve);
