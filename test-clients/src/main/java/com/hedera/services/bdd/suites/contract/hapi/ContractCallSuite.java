@@ -235,7 +235,7 @@ public class ContractCallSuite extends HapiSuite {
                 actionsShowPropagatedRevert());
     }
 
-    private HapiApiSpec actionsShowPropagatedRevert() {
+    private HapiSpec actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
         final var somebody = "somebody";
@@ -247,7 +247,6 @@ public class ContractCallSuite extends HapiSuite {
 
         return defaultHapiSpec("ActionsShowPropagatedRevert")
                 .given(
-                        overriding("contracts.sidecars", "CONTRACT_ACTION"),
                         uploadInitCode(APPROVE_BY_DELEGATE),
                         contractCreate(APPROVE_BY_DELEGATE),
                         cryptoCreate(TOKEN_TREASURY),
@@ -297,9 +296,7 @@ public class ContractCallSuite extends HapiSuite {
                 .then(
                         // FUTURE WORK - enhance sidecar validation utilities to confirm
                         // all three action sidecars above have their oneof action_data set
-                        overriding(
-                                "contracts.sidecars",
-                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
+                        );
     }
 
     private HapiSpec whitelistingAliasedContract() {

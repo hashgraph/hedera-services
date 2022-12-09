@@ -144,7 +144,7 @@ public class ContractMintHTSSuite extends HapiSuite {
                 happyPathZeroUnitFungibleTokenMint());
     }
 
-    private HapiApiSpec happyPathZeroUnitFungibleTokenMint() {
+    private HapiSpec happyPathZeroUnitFungibleTokenMint() {
         final var amount = 0L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
