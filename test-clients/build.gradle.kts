@@ -123,6 +123,12 @@ dependencies {
     eetImplementation(project(":hedera-node:hedera-util-service-impl"))
 }
 
+tasks.withType<Test> {
+    this.testLogging {
+        this.showStandardStreams = true
+    }
+}
+
 tasks.itest {
     systemProperty("junit.jupiter.execution.parallel.enabled", false)
     systemProperty("TAG", "services-node:" + project.version)

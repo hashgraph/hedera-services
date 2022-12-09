@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.persistence;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;

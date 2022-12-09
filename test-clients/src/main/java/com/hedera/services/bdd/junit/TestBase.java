@@ -19,20 +19,17 @@ import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
@@ -40,49 +37,56 @@ import org.junit.jupiter.api.DynamicTest;
 /** Base class with some utility methods that can be used by JUnit-based test classes. */
 public abstract class TestBase {
     @SafeVarargs
+    @SuppressWarnings("java:S3864")
     protected final DynamicTest extractedSpecsFromConcurrentSuites(
             final Supplier<HapiSuite>... suiteSuppliers) {
         final var commaSeparatedSuites = new StringBuilder();
-        final var contextualizedSpecs = Arrays.stream(suiteSuppliers)
-                .map(Supplier::get)
-                .peek(suite -> commaSeparatedSuites
-                        .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
-                        .append(suite.name()))
-                .flatMap(this::contextualizedSpecsFromConcurrent)
-                .toList();
+        final var contextualizedSpecs =
+                Arrays.stream(suiteSuppliers)
+                        .map(Supplier::get)
+                        .peek(
+                                suite ->
+                                        commaSeparatedSuites
+                                                .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
+                                                .append(suite.name()))
+                        .flatMap(this::contextualizedSpecsFromConcurrent)
+                        .toList();
+        System.out.println("CONTEXTUALIZED " + contextualizedSpecs.size() + " SPECS");
         return dynamicTest(
-                commaSeparatedSuites.toString(),
-                () -> concurrentExecutionOf(contextualizedSpecs));
+                commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
     }
 
     private void concurrentExecutionOf(final List<HapiSpec> specs) {
         HapiSuite.runConcurrentSpecs(specs);
         final var failures = specs.stream().filter(HapiSpec::notOk).toList();
         if (!failures.isEmpty()) {
-            final var failureReport = """
+            final var failureReport =
+                    """
                     %d specs failed. By suite,
                     %s
                     """;
             final var details = new StringBuilder();
             failures.stream()
-                    .collect(Collectors.groupingBy(
-                            HapiSpec::getSuitePrefix,
-                            Collectors.toList()))
-                    .forEach((suiteName, failedSpecs) -> {
-                        details
-                                .append("  ")
-                                .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
-                                .append(" ~ ")
-                                .append(failedSpecs.size())
-                                .append(" failures:");
-                         failedSpecs.forEach(failure ->
-                                 details
-                                         .append("\n  ")
-                                         .append(failure.getName())
-                                         .append("\n")
-                                         .append(Arrays.toString(
-                                                 Objects.requireNonNull(failure.getCause()).getStackTrace())));
-                    });
+                    .collect(Collectors.groupingBy(HapiSpec::getSuitePrefix, Collectors.toList()))
+                    .forEach(
+                            (suiteName, failedSpecs) -> {
+                                details.append("  ")
+                                        .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
+                                        .append(" ~ ")
+                                        .append(failedSpecs.size())
+                                        .append(" failures:");
+                                failedSpecs.forEach(
+                                        failure ->
+                                                details.append("\n  ")
+                                                        .append(failure.getName())
+                                                        .append("\n")
+                                                        .append(
+                                                                Arrays.toString(
+                                                                        Objects.requireNonNull(
+                                                                                        failure
+                                                                                                .getCause())
+                                                                                .getStackTrace())));
+                            });
             Assertions.fail(String.format(failureReport, failures.size(), details));
         }
     }
@@ -93,12 +97,9 @@ public abstract class TestBase {
         }
         // Re-use gRPC channels for all specs
         suite.skipClientTearDown();
-        // Don't log things that nobody will see
-        suite.deferResultsSummary();
-        return suite
-                .getSpecsInSuite()
-                .stream()
-                .map(spec -> spec.setSuitePrefix(suite.name()));
+        // Don't log unnecessary detail
+        suite.setOnlyLogHeader();
+        return suite.getSpecsInSuite().stream().map(spec -> spec.setSuitePrefix(suite.name()));
     }
 
     /**

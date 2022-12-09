@@ -15,11 +15,11 @@
  */
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
+import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.COMPARE;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.*;
-import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
-import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.infrastructure.HapiApiClients.clientsFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.*;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
@@ -146,11 +146,10 @@ public class HapiSpec implements Runnable {
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
     /**
-     * When the final status is {@code FAILED}, contains the exception thrown
-     * by the failed assertion that terminated {@code exec()}.
+     * When the final status is {@code FAILED}, contains the exception thrown by the failed
+     * assertion that terminated {@code exec()}.
      */
-    @Nullable
-    private Throwable failure = null;
+    @Nullable private Throwable failure = null;
 
     public static ThreadPoolExecutor getCommonThreadPool() {
         return THREAD_POOL;
@@ -646,8 +645,7 @@ public class HapiSpec implements Runnable {
     }
 
     public static Def.Setup onlyHapiSpec(String name) {
-        return setup ->
-                given -> when -> then -> new HapiSpec(name, true, setup, given, when, then);
+        return setup -> given -> when -> then -> new HapiSpec(name, true, setup, given, when, then);
     }
 
     private HapiSpec(

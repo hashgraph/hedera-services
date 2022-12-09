@@ -19,7 +19,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Function;
-
 import org.junit.jupiter.api.Assertions;
 
 public class EqualityAssertsProviderFactory {

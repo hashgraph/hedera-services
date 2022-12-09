@@ -1697,8 +1697,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
                                                 DEFAULT_LONG_TERM_ENABLED)));
     }
 
-    public static List<HapiSpec> withAndWithoutLongTermEnabled(
-            Supplier<List<HapiSpec>> getSpecs) {
+    public static List<HapiSpec> withAndWithoutLongTermEnabled(Supplier<List<HapiSpec>> getSpecs) {
         List<HapiSpec> list = new ArrayList<>();
         list.add(disableLongTermScheduledTransactions());
         list.addAll(getSpecs.get());

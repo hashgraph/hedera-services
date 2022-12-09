@@ -109,8 +109,7 @@ public class TxnVerbs {
     }
 
     @SafeVarargs
-    public static HapiCryptoTransfer cryptoTransfer(
-            Function<HapiSpec, TransferList>... providers) {
+    public static HapiCryptoTransfer cryptoTransfer(Function<HapiSpec, TransferList>... providers) {
         return new HapiCryptoTransfer(providers);
     }
 

@@ -1304,8 +1304,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiSpec
-            scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
+    private HapiSpec scheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidSize";
         String invalidSchedule = "withInvalidSize";
@@ -1352,8 +1351,7 @@ public class ScheduleExecutionSpecs extends HapiSuite {
                                                 successFeesObs.get(), failureFeesObs.get(), 1.0)));
     }
 
-    private HapiSpec
-            scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
+    private HapiSpec scheduledSubmitFailedWithInvalidChunkTxnIdStillPaysServiceFeeButHasNoImpact() {
         String immutableTopic = "XXX";
         String validSchedule = "withValidChunkTxnId";
         String invalidSchedule = "withInvalidChunkTxnId";

@@ -2158,8 +2158,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec
-            hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    private HapiSpec hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender")
                 .given(

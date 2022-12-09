@@ -338,8 +338,7 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         }
 
         if (!basePropsFile.isPresent()) {
-            if (!file.equals(HapiSuite.API_PERMISSIONS)
-                    && !file.equals(HapiSuite.APP_PROPERTIES)) {
+            if (!file.equals(HapiSuite.API_PERMISSIONS) && !file.equals(HapiSuite.APP_PROPERTIES)) {
                 throw new IllegalStateException(
                         "Property overrides make no sense for file '" + file + "'!");
             }

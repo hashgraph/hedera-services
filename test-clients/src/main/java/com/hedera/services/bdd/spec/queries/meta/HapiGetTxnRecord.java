@@ -37,8 +37,8 @@ import com.esaulpaugh.headlong.abi.ABIJSON;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
@@ -490,8 +490,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 "Bad transaction hash!");
     }
 
-    private void assertTopicRunningHash(
-            final HapiSpec spec, final TransactionRecord actualRecord) throws IOException {
+    private void assertTopicRunningHash(final HapiSpec spec, final TransactionRecord actualRecord)
+            throws IOException {
         if (topicToValidate.isPresent()) {
             if (actualRecord.getReceipt().getStatus().equals(ResponseCodeEnum.SUCCESS)) {
                 final var previousRunningHash = spec.registry().getBytes(topicToValidate.get());
@@ -965,8 +965,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     }
 
     @Override
-    protected long lookupCostWith(final HapiSpec spec, final Transaction payment)
-            throws Throwable {
+    protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
         final Query query = getRecordQuery(spec, payment, true);
         final Response response =
                 spec.clients()

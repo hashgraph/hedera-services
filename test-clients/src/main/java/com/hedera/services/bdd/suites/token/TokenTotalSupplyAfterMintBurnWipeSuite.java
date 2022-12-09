@@ -50,9 +50,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()
-                });
+                new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
     }
 
     public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {

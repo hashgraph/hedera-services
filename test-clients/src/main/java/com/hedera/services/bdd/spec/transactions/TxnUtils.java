@@ -46,8 +46,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -294,8 +294,7 @@ public class TxnUtils {
                 .build();
     }
 
-    public static TransactionID asTransactionID(
-            final HapiSpec spec, final Optional<String> payer) {
+    public static TransactionID asTransactionID(final HapiSpec spec, final Optional<String> payer) {
         final var payerID =
                 spec.registry().getAccountID(payer.orElse(spec.setup().defaultPayerName()));
         final var validStart = getUniqueTimestampPlusSecs(spec.setup().txnStartOffsetSecs());
@@ -350,8 +349,8 @@ public class TxnUtils {
                 .collect(joining(", "));
     }
 
-    public static Timestamp currExpiry(
-            final String file, final HapiSpec spec, final String payer) throws Throwable {
+    public static Timestamp currExpiry(final String file, final HapiSpec spec, final String payer)
+            throws Throwable {
         final HapiGetFileInfo subOp = getFileInfo(file).payingWith(payer).noLogging();
         final Optional<Throwable> error = subOp.execFor(spec);
         if (error.isPresent()) {

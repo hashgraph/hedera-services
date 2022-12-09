@@ -29,13 +29,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class UpdatePermissionsDuringReconnect extends HapiSuite {
-    private static final Logger log =
-            LogManager.getLogger(UpdatePermissionsDuringReconnect.class);
+    private static final Logger log = LogManager.getLogger(UpdatePermissionsDuringReconnect.class);
 
     public static void main(String... args) {
         new UpdatePermissionsDuringReconnect().runSuiteSync();

@@ -356,8 +356,7 @@ public class StakingSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec
-            evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
+    private HapiSpec evenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation() {
         return defaultHapiSpec(
                         "EvenOneTinybarChangeInIndirectStakingAccountTriggersStakeeRewardSituation")
                 .given(

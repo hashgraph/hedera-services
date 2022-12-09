@@ -1481,9 +1481,7 @@ public class TokenInfoHTSSuite extends HapiSuite {
     }
 
     private TokenNftInfo getTokenNftInfoForCheck(
-            final HapiSpec spec,
-            final HapiGetTokenInfo getTokenInfoQuery,
-            final ByteString meta) {
+            final HapiSpec spec, final HapiGetTokenInfo getTokenInfoQuery, final ByteString meta) {
         final var tokenId =
                 getTokenInfoQuery.getResponse().getTokenGetInfo().getTokenInfo().getTokenId();
 

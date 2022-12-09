@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -87,8 +87,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -746,8 +746,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getAccountBalance(beneficiary).logged());
     }
 
-    private HapiSpec
-            getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
+    private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
         final var civilian = "civilian";
         final var creation = "creation";
         final var gasToOffer = 128_000L;

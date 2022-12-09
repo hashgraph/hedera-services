@@ -68,13 +68,11 @@ public class TransferListAsserts extends BaseErroringAssertsProvider<TransferLis
         return new MissingPaymentAsserts(providers);
     }
 
-    public static Function<HapiSpec, Map.Entry<AccountID, Long>> to(
-            String account, Long amount) {
+    public static Function<HapiSpec, Map.Entry<AccountID, Long>> to(String account, Long amount) {
         return spec -> new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), amount);
     }
 
-    public static Function<HapiSpec, Map.Entry<AccountID, Long>> from(
-            String account, Long amount) {
+    public static Function<HapiSpec, Map.Entry<AccountID, Long>> from(String account, Long amount) {
         return spec ->
                 new AbstractMap.SimpleEntry<>(spec.registry().getAccountID(account), -1 * amount);
     }

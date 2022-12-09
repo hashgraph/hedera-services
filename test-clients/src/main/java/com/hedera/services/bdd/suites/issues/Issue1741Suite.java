@@ -37,8 +37,7 @@ public class Issue1741Suite extends HapiSuite {
         return List.of(queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment());
     }
 
-    public static HapiSpec
-            queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
+    public static HapiSpec queryPaymentTxnMustHavePayerBalanceForBothTransferFeeAndNodePayment() {
         final long BALANCE = 1_000_000L;
 
         return HapiSpec.defaultHapiSpec(

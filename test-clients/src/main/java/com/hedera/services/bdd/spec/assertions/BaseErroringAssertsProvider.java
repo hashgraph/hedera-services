@@ -17,8 +17,8 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.isIdLiteral;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;

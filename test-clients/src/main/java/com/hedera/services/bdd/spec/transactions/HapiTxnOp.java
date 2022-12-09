@@ -35,8 +35,8 @@ import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
@@ -122,8 +122,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected abstract T self();
 
-    protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec)
-            throws Throwable;
+    protected abstract Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable;
 
     protected abstract Function<Transaction, TransactionResponse> callToUse(HapiSpec spec);
 

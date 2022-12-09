@@ -17,7 +17,6 @@ package com.hedera.services.bdd.spec.utilops;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.function.Function;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

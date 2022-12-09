@@ -291,8 +291,8 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
     }
 
-    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>>
-            isLiteralArrayResult(Object[] objs) {
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isLiteralArrayResult(
+            Object[] objs) {
         return ignore -> actualObjs -> matchErrors(objs, (Object[]) actualObjs[0]);
     }
 

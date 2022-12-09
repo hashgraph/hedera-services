@@ -40,15 +40,13 @@ public class CustomSpecAssert extends UtilOp {
         }
     }
 
-    private static void executeHederaOps(
-            final HapiSpec spec, final List<HapiSpecOperation> ops) {
+    private static void executeHederaOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         for (final HapiSpecOperation op : ops) {
             handleExec(spec, op);
         }
     }
 
-    private static void executeEthereumOps(
-            final HapiSpec spec, final List<HapiSpecOperation> ops) {
+    private static void executeEthereumOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         final var convertedOps = convertHapiCallsToEthereumCalls(ops);
         for (final var op : convertedOps) {
             handleExec(spec, op);

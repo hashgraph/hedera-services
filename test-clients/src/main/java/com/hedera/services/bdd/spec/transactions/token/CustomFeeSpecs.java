@@ -39,8 +39,7 @@ public class CustomFeeSpecs {
         return spec -> builtFixedHbar(amount, collector, allCollectorsExempt, spec);
     }
 
-    public static Function<HapiSpec, FixedFee> fixedHbarFeeInheritingRoyaltyCollector(
-            long amount) {
+    public static Function<HapiSpec, FixedFee> fixedHbarFeeInheritingRoyaltyCollector(long amount) {
         return spec -> builtFixedHbarSansCollector(amount);
     }
 

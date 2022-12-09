@@ -114,8 +114,7 @@ public class HapiGetContractBytecode extends HapiQueryOp<HapiGetContractBytecode
         return costFrom(response);
     }
 
-    private Query getContractBytecodeQuery(
-            HapiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractBytecodeQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         final ContractID resolvedTarget;
         if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
             resolvedTarget =

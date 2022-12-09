@@ -65,8 +65,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
@@ -445,8 +445,7 @@ public class UtilVerbs {
                     if (!asId(account, spec).equals(asId(GENESIS, spec))) {
                         HapiCryptoTransfer subOp =
                                 cryptoTransfer(
-                                        tinyBarsFromTo(
-                                                GENESIS, account, HapiSuite.ADEQUATE_FUNDS));
+                                        tinyBarsFromTo(GENESIS, account, HapiSuite.ADEQUATE_FUNDS));
                         CustomSpecAssert.allRunFor(spec, subOp);
                     }
                 });

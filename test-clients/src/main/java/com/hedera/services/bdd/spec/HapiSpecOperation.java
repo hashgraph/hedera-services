@@ -307,8 +307,7 @@ public abstract class HapiSpecOperation {
     }
 
     protected Transaction finalizedTxn(
-            final HapiSpec spec, final Consumer<TransactionBody.Builder> opDef)
-            throws Throwable {
+            final HapiSpec spec, final Consumer<TransactionBody.Builder> opDef) throws Throwable {
         return finalizedTxn(spec, opDef, false);
     }
 

@@ -49,8 +49,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 /** The set of BDD tests that are sequential. */
 @Execution(ExecutionMode.SAME_THREAD)
 public class SequentialIntegrationTests extends IntegrationTestBase {
-    @Tag("integration")
-    @TestFactory
+//    @Tag("integration")
+//    @TestFactory
     Collection<DynamicContainer> sequential() {
         return List.of(
                 extractSpecsFromSuite(RecordCreationSuite::new),

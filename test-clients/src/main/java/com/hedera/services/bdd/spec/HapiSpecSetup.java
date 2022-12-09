@@ -15,10 +15,10 @@
  */
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.stream.Collectors.toList;

@@ -30,8 +30,8 @@ import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
@@ -330,8 +330,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         }
     }
 
-    private Consumer<TransactionBody.Builder> opDef(HapiSpec spec, long amount)
-            throws Throwable {
+    private Consumer<TransactionBody.Builder> opDef(HapiSpec spec, long amount) throws Throwable {
         TransferList transfers =
                 asTransferList(
                         tinyBarsFromTo(

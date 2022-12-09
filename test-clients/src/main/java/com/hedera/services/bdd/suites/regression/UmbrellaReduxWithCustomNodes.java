@@ -25,8 +25,8 @@ import static com.hedera.services.bdd.suites.regression.RegressionProviderFactor
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
@@ -85,8 +85,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
+        return List.of(new HapiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
     }
 
     private HapiSpec messageSubmissionSimple() {

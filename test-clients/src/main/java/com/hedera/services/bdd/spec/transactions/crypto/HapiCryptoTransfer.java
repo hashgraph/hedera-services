@@ -199,8 +199,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
     @SafeVarargs
     public HapiCryptoTransfer(
-            final boolean sortTransferList,
-            final Function<HapiSpec, TransferList>... providers) {
+            final boolean sortTransferList, final Function<HapiSpec, TransferList>... providers) {
         if (providers.length == 0) {
             hbarOnlyProvider = ignore -> TransferList.getDefaultInstance();
         } else if (providers.length == 1) {

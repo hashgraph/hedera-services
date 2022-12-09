@@ -20,8 +20,8 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusDe
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.utils.fee.ConsensusServiceFeeBuilder;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusDeleteTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;

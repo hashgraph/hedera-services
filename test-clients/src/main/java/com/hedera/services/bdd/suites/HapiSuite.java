@@ -35,7 +35,6 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSuite {
@@ -126,6 +125,7 @@ public abstract class HapiSuite {
     public static final String ETH_SUFFIX = "_Eth";
 
     private boolean deferResultsSummary = false;
+    private boolean onlyLogHeader = false;
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
     private int suiteRunnerCounter = 0;
@@ -156,6 +156,11 @@ public abstract class HapiSuite {
         this.deferResultsSummary = true;
     }
 
+    public void setOnlyLogHeader() {
+        this.onlyLogHeader = true;
+    }
+
+
     public boolean getDeferResultsSummary() {
         return deferResultsSummary;
     }
@@ -182,7 +187,7 @@ public abstract class HapiSuite {
     @SuppressWarnings("java:S2629")
     private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
         suiteRunnerCounter++;
-        if (!getDeferResultsSummary()) {
+        if (!deferResultsSummary || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
@@ -244,7 +249,8 @@ public abstract class HapiSuite {
     }
 
     public static void runConcurrentSpecs(final List<HapiSpec> specs) {
-        final var futures = specs.stream()
+        final var futures =
+                specs.stream()
                         .map(r -> CompletableFuture.runAsync(r, HapiSpec.getCommonThreadPool()))
                         .<CompletableFuture<Void>>toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).join();
