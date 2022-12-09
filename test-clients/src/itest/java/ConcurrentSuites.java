@@ -18,6 +18,7 @@ import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
 import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
+import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -46,8 +47,29 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DefaultTokenStatusSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DeleteTokenPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.FreezeUnfreezeTokenPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.GrantRevokeKycSuite;
+import com.hedera.services.bdd.suites.contract.precompile.MixedHTSPrecompileTestsSuite;
+import com.hedera.services.bdd.suites.contract.precompile.PauseUnpauseTokenAccountPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.PrngPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenAndTypeCheckSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenExpiryInfoSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenInfoHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.TokenUpdatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
+import com.hedera.services.bdd.suites.contract.records.RecordsSuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite;
+import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
+import com.hedera.services.bdd.suites.ethereum.EthereumSuite;
+import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
+import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
@@ -58,6 +80,7 @@ import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
 import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
 import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
+import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
 import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import java.util.function.Supplier;
@@ -68,6 +91,10 @@ public class ConcurrentSuites {
     static Supplier<HapiSuite>[] all() {
         return (Supplier<HapiSuite>[])
                 new Supplier[] {
+                    CryptoApproveAllowanceSuite::new,
+                    TokenPauseSpecs::new,
+                    FileAppendSuite::new,
+                    TopicGetInfoSuite::new,
                     AutoAccountCreationSuite::new,
                     TokenAssociationSpecs::new,
                     TokenCreateSpecs::new,
@@ -104,11 +131,11 @@ public class ConcurrentSuites {
                     ExtCodeCopyOperationSuite::new,
                     ExtCodeHashOperationSuite::new,
                     ExtCodeSizeOperationSuite::new,
-                    // FIXME!
-                    //                        GlobalPropertiesSuite::new,
+//                    // FIXME!
+//                    //                        GlobalPropertiesSuite::new,
                     SStoreSuite::new,
                     StaticCallOperationSuite::new,
-                    //                      // contract.openzeppelin
+                    // contract.openzeppelin
                     ERC20ContractInteractions::new,
                     ERC721ContractInteractions::new,
                     ERC1155ContractInteractions::new,
@@ -120,27 +147,26 @@ public class ConcurrentSuites {
                     ContractKeysHTSSuite::new,
                     ContractMintHTSSuite::new,
                     CryptoTransferHTSSuite::new,
-                    //                        DefaultTokenStatusSuite::new,
-                    //                        DelegatePrecompileSuite::new,
-                    //                        DeleteTokenPrecompileSuite::new,
-                    //                        DissociatePrecompileSuite::new,
-                    //                        ERCPrecompileSuite::new,
-                    //                        FreezeUnfreezeTokenPrecompileSuite::new,
-                    //                        GrantRevokeKycSuite::new,
-                    //                        MixedHTSPrecompileTestsSuite::new,
-                    //                        PauseUnpauseTokenAccountPrecompileSuite::new,
-                    //                        PrngPrecompileSuite::new,
-                    //                        TokenAndTypeCheckSuite::new,
-                    //                        TokenExpiryInfoSuite::new,
-                    //                        TokenInfoHTSSuite::new,
-                    //                        TokenUpdatePrecompileSuite::new,
-                    //                        WipeTokenAccountPrecompileSuite::new,
-                    //                        // contract.records
-                    //                        LogsSuite::new,
-                    //                        RecordsSuite::new,
-                    //                        // contract.ethereum
-                    //                        EthereumSuite::new,
-                    //                        HelloWorldEthereumSuite::new));
+                    DefaultTokenStatusSuite::new,
+                    DelegatePrecompileSuite::new,
+                    DeleteTokenPrecompileSuite::new,
+                    DissociatePrecompileSuite::new,
+                    ERCPrecompileSuite::new,
+                    FreezeUnfreezeTokenPrecompileSuite::new,
+                    GrantRevokeKycSuite::new,
+                    MixedHTSPrecompileTestsSuite::new,
+                    PauseUnpauseTokenAccountPrecompileSuite::new,
+                    PrngPrecompileSuite::new,
+                    TokenAndTypeCheckSuite::new,
+                    TokenExpiryInfoSuite::new,
+                    TokenInfoHTSSuite::new,
+                    TokenUpdatePrecompileSuite::new,
+                    WipeTokenAccountPrecompileSuite::new,
+                    // contract.records
+                    RecordsSuite::new,
+                    // contract.ethereum
+                    EthereumSuite::new,
+                    HelloWorldEthereumSuite::new,
                 };
     }
 }

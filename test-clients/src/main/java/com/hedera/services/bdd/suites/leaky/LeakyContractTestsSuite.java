@@ -31,6 +31,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
@@ -56,12 +57,15 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CON
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEFAULT_MAX_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEPOSIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIMPLE_UPDATE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -69,6 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -94,13 +99,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class LeakyContractSpecsSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(LeakyContractSpecsSuite.class);
+public class LeakyContractTestsSuite extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
 
     private static final String FALSE = "false";
 
     public static void main(String... args) {
-        new LeakyContractSpecsSuite().runSuiteSync();
+        new LeakyContractTestsSuite().runSuiteSync();
     }
 
     @Override
@@ -118,7 +123,28 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                 createGasLimitOverMaxGasLimitFailsPrecheck(),
                 contractCreationStoragePriceMatchesFinalExpiry(),
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
+                accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller());
+    }
+
+    HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
+        final String ACCOUNT = "account";
+        return defaultHapiSpec(
+                "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
+                .when(
+                        ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(ACCOUNT)
+                                .maxGasAllowance(FIVE_HBARS)
+                                .nonce(0)
+                                .gasLimit(GAS_LIMIT)
+                                .hasKnownStatus(INVALID_ACCOUNT_ID))
+                .then(overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "true"));
     }
 
     private HapiSpec transferToCaller() {
@@ -609,7 +635,7 @@ public class LeakyContractSpecsSuite extends HapiSuite {
         final var contract = "TemporarySStoreRefund";
         return defaultHapiSpec("TemporarySStoreRefundTest")
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(

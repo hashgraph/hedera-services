@@ -73,7 +73,7 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     public static final String WIPE_NON_FUNGIBLE_TOKEN = "wipeNonFungibleToken";
 
     public static void main(String... args) {
-        new WipeTokenAccountPrecompileSuite().runSuiteSync();
+        new WipeTokenAccountPrecompileSuite().runSuiteAsync();
     }
 
     @Override
@@ -82,8 +82,13 @@ public class WipeTokenAccountPrecompileSuite extends HapiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios()));
+        return List.of(wipeFungibleTokenScenarios(), wipeNonFungibleTokenScenarios());
     }
 
     private HapiSpec wipeFungibleTokenScenarios() {

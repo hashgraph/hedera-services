@@ -69,7 +69,7 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
     private static final String EXPLICIT_CREATE_RESULT = "Explicit create result is {}";
 
     public static void main(String... args) {
-        new MixedHTSPrecompileTestsSuite().runSuiteSync();
+        new MixedHTSPrecompileTestsSuite().runSuiteAsync();
     }
 
     @Override
@@ -80,11 +80,11 @@ public class MixedHTSPrecompileTestsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile(),
+                hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile(),
                 createTokenWithFixedFeeThenTransferAndAssessFee());
     }
 
-    private HapiSpec HSCS_PREC_021_try_catch_construct_only_rolls_back_the_failed_precompile() {
+    private HapiSpec hscsPrec021TryCatchConstructOnlyRollsBackTheFailedPrecompile() {
         final var theAccount = "anybody";
         final var token = "Token";
         final var outerContract = "AssociateTryCatch";

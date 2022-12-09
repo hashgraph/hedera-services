@@ -89,20 +89,10 @@ public class DissociatePrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of();
-    }
-
-    List<HapiSpec> positiveSpecs() {
         return List.of(
-                new HapiSpec[] {
-                    dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
-                    nestedDissociateWorksAsExpected(),
-                    multiplePrecompileDissociationWithSigsForFungibleWorks()
-                });
+                dissociatePrecompileHasExpectedSemanticsForDeletedTokens(),
+                nestedDissociateWorksAsExpected(),
+                multiplePrecompileDissociationWithSigsForFungibleWorks());
     }
 
     /* -- Not specifically required in the HTS Precompile Test Plan -- */

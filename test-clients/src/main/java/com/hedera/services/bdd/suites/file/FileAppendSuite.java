@@ -40,10 +40,12 @@ public class FileAppendSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    vanillaAppendSucceeds(), baseOpsHaveExpectedPrices(),
-                });
+        return List.of(vanillaAppendSucceeds(), baseOpsHaveExpectedPrices());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     public HapiSpec baseOpsHaveExpectedPrices() {

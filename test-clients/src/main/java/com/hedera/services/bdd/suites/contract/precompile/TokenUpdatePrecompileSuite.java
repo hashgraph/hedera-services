@@ -16,12 +16,14 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -107,8 +109,6 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-    private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-    final AtomicReference<TokenID> nftToken = new AtomicReference<>();
     private static final String CUSTOM_NAME = "customName";
     private static final String CUSTOM_SYMBOL = "Ω";
     private static final String CUSTOM_MEMO = "Omega";
@@ -121,12 +121,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final long PAUSE_KEY_TYPE = 64L;
 
     public static void main(String... args) {
-        new TokenUpdatePrecompileSuite().runSuiteSync();
+        new TokenUpdatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -157,13 +157,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec updateTokenWithKeysHappyPath() {
-
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithKeysHappyPath")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -303,11 +303,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var newTokenTreasury = "newTokenTreasury";
         final var NO_ADMIN_TOKEN = "noAdminKeyToken";
         final AtomicReference<TokenID> noAdminKeyToken = new AtomicReference<>();
+        final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTreasuryWithAndWithoutAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(newTokenTreasury).maxAutomaticTokenAssociations(6),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
                         contractCreate(TOKEN_UPDATE_CONTRACT),
@@ -382,10 +383,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     public HapiSpec updateWithTooLongNameAndSymbol() {
         final var tooLongString = "ORIGINAL" + TxnUtils.randomUppercase(101);
         final var tooLongSymbolTxn = "tooLongSymbolTxn";
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateWithTooLongNameAndSymbol")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
                         contractCreate(TOKEN_UPDATE_CONTRACT),
@@ -467,13 +469,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
         final var NO_FREEZE_KEY_TXN = "NO_FREEZE_KEY_TXN";
         final var NO_SUPPLY_KEY_TXN = "NO_SUPPLY_KEY_TXN";
         final List<AtomicReference<TokenID>> tokenList = new ArrayList<>();
-
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithKeysNegative")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT)
                                 .balance(ONE_MILLION_HBARS)
@@ -761,13 +763,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec updateTokenWithInvalidKeyValues() {
-
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateTokenWithInvalidKeyValues")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -824,12 +826,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
 
     private HapiSpec updateOnlyTokenKeysAndGetTheUpdatedValues() {
 
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("updateOnlyTokenKeysAndGetTheUpdatedValues")
                 .given(
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(MULTI_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
@@ -1110,13 +1113,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     public HapiSpec updateOnlyKeysForNonFungibleToken() {
+        final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateOnlyKeysForNonFungibleToken")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
@@ -1191,13 +1195,14 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdmin() {
+        final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("updateNftTokenKeysWithWrongTokenIdAndMissingAdminKey")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
                         newKeyNamed(ED25519KEY).shape(ED25519),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
@@ -1284,11 +1289,11 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     }
 
     public HapiSpec getTokenKeyForNonFungibleNegative() {
-
+        final AtomicReference<TokenID> nftToken = new AtomicReference<>();
         return defaultHapiSpec("getTokenKeyForNonFungibleNegative")
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
-                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(MULTI_KEY).shape(ED25519_ON),
                         cryptoCreate(ACCOUNT).key(MULTI_KEY).balance(ONE_MILLION_HBARS),
                         uploadInitCode(TOKEN_UPDATE_CONTRACT),
                         contractCreate(TOKEN_UPDATE_CONTRACT),

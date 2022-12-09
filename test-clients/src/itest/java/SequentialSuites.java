@@ -19,6 +19,7 @@ import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
@@ -32,7 +33,8 @@ import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
-import com.hedera.services.bdd.suites.leaky.LeakyContractSpecsSuite;
+import com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite;
+import com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -46,7 +48,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.throttling.PrivilegedOpsSuite;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
-import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
 import java.util.function.Supplier;
 
 public class SequentialSuites {
@@ -55,37 +56,35 @@ public class SequentialSuites {
         return (Supplier<HapiSuite>[])
                 new Supplier[] {
                     RecordCreationSuite::new,
+                    FeatureFlagSuite::new,
                     AutoAccountUpdateSuite::new,
                     GracePeriodRestrictionsSuite::new,
-                    CryptoApproveAllowanceSuite::new,
-                    TokenPauseSpecs::new,
-                    FileAppendSuite::new,
-                    FileUpdateSuite::new,
-                    ProtectedFilesUpdateSuite::new,
-                    ExchangeRateControlSuite::new,
-                    FileRecordsSanityCheckSuite::new,
-                    FetchSystemFiles::new,
-                    VersionInfoSpec::new,
-                    ContractRecordsSanityCheckSuite::new,
-                    TopicGetInfoSuite::new,
-                    SpecialAccountsAreExempted::new,
-                    CryptoUpdateSuite::new,
-                    CryptoRecordsSanityCheckSuite::new,
-                    ThrottleDefValidationSuite::new,
-                    PrivilegedOpsSuite::new,
-                    CongestionPricingSuite::new,
-                    CryptoCreateSuite::new,
-                    UmbrellaRedux::new,
-                    ScheduleCreateSpecs::new,
-                    ScheduleSignSpecs::new,
-                    TraceabilitySuite::new,
-                    ScheduleRecordSpecs::new,
-                    ScheduleExecutionSpecs::new,
-                    ScheduleDeleteSpecs::new,
+//                    FileUpdateSuite::new,
+//                    ProtectedFilesUpdateSuite::new,
+//                    ExchangeRateControlSuite::new,
+//                    FileRecordsSanityCheckSuite::new,
+//                    FetchSystemFiles::new,
+//                    VersionInfoSpec::new,
+//                    ContractRecordsSanityCheckSuite::new,
+//                    SpecialAccountsAreExempted::new,
+//                    CryptoUpdateSuite::new,
+//                    CryptoRecordsSanityCheckSuite::new,
+//                    ThrottleDefValidationSuite::new,
+//                    PrivilegedOpsSuite::new,
+//                    CongestionPricingSuite::new,
+//                    CryptoCreateSuite::new,
+//                    UmbrellaRedux::new,
+//                    ScheduleCreateSpecs::new,
+//                    ScheduleSignSpecs::new,
+//                    TraceabilitySuite::new,
+//                    ScheduleRecordSpecs::new,
+//                    ScheduleExecutionSpecs::new,
+//                    ScheduleDeleteSpecs::new,
+                    LogsSuite::new,
                     SelfDestructSuite::new,
                     CreatePrecompileSuite::new,
-                    LeakyContractSpecsSuite::new,
-                    FeatureFlagSuite::new,
+                    LeakyContractTestsSuite::new,
+                    LeakyCryptoTestsSuite::new,
                     Create2OperationSuite::new,
                 };
     }

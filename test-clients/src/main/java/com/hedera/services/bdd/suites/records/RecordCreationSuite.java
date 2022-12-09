@@ -209,6 +209,7 @@ public class RecordCreationSuite extends HapiSuite {
                                     .contents(serde.toValidatedRawFile(stylized121)),
                             overridingAllOf(
                                     Map.of(
+                                            CHAIN_ID_PROP, "298",
                                             "staking.fees.nodeRewardPercentage", "10",
                                             "staking.fees.stakingRewardPercentage", "10",
                                             "staking.isEnabled", "true",
@@ -286,6 +287,7 @@ public class RecordCreationSuite extends HapiSuite {
                                         final var cloneConfirmations =
                                                 inParallel(
                                                         IntStream.rangeClosed(200, 750)
+                                                                .filter(i -> i < 350 || i >= 400)
                                                                 .mapToObj(
                                                                         i ->
                                                                                 getAccountInfo(

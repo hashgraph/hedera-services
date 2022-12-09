@@ -79,24 +79,16 @@ public class DelegatePrecompileSuite extends HapiSuite {
     private static final String SUPPLY_KEY = "supplyKey";
 
     public static void main(String... args) {
-        new DelegatePrecompileSuite().runSuiteSync();
+        new DelegatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(positiveSpecs(), negativeSpecs());
-    }
-
-    List<HapiSpec> negativeSpecs() {
-        return List.of();
-    }
-
-    List<HapiSpec> positiveSpecs() {
         return List.of(delegateCallForTransfer(), delegateCallForBurn(), delegateCallForMint());
     }
 

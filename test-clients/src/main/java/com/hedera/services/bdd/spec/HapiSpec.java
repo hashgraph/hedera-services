@@ -107,6 +107,15 @@ public class HapiSpec implements Runnable {
         TRUE
     }
 
+    private record Failure(Throwable cause, String opDescription) {
+        private static String LOG_TPL = "%s when executing %s";
+
+        @Override
+        public String toString() {
+            return String.format(LOG_TPL, cause.getMessage(), opDescription);
+        }
+    }
+
     private final Map<String, Long> privateKeyToNonce = new HashMap<>();
 
     public boolean isOnlySpecToRunInSuite() {
@@ -136,7 +145,7 @@ public class HapiSpec implements Runnable {
     ThreadPoolExecutor finalizingExecutor;
     List<Consumer<Integer>> ledgerOpCountCallbacks = new ArrayList<>();
     CompletableFuture<Void> finalizingFuture;
-    AtomicReference<Optional<Throwable>> finishingError = new AtomicReference<>(Optional.empty());
+    AtomicReference<Optional<Failure>> finishingError = new AtomicReference<>(Optional.empty());
     BlockingQueue<HapiSpecOpFinisher> pendingOps = new PriorityBlockingQueue<>();
     EnumMap<ResponseCodeEnum, AtomicInteger> precheckStatusCounts =
             new EnumMap<>(ResponseCodeEnum.class);
@@ -146,10 +155,10 @@ public class HapiSpec implements Runnable {
     List<SingleAccountBalances> accountBalances = new ArrayList<>();
 
     /**
-     * When the final status is {@code FAILED}, contains the exception thrown by the failed
+     * When this spec's final status is {@code FAILED}, contains the information on the failed
      * assertion that terminated {@code exec()}.
      */
-    @Nullable private Throwable failure = null;
+    @Nullable private Failure failure = null;
 
     public static ThreadPoolExecutor getCommonThreadPool() {
         return THREAD_POOL;
@@ -287,7 +296,7 @@ public class HapiSpec implements Runnable {
     }
 
     @Nullable
-    public Throwable getCause() {
+    public Failure getCause() {
         return failure;
     }
 
@@ -392,10 +401,12 @@ public class HapiSpec implements Runnable {
         }
         for (HapiSpecOperation op : ops) {
             Optional<Throwable> error = op.execFor(this);
-            Throwable asyncError = null;
-            if (error.isPresent() || (asyncError = finishingError.get().orElse(null)) != null) {
+            Failure asyncFailure = null;
+            if (error.isPresent() || (asyncFailure = finishingError.get().orElse(null)) != null) {
                 status = FAILED;
-                failure = error.orElse(asyncError);
+                failure = error
+                        .map(t -> new Failure(t, op.toString()))
+                        .orElse(asyncFailure);
                 break;
             } else {
                 log.info("'{}' finished initial execution of {}", name, op);
@@ -452,7 +463,9 @@ public class HapiSpec implements Runnable {
                                                                                     logPrefix(),
                                                                                     op);
                                                                             finishingError.set(
-                                                                                    Optional.of(t));
+                                                                                    Optional.of(
+                                                                                            new Failure(t, op.toString()))
+                                                                            );
                                                                         }
                                                                     }
                                                                 } else {

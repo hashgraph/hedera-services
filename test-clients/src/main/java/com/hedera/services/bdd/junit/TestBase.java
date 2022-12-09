@@ -72,17 +72,13 @@ public abstract class TestBase {
                                         .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
                                         .append(" -> ")
                                         .append(failedSpecs.size())
-                                        .append(" failures:");
+                                        .append(" failures:\n    ");
                                 failedSpecs.forEach(
                                         failure ->
-                                                details.append("\n  ")
-                                                        .append(failure.getName())
-                                                        .append("\n")
-                                                        .append(
-                                                                Objects.requireNonNull(
-                                                                                failure.getCause())
-                                                                        .getMessage())
-                                                        .append("\n"));
+                                                details.append(failure.getName())
+                                                        .append(": ")
+                                                        .append(failure.getCause())
+                                                        .append("\n    "));
                             });
             Assertions.fail(String.format(failureReport, failures.size(), details));
         }
@@ -126,7 +122,8 @@ public abstract class TestBase {
                                                                     + "executing "
                                                                     + "SPEC {"
                                                                     + s.getName()
-                                                                    + "}");
+                                                                    + "}: "
+                                                                    + s.getCause());
                                                 }));
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }

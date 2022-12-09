@@ -39,12 +39,17 @@ public class RecordsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordsSuite.class);
 
     public static void main(String... args) {
-        new RecordsSuite().runSuiteSync();
+        new RecordsSuite().runSuiteAsync();
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {bigCall(), txRecordsContainValidTransfers()});
+        return List.of(bigCall(), txRecordsContainValidTransfers());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     HapiSpec bigCall() {

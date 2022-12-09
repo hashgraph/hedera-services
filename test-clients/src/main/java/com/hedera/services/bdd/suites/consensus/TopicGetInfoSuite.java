@@ -31,12 +31,17 @@ public class TopicGetInfoSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicGetInfoSuite.class);
 
     public static void main(String... args) {
-        new TopicGetInfoSuite().runSuiteSync();
+        new TopicGetInfoSuite().runSuiteAsync();
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {postCreateTopicCase()});
+        return List.of(postCreateTopicCase());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     private HapiSpec postCreateTopicCase() {

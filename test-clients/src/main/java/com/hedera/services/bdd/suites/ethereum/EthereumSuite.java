@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -103,7 +102,7 @@ public class EthereumSuite extends HapiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
     private static final String ERC721_CONTRACT_WITH_HTS_CALLS = "ERC721ContractWithHTSCalls";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
-    private static final long GAS_LIMIT = 1_000_000;
+    public static final long GAS_LIMIT = 1_000_000;
 
     public static final String ERC20_CONTRACT = "ERC20Contract";
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
@@ -111,14 +110,17 @@ public class EthereumSuite extends HapiSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
     public static void main(String... args) {
-        new EthereumSuite().runSuiteSync();
+        new EthereumSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return Stream.concat(
-                        Stream.of(setChainId()),
-                        Stream.concat(
                                 feePaymentMatrix().stream(),
                                 Stream.of(
                                         invalidTxData(),
@@ -130,12 +132,11 @@ public class EthereumSuite extends HapiSuite {
                                         ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
                                         ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
                                         ETX_014_contractCreateInheritsSignerProperties(),
-                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                                         ETX_009_callsToTokenAddresses(),
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
                                         ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
-                                        setApproveForAllUsingLocalNodeSetupPasses())))
+                                        setApproveForAllUsingLocalNodeSetupPasses()))
                 .toList();
     }
 
@@ -575,10 +576,6 @@ public class EthereumSuite extends HapiSuite {
                                 }));
     }
 
-    HapiSpec setChainId() {
-        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
-    }
-
     HapiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
@@ -717,26 +714,6 @@ public class EthereumSuite extends HapiSuite {
                                     allRunFor(spec, relayerBalance, senderBalance);
                                 }),
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
-    }
-
-    HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
-        final String ACCOUNT = "account";
-        return defaultHapiSpec(
-                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
-                .given(
-                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(ACCOUNT)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .nonce(0)
-                                .gasLimit(GAS_LIMIT)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     HapiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {

@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
@@ -75,41 +74,33 @@ public class HelloWorldEthereumSuite extends HapiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
     private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
-        new HelloWorldEthereumSuite().runSuiteSync();
+        new HelloWorldEthereumSuite().runSuiteAsync();
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(setChainId(), ethereumCalls(), ethereumCreates());
+        return allOf(ethereumCalls(), ethereumCreates());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     List<HapiSpec> ethereumCalls() {
         return List.of(
-                new HapiSpec[] {
                     relayerFeeAsExpectedIfSenderCoversGas(),
                     depositSuccess(),
                     badRelayClient(),
-                    ethereumCallWithCalldataBiggerThanMaxSucceeds()
-                });
+                    ethereumCallWithCalldataBiggerThanMaxSucceeds());
     }
 
     List<HapiSpec> ethereumCreates() {
         return List.of(
-                new HapiSpec[] {
-                    smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate()
-                });
-    }
-
-    List<HapiSpec> setChainId() {
-        return List.of(
-                defaultHapiSpec("SetChainId")
-                        .given()
-                        .when()
-                        .then(overriding(CHAIN_ID_PROP, "298")));
+                    smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
     HapiSpec badRelayClient() {

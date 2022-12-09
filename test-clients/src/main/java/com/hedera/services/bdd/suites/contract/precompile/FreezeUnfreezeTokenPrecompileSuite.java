@@ -88,7 +88,12 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
     public static void main(String... args) {
-        new FreezeUnfreezeTokenPrecompileSuite().runSuiteSync();
+        new FreezeUnfreezeTokenPrecompileSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override

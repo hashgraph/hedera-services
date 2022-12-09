@@ -57,7 +57,7 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     private static final String GET_TOKEN_DEFAULT_KYC = "getTokenDefaultKyc";
 
     public static void main(String... args) {
-        new DefaultTokenStatusSuite().runSuiteSync();
+        new DefaultTokenStatusSuite().runSuiteAsync();
     }
 
     @Override
@@ -68,6 +68,11 @@ public class DefaultTokenStatusSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(getTokenDefaultFreezeStatus(), getTokenDefaultKycStatus());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     private HapiSpec getTokenDefaultFreezeStatus() {

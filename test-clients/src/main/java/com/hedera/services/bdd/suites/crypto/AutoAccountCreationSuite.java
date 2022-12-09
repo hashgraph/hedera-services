@@ -322,6 +322,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 20,
                                                 fixedHbarFeeInheritingRoyaltyCollector(1),
                                                 firstRoyaltyCollector))
+                                .hasKnownStatus(INVALID_ADMIN_KEY)
                                 .via(NFT_CREATE),
                         mintToken(
                                 NFT_INFINITE_SUPPLY_TOKEN,

@@ -82,7 +82,12 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
     public static void main(String... args) {
-        new PauseUnpauseTokenAccountPrecompileSuite().runSuiteSync();
+        new PauseUnpauseTokenAccountPrecompileSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
