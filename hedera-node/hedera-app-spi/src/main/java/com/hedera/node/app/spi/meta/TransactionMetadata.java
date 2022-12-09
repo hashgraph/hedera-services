@@ -17,6 +17,7 @@ package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
@@ -60,6 +61,13 @@ public interface TransactionMetadata {
      * @return keys needed for validating signing requirements
      */
     List<HederaKey> requiredKeys();
+
+    /**
+     * Payer for the transaction
+     *
+     * @return payer for the transaction
+     */
+    AccountID payer();
 
     /**
      * Copies existing metadata and returns builder object.

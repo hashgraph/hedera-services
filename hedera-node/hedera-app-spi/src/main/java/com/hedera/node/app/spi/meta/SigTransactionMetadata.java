@@ -61,6 +61,11 @@ public class SigTransactionMetadata implements TransactionMetadata {
     }
 
     @Override
+    public AccountID payer() {
+        return payer;
+    }
+
+    @Override
     public ResponseCodeEnum status() {
         return status;
     }
@@ -70,6 +75,7 @@ public class SigTransactionMetadata implements TransactionMetadata {
         return new SigTransactionMetadataBuilder(lookup)
                 .txnBody(txn)
                 .status(status)
+                .payer(payer)
                 .addAllReqKeys(requiredKeys);
     }
 }

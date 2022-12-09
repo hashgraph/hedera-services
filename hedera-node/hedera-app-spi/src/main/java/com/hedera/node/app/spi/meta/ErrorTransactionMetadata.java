@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.meta;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,5 +74,11 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
     @Override
     public List<HederaKey> requiredKeys() {
         return List.of();
+    }
+
+    @Override
+    public AccountID payer() {
+        throw new UnsupportedOperationException(
+                "This operation is not supported after an error occurred");
     }
 }

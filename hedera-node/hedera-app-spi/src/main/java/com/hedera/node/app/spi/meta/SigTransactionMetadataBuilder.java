@@ -59,13 +59,25 @@ public class SigTransactionMetadataBuilder {
         return this;
     }
 
-    public SigTransactionMetadataBuilder payer(final AccountID status) {
-        this.payer = status;
+    /**
+     * Set payer for the transaction
+     *
+     * @param payer payer for the transaction
+     * @return builder object
+     */
+    public SigTransactionMetadataBuilder payer(final AccountID payer) {
+        this.payer = payer;
         return this;
     }
 
+    /**
+     * Add a list of keys to require keys
+     *
+     * @param keys list of keys to add
+     * @return builder object
+     */
     public SigTransactionMetadataBuilder addAllReqKeys(final List<HederaKey> keys) {
-        this.requiredKeys.addAll(keys);
+        requiredKeys.addAll(keys);
         return this;
     }
 

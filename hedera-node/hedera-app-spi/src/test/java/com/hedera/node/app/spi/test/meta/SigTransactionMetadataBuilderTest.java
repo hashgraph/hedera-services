@@ -90,6 +90,23 @@ class SigTransactionMetadataBuilderTest {
     }
 
     @Test
+    void gettersWorkAsExpectedWhenPayerIsSet() {
+        final var txn = createAccountTransaction();
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payer(payer)
+                        .addAllReqKeys(List.of(payerKey, otherKey));
+        meta = subject.build();
+
+        assertFalse(meta.failed());
+        assertEquals(txn, meta.txnBody());
+        assertEquals(List.of(payerKey, otherKey), meta.requiredKeys());
+        assertEquals(payer, meta.payer());
+    }
+
+    @Test
     void gettersWorkAsExpectedWhenOtherSigsExist() {
         final var txn = createAccountTransaction();
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
