@@ -82,6 +82,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
     private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
     private Consumer<Object[]> resultObserver = null;
+    private Consumer<ByteString> eventDataObserver = null;
     private Optional<FileID> ethFileID = Optional.empty();
     private boolean createCallDataFile;
     private boolean isTokenFlow;
@@ -174,6 +175,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall exposingResultTo(final Consumer<Object[]> observer) {
         resultObserver = observer;
+        return this;
+    }
+
+    public HapiEthereumCall exposingEventDataTo(final Consumer<ByteString> observer) {
+        eventDataObserver = observer;
         return this;
     }
 
@@ -369,6 +375,14 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                                                 .toByteArray());
                         resultObserver.accept(result.toList().toArray());
                     });
+        }
+        if (eventDataObserver != null) {
+            doObservedLookup(
+                    spec,
+                    txnSubmitted,
+                    rcd ->
+                            eventDataObserver.accept(
+                                    rcd.getContractCallResult().getLogInfo(0).getData()));
         }
     }
 

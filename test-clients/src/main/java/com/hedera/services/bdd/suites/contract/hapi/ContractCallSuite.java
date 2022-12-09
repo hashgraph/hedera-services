@@ -106,7 +106,6 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
@@ -248,7 +247,75 @@ public class ContractCallSuite extends HapiApiSuite {
                 exchangeRatePrecompileWorks(),
                 canMintAndTransferInSameContractOperation(),
                 workingHoursDemo(),
-                lpFarmSimulation());
+                lpFarmSimulation(),
+                actionsShowPropagatedRevert());
+    }
+
+    private HapiApiSpec actionsShowPropagatedRevert() {
+        final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
+        final var badApproval = "BadApproval";
+        final var somebody = "somebody";
+        final var somebodyElse = "somebodyElse";
+        final var tokenInQuestion = "TokenInQuestion";
+        final var someSupplyKey = "someSupplyKey";
+        final AtomicReference<String> tiqMirrorAddr = new AtomicReference<>();
+        final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
+
+        return defaultHapiSpec("ActionsShowPropagatedRevert")
+                .given(
+                        overriding("contracts.sidecars", "CONTRACT_ACTION"),
+                        uploadInitCode(APPROVE_BY_DELEGATE),
+                        contractCreate(APPROVE_BY_DELEGATE),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(somebody).maxAutomaticTokenAssociations(2),
+                        cryptoCreate(somebodyElse)
+                                .maxAutomaticTokenAssociations(2)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                somebodyElseMirrorAddr.set(
+                                                        asHexedSolidityAddress(id))),
+                        newKeyNamed(someSupplyKey),
+                        tokenCreate(tokenInQuestion)
+                                .supplyKey(someSupplyKey)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(
+                                        idLit ->
+                                                tiqMirrorAddr.set(
+                                                        asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(
+                                                                        idLit)))),
+                        mintToken(
+                                tokenInQuestion,
+                                List.of(
+                                        // 1
+                                        ByteString.copyFromUtf8("A penny for"),
+                                        // 2
+                                        ByteString.copyFromUtf8("the Old Guy"))),
+                        cryptoTransfer(
+                                movingUnique(tokenInQuestion, 1L)
+                                        .between(TOKEN_TREASURY, somebody)))
+                .when(
+                        sourcing(
+                                () ->
+                                        contractCall(
+                                                        APPROVE_BY_DELEGATE,
+                                                        "doIt",
+                                                        asHeadlongAddress(tiqMirrorAddr.get()),
+                                                        asHeadlongAddress(
+                                                                somebodyElseMirrorAddr.get()),
+                                                        MAX_UINT256_VALUE)
+                                                .payingWith(somebody)
+                                                .gas(1_000_000)
+                                                .via(badApproval)
+                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        // FUTURE WORK - enhance sidecar validation utilities to confirm
+                        // all three action sidecars above have their oneof action_data set
+                        overriding(
+                                "contracts.sidecars",
+                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     private HapiApiSpec whitelistingAliasedContract() {
@@ -391,7 +458,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                             ASSOCIATOR,
                                                             "associate",
                                                             asHeadlongAddress(mirrorAddress),
-                                                            HapiParserUtil.asHeadlongAddress(
+                                                            asHeadlongAddress(
                                                                     asAddress(tokenID.get())))
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .gas(GAS_TO_OFFER)
@@ -404,7 +471,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                                             ASSOCIATOR,
                                                             "associate",
                                                             asHeadlongAddress(create2address),
-                                                            HapiParserUtil.asHeadlongAddress(
+                                                            asHeadlongAddress(
                                                                     asAddress(tokenID.get())))
                                                     .gas(GAS_TO_OFFER));
                                 }))
@@ -579,10 +646,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                                                                 minters),
                                                                         isLiteralResult(
                                                                                 new Object[] {
-                                                                                    HapiParserUtil
-                                                                                            .asHeadlongAddress(
-                                                                                                    defaultPayerMirror
-                                                                                                            .get())
+                                                                                    asHeadlongAddress(
+                                                                                            defaultPayerMirror
+                                                                                                    .get())
                                                                                 })))),
                         sourcing(
                                 () ->
@@ -595,10 +661,9 @@ public class ContractCallSuite extends HapiApiSuite {
                                                                                 minters),
                                                                         isLiteralResult(
                                                                                 new Object[] {
-                                                                                    HapiParserUtil
-                                                                                            .asHeadlongAddress(
-                                                                                                    defaultPayerMirror
-                                                                                                            .get())
+                                                                                    asHeadlongAddress(
+                                                                                            defaultPayerMirror
+                                                                                                    .get())
                                                                                 })))),
                         sourcing(
                                 () ->
@@ -665,9 +730,8 @@ public class ContractCallSuite extends HapiApiSuite {
                                     final var creation =
                                             contractCreate(
                                                             contract,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    asAddress(tokenId)),
-                                                            HapiParserUtil.asHeadlongAddress(
+                                                            asHeadlongAddress(asAddress(tokenId)),
+                                                            asHeadlongAddress(
                                                                     asAddress(treasuryId)))
                                                     .gas(gasToOffer);
                                     allRunFor(spec, creation);
@@ -1809,7 +1873,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             KILL_ME,
-                                                            HapiParserUtil.asHeadlongAddress(
+                                                            asHeadlongAddress(
                                                                     asAddress(contractAccountId)))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
@@ -1819,8 +1883,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             KILL_ME,
-                                                            HapiParserUtil.asHeadlongAddress(
-                                                                    new byte[20]))
+                                                            asHeadlongAddress(new byte[20]))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
                                                     .hasKnownStatus(INVALID_SOLIDITY_ADDRESS);
@@ -1830,7 +1893,7 @@ public class ContractCallSuite extends HapiApiSuite {
                                             contractCall(
                                                             contract,
                                                             KILL_ME,
-                                                            HapiParserUtil.asHeadlongAddress(
+                                                            asHeadlongAddress(
                                                                     asAddress(receiverAccountId)))
                                                     .payingWith(PAYER)
                                                     .gas(300_000L)
