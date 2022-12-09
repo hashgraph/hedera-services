@@ -1,42 +1,34 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.leaky;
 
-import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
-import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
-import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiSuite;
-
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -67,17 +59,25 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
-
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.queries.QueryVerbs;
+import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -121,9 +121,9 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                                 (spec, log) -> {
                                     var transferCall =
                                             contractCall(
-                                                    TRANSFERRING_CONTRACT,
-                                                    TRANSFER_TO_CALLER,
-                                                    BigInteger.valueOf(10))
+                                                            TRANSFERRING_CONTRACT,
+                                                            TRANSFER_TO_CALLER,
+                                                            BigInteger.valueOf(10))
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .via(transferTxn)
                                                     .logged();
@@ -180,10 +180,10 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
                         contractCall(
-                                SIMPLE_UPDATE_CONTRACT,
-                                "set",
-                                BigInteger.valueOf(5),
-                                BigInteger.valueOf(42))
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
                                 .gas(300_000L)
                                 .via(CALL_TX))
                 .then(
@@ -252,9 +252,9 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                createIndirectly,
-                                                "makeOpaquely",
-                                                asHeadlongAddress(toyMakerMirror.get()))
+                                                        createIndirectly,
+                                                        "makeOpaquely",
+                                                        asHeadlongAddress(toyMakerMirror.get()))
                                                 .payingWith(longLivedPayer)))
                 .then(
                         overriding(
@@ -271,10 +271,10 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                 .when()
                 .then(
                         contractCall(
-                                SIMPLE_UPDATE_CONTRACT,
-                                "set",
-                                BigInteger.valueOf(5),
-                                BigInteger.valueOf(42))
+                                        SIMPLE_UPDATE_CONTRACT,
+                                        "set",
+                                        BigInteger.valueOf(5),
+                                        BigInteger.valueOf(42))
                                 .gas(101L)
                                 .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
                         resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
@@ -293,7 +293,6 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                         UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
     }
 
-
     private HapiSpec transferZeroHbarsToCaller() {
         final var transferTxn = TRANSFER_TXN;
         return defaultHapiSpec("transferZeroHbarsToCaller")
@@ -308,9 +307,9 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                                 (spec, log) -> {
                                     var transferCall =
                                             contractCall(
-                                                    TRANSFERRING_CONTRACT,
-                                                    TRANSFER_TO_CALLER,
-                                                    BigInteger.ZERO)
+                                                            TRANSFERRING_CONTRACT,
+                                                            TRANSFER_TO_CALLER,
+                                                            BigInteger.ZERO)
                                                     .payingWith(DEFAULT_CONTRACT_SENDER)
                                                     .via(transferTxn)
                                                     .logged();
@@ -384,19 +383,19 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                         contractCreate(contract))
                 .when(
                         contractCall(
-                                contract,
-                                DEPOSIT,
-                                TRANSFER_AMOUNT,
-                                0L,
-                                "So we out-danced thought...")
+                                        contract,
+                                        DEPOSIT,
+                                        TRANSFER_AMOUNT,
+                                        0L,
+                                        "So we out-danced thought...")
                                 .via("noLogsCallTxn")
                                 .sending(TRANSFER_AMOUNT),
                         contractCall(
-                                contract,
-                                DEPOSIT,
-                                TRANSFER_AMOUNT,
-                                5L,
-                                "So we out-danced thought...")
+                                        contract,
+                                        DEPOSIT,
+                                        TRANSFER_AMOUNT,
+                                        5L,
+                                        "So we out-danced thought...")
                                 .via("loggedCallTxn")
                                 .sending(TRANSFER_AMOUNT))
                 .then(

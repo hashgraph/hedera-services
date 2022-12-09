@@ -160,7 +160,6 @@ public abstract class HapiSuite {
         this.onlyLogHeader = true;
     }
 
-
     public boolean getDeferResultsSummary() {
         return deferResultsSummary;
     }

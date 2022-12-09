@@ -38,8 +38,7 @@ import org.junit.jupiter.api.DynamicTest;
 public abstract class TestBase {
     @SafeVarargs
     @SuppressWarnings("java:S3864")
-    protected final DynamicTest specsFrom(
-            final Supplier<HapiSuite>... suiteSuppliers) {
+    protected final DynamicTest specsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
         final var commaSeparatedSuites = new StringBuilder();
         final var contextualizedSpecs =
                 Arrays.stream(suiteSuppliers)

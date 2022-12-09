@@ -336,8 +336,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
         return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
                 .given(
                         UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations"),
+                                "tokens.maxPerAccount", "entities.limitTokenAssociations"),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)

@@ -31,9 +31,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOU
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,10 +46,10 @@ public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[]{
-                        transactionsWithOnlySigMap(),
-                        transactionsWithSignedTxnBytesAndSigMap(),
-                        transactionsWithSignedTxnBytesAndBodyBytes()
+                new HapiSpec[] {
+                    transactionsWithOnlySigMap(),
+                    transactionsWithSignedTxnBytesAndSigMap(),
+                    transactionsWithSignedTxnBytesAndBodyBytes()
                 });
     }
 

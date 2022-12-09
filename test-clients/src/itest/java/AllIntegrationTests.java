@@ -1,3 +1,21 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -6,19 +24,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-
 /**
- * We first run sequentially a minimal set of {@link com.hedera.services.bdd.spec.HapiSpec}'s
- * that have "leaky" side effects like disabling a feature flag or setting restrictive
- * throttles.
+ * We first run sequentially a minimal set of {@link com.hedera.services.bdd.spec.HapiSpec}'s that
+ * have "leaky" side effects like disabling a feature flag or setting restrictive throttles.
  *
  * <p>These specs end by:
+ *
  * <ol>
- *      <li>Enabling all feature flags; and,</li>
- *      <li>Disabling contract throttles.</li>
+ *   <li>Enabling all feature flags; and,
+ *   <li>Disabling contract throttles.
  * </ol>
  *
  * <p>Afterwards we run concurrently a much larger set of non-interfering specs.

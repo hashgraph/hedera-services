@@ -93,7 +93,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -4702,8 +4701,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         .via(NAME_TXN)
                                                         .hasKnownStatus(SUCCESS)
                                                         .gas(GAS_TO_OFFER))))
-                .then(
-                        getTxnRecord(NAME_TXN).andAllChildRecords().logged());
+                .then(getTxnRecord(NAME_TXN).andAllChildRecords().logged());
     }
 
     private HapiSpec erc721GetApproved() {

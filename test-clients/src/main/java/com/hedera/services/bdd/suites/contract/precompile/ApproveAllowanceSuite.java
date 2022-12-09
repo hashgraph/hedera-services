@@ -50,7 +50,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -554,8 +553,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                                                                                         asAddress(
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
-                                                                                                                                theSpender))))))))
-                        );
+                                                                                                                                theSpender)))))))));
     }
 
     private HapiSpec nftSetApprovalForAll() {
