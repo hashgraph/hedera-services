@@ -68,5 +68,5 @@ public interface CryptoService extends Service {
      * @return lookup for account's keys
      */
     @NonNull
-    public AccountKeyLookup createAccountKeyLookupFor(States states);
+    AccountKeyLookup createAccountKeyLookupFor(States states);
 }

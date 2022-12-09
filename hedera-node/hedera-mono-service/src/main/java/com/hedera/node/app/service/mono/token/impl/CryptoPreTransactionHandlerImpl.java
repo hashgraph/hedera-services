@@ -57,7 +57,6 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
     }
 
-    @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn) {
         final var op = txn.getCryptoDelete();

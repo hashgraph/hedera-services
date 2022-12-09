@@ -35,7 +35,7 @@ import java.util.List;
  * will be subclassed For e.g., we need a {@link TransactionMetadata} with an inner {@link
  * TransactionMetadata} for schedule transactions.
  */
-public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuilder<T>> {
+public class SigTransactionMetadataBuilder {
     protected List<HederaKey> requiredKeys = new ArrayList<>();
     protected ResponseCodeEnum status = OK;
 
@@ -54,19 +54,19 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param status status to be set on {@link TransactionMetadata}
      * @return builder object
      */
-    public T status(final ResponseCodeEnum status) {
+    public SigTransactionMetadataBuilder status(final ResponseCodeEnum status) {
         this.status = status;
-        return self();
+        return this;
     }
 
-    public T payer(final AccountID status) {
+    public SigTransactionMetadataBuilder payer(final AccountID status) {
         this.payer = status;
-        return self();
+        return this;
     }
 
-    public T addAllReqKeys(final List<HederaKey> keys) {
+    public SigTransactionMetadataBuilder addAllReqKeys(final List<HederaKey> keys) {
         this.requiredKeys.addAll(keys);
-        return self();
+        return this;
     }
 
     /**
@@ -75,10 +75,10 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param payer payer for the transaction
      * @return builder object
      */
-    public T payerKeyFor(AccountID payer) {
+    public SigTransactionMetadataBuilder payerKeyFor(AccountID payer) {
         this.payer = payer;
         addPayerKey();
-        return self();
+        return this;
     }
 
     /**
@@ -87,9 +87,9 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param key key to be added
      * @return builder object
      */
-    public T addToReqKeys(HederaKey key) {
+    public SigTransactionMetadataBuilder addToReqKeys(HederaKey key) {
         requiredKeys.add(key);
-        return self();
+        return this;
     }
 
     /**
@@ -98,9 +98,9 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param txn transaction body of the transaction
      * @return builder object
      */
-    public T txnBody(TransactionBody txn) {
+    public SigTransactionMetadataBuilder txnBody(TransactionBody txn) {
         this.txn = txn;
-        return self();
+        return this;
     }
 
     /**
@@ -110,7 +110,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      *
      * @param id given accountId
      */
-    public T addNonPayerKey(final AccountID id) {
+    public SigTransactionMetadataBuilder addNonPayerKey(final AccountID id) {
         return addNonPayerKey(id, null);
     }
 
@@ -123,13 +123,14 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    public T addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
+    public SigTransactionMetadataBuilder addNonPayerKey(
+            final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
-            return self();
+            return this;
         }
         final var result = keyLookup.getKey(id);
         failOrAddToKeys(result, failureStatus);
-        return self();
+        return this;
     }
 
     /**
@@ -142,23 +143,18 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param id given accountId
      * @param failureStatus given failure status
      */
-    public T addNonPayerKeyIfReceiverSigRequired(
+    public SigTransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(
             final AccountID id, final ResponseCodeEnum failureStatus) {
         if (isNotNeeded(id)) {
-            return self();
+            return this;
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
         failOrAddToKeys(result, failureStatus);
-        return self();
+        return this;
     }
 
     public SigTransactionMetadata build() {
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
-    }
-
-    @SuppressWarnings("unchecked")
-    final T self() {
-        return (T) this;
     }
 
     /* ---------- Helper methods ---------- */
