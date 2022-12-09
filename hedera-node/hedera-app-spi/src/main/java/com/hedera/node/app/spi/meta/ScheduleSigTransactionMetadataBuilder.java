@@ -16,8 +16,6 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
@@ -28,7 +26,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * because doing so would cause service modules to have a circular dependency on the app module.
  * Maybe we need some kind of base module from which services can extend and put it there?
  */
-public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
+public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder>{
     private TransactionMetadata scheduledTxnMeta;
 
     public ScheduleSigTransactionMetadataBuilder(

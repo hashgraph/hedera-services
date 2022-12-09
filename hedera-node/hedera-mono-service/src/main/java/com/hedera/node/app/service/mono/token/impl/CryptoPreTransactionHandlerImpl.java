@@ -57,14 +57,13 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         return createAccountSigningMetadata(tx, key, receiverSigReq, payer);
     }
 
-    @Override
     /** {@inheritDoc} */
     public TransactionMetadata preHandleCryptoDelete(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDelete();
         final var deleteAccountId = op.getDeleteAccountID();
         final var transferAccountId = op.getTransferAccountID();
         final var meta =
-                new SigTransactionMetadataBuilder(accountStore)
+                new SigTransactionMetadataBuilder<>(accountStore)
                         .payerKeyFor(payer)
                         .txnBody(txn)
                         .addNonPayerKey(deleteAccountId)
@@ -78,7 +77,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoApproveAllowance();
         final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+                new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
         var failureStatus = INVALID_ALLOWANCE_OWNER_ID;
 
         for (final var allowance : op.getCryptoAllowancesList()) {
@@ -112,7 +111,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDeleteAllowance();
         final var meta =
-                new SigTransactionMetadataBuilder(accountStore)
+                new SigTransactionMetadataBuilder<>(accountStore)
                         .payerKeyFor(payer)
                         .txnBody(txn);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
@@ -128,7 +127,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var op = txn.getCryptoUpdateAccount();
         final var updateAccountId = op.getAccountIDToUpdate();
         final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+                new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
 
         final var newAccountKeyMustSign = !waivers.isNewKeySignatureWaived(txn, payer);
         final var targetAccountKeyMustSign = !waivers.isTargetAccountSignatureWaived(txn, payer);
@@ -178,7 +177,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             final boolean receiverSigReq,
             final AccountID payer) {
         final var meta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn);
+                new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
         if (receiverSigReq && key.isPresent()) {
             meta.addToReqKeys(key.get());
         }

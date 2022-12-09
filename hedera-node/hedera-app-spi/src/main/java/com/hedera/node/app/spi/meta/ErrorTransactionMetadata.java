@@ -15,15 +15,16 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import static java.util.Objects.requireNonNull;
-
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 /** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
 public final class ErrorTransactionMetadata implements TransactionMetadata {
@@ -76,8 +77,10 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
         return List.of();
     }
 
+    @Nullable
     @Override
-    public SigTransactionMetadataBuilder copy(AccountKeyLookup lookup) {
-        throw new UnsupportedOperationException("Copy of Error metadata is not supported");
+    public AccountID payer() {
+        return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
+        // method.
     }
 }

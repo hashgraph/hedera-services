@@ -20,6 +20,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import java.util.Collections;
+
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification. This class may have subclasses in the future.
@@ -38,7 +40,7 @@ public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
             final AccountID payer,
             final ResponseCodeEnum status,
             final TransactionMetadata scheduledTxnMeta) {
-        super(topLevelTxn, payer, status);
+        super(topLevelTxn, payer, status, Collections.emptyList());
         this.scheduledTxnMeta = scheduledTxnMeta;
     }
 

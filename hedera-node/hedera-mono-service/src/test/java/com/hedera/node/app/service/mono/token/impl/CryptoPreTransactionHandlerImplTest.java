@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.*;
 
 import com.google.protobuf.BoolValue;
@@ -141,7 +140,7 @@ class CryptoPreTransactionHandlerImplTest {
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(store).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder<>(store).payerKeyFor(payer).txnBody(txn).build();
 
         final var meta = subject.preHandleCryptoCreate(txn, payer);
 

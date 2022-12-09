@@ -26,13 +26,15 @@ import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification. NOTE : This class may have subclasses in the future.
+ * verification.
+ *
+ * <p>NOTE: This class may have subclasses in the future.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
-    protected List<HederaKey> requiredKeys = new ArrayList<>();
-    protected TransactionBody txn;
-    protected AccountID payer;
-    protected ResponseCodeEnum status;
+    protected final List<HederaKey> requiredKeys = new ArrayList<>();
+    protected final TransactionBody txn;
+    protected final AccountID payer;
+    protected final ResponseCodeEnum status;
 
     public SigTransactionMetadata(
             final TransactionBody txn,
@@ -45,11 +47,6 @@ public class SigTransactionMetadata implements TransactionMetadata {
         requiredKeys.addAll(otherKeys);
     }
 
-    public SigTransactionMetadata(
-            final TransactionBody txn, final AccountID payer, final ResponseCodeEnum status) {
-        this(txn, payer, status, Collections.emptyList());
-    }
-
     @Override
     public TransactionBody txnBody() {
         return txn;
@@ -57,7 +54,12 @@ public class SigTransactionMetadata implements TransactionMetadata {
 
     @Override
     public List<HederaKey> requiredKeys() {
-        return requiredKeys;
+        return Collections.unmodifiableList(requiredKeys);
+    }
+
+    @Override
+    public AccountID payer() {
+        return payer;
     }
 
     @Override
@@ -67,9 +69,10 @@ public class SigTransactionMetadata implements TransactionMetadata {
 
     @Override
     public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup) {
-        return new SigTransactionMetadataBuilder(lookup)
+        return new SigTransactionMetadataBuilder<>(lookup)
                 .txnBody(txn)
                 .status(status)
+                .payer(payer)
                 .addAllReqKeys(requiredKeys);
     }
 }

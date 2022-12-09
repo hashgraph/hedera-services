@@ -46,7 +46,7 @@ class SigTransactionMetadataTest {
         given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
         subject =
-                new SigTransactionMetadataBuilder(lookup)
+                new SigTransactionMetadataBuilder<>(lookup)
                         .payerKeyFor(payer)
                         .txnBody(txn)
                         .addToReqKeys(otherKey)
@@ -63,7 +63,7 @@ class SigTransactionMetadataTest {
         given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
         subject =
-                new SigTransactionMetadataBuilder(lookup)
+                new SigTransactionMetadataBuilder<>(lookup)
                         .payerKeyFor(payer)
                         .status(INVALID_ACCOUNT_ID)
                         .txnBody(txn)
@@ -74,6 +74,25 @@ class SigTransactionMetadataTest {
         assertEquals(txn, subject.txnBody());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
         assertEquals(List.of(payerKey, otherKey), subject.requiredKeys());
+    }
+
+    @Test
+    void copyWorksAsExpected() {
+        given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        final var txn = createAccountTransaction();
+        subject =
+                new SigTransactionMetadataBuilder<>(lookup)
+                        .payerKeyFor(payer)
+                        .status(INVALID_ACCOUNT_ID)
+                        .txnBody(txn)
+                        .addToReqKeys(otherKey)
+                        .build();
+
+        final var copy = subject.copy(lookup);
+        assertEquals(copy.build().txnBody(), subject.txnBody());
+        assertEquals(copy.build().requiredKeys(), subject.requiredKeys());
+        assertEquals(copy.build().status(), subject.status());
+        assertEquals(copy.build().payer(), subject.payer());
     }
 
     private TransactionBody createAccountTransaction() {

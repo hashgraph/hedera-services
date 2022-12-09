@@ -113,7 +113,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
     private TransactionMetadata failedMeta(
             final ResponseCodeEnum response, final TransactionBody txn, final AccountID payer) {
-        final var meta = new SigTransactionMetadataBuilder(keyLookup)
+        final var meta = new SigTransactionMetadataBuilder<>(keyLookup)
                 .payerKeyFor(payer)
                 .txnBody(txn);
         meta.status(response);

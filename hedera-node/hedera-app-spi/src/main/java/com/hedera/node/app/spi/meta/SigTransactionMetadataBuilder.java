@@ -28,22 +28,25 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Builds {@link SigTransactionMetadata} by collecting needed information collected when
- * transactions are handled as part of "pre-handle" needed for signature verification. This class
- * will be subclassed For e.g., we need a {@link TransactionMetadata} with an inner {@link
- * TransactionMetadata} for schedule transactions.
+ * transactions are handled as part of "pre-handle" needed for signature verification.
+ *
+ * <p>NOTE : This class is designed to be subclassed For e.g., we need a {@link TransactionMetadata}
+ * with an inner {@link TransactionMetadata} for schedule transactions.
  */
 public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuilder<T>> {
-    protected List<HederaKey> requiredKeys = new ArrayList<>();
+    protected final List<HederaKey> requiredKeys = new ArrayList<>();
     protected ResponseCodeEnum status = OK;
 
     protected TransactionBody txn;
     protected final AccountKeyLookup keyLookup;
     protected AccountID payer;
 
-    public SigTransactionMetadataBuilder(final AccountKeyLookup keyLookup) {
+    public SigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
+        Objects.requireNonNull(keyLookup);
         this.keyLookup = keyLookup;
     }
 
@@ -54,18 +57,33 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param status status to be set on {@link TransactionMetadata}
      * @return builder object
      */
-    public T status(final ResponseCodeEnum status) {
+    public T status(@NonNull final ResponseCodeEnum status) {
+        Objects.requireNonNull(status);
         this.status = status;
         return self();
     }
 
-    public T payer(final AccountID status) {
-        this.payer = status;
+    /**
+     * Set payer for the transaction
+     *
+     * @param payer payer for the transaction
+     * @return builder object
+     */
+    public T payer(@NonNull final AccountID payer) {
+        Objects.requireNonNull(payer);
+        this.payer = payer;
         return self();
     }
 
-    public T addAllReqKeys(final List<HederaKey> keys) {
-        this.requiredKeys.addAll(keys);
+    /**
+     * Add a list of keys to require keys
+     *
+     * @param keys list of keys to add
+     * @return builder object
+     */
+    public T addAllReqKeys(@NonNull final List<HederaKey> keys) {
+        Objects.requireNonNull(keys);
+        requiredKeys.addAll(keys);
         return self();
     }
 
@@ -75,7 +93,8 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param payer payer for the transaction
      * @return builder object
      */
-    public T payerKeyFor(AccountID payer) {
+    public T payerKeyFor(@NonNull AccountID payer) {
+        Objects.requireNonNull(payer);
         this.payer = payer;
         addPayerKey();
         return self();
@@ -87,7 +106,8 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param key key to be added
      * @return builder object
      */
-    public T addToReqKeys(HederaKey key) {
+    public T addToReqKeys(@NonNull HederaKey key) {
+        Objects.requireNonNull(key);
         requiredKeys.add(key);
         return self();
     }
@@ -98,7 +118,8 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param txn transaction body of the transaction
      * @return builder object
      */
-    public T txnBody(TransactionBody txn) {
+    public T txnBody(@NonNull TransactionBody txn) {
+        Objects.requireNonNull(txn);
         this.txn = txn;
         return self();
     }
@@ -110,7 +131,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      *
      * @param id given accountId
      */
-    public T addNonPayerKey(final AccountID id) {
+    public T addNonPayerKey(@NonNull final AccountID id) {
         return addNonPayerKey(id, null);
     }
 
@@ -121,14 +142,17 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * failureReason is null, sets the default failureReason given in the result.
      *
      * @param id given accountId
-     * @param failureStatus given failure status
+     * @param failureStatusToUse failure status to be set if there is failure
      */
-    public T addNonPayerKey(final AccountID id, final ResponseCodeEnum failureStatus) {
+    public T addNonPayerKey(
+            @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
+        Objects.requireNonNull(id);
+
         if (isNotNeeded(id)) {
             return self();
         }
         final var result = keyLookup.getKey(id);
-        failOrAddToKeys(result, failureStatus);
+        addToKeysOrFail(result, failureStatusToUse);
         return self();
     }
 
@@ -140,18 +164,27 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * failureReason given in the result.
      *
      * @param id given accountId
-     * @param failureStatus given failure status
+     * @param failureStatusToUse failure status to be set if there is failure
      */
     public T addNonPayerKeyIfReceiverSigRequired(
-            final AccountID id, final ResponseCodeEnum failureStatus) {
+            @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
+        Objects.requireNonNull(id);
+
         if (isNotNeeded(id)) {
             return self();
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
-        failOrAddToKeys(result, failureStatus);
+        addToKeysOrFail(result, failureStatusToUse);
         return self();
     }
 
+    /**
+     * Creates and returns a new {@link SigTransactionMetadata} based on the values configured in
+     * this builder.
+     *
+     * @return a new {@link SigTransactionMetadata}
+     */
+    @NonNull
     public SigTransactionMetadata build() {
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
     }
@@ -169,7 +202,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      */
     private void addPayerKey() {
         final var result = keyLookup.getKey(payer);
-        failOrAddToKeys(result, INVALID_PAYER_ACCOUNT_ID);
+        addToKeysOrFail(result, INVALID_PAYER_ACCOUNT_ID);
     }
 
     /**
@@ -207,7 +240,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param result key lookup result
      * @param failureStatus failure reason for the lookup
      */
-    private void failOrAddToKeys(
+    private void addToKeysOrFail(
             final KeyOrLookupFailureReason result, @Nullable final ResponseCodeEnum failureStatus) {
         if (result.failed()) {
             this.status = failureStatus != null ? failureStatus : result.failureReason();
