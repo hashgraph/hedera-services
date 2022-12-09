@@ -26,7 +26,9 @@ import java.util.List;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification. NOTE : This class may have subclasses in the future.
+ * verification.
+ *
+ * <p>NOTE: This class may have subclasses in the future.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
     protected final List<HederaKey> requiredKeys = new ArrayList<>();

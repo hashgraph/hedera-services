@@ -90,6 +90,25 @@ class SigTransactionMetadataBuilderTest {
     }
 
     @Test
+    void nullInputToBuilderArgumentsThrows() {
+        final var subject = new SigTransactionMetadataBuilder(keyLookup);
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
+        given(keyLookup.getKeyIfReceiverSigRequired(payer)).willReturn(withKey(payerKey));
+
+        assertThrows(NullPointerException.class, () -> new SigTransactionMetadataBuilder(null));
+        assertThrows(NullPointerException.class, () -> subject.txnBody(null));
+        assertThrows(NullPointerException.class, () -> subject.payer(null));
+        assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
+        assertThrows(NullPointerException.class, () -> subject.status(null));
+        assertThrows(NullPointerException.class, () -> subject.addNonPayerKey(null));
+        assertThrows(
+                NullPointerException.class,
+                () -> subject.addNonPayerKeyIfReceiverSigRequired(null, null));
+        assertDoesNotThrow(() -> subject.addNonPayerKey(payer, null));
+        assertDoesNotThrow(() -> subject.addNonPayerKeyIfReceiverSigRequired(payer, null));
+    }
+
+    @Test
     void gettersWorkAsExpectedWhenPayerIsSet() {
         final var txn = createAccountTransaction();
 
