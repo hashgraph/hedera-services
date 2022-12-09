@@ -32,6 +32,7 @@ import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
+import com.hedera.services.bdd.suites.leaky.LeakyContractSpecsSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
@@ -81,10 +82,11 @@ public class SequentialSuites {
                     ScheduleRecordSpecs::new,
                     ScheduleExecutionSpecs::new,
                     ScheduleDeleteSpecs::new,
-                    Create2OperationSuite::new,
                     SelfDestructSuite::new,
                     CreatePrecompileSuite::new,
-                    FeatureFlagSuite::new
+                    LeakyContractSpecsSuite::new,
+                    FeatureFlagSuite::new,
+                    Create2OperationSuite::new,
                 };
     }
 }

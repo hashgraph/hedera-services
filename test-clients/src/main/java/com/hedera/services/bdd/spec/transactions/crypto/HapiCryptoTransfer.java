@@ -72,6 +72,7 @@ import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -283,9 +284,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
-            final String from, final ByteString to, final Function<HapiSpec, Long> amountFn) {
+            final String from, final ByteString to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
-            final long amount = amountFn.apply(spec);
+            final long amount = amountFn.applyAsLong(spec);
             final AccountID toAccount = asIdWithAlias(to);
             final AccountID fromAccount = asId(from, spec);
             return TransferList.newBuilder()
@@ -304,9 +305,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
-            final String from, final String to, final Function<HapiSpec, Long> amountFn) {
+            final String from, final String to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
-            final long amount = amountFn.apply(spec);
+            final long amount = amountFn.applyAsLong(spec);
             final AccountID toAccount = asId(to, spec);
             final AccountID fromAccount = asId(from, spec);
             return TransferList.newBuilder()
@@ -340,9 +341,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromToWithAlias(
-            final String from, final String to, final Function<HapiSpec, Long> amountFn) {
+            final String from, final String to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
-            final long amount = amountFn.apply(spec);
+            final long amount = amountFn.applyAsLong(spec);
             final AccountID toAccount;
             final AccountID fromAccount;
 
@@ -375,9 +376,9 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromToWithInvalidAmounts(
-            final String from, final String to, final Function<HapiSpec, Long> amountFn) {
+            final String from, final String to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
-            final long amount = amountFn.apply(spec);
+            final long amount = amountFn.applyAsLong(spec);
             final AccountID toAccount = asId(to, spec);
             final AccountID fromAccount = asId(from, spec);
             return TransferList.newBuilder()

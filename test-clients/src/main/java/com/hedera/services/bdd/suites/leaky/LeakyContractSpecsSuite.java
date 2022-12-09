@@ -21,23 +21,31 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX;
@@ -54,6 +62,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRA
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,6 +72,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -74,10 +84,12 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -97,7 +109,9 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                 transferToCaller(),
                 resultSizeAffectsFees(),
                 temporarySStoreRefundTest(),
+                canCallPendingContractSafely(),
                 transferZeroHbarsToCaller(),
+                deletedContractsCannotBeUpdated(),
                 autoAssociationSlotsAppearsInInfo(),
                 gasLimitOverMaxGasLimitFailsPrecheck(),
                 createMinChargeIsTXGasUsedByContractCreate(),
@@ -632,6 +646,62 @@ public class LeakyContractSpecsSuite extends HapiSuite {
                                     Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
                                 }),
                         UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+    }
+
+    private HapiSpec deletedContractsCannotBeUpdated() {
+        final var contract = "SelfDestructCallable";
+
+        return defaultHapiSpec("DeletedContractsCannotBeUpdated")
+                .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
+                .when(contractCall(contract, "destroy").deferStatusResolution())
+                .then(
+                        contractUpdate(contract)
+                                .newMemo("Hi there!")
+                                .hasKnownStatus(INVALID_CONTRACT_ID));
+    }
+
+    private HapiSpec canCallPendingContractSafely() {
+        final var numSlots = 64L;
+        final var createBurstSize = 500;
+        final long[] targets = {19, 24};
+        final AtomicLong createdFileNum = new AtomicLong();
+        final var callTxn = "callTxn";
+        final var contract = "FibonacciPlus";
+        final var expiry = Instant.now().getEpochSecond() + 7776000;
+
+        return defaultHapiSpec("CanCallPendingContractSafely")
+                .given(
+                        uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
+                        inParallel(
+                                IntStream.range(0, createBurstSize)
+                                        .mapToObj(
+                                                i ->
+                                                        contractCustomCreate(
+                                                                        contract,
+                                                                        String.valueOf(i),
+                                                                        numSlots)
+                                                                .fee(ONE_HUNDRED_HBARS)
+                                                                .gas(300_000L)
+                                                                .payingWith(GENESIS)
+                                                                .noLogging()
+                                                                .deferStatusResolution()
+                                                                .bytecode(contract)
+                                                                .adminKey(THRESHOLD))
+                                        .toArray(HapiSpecOperation[]::new)))
+                .when()
+                .then(
+                        sourcing(
+                                () ->
+                                        contractCallWithFunctionAbi(
+                                                        "0.0."
+                                                                + (createdFileNum.get()
+                                                                        + createBurstSize),
+                                                        getABIFor(FUNCTION, "addNthFib", contract),
+                                                        targets,
+                                                        12L)
+                                                .payingWith(GENESIS)
+                                                .gas(300_000L)
+                                                .via(callTxn)));
     }
 
     @Override

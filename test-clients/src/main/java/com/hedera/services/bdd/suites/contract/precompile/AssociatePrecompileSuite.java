@@ -85,7 +85,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final String FROZEN_TOKEN = "Frozen token";
     private static final String UNFROZEN_TOKEN = "Unfrozen token";
     private static final String KYC_TOKEN = "KYC token";
-    private static final String TOKEN = "Token";
     private static final String DELEGATE_KEY = "Delegate key";
     private static final String FREEZE_KEY = "Freeze key";
     private static final String KYC_KEY = "KYC key";
@@ -93,12 +92,12 @@ public class AssociatePrecompileSuite extends HapiSuite {
     private static final byte[] TOKEN_ADDRESS = asAddress(TokenID.newBuilder().build());
 
     public static void main(String... args) {
-        new AssociatePrecompileSuite().runSuiteSync();
+        new AssociatePrecompileSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -108,14 +107,12 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
     List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiSpec[] {
-                    functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
-                    nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                    invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
-                    nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
-                    invalidAbiCallGracefullyFailsWithinSingleContractCall(),
-                    invalidSingleAbiCallConsumesAllProvidedGas()
-                });
+                functionCallWithLessThanFourBytesFailsWithinSingleContractCall(),
+                nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls(),
+                invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls(),
+                nonSupportedAbiCallGracefullyFailsWithinSingleContractCall(),
+                invalidAbiCallGracefullyFailsWithinSingleContractCall(),
+                invalidSingleAbiCallConsumesAllProvidedGas());
     }
 
     List<HapiSpec> positiveSpecs() {

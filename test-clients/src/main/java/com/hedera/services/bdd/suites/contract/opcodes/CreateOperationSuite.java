@@ -66,18 +66,16 @@ public class CreateOperationSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    simpleFactoryWorks(),
-                    stackedFactoryWorks(),
-                    resetOnFactoryFailureWorks(),
-                    resetOnFactoryFailureAfterDeploymentWorks(),
-                    resetOnStackedFactoryFailureWorks(),
-                    inheritanceOfNestedCreatedContracts(),
-                    factoryAndSelfDestructInConstructorContract(),
-                    factoryQuickSelfDestructContract(),
-                    contractCreateWithNewOpInConstructor(),
-                    childContractStorageWorks()
-                });
+                simpleFactoryWorks(),
+                stackedFactoryWorks(),
+                resetOnFactoryFailureWorks(),
+                resetOnFactoryFailureAfterDeploymentWorks(),
+                resetOnStackedFactoryFailureWorks(),
+                inheritanceOfNestedCreatedContracts(),
+                factoryAndSelfDestructInConstructorContract(),
+                factoryQuickSelfDestructContract(),
+                contractCreateWithNewOpInConstructor(),
+                childContractStorageWorks());
     }
 
     @Override
@@ -158,10 +156,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .saveToRegistry("contractInfo");
                                     allRunFor(spec, successTxn, parentContract);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContractIDs =
                                             successTxn
                                                     .getResponseRecord()
@@ -189,10 +183,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .saveToRegistry("contractInfo");
                                     allRunFor(spec, successTxn, parentContract);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContractIDs =
                                             successTxn
                                                     .getResponseRecord()
@@ -226,10 +216,6 @@ public class CreateOperationSuite extends HapiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()
@@ -269,10 +255,6 @@ public class CreateOperationSuite extends HapiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()
@@ -313,10 +295,6 @@ public class CreateOperationSuite extends HapiSuite {
                                     allRunFor(
                                             spec, revertTxn, parentContract, deploymentSuccessTxn);
 
-                                    final var parentID =
-                                            spec.registry()
-                                                    .getContractInfo("contractInfo")
-                                                    .getContractID();
                                     final var createdContracts =
                                             deploymentSuccessTxn
                                                     .getResponseRecord()

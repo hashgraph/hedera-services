@@ -145,7 +145,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                     duplicateKeysAndSerialsInSameTxnDoesntThrow(),
                     scheduledCryptoApproveAllowanceWorks(),
                     // Flaky in CI, not clear why yet
-                    //                    scheduledCryptoApproveAllowanceWaitForExpiryTrue()
+//                    scheduledCryptoApproveAllowanceWaitForExpiryTrue()
                 });
     }
 

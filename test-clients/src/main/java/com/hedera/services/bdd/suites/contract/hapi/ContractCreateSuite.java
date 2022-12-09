@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -47,10 +46,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -79,7 +76,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -93,11 +89,9 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes32;
@@ -106,6 +100,7 @@ public class ContractCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
+    public static final String PARENT_INFO = "parentInfo";
 
     public static void main(String... args) {
         new ContractCreateSuite().runSuiteAsync();
@@ -114,29 +109,26 @@ public class ContractCreateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    createEmptyConstructor(),
-                    insufficientPayerBalanceUponCreation(),
-                    rejectsInvalidMemo(),
-                    rejectsInsufficientFee(),
-                    rejectsInvalidBytecode(),
-                    revertsNonzeroBalance(),
-                    createFailsIfMissingSigs(),
-                    rejectsInsufficientGas(),
-                    createsVanillaContractAsExpectedWithOmittedAdminKey(),
-                    childCreationsHaveExpectedKeysWithOmittedAdminKey(),
-                    cannotCreateTooLargeContract(),
-                    revertedTryExtCallHasNoSideEffects(),
-                    receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
-                    cannotSendToNonExistentAccount(),
-                    delegateContractIdRequiredForTransferInDelegateCall(),
-                    vanillaSuccess(),
-                    blockTimestampChangesWithinFewSeconds(),
-                    contractWithAutoRenewNeedSignatures(),
-                    getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                    createContractWithStakingFields(),
-                    canCallPendingContractSafely(),
-                });
+                createEmptyConstructor(),
+                insufficientPayerBalanceUponCreation(),
+                rejectsInvalidMemo(),
+                rejectsInsufficientFee(),
+                rejectsInvalidBytecode(),
+                revertsNonzeroBalance(),
+                createFailsIfMissingSigs(),
+                rejectsInsufficientGas(),
+                createsVanillaContractAsExpectedWithOmittedAdminKey(),
+                childCreationsHaveExpectedKeysWithOmittedAdminKey(),
+                cannotCreateTooLargeContract(),
+                revertedTryExtCallHasNoSideEffects(),
+                receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
+                cannotSendToNonExistentAccount(),
+                delegateContractIdRequiredForTransferInDelegateCall(),
+                vanillaSuccess(),
+                blockTimestampChangesWithinFewSeconds(),
+                contractWithAutoRenewNeedSignatures(),
+                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+                createContractWithStakingFields());
     }
 
     @Override
@@ -218,50 +210,6 @@ public class ContractCreateSuite extends HapiSuite {
                         contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .payingWith("bankrupt")
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
-    }
-
-    private HapiSpec canCallPendingContractSafely() {
-        final var numSlots = 64L;
-        final var createBurstSize = 500;
-        final long[] targets = {19, 24};
-        final AtomicLong createdFileNum = new AtomicLong();
-        final var callTxn = "callTxn";
-        final var contract = "FibonacciPlus";
-        final var expiry = Instant.now().getEpochSecond() + 7776000;
-
-        return defaultHapiSpec("CanCallPendingContractSafely")
-                .given(
-                        uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
-                        inParallel(
-                                IntStream.range(0, createBurstSize)
-                                        .mapToObj(
-                                                i ->
-                                                        contractCustomCreate(
-                                                                        contract,
-                                                                        String.valueOf(i),
-                                                                        numSlots)
-                                                                .fee(ONE_HUNDRED_HBARS)
-                                                                .gas(300_000L)
-                                                                .payingWith(GENESIS)
-                                                                .noLogging()
-                                                                .deferStatusResolution()
-                                                                .bytecode(contract)
-                                                                .adminKey(THRESHOLD))
-                                        .toArray(HapiSpecOperation[]::new)))
-                .when()
-                .then(
-                        sourcing(
-                                () ->
-                                        contractCallWithFunctionAbi(
-                                                        "0.0."
-                                                                + (createdFileNum.get()
-                                                                        + createBurstSize),
-                                                        getABIFor(FUNCTION, "addNthFib", contract),
-                                                        targets,
-                                                        12L)
-                                                .payingWith(GENESIS)
-                                                .gas(300_000L)
-                                                .via(callTxn)));
     }
 
     HapiSpec cannotSendToNonExistentAccount() {
@@ -818,7 +766,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getContractInfo(contract)
                                 .has(contractWith().maxAutoAssociations(10))
                                 .logged()
-                                .saveToRegistry("parentInfo"))
+                                .saveToRegistry(PARENT_INFO))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
                         contractCall(contract, "getIndirect")
@@ -861,10 +809,10 @@ public class ContractCreateSuite extends HapiSuite {
                                                                                 contractWith()
                                                                                         .nonNullContractId()
                                                                                         .propertiesInheritedFrom(
-                                                                                                "parentInfo")))
+                                                                                                PARENT_INFO)))
                                                                 .logs(inOrder()))),
                         contractListWithPropertiesInheritedFrom(
-                                "createChildCallResult", 1, "parentInfo"));
+                                "createChildCallResult", 1, PARENT_INFO));
     }
 
     HapiSpec contractWithAutoRenewNeedSignatures() {

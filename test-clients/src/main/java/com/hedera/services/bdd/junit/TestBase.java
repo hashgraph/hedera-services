@@ -50,7 +50,6 @@ public abstract class TestBase {
                                                 .append(suite.name()))
                         .flatMap(this::contextualizedSpecsFromConcurrent)
                         .toList();
-        System.out.println("CONTEXTUALIZED " + contextualizedSpecs.size() + " SPECS");
         return dynamicTest(
                 commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
     }
@@ -61,7 +60,7 @@ public abstract class TestBase {
         if (!failures.isEmpty()) {
             final var failureReport =
                     """
-                    %d specs failed. By suite,
+                    %d specs FAILED. By suite,
                     %s
                     """;
             final var details = new StringBuilder();
@@ -71,7 +70,7 @@ public abstract class TestBase {
                             (suiteName, failedSpecs) -> {
                                 details.append("  ")
                                         .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
-                                        .append(" ~ ")
+                                        .append(" -> ")
                                         .append(failedSpecs.size())
                                         .append(" failures:");
                                 failedSpecs.forEach(
@@ -80,11 +79,10 @@ public abstract class TestBase {
                                                         .append(failure.getName())
                                                         .append("\n")
                                                         .append(
-                                                                Arrays.toString(
-                                                                        Objects.requireNonNull(
-                                                                                        failure
-                                                                                                .getCause())
-                                                                                .getStackTrace())));
+                                                                Objects.requireNonNull(
+                                                                                failure.getCause())
+                                                                        .getMessage())
+                                                        .append("\n"));
                             });
             Assertions.fail(String.format(failureReport, failures.size(), details));
         }

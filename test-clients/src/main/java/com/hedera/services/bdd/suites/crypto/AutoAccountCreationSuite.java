@@ -1457,7 +1457,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 .initialSupply(0)
                                 .treasury(PARTY)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY),
+                                .supplyKey(MULTI_KEY)
+                                .hasKnownStatus(INVALID_ADMIN_KEY),
                         mintToken(
                                 nonFungibleToken,
                                 List.of(copyFromUtf8("Test transfer nft to EVM address alias."))),

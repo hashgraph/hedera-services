@@ -112,7 +112,6 @@ public class Create2OperationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
-    private static final String FALSE = "false";
     private static final String GET_BYTECODE = "getBytecode";
     private static final String DEPLOY = "deploy";
     private static final String CREATE_2_TXN = "create2Txn";

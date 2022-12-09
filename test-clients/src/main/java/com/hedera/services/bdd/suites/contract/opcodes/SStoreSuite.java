@@ -60,10 +60,7 @@ public class SStoreSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage(),
-                });
+        return List.of(multipleSStoreOpsSucceed(), benchmarkSingleSetter(), childStorage());
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.

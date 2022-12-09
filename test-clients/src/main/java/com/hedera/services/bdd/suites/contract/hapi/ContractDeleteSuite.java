@@ -60,18 +60,16 @@ public class ContractDeleteSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    rejectsWithoutProperSig(),
-                    systemCannotDeleteOrUndeleteContracts(),
-                    deleteWorksWithMutableContract(),
-                    deleteFailsWithImmutableContract(),
-                    deleteTransfersToAccount(),
-                    deleteTransfersToContract(),
-                    cannotDeleteOrSelfDestructTokenTreasury(),
-                    cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
-                    cannotSendValueToTokenAccount(),
-                    cannotUseMoreThanChildContractLimit()
-                });
+                rejectsWithoutProperSig(),
+                systemCannotDeleteOrUndeleteContracts(),
+                deleteWorksWithMutableContract(),
+                deleteFailsWithImmutableContract(),
+                deleteTransfersToAccount(),
+                deleteTransfersToContract(),
+                cannotDeleteOrSelfDestructTokenTreasury(),
+                cannotDeleteOrSelfDestructContractWithNonZeroBalance(),
+                cannotSendValueToTokenAccount(),
+                cannotUseMoreThanChildContractLimit());
     }
 
     private HapiSpec cannotUseMoreThanChildContractLimit() {

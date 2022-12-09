@@ -53,7 +53,7 @@ public class BalanceOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {verifiesExistenceOfAccountsAndContracts()});
+        return List.of(verifiesExistenceOfAccountsAndContracts());
     }
 
     @Override

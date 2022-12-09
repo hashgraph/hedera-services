@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -216,7 +215,6 @@ public class ContractCallSuite extends HapiSuite {
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
                 imapUserExercise(),
-                deletedContractsCannotBeUpdated(),
                 sendHbarsToAddressesMultipleTimes(),
                 sendHbarsToDifferentAddresses(),
                 sendHbarsFromDifferentAddressessToAddress(),
@@ -597,18 +595,6 @@ public class ContractCallSuite extends HapiSuite {
                                                         "Peter",
                                                         nyJurisCode.get())
                                                 .gas(1_000_000)));
-    }
-
-    private HapiSpec deletedContractsCannotBeUpdated() {
-        final var contract = "SelfDestructCallable";
-
-        return defaultHapiSpec("DeletedContractsCannotBeUpdated")
-                .given(uploadInitCode(contract), contractCreate(contract).gas(300_000))
-                .when(contractCall(contract, "destroy").deferStatusResolution())
-                .then(
-                        contractUpdate(contract)
-                                .newMemo("Hi there!")
-                                .hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     private HapiSpec workingHoursDemo() {

@@ -45,10 +45,7 @@ public class CallOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    callingContract(), verifiesExistence(),
-                });
+        return List.of(callingContract(), verifiesExistence());
     }
 
     @Override
