@@ -75,6 +75,10 @@ public class QueryVerbs {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
     }
 
+    public static HapiGetAccountInfo getLiteralAliasAccountInfo(final String alias) {
+        return new HapiGetAccountInfo(alias, ReferenceType.HEXED_CONTRACT_ALIAS);
+    }
+
     public static HapiGetAccountRecords getAccountRecords(final String account) {
         return new HapiGetAccountRecords(account);
     }
