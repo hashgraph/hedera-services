@@ -177,9 +177,13 @@ public class AutoCreationLogic {
                 final var alias = syntheticCreation.getCryptoCreateAccount().getAlias();
                 if (alias != ByteString.EMPTY) {
                     sigImpactHistorian.markAliasChanged(alias);
+                    final var maybeAddress = aliasManager.keyAliasToEVMAddress(alias);
+                    if (maybeAddress != null) {
+                        sigImpactHistorian.markAliasChanged(ByteString.copyFrom(maybeAddress));
+                    }
                 }
                 sigImpactHistorian.markEntityChanged(
-                        childRecord.getReceiptBuilder().getAccountId().num());
+                    childRecord.getReceiptBuilder().getAccountId().num());
             }
             recordSubmissions.submitForTracking(syntheticCreation, childRecord);
         }

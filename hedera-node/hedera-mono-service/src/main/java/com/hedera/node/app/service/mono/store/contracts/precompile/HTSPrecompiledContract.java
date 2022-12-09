@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
@@ -133,8 +134,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
-    private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON =
-            Bytes.of("Error decoding precompile input".getBytes());
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR =
             "ERC721Metadata: URI query for nonexistent token";
 
@@ -227,7 +226,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
-            frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+            frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
             return NO_RESULT;
         }
 
