@@ -15,21 +15,16 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenExpiryInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -39,12 +34,9 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function GET_TOKEN_EXPIRY_INFO_FUNCTION =
-            new Function("getTokenExpiryInfo(address)");
-    private static final Bytes GET_TOKEN_EXPIRY_INFO_SELECTOR =
-            Bytes.wrap(GET_TOKEN_EXPIRY_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_TOKEN_EXPIRY_INFO_DECODER = TypeFactory.create(BYTES32);
+public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile
+        implements EvmGetTokenExpiryInfoPrecompile {
+
     private final StateView stateView;
 
     public GetTokenExpiryInfoPrecompile(
@@ -61,7 +53,7 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var getTokenExpiryInfoWrapper = decodeGetTokenExpiryInfo(input);
-        tokenId = getTokenExpiryInfoWrapper.tokenID();
+        tokenId = getTokenExpiryInfoWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -82,12 +74,10 @@ public class GetTokenExpiryInfoPrecompile extends AbstractReadOnlyPrecompile {
         return encoder.encodeGetTokenExpiryInfo(expiryInfo);
     }
 
-    public static GetTokenExpiryInfoWrapper decodeGetTokenExpiryInfo(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input, GET_TOKEN_EXPIRY_INFO_SELECTOR, GET_TOKEN_EXPIRY_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return new GetTokenExpiryInfoWrapper(tokenID);
+    public static GetTokenExpiryInfoWrapper<TokenID> decodeGetTokenExpiryInfo(final Bytes input) {
+        final var rawGetTokenExpityInfoWrapper =
+                EvmGetTokenExpiryInfoPrecompile.decodeGetTokenExpiryInfo(input);
+        return new GetTokenExpiryInfoWrapper<>(
+                convertAddressBytesToTokenID(rawGetTokenExpityInfoWrapper.token()));
     }
 }

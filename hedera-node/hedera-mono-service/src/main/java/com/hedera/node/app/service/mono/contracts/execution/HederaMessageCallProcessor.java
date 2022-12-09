@@ -15,16 +15,15 @@
  */
 package com.hedera.node.app.service.mono.contracts.execution;
 
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_EXECUTING;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.ContractActionType;
 import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.mono.store.contracts.precompile.HTSPrecompiledContract;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -36,26 +35,29 @@ public class HederaMessageCallProcessor extends HederaEvmMessageCallProcessor {
     public static final Bytes INVALID_TRANSFER =
             Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
 
+    private final Predicate<Address> isNativePrecompileCheck;
+
     public HederaMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
+        isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
     }
 
     @Override
     public void start(final MessageFrame frame, final OperationTracer operationTracer) {
         super.start(frame, operationTracer);
 
-        final var hederaPrecompile = hederaPrecompiles.get(frame.getContractAddress());
-        final var nonPrecompileResultState = frame.getState();
-        if (nonPrecompileResultState != EXCEPTIONAL_HALT
-                && nonPrecompileResultState != CODE_EXECUTING) {
-            // Pre-compile execution doesn't set the state to CODE_EXECUTING after start()
+        // potential precompile execution will be done after super.start(),
+        // so trace results here
+        final var contractAddress = frame.getContractAddress();
+        if (isNativePrecompileCheck.test(contractAddress)
+                || hederaPrecompiles.containsKey(contractAddress)) {
             ((HederaOperationTracer) operationTracer)
                     .tracePrecompileResult(
                             frame,
-                            hederaPrecompile != null
+                            hederaPrecompiles.containsKey(contractAddress)
                                     ? ContractActionType.SYSTEM
                                     : ContractActionType.PRECOMPILE);
         }

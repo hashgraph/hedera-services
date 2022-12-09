@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
@@ -191,6 +190,10 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
                                 // any expected exception means no eth mapping
                             }
                         }
+
+                        if (alias.size() == EVM_ADDRESS_LEN) {
+                            numEOAliases.incrementAndGet();
+                        }
                     }
                 });
         log.info(
@@ -215,23 +218,9 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     }
 
     public void forgetEvmAddress(final ByteString alias) {
-        try {
-            final var key = Key.parseFrom(alias);
-            final var jKey = JKey.mapKey(key);
-            if (jKey.hasECDSAsecp256k1Key()) {
-                // ecdsa keys from alias are currently only stored in compressed form.
-                final byte[] rawCompressedKey = jKey.getECDSASecp256k1Key();
-                // trust, but verify
-                if (rawCompressedKey.length
-                        == JECDSASecp256k1Key.ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    final var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
-                    if (evmAddress.length > 0) {
-                        curAliases().remove(ByteString.copyFrom(evmAddress));
-                    }
-                }
-            }
-        } catch (final InvalidProtocolBufferException | DecoderException internal) {
-            // any parse error means it's not a evm address
+        var evmAddress = keyAliasToEVMAddress(alias);
+        if (evmAddress != null) {
+            curAliases().remove(ByteString.copyFrom(evmAddress));
         }
     }
 
@@ -242,7 +231,20 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
      * @return EntityNum mapped to the given alias.
      */
     public EntityNum lookupIdBy(final ByteString alias) {
-        return curAliases().getOrDefault(alias, MISSING_NUM);
+        var entityNum = curAliases().getOrDefault(alias, MISSING_NUM);
+
+        // We don't want to treat a Key-derived alias as "missing" if its auto-created account
+        // would collide with an existing EVM address; so check for that case now
+        if (alias.size() > EVM_ADDRESS_LEN && entityNum == MISSING_NUM) {
+            // if we don't find entity num for key alias we can try to derive EVM address from it
+            // and look it up
+            var evmAddress = keyAliasToEVMAddress(alias);
+            if (evmAddress != null) {
+                entityNum = curAliases().getOrDefault(ByteString.copyFrom(evmAddress), MISSING_NUM);
+            }
+        }
+
+        return entityNum;
     }
 
     private Map<ByteString, EntityNum> curAliases() {
@@ -252,5 +254,19 @@ public class AliasManager extends HederaEvmContractAliases implements ContractAl
     @VisibleForTesting
     Map<ByteString, EntityNum> getAliases() {
         return curAliases();
+    }
+
+    @Nullable
+    public byte[] keyAliasToEVMAddress(final ByteString alias) {
+        try {
+            final Key key = Key.parseFrom(alias);
+            final JKey jKey = JKey.mapKey(key);
+            return tryAddressRecovery(jKey, ADDRESS_RECOVERY_FN);
+        } catch (InvalidProtocolBufferException
+                | DecoderException
+                | IllegalArgumentException ignore) {
+            // any expected exception means no eth mapping
+            return null;
+        }
     }
 }

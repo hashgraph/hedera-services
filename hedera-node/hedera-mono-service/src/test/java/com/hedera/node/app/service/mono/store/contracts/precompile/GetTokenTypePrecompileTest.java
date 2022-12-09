@@ -33,7 +33,7 @@ class GetTokenTypePrecompileTest {
     @Test
     void decodeGetTokenTypeAsExpected() {
         final var decodedInput = decodeGetTokenType(GET_TOKEN_TYPE_INPUT);
-        assertEquals(TokenID.newBuilder().setTokenNum(2829).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(2829).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 }
