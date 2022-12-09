@@ -32,14 +32,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TransactionMetadataTest {
+class TransactionMetadataTest {
     @Mock AccountKeyLookup lookup;
     final List<HederaKey> requiredKeys = new ArrayList<>();
     final TransactionBody txnBody = TransactionBody.getDefaultInstance();
     final AccountID payer = AccountID.getDefaultInstance();
 
     @Test
-    public void testCopy() {
+    void testCopy() {
         final var metadata = new SigTransactionMetadata(txnBody, payer, OK, requiredKeys);
         final var copy = metadata.copy(lookup).build();
         assertNotNull(copy);

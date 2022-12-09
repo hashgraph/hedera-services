@@ -22,7 +22,7 @@ import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
 
-public class ErrorTransactionMetadataTest {
+class ErrorTransactionMetadataTest {
     final ResponseCodeEnum responseCode = ResponseCodeEnum.INVALID_SIGNATURE;
     final Throwable throwable = new Throwable("Invalid signature");
     final TransactionBody txBody = createAccountTransaction();
@@ -31,17 +31,17 @@ public class ErrorTransactionMetadataTest {
             new ErrorTransactionMetadata(responseCode, throwable, txBody);
 
     @Test
-    public void testCause() {
+    void testCause() {
         assertEquals("Invalid signature", subject.cause().getMessage());
     }
 
     @Test
-    public void testStatus() {
+    void testStatus() {
         assertEquals(ResponseCodeEnum.INVALID_SIGNATURE, subject.status());
     }
 
     @Test
-    public void testTxnBody() {
+    void testTxnBody() {
         assertEquals(txBody, subject.txnBody());
     }
 
@@ -51,7 +51,7 @@ public class ErrorTransactionMetadataTest {
     }
 
     @Test
-    public void testPayer() {
+    void testPayer() {
         assertNull(subject.payer());
     }
 
