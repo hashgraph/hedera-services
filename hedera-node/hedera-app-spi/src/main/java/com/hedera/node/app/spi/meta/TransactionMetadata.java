@@ -20,6 +20,8 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.List;
 
 /**
@@ -75,7 +77,7 @@ public interface TransactionMetadata {
      * @param lookup key lookup needed for the builder
      * @return builder object
      */
-    default SigTransactionMetadataBuilder copy(AccountKeyLookup lookup) {
+    default SigTransactionMetadataBuilder copy(@NonNull AccountKeyLookup lookup) {
         throw new UnsupportedOperationException("Copy operation is not supported");
     }
 }

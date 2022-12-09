@@ -45,11 +45,6 @@ public class SigTransactionMetadata implements TransactionMetadata {
         requiredKeys.addAll(otherKeys);
     }
 
-    public SigTransactionMetadata(
-            final TransactionBody txn, final AccountID payer, final ResponseCodeEnum status) {
-        this(txn, payer, status, Collections.emptyList());
-    }
-
     @Override
     public TransactionBody txnBody() {
         return txn;
