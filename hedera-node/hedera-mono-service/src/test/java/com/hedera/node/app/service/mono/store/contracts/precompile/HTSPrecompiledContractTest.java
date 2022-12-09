@@ -348,7 +348,6 @@ class HTSPrecompiledContractTest {
                 new RedirectViewExecutor(
                         input,
                         messageFrame,
-                        encoder,
                         evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas);
         given(infrastructureFactory.newRedirectExecutor(any(), any(), any()))

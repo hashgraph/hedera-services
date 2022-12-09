@@ -46,7 +46,6 @@ import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.state.enums.TokenType;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.AllowancePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.GetApprovedPrecompile;
@@ -76,7 +75,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RedirectViewExecutorTest {
     @Mock private MessageFrame frame;
-    @Mock private EncodingFacade encodingFacade;
     @Mock private EvmEncodingFacade evmEncodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private HederaStackedWorldStateUpdater stackedWorldStateUpdater;
@@ -312,7 +310,7 @@ class RedirectViewExecutorTest {
         given(stackedWorldStateUpdater.trackingLedgers()).willReturn(worldLedgers);
         this.subject =
                 new RedirectViewExecutor(
-                        input, frame, encodingFacade, evmEncodingFacade, viewGasCalculator);
+                        input, frame, evmEncodingFacade, viewGasCalculator);
         return nestedInput;
     }
 }
