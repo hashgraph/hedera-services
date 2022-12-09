@@ -25,7 +25,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface Service {
 
     /**
-     * Returns the name of the service
+     * Returns the name of the service. This name must be unique for each service deployed on the
+     * application.
      *
      * @return the name
      */

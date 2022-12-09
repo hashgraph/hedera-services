@@ -128,8 +128,9 @@ class WorkflowOnsetTest {
         final var byteArray = new byte[0];
         when(localTxParser.parseFrom(byteArray)).thenReturn(tx);
 
-        ctx = new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
-        final var result = onset.parseAndCheck(ctx, byteArray);
+        final var localCtx =
+                new SessionContext(queryParser, localTxParser, signedParser, txBodyParser);
+        final var result = onset.parseAndCheck(localCtx, byteArray);
 
         // then
         assertThat(result.txBody()).isEqualTo(txBody);

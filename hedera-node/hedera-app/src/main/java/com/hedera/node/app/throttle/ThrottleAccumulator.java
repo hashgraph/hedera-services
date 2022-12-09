@@ -29,11 +29,11 @@ public class ThrottleAccumulator {
     private static final Logger LOG = LoggerFactory.getLogger(ThrottleAccumulator.class);
 
     /**
-     * Increments the throttle associated with {@code id} and returns whether the throttle has been
-     * exceeded. If there is no throttle associated with {@code functionality}, then an {@link
-     * IllegalArgumentException} will be thrown. This is to prevent bugs where some code
-     * accidentally specified a throttle but a corresponding throttle was never configured, leading
-     * to an open-throttle situation (i.e. an un-throttled attack vector).
+     * Increments the throttle associated with functionality's {@code id} and returns whether the
+     * throttle has been exceeded. If there is no throttle associated with {@code functionality},
+     * then an {@link IllegalArgumentException} will be thrown. This is to prevent bugs where some
+     * code accidentally specified a throttle but a corresponding throttle was never configured,
+     * leading to an open-throttle situation (i.e. an un-throttled attack vector).
      *
      * @param functionality The ID of the throttle to increment and check. This must exist.
      * @return true if the throttle has been exceeded, false otherwise.

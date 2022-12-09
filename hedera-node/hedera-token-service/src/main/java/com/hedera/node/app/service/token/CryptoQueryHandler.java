@@ -29,7 +29,7 @@ import java.util.Optional;
 /**
  * Defines APIs for responding to queries on state. Most of these APIs are defined in
  * "CryptoService" in the protobuf. Some APIs are defined for the use of other modules, or the
- * Hedera application. Some queries are paid, some, some are free.
+ * Hedera application. Some queries are paid, some are free.
  */
 public interface CryptoQueryHandler extends QueryHandler {
     /**
@@ -43,9 +43,9 @@ public interface CryptoQueryHandler extends QueryHandler {
     Optional<Account> getAccountById(@NonNull AccountID id);
 
     /**
-     * Returns all transactions in the last 180s of consensus time for which the given account was
-     * the effective payer <b>and</b> network property {@code ledger.keepRecordsInState} was {@code
-     * true}.
+     * Returns all transactions within the persistence period of consensus time for which the given
+     * account was the effective payer <b>and</b> network property {@code ledger.keepRecordsInState}
+     * was {@code true}.
      */
     void getAccountRecords(@NonNull CryptoGetAccountRecordsQuery query);
 

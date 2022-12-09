@@ -19,7 +19,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANS
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.node.app.SessionContext;
+import com.google.protobuf.Parser;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,8 +41,8 @@ public class SubmissionManager {
     /**
      * Constructor of {@code SubmissionManager}
      *
-     * @param platform the {@link Platform}
-     * @param recordCache the {@link RecordCache}
+     * @param platform the {@link Platform} to which transactions will be submitted
+     * @param recordCache the {@link RecordCache} that tracks submitted transactions
      * @param speedometers metrics related to submissions
      */
     public SubmissionManager(
@@ -57,27 +57,27 @@ public class SubmissionManager {
     /**
      * Submit a transaction to the {@link Platform}
      *
-     * @param ctx the {@link SessionContext}
      * @param txBody the {@link TransactionBody} that should be submitted to the platform
      * @param byteBuffer the {@link ByteBuffer} of the data that should be submitted
+     * @param parser the {@link Parser} that is used to eventually parse the {@link
+     *     TransactionBody#getUncheckedSubmit()}
      * @throws NullPointerException if one of the arguments is {@code null}
      * @throws PreCheckException if the transaction could not be submitted
      */
     public void submit(
-            @NonNull final SessionContext ctx,
             @NonNull final TransactionBody txBody,
-            @NonNull final ByteBuffer byteBuffer)
+            @NonNull final ByteBuffer byteBuffer,
+            @NonNull final Parser<TransactionBody> parser)
             throws PreCheckException {
-        requireNonNull(ctx);
         requireNonNull(txBody);
         requireNonNull(byteBuffer);
+        requireNonNull(parser);
 
         final byte[] payload;
         if (txBody.hasUncheckedSubmit()) {
             try {
                 payload =
-                        ctx.txParser()
-                                .parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
+                        parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())
                                 .toByteArray();
             } catch (InvalidProtocolBufferException e) {
                 LOG.warn("Transaction bytes from UncheckedSubmit not a valid gRPC transaction!", e);

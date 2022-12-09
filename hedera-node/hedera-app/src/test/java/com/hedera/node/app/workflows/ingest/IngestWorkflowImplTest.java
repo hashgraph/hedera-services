@@ -274,7 +274,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(OK);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager).submit(ctx, TRANSACTION_BODY, requestBuffer);
+        verify(submissionManager).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
         verify(opCounters).countSubmitted(ConsensusCreateTopic);
     }
 
@@ -411,7 +411,7 @@ class IngestWorkflowImplTest {
         assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(PAYER_ACCOUNT_NOT_FOUND);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(ctx, TRANSACTION_BODY, requestBuffer);
+        verify(submissionManager, never()).submit(TRANSACTION_BODY, requestBuffer, txBodyParser);
         verify(opCounters, never()).countSubmitted(ConsensusCreateTopic);
     }
 

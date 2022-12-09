@@ -101,8 +101,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
         // Do some general pre-checks
         if (nodeInfo.isSelfZeroStake()) {
             result = INVALID_NODE_ACCOUNT;
-        }
-        if (currentPlatformStatus.get() != ACTIVE) {
+        } else if (currentPlatformStatus.get() != ACTIVE) {
             result = PLATFORM_NOT_ACTIVE;
         }
 
@@ -142,7 +141,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                 }
 
                 // 7. Submit to platform
-                submissionManager.submit(ctx, txBody, requestBuffer);
+                submissionManager.submit(txBody, requestBuffer, ctx.txBodyParser());
 
                 opCounters.countSubmitted(functionality);
             } catch (InsufficientBalanceException e) {
