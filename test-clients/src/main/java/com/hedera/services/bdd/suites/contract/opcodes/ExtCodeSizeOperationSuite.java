@@ -54,6 +54,11 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
         return List.of(verifiesExistence());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     @SuppressWarnings("java:S5960")
     HapiSpec verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";

@@ -56,6 +56,11 @@ public class BalanceOperationSuite extends HapiSuite {
         return List.of(new HapiSpec[] {verifiesExistenceOfAccountsAndContracts()});
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     HapiSpec verifiesExistenceOfAccountsAndContracts() {
         final var contract = "BalanceChecker";
         final var BALANCE = 10L;

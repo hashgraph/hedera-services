@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPreco
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Frozen;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -122,8 +121,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
     List<HapiSpec> positiveSpecs() {
         return List.of(
                 nestedAssociateWorksAsExpected(),
-                multipleAssociatePrecompileWithSignatureWorksForFungible(),
-                associatePrecompileTokensPerAccountLimitExceeded());
+                multipleAssociatePrecompileWithSignatureWorksForFungible());
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
@@ -339,8 +337,7 @@ public class AssociatePrecompileSuite extends HapiSuite {
                 .given(
                         UtilVerbs.resetToDefault(
                                 "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"),
+                                "entities.limitTokenAssociations"),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)
@@ -496,103 +493,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
-    }
-
-    /* -- Not specifically required in the HTS Precompile Test Plan -- */
-    private HapiSpec associatePrecompileTokensPerAccountLimitExceeded() {
-        final AtomicReference<AccountID> accountID = new AtomicReference<>();
-        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
-        final AtomicReference<TokenID> secondVanillaTokenID = new AtomicReference<>();
-
-        return defaultHapiSpec("AssociatePrecompileTokensPerAccountLimitExceeded")
-                .given(
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"),
-                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
-                        tokenCreate(TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> secondVanillaTokenID.set(asToken(id))),
-                        uploadInitCode(THE_CONTRACT),
-                        contractCreate(THE_CONTRACT),
-                        UtilVerbs.overriding("tokens.maxPerAccount", "1"),
-                        UtilVerbs.overriding("entities.limitTokenAssociations", "true"),
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "true"))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCreate(THE_CONTRACT).bytecode(THE_CONTRACT),
-                                                newKeyNamed(DELEGATE_KEY)
-                                                        .shape(
-                                                                DELEGATE_CONTRACT_KEY_SHAPE
-                                                                        .signedWith(
-                                                                                sigs(
-                                                                                        ON,
-                                                                                        THE_CONTRACT))),
-                                                cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                vanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("vanillaTokenAssociateTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                THE_CONTRACT,
-                                                                "tokenAssociate",
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(accountID.get())),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                secondVanillaTokenID
-                                                                                        .get())))
-                                                        .payingWith(GENESIS)
-                                                        .via("secondVanillaTokenAssociateFailsTxn")
-                                                        .gas(GAS_TO_OFFER)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        childRecordsCheck(
-                                "vanillaTokenAssociateTxn",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
-                        childRecordsCheck(
-                                "secondVanillaTokenAssociateFailsTxn",
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .withStatus(
-                                                                                TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)))),
-                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
-                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount",
-                                "entities.limitTokenAssociations",
-                                "contracts.throttle.throttleByGas"));
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */

@@ -38,7 +38,7 @@ public class SelfDestructSuite extends HapiSuite {
     private final Logger LOGGER = LogManager.getLogger(SelfDestructSuite.class);
 
     public static void main(String... args) {
-        new SelfDestructSuite().runSuiteSync();
+        new SelfDestructSuite().runSuiteAsync();
     }
 
     @Override
@@ -53,6 +53,11 @@ public class SelfDestructSuite extends HapiSuite {
                     HSCS_EVM_008_SelfDestructInConstructorWorks(),
                     HSCS_EVM_008_SelfDestructWhenCalling()
                 });
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return false;
     }
 
     private HapiSpec HSCS_EVM_008_SelfDestructInConstructorWorks() {

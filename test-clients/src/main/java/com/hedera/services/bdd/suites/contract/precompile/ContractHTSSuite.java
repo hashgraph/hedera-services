@@ -44,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
@@ -102,7 +101,7 @@ public class ContractHTSSuite extends HapiSuite {
     private static final String UNIVERSAL_KEY = "multipurpose";
 
     public static void main(String... args) {
-        new ContractHTSSuite().runSuiteSync();
+        new ContractHTSSuite().runSuiteAsync();
     }
 
     @Override
@@ -941,7 +940,6 @@ public class ContractHTSSuite extends HapiSuite {
     private HapiSpec transferNft() {
         return defaultHapiSpec("TransferNft")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         newKeyNamed(UNIVERSAL_KEY),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER),

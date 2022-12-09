@@ -49,6 +49,11 @@ public class ERC721ContractInteractions extends HapiSuite {
         return List.of(callsERC721ContractInteractions());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec callsERC721ContractInteractions() {
         final var CONTRACT = "GameItem";
         final var nftId = BigInteger.ONE;

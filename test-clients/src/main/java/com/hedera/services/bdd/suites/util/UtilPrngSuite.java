@@ -35,7 +35,7 @@ import org.apache.logging.log4j.Logger;
 public class UtilPrngSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UtilPrngSuite.class);
     private static final String PRNG_IS_ENABLED = "utilPrng.isEnabled";
-    private static final String BOB = "bob";
+    public static final String BOB = "bob";
 
     public static void main(String... args) {
         new UtilPrngSuite().runSuiteSync();
@@ -50,21 +50,7 @@ public class UtilPrngSuite extends HapiSuite {
         return List.of(
                 happyPathWorksForRangeAndBitString(),
                 failsInPreCheckForNegativeRange(),
-                usdFeeAsExpected(),
-                featureFlagWorks());
-    }
-
-    private HapiSpec featureFlagWorks() {
-        return defaultHapiSpec("featureFlagWorks")
-                .given(
-                        overridingAllOf(Map.of(PRNG_IS_ENABLED, "false")),
-                        cryptoCreate(BOB).balance(ONE_HUNDRED_HBARS),
-                        hapiPrng().payingWith(BOB).via("baseTxn").blankMemo().logged(),
-                        getTxnRecord("baseTxn").hasNoPseudoRandomData().logged())
-                .when(
-                        hapiPrng(10).payingWith(BOB).via("plusRangeTxn").blankMemo().logged(),
-                        getTxnRecord("plusRangeTxn").hasNoPseudoRandomData().logged())
-                .then();
+                usdFeeAsExpected());
     }
 
     private HapiSpec usdFeeAsExpected() {

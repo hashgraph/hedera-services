@@ -38,6 +38,8 @@ public interface TimedFunctionalityThrottling extends FunctionalityThrottling {
         return shouldThrottleQuery(queryFunction, Instant.now(), query);
     }
 
+    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function, Instant now);
+
     /**
      * Verifies if the frontend throttle has enough capacity to handle the transaction
      *

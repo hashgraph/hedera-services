@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.*;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -60,6 +61,11 @@ public class GlobalPropertiesSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(chainIdWorks(), baseFeeWorks(), coinbaseWorks(), gasLimitWorks());
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     private HapiSpec chainIdWorks() {

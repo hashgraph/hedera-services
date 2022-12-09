@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.opcodes;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -60,7 +61,7 @@ public class CreateOperationSuite extends HapiSuite {
     private static final String CONTRACT = "FactoryContract";
 
     public static void main(String... args) {
-        new CreateOperationSuite().runSuiteSync();
+        new CreateOperationSuite().runSuiteAsync();
     }
 
     @Override
@@ -73,11 +74,16 @@ public class CreateOperationSuite extends HapiSuite {
                     resetOnFactoryFailureAfterDeploymentWorks(),
                     resetOnStackedFactoryFailureWorks(),
                     inheritanceOfNestedCreatedContracts(),
-                    //				factoryAndSelfDestructInConstructorContract(),
-                    //				factoryQuickSelfDestructContract(),
+                    factoryAndSelfDestructInConstructorContract(),
+                    factoryQuickSelfDestructContract(),
                     contractCreateWithNewOpInConstructor(),
                     childContractStorageWorks()
                 });
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     private HapiSpec factoryAndSelfDestructInConstructorContract() {
@@ -164,9 +170,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .getCreatedContractIDsList();
 
                                     Assertions.assertEquals(createdContractIDs.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(0).getContractNum() - 1);
                                 }));
     }
 
@@ -198,12 +201,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .getCreatedContractIDsList();
 
                                     Assertions.assertEquals(createdContractIDs.size(), 2);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(0).getContractNum() - 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContractIDs.get(1).getContractNum() - 2);
                                 }));
     }
 
@@ -247,9 +244,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 
@@ -293,9 +287,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 
@@ -340,9 +331,6 @@ public class CreateOperationSuite extends HapiSuite {
                                                     .getCreatedContractIDsList()
                                                     .isEmpty());
                                     Assertions.assertEquals(createdContracts.size(), 1);
-                                    Assertions.assertEquals(
-                                            parentID.getContractNum(),
-                                            createdContracts.get(0).getContractNum() - 1);
                                 }));
     }
 

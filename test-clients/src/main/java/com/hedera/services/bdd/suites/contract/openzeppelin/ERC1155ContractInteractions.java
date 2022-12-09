@@ -51,6 +51,11 @@ public class ERC1155ContractInteractions extends HapiSuite {
         return List.of(erc1155());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec erc1155() {
         return defaultHapiSpec("ERC-1155")
                 .given(cryptoCreate(ACCOUNT1), uploadInitCode(CONTRACT))

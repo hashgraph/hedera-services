@@ -50,64 +50,33 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * - CONCURRENCY STATUS -
+ *   . Can run concurrent without temporarySStoreRefundTest()
+ */
 public class SStoreSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SStoreSuite.class);
     public static final int MAX_CONTRACT_STORAGE_KB = 1024;
     public static final int MAX_CONTRACT_GAS = 15_000_000;
     private static final String GET_CHILD_VALUE = "getChildValue";
-    AtomicReference<ByteString> legacyProps = new AtomicReference<>();
 
     public static void main(String... args) {
-        new SStoreSuite().runSuiteSync();
+        new SStoreSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 new HapiSpec[] {
-                    setupAppProperties(),
                     multipleSStoreOpsSucceed(),
                     benchmarkSingleSetter(),
                     childStorage(),
-                    temporarySStoreRefundTest(),
-                    cleanupAppProperties()
                 });
-    }
-
-    private HapiSpec setupAppProperties() {
-        return HapiSpec.defaultHapiSpec("Setup")
-                .given(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var lookup = getFileContents(APP_PROPERTIES);
-                                    allRunFor(spec, lookup);
-                                    final var contents =
-                                            lookup.getResponse()
-                                                    .getFileGetContents()
-                                                    .getFileContents()
-                                                    .getContents();
-                                    legacyProps.set(contents);
-                                }),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "contracts.maxGasPerSec",
-                                                "" + MAX_CONTRACT_GAS,
-                                                "contracts.throttle.throttleByGas",
-                                                "false")))
-                .when()
-                .then();
-    }
-
-    private HapiSpec cleanupAppProperties() {
-        return HapiSpec.defaultHapiSpec("Cleanup")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .contents(ignore -> legacyProps.get()))
-                .when()
-                .then();
     }
 
     // This test is failing with CONSENSUS_GAS_EXHAUSTED prior the refactor.
@@ -116,10 +85,6 @@ public class SStoreSuite extends HapiSuite {
         final var GAS_TO_OFFER = 6_000_000L;
         return HapiSpec.defaultHapiSpec("MultipleSStoresShouldWork")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + GAS_TO_OFFER)),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
@@ -168,10 +133,6 @@ public class SStoreSuite extends HapiSuite {
         final var contract = "ChildStorage";
         return defaultHapiSpec("ChildStorage")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of("contracts.maxGasPerSec", "" + MAX_CONTRACT_GAS)),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
@@ -276,49 +237,6 @@ public class SStoreSuite extends HapiSuite {
                                                                 new Object[] {
                                                                     BigInteger.valueOf(1L)
                                                                 }))));
-    }
-
-    HapiSpec temporarySStoreRefundTest() {
-        final var contract = "TemporarySStoreRefund";
-        return defaultHapiSpec("TemporarySStoreRefundTest")
-                .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        contractCall(contract, "holdTemporary", BigInteger.valueOf(10))
-                                .via("tempHoldTx"),
-                        contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
-                                .via("permHoldTx"))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var subop01 =
-                                            getTxnRecord("tempHoldTx")
-                                                    .saveTxnRecordToRegistry("tempHoldTxRec")
-                                                    .logged();
-                                    final var subop02 =
-                                            getTxnRecord("permHoldTx")
-                                                    .saveTxnRecordToRegistry("permHoldTxRec")
-                                                    .logged();
-
-                                    CustomSpecAssert.allRunFor(spec, subop01, subop02);
-
-                                    final var gasUsedForTemporaryHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("tempHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    final var gasUsedForPermanentHoldTx =
-                                            spec.registry()
-                                                    .getTransactionRecord("permHoldTxRec")
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-
-                                    Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
-                                    Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
-                                }),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
     }
 
     @Override

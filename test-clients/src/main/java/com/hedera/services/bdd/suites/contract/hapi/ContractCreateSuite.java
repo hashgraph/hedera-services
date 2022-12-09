@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -47,7 +48,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -56,9 +56,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPro
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -75,9 +72,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
@@ -119,12 +114,10 @@ import org.apache.tuweni.bytes.Bytes32;
 public class ContractCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
-    private static final String defaultMaxGas =
-            HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec");
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
 
     public static void main(String... args) {
-        new ContractCreateSuite().runSuiteSync();
+        new ContractCreateSuite().runSuiteAsync();
     }
 
     @Override
@@ -146,18 +139,18 @@ public class ContractCreateSuite extends HapiSuite {
                     receiverSigReqTransferRecipientMustSignWithFullPubKeyPrefix(),
                     cannotSendToNonExistentAccount(),
                     delegateContractIdRequiredForTransferInDelegateCall(),
-                    maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
-                    minChargeIsTXGasUsedByContractCreate(),
-                    gasLimitOverMaxGasLimitFailsPrecheck(),
                     vanillaSuccess(),
-                    propagatesNestedCreations(),
                     blockTimestampChangesWithinFewSeconds(),
                     contractWithAutoRenewNeedSignatures(),
-                    autoAssociationSlotsAppearsInInfo(),
                     getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                    createContractWithStakingFields()
-                    //						canCallPendingContractSafely(),
+                    createContractWithStakingFields(),
+                    canCallPendingContractSafely(),
                 });
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     HapiSpec createContractWithStakingFields() {
@@ -224,44 +217,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasPrecheck(INVALID_STAKING_ID));
     }
 
-    private HapiSpec autoAssociationSlotsAppearsInInfo() {
-        final int maxAutoAssociations = 100;
-        final int ADVENTUROUS_NETWORK = 1_000;
-        final String CONTRACT = "Multipurpose";
-        final String associationsLimitProperty = "entities.limitTokenAssociations";
-        final String defaultAssociationsLimit =
-                HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
-
-        return defaultHapiSpec("autoAssociationSlotsAppearsInInfo")
-                .given(
-                        overridingThree(
-                                "entities.limitTokenAssociations", "true",
-                                "tokens.maxPerAccount", "" + 1,
-                                "contracts.allowAutoAssociations", "true"))
-                .when()
-                .then(
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .maxAutomaticTokenAssociations(maxAutoAssociations)
-                                .hasPrecheck(
-                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-
-                        // Default is NOT to limit associations for entities
-                        overriding(associationsLimitProperty, defaultAssociationsLimit),
-                        contractCreate(CONTRACT)
-                                .adminKey(ADMIN_KEY)
-                                .maxAutomaticTokenAssociations(maxAutoAssociations),
-                        getContractInfo(CONTRACT)
-                                .has(
-                                        ContractInfoAsserts.contractWith()
-                                                .maxAutoAssociations(maxAutoAssociations))
-                                .logged(),
-                        // Restore default
-                        overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
-    }
-
     private HapiSpec insufficientPayerBalanceUponCreation() {
         return defaultHapiSpec("InsufficientPayerBalanceUponCreation")
                 .given(
@@ -275,18 +230,16 @@ public class ContractCreateSuite extends HapiSuite {
     }
 
     private HapiSpec canCallPendingContractSafely() {
-        final var numSlots = 64;
+        final var numSlots = 64L;
         final var createBurstSize = 500;
-        final int[] targets = {19, 24};
+        final long[] targets = {19, 24};
         final AtomicLong createdFileNum = new AtomicLong();
         final var callTxn = "callTxn";
         final var contract = "FibonacciPlus";
-        final var expiry = Instant.now().getEpochSecond() + 1000;
+        final var expiry = Instant.now().getEpochSecond() + 7776000;
 
         return defaultHapiSpec("CanCallPendingContractSafely")
                 .given(
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
-                        UtilVerbs.overriding("ledger.autoRenewPeriod.minDuration", "10"),
                         uploadSingleInitCode(contract, expiry, GENESIS, createdFileNum::set),
                         inParallel(
                                 IntStream.range(0, createBurstSize)
@@ -314,12 +267,10 @@ public class ContractCreateSuite extends HapiSuite {
                                                                         + createBurstSize),
                                                         getABIFor(FUNCTION, "addNthFib", contract),
                                                         targets,
-                                                        12)
+                                                        12L)
                                                 .payingWith(GENESIS)
                                                 .gas(300_000L)
-                                                .via(callTxn)),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"),
-                        UtilVerbs.resetToDefault("ledger.autoRenewPeriod.minDuration"));
+                                                .via(callTxn)));
     }
 
     HapiSpec cannotSendToNonExistentAccount() {
@@ -415,90 +366,9 @@ public class ContractCreateSuite extends HapiSuite {
     private HapiSpec createEmptyConstructor() {
         return defaultHapiSpec("EmptyConstructor")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10",
-                                        "staking.isEnabled", "true",
-                                        "staking.maxDailyStakeRewardThPerH", "100",
-                                        "staking.rewardRate", "100_000_000_000",
-                                        "staking.startThreshold", "100_000_000")),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).hasKnownStatus(SUCCESS));
-    }
-
-    private HapiSpec propagatesNestedCreations() {
-        final var call = "callTxn";
-        final var creation = "createTxn";
-        final var contract = "NestedCreations";
-
-        final var adminKey = "adminKey";
-        final var entityMemo = "JUST DO IT";
-        final var customAutoRenew = 7776001L;
-        final AtomicReference<String> firstLiteralId = new AtomicReference<>();
-        final AtomicReference<String> secondLiteralId = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedFirstAddress = new AtomicReference<>();
-        final AtomicReference<ByteString> expectedSecondAddress = new AtomicReference<>();
-
-        return defaultHapiSpec("PropagatesNestedCreations")
-                .given(
-                        newKeyNamed(adminKey),
-                        uploadInitCode(contract),
-                        contractCreate(contract)
-                                .stakedNodeId(0)
-                                .adminKey(adminKey)
-                                .entityMemo(entityMemo)
-                                .autoRenewSecs(customAutoRenew)
-                                .via(creation))
-                .when(contractCall(contract, "propagate").gas(4_000_000L).via(call))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var parentNum = spec.registry().getContractId(contract);
-                                    final var firstId =
-                                            ContractID.newBuilder()
-                                                    .setContractNum(parentNum.getContractNum() + 1L)
-                                                    .build();
-                                    firstLiteralId.set(
-                                            HapiPropertySource.asContractString(firstId));
-                                    expectedFirstAddress.set(
-                                            ByteString.copyFrom(asSolidityAddress(firstId)));
-                                    final var secondId =
-                                            ContractID.newBuilder()
-                                                    .setContractNum(parentNum.getContractNum() + 2L)
-                                                    .build();
-                                    secondLiteralId.set(
-                                            HapiPropertySource.asContractString(secondId));
-                                    expectedSecondAddress.set(
-                                            ByteString.copyFrom(asSolidityAddress(secondId)));
-                                }),
-                        sourcing(
-                                () ->
-                                        childRecordsCheck(
-                                                call,
-                                                SUCCESS,
-                                                recordWith()
-                                                        .contractCreateResult(
-                                                                resultWith()
-                                                                        .evmAddress(
-                                                                                expectedFirstAddress
-                                                                                        .get()))
-                                                        .status(SUCCESS),
-                                                recordWith()
-                                                        .contractCreateResult(
-                                                                resultWith()
-                                                                        .evmAddress(
-                                                                                expectedSecondAddress
-                                                                                        .get()))
-                                                        .status(SUCCESS))),
-                        sourcing(
-                                () ->
-                                        getContractInfo(firstLiteralId.get())
-                                                .has(
-                                                        contractWith()
-                                                                .propertiesInheritedFrom(
-                                                                        contract))));
     }
 
     private HapiSpec revertedTryExtCallHasNoSideEffects() {
@@ -861,67 +731,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .hasKnownStatus(INSUFFICIENT_GAS));
     }
 
-    private HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
-                .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "5"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX"))
-                .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord("createTX")
-                                                    .saveTxnRecordToRegistry("createTXRec");
-                                    allRunFor(spec, subop01);
-
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord("createTXRec")
-                                                    .getContractCreateResult()
-                                                    .getGasUsed();
-                                    assertEquals(285_000L, gasUsed);
-                                }),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
-    }
-
-    private HapiSpec minChargeIsTXGasUsedByContractCreate() {
-        return defaultHapiSpec("MinChargeIsTXGasUsedByContractCreate")
-                .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX"))
-                .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord("createTX")
-                                                    .saveTxnRecordToRegistry("createTXRec");
-                                    allRunFor(spec, subop01);
-
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord("createTXRec")
-                                                    .getContractCreateResult()
-                                                    .getGasUsed();
-                                    assertTrue(gasUsed > 0L);
-                                }),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
-    }
-
-    private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
-                .given(
-                        UtilVerbs.overriding("contracts.maxGasPerSec", "100"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when()
-                .then(
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(101L)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        UtilVerbs.resetToDefault("contracts.maxGasPerSec"));
-    }
-
     HapiSpec blockTimestampChangesWithinFewSeconds() {
         final var contract = "EmitBlockTimestamp";
         final var firstBlock = "firstBlock";
@@ -1012,7 +821,6 @@ public class ContractCreateSuite extends HapiSuite {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("VanillaSuccess")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
@@ -1020,8 +828,7 @@ public class ContractCreateSuite extends HapiSuite {
                         getContractInfo(contract)
                                 .has(contractWith().maxAutoAssociations(10))
                                 .logged()
-                                .saveToRegistry("parentInfo"),
-                        upMaxGasTo(1_000_000L))
+                                .saveToRegistry("parentInfo"))
                 .when(
                         contractCall(contract, "create").gas(1_000_000L).via("createChildTxn"),
                         contractCall(contract, "getIndirect")
@@ -1067,8 +874,7 @@ public class ContractCreateSuite extends HapiSuite {
                                                                                                 "parentInfo")))
                                                                 .logs(inOrder()))),
                         contractListWithPropertiesInheritedFrom(
-                                "createChildCallResult", 1, "parentInfo"),
-                        restoreDefaultMaxGas());
+                                "createChildCallResult", 1, "parentInfo"));
     }
 
     HapiSpec contractWithAutoRenewNeedSignatures() {
@@ -1096,20 +902,6 @@ public class ContractCreateSuite extends HapiSuite {
                                 .logged())
                 .when()
                 .then();
-    }
-
-    private HapiSpecOperation upMaxGasTo(final long amount) {
-        return fileUpdate(APP_PROPERTIES)
-                .fee(ONE_HUNDRED_HBARS)
-                .payingWith(EXCHANGE_RATE_CONTROL)
-                .overridingProps(Map.of("contracts.maxGasPerSec", "" + amount));
-    }
-
-    private HapiSpecOperation restoreDefaultMaxGas() {
-        return fileUpdate(APP_PROPERTIES)
-                .fee(ONE_HUNDRED_HBARS)
-                .payingWith(EXCHANGE_RATE_CONTROL)
-                .overridingProps(Map.of("contracts.maxGasPerSec", defaultMaxGas));
     }
 
     @Override

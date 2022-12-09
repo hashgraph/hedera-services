@@ -71,7 +71,6 @@ public class ContractMusicalChairsSuite extends HapiSuite {
         List<HapiSpecOperation> then = new ArrayList<>();
 
         ////// Create contract //////
-        given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
         given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
         given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
         given.add(uploadInitCode(contract));
@@ -134,7 +133,6 @@ public class ContractMusicalChairsSuite extends HapiSuite {
                                                                                                                     .getAccountID(
                                                                                                                             "Player13")))
                                                                                 }))))));
-        then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
 
         return defaultHapiSpec("playGame")
                 .given(given.toArray(HapiSpecOperation[]::new))

@@ -51,6 +51,11 @@ public class CallOperationSuite extends HapiSuite {
                 });
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     HapiSpec verifiesExistence() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";

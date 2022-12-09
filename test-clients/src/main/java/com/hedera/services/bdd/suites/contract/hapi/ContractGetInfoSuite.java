@@ -46,6 +46,11 @@ public class ContractGetInfoSuite extends HapiSuite {
                 getInfoWorks(), invalidContractFromCostAnswer(), invalidContractFromAnswerOnly());
     }
 
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
     private HapiSpec getInfoWorks() {
         final var contract = "Multipurpose";
         final var MEMO = "This is a test.";

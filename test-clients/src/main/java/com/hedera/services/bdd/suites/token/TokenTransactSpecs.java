@@ -735,7 +735,6 @@ public class TokenTransactSpecs extends HapiSuite {
 
         return defaultHapiSpec("autoAssociationWorksForContracts")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         newKeyNamed(SUPPLY_KEY),
                         uploadInitCode(theContract),
                         contractCreate(theContract).maxAutomaticTokenAssociations(2),

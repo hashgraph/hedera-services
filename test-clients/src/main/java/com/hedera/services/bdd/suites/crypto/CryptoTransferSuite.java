@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.revokeTokenKyc;
@@ -912,13 +911,6 @@ public class CryptoTransferSuite extends HapiSuite {
     private HapiSpec allowanceTransfersWorkAsExpected() {
         return defaultHapiSpec("AllowanceTransfersWorkAsExpected")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "hedera.allowances.maxTransactionLimit", "20",
-                                                "hedera.allowances.maxAccountLimit", "100")),
                         newKeyNamed(ADMIN_KEY),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),

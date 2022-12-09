@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -57,8 +56,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -120,8 +117,6 @@ public class Create2OperationSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
     private static final String CREATION = "creation";
-    private static final String CONTRACTS_THROTTLE_THROTTLE_BY_GAS =
-            "contracts.throttle.throttleByGas";
     private static final String FALSE = "false";
     private static final String GET_BYTECODE = "getBytecode";
     private static final String DEPLOY = "deploy";
@@ -233,7 +228,6 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("InlineCreate2CanFailSafely")
                 .given(
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -309,7 +303,6 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("InlineCreateCanFailSafely")
                 .given(
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         contractCreate(contract)
                                 .payingWith(GENESIS)
@@ -424,17 +417,8 @@ public class Create2OperationSuite extends HapiSuite {
 
         return defaultHapiSpec("Create2FactoryWorksAsExpected")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10",
-                                        "staking.isEnabled", "true",
-                                        "staking.maxDailyStakeRewardThPerH", "100",
-                                        "staking.rewardRate", "100_000_000_000",
-                                        "staking.startThreshold", "100_000_000")),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
-                        overriding(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, FALSE),
                         uploadInitCode(contract),
                         cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
                         contractCreate(contract)
@@ -499,22 +483,6 @@ public class Create2OperationSuite extends HapiSuite {
                                                                     hexedAddress);
                                                         })
                                                 .payingWith(GENESIS)),
-                        // First check the feature toggle
-                        overriding("contracts.allowCreate2", FALSE),
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        contract,
-                                                        DEPLOY,
-                                                        testContractInitcode.get(),
-                                                        salt)
-                                                .payingWith(GENESIS)
-                                                .gas(4_000_000L)
-                                                .sending(tcValue)
-                                                .via(CREATE_2_TXN)
-                                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION)),
-                        // Now re-enable CREATE2 and proceed
-                        overriding("contracts.allowCreate2", "true"),
                         // https://github.com/hashgraph/hedera-services/issues/2867 - cannot
                         // re-create same address
                         sourcing(
@@ -692,9 +660,8 @@ public class Create2OperationSuite extends HapiSuite {
         final AtomicReference<String> blockedMirrorAddr = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
-        return onlyDefaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
+        return defaultHapiSpec("CanBlockCreate2ChildWithHollowAccount")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(replAdminKey),
                         uploadInitCode(contract),
@@ -838,8 +805,7 @@ public class Create2OperationSuite extends HapiSuite {
                                                 .payingWith(GENESIS)
                                                 .gas(4_000_000L)
                                                 /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)));
     }
 
     @SuppressWarnings("java:S5669")

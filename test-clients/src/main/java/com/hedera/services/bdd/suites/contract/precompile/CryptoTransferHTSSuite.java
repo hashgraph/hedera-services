@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.accountAmount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -98,7 +97,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String FUNGIBLE_TOKEN = "TokenA";
     private static final String NFT_TOKEN = "Token_NFT";
-    private static final String TOKEN_TREASURY = "treasury";
+
     private static final String RECEIVER = "receiver";
     private static final String RECEIVER2 = "receiver2";
     private static final String SENDER = "sender";
@@ -693,7 +692,6 @@ public class CryptoTransferHTSSuite extends HapiSuite {
 
         return defaultHapiSpec("NonNestedCryptoTransferForFungibleToken")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER)
                                 .balance(2 * ONE_HUNDRED_HBARS)

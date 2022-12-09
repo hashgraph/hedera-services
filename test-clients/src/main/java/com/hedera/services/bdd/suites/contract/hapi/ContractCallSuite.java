@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -65,7 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
@@ -131,17 +132,17 @@ public class ContractCallSuite extends HapiSuite {
 
     private static final String ALICE = "Alice";
 
-    private static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
+    public static final String LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION =
             "ledger.autoRenewPeriod.maxDuration";
-    private static final String DEFAULT_MAX_AUTO_RENEW_PERIOD =
+    public static final String DEFAULT_MAX_AUTO_RENEW_PERIOD =
             HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION);
 
     private static final long DEPOSIT_AMOUNT = 1000;
     private static final long GAS_TO_OFFER = 2_000_000L;
 
     public static final String PAY_RECEIVABLE_CONTRACT = "PayReceivable";
-    private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
-    private static final String TRANSFERRING_CONTRACT = "Transferring";
+    public static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
+    public static final String TRANSFERRING_CONTRACT = "Transferring";
     private static final String SIMPLE_STORAGE_CONTRACT = "SimpleStorage";
     private static final String OWNER = "owner";
     private static final String INSERT = "insert";
@@ -155,17 +156,17 @@ public class ContractCallSuite extends HapiSuite {
     private static final String BOB_TOKEN_BALANCE = "bobTokenBalance";
     private static final String PAYER = "payer";
     private static final String GET_CODE_SIZE = "getCodeSize";
-    private static final String DEPOSIT = "deposit";
+    public static final String DEPOSIT = "deposit";
     private static final String PAY_TXN = "payTxn";
     private static final String BENEFICIARY = "beneficiary";
     private static final String RECEIVER = "receiver";
     private static final String GET_BALANCE = "getBalance";
-    private static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
+    public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     private static final String TRANSFER_TXN = "transferTxn";
-    private static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
-    private static final String TRANSFER_TO_CALLER = "transferToCaller";
+    public static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
+    public static final String TRANSFER_TO_CALLER = "transferToCaller";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
-    private static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
             "contracts.maxRefundPercentOfGasLimit";
     private static final String FAIL_INSUFFICIENT_GAS = "failInsufficientGas";
     private static final String FAIL_INVALID_INITIAL_BALANCE = "failInvalidInitialBalance";
@@ -175,11 +176,11 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVABLE_SIG_REQ_ACCOUNT = "receivableSigReqAccount";
     private static final String RECEIVABLE_SIG_REQ_ACCOUNT_INFO = "receivableSigReqAccountInfo";
     private static final String TRANSFER_TO_ADDRESS = "transferToAddress";
-    private static final String CALL_TX = "callTX";
-    private static final String CALL_TX_REC = "callTXRec";
+    public static final String CALL_TX = "callTX";
+    public static final String CALL_TX_REC = "callTXRec";
     private static final String ACCOUNT = "account";
-    private static final String ACCOUNT_INFO = "accountInfo";
-    private static final String CONTRACT_FROM = "contract_from";
+    public static final String ACCOUNT_INFO = "accountInfo";
+    public static final String CONTRACT_FROM = "contract_from";
     private static final String RECEIVER_INFO = "receiverInfo";
     private static final String SCINFO = "scinfo";
     private static final String NESTED_TRANSFER_CONTRACT = "NestedTransferContract";
@@ -193,18 +194,17 @@ public class ContractCallSuite extends HapiSuite {
     private static final String RECEIVER_3_INFO = "receiver3Info";
 
     public static void main(String... args) {
-        new ContractCallSuite().runSuiteSync();
+        new ContractCallSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                resultSizeAffectsFees(),
                 payableSuccess(),
                 depositSuccess(),
                 depositDeleteSuccess(),
@@ -214,7 +214,6 @@ public class ContractCallSuite extends HapiSuite {
                 smartContractInlineAssemblyCheck(),
                 ocToken(),
                 contractTransferToSigReqAccountWithKeySucceeds(),
-                maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 minChargeIsTXGasUsedByContractCall(),
                 hscsEvm005TransferOfHBarsWorksBetweenContracts(),
                 hscsEvm006ContractHBarTransferToAccount(),
@@ -228,7 +227,6 @@ public class ContractCallSuite extends HapiSuite {
                 smartContractFailFirst(),
                 contractTransferToSigReqAccountWithoutKeyFails(),
                 callingDestructedContractReturnsStatusDeleted(),
-                gasLimitOverMaxGasLimitFailsPrecheck(),
                 imapUserExercise(),
                 deletedContractsCannotBeUpdated(),
                 sendHbarsToAddressesMultipleTimes(),
@@ -236,13 +234,10 @@ public class ContractCallSuite extends HapiSuite {
                 sendHbarsFromDifferentAddressessToAddress(),
                 sendHbarsFromAndToDifferentAddressess(),
                 transferNegativeAmountOfHbars(),
-                transferToCaller(),
-                transferZeroHbarsToCaller(),
                 transferZeroHbars(),
                 sendHbarsToOuterContractFromDifferentAddresses(),
                 sendHbarsToCallerFromDifferentAddresses(),
                 bitcarbonTestStillPasses(),
-                contractCreationStoragePriceMatchesFinalExpiry(),
                 whitelistingAliasedContract(),
                 cannotUseMirrorAddressOfAliasedContractInPrecompileMethod(),
                 exchangeRatePrecompileWorks(),
@@ -409,64 +404,6 @@ public class ContractCallSuite extends HapiSuite {
                                                     .gas(GAS_TO_OFFER));
                                 }))
                 .then();
-    }
-
-    @SuppressWarnings("java:S5960")
-    private HapiSpec contractCreationStoragePriceMatchesFinalExpiry() {
-        final var toyMaker = "ToyMaker";
-        final var createIndirectly = "CreateIndirectly";
-        final var normalPayer = "normalPayer";
-        final var longLivedPayer = "longLivedPayer";
-        final var longLifetime = 100 * 7776000L;
-        final AtomicLong normalPayerGasUsed = new AtomicLong();
-        final AtomicLong longLivedPayerGasUsed = new AtomicLong();
-        final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
-
-        return defaultHapiSpec("ContractCreationStoragePriceMatchesFinalExpiry")
-                .given(
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + longLifetime),
-                        cryptoCreate(normalPayer),
-                        cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
-                        uploadInitCode(toyMaker, createIndirectly),
-                        contractCreate(toyMaker)
-                                .exposingNumTo(
-                                        num ->
-                                                toyMakerMirror.set(
-                                                        asHexedSolidityAddress(0, 0, num))),
-                        sourcing(
-                                () ->
-                                        contractCreate(createIndirectly)
-                                                .autoRenewSecs(longLifetime)
-                                                .payingWith(GENESIS)))
-                .when(
-                        contractCall(toyMaker, "make")
-                                .payingWith(normalPayer)
-                                .exposingGasTo(
-                                        (status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
-                        contractCall(toyMaker, "make")
-                                .payingWith(longLivedPayer)
-                                .exposingGasTo(
-                                        (status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
-                        assertionsHold(
-                                (spec, opLog) ->
-                                        Assertions.assertEquals(
-                                                normalPayerGasUsed.get(),
-                                                longLivedPayerGasUsed.get(),
-                                                "Payer expiry should not affect create storage"
-                                                        + " cost")),
-                        // Verify that we are still charged a "typical" amount despite the payer and
-                        // the original sender contract having extremely long expiry dates
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        createIndirectly,
-                                                        "makeOpaquely",
-                                                        asHeadlongAddress(toyMakerMirror.get()))
-                                                .payingWith(longLivedPayer)))
-                .then(
-                        overriding(
-                                LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
-                                "" + DEFAULT_MAX_AUTO_RENEW_PERIOD));
     }
 
     @SuppressWarnings("java:S5669")
@@ -1445,7 +1382,6 @@ public class ContractCallSuite extends HapiSuite {
     HapiSpec payableSuccess() {
         return defaultHapiSpec("PayableSuccess")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "1000000"),
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD).gas(1_000_000))
                 .when(contractCall(PAY_RECEIVABLE_CONTRACT).via(PAY_TXN).sending(DEPOSIT_AMOUNT))
@@ -1460,14 +1396,12 @@ public class ContractCallSuite extends HapiSuite {
                                                                                 logWith()
                                                                                         .longAtBytes(
                                                                                                 DEPOSIT_AMOUNT,
-                                                                                                24))))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
+                                                                                                24))))));
     }
 
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
         return defaultHapiSpec("CallingDestructedContractReturnsStatusDeleted")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "1000000"),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -1490,8 +1424,7 @@ public class ContractCallSuite extends HapiSuite {
                                         BigInteger.valueOf(15),
                                         BigInteger.valueOf(434))
                                 .gas(350_000L)
-                                .hasKnownStatus(CONTRACT_DELETED),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
+                                .hasKnownStatus(CONTRACT_DELETED));
     }
 
     HapiSpec insufficientGas() {
@@ -1556,97 +1489,6 @@ public class ContractCallSuite extends HapiSuite {
                 .then(
                         contractCallWithFunctionAbi("invalid", function)
                                 .hasKnownStatus(INVALID_CONTRACT_ID));
-    }
-
-    private HapiSpec resultSizeAffectsFees() {
-        final var contract = "VerboseDeposit";
-        final var TRANSFER_AMOUNT = 1_000L;
-        BiConsumer<TransactionRecord, Logger> resultSizeFormatter =
-                (rcd, txnLog) -> {
-                    final var result = rcd.getContractCallResult();
-                    txnLog.info(
-                            "Contract call result FeeBuilder size = {}, fee = {}, result is"
-                                    + " [self-reported size = {}, '{}']",
-                            () -> FeeBuilder.getContractFunctionSize(result),
-                            rcd::getTransactionFee,
-                            result.getContractCallResult()::size,
-                            result::getContractCallResult);
-                    txnLog.info("  Literally :: {}", result);
-                };
-
-        return defaultHapiSpec("ResultSizeAffectsFees")
-                .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage",
-                                        "10",
-                                        "staking.fees.stakingRewardPercentage",
-                                        "10",
-                                        "staking.isEnabled",
-                                        "true",
-                                        "staking.maxDailyStakeRewardThPerH",
-                                        "100",
-                                        "staking.rewardRate",
-                                        "100_000_000_000",
-                                        "staking.startThreshold",
-                                        "100_000_000",
-                                        CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-                                        "100",
-                                        "contracts.throttle.throttleByGas",
-                                        "false")),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        contractCall(
-                                        contract,
-                                        DEPOSIT,
-                                        TRANSFER_AMOUNT,
-                                        0L,
-                                        "So we out-danced thought...")
-                                .via("noLogsCallTxn")
-                                .sending(TRANSFER_AMOUNT),
-                        contractCall(
-                                        contract,
-                                        DEPOSIT,
-                                        TRANSFER_AMOUNT,
-                                        5L,
-                                        "So we out-danced thought...")
-                                .via("loggedCallTxn")
-                                .sending(TRANSFER_AMOUNT))
-                .then(
-                        assertionsHold(
-                                (spec, assertLog) -> {
-                                    HapiGetTxnRecord noLogsLookup =
-                                            QueryVerbs.getTxnRecord("noLogsCallTxn")
-                                                    .loggedWith(resultSizeFormatter);
-                                    HapiGetTxnRecord logsLookup =
-                                            QueryVerbs.getTxnRecord("loggedCallTxn")
-                                                    .loggedWith(resultSizeFormatter);
-                                    allRunFor(spec, noLogsLookup, logsLookup);
-                                    final var unloggedRecord =
-                                            noLogsLookup
-                                                    .getResponse()
-                                                    .getTransactionGetRecord()
-                                                    .getTransactionRecord();
-                                    final var loggedRecord =
-                                            logsLookup
-                                                    .getResponse()
-                                                    .getTransactionGetRecord()
-                                                    .getTransactionRecord();
-                                    assertLog.info(
-                                            "Fee for logged record   = {}",
-                                            loggedRecord::getTransactionFee);
-                                    assertLog.info(
-                                            "Fee for unlogged record = {}",
-                                            unloggedRecord::getTransactionFee);
-                                    Assertions.assertNotEquals(
-                                            unloggedRecord.getTransactionFee(),
-                                            loggedRecord.getTransactionFee(),
-                                            "Result size should change the txn fee!");
-                                }),
-                        UtilVerbs.resetToDefault(
-                                CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT,
-                                "contracts.throttle.throttleByGas"));
     }
 
     HapiSpec smartContractFailFirst() {
@@ -1940,42 +1782,10 @@ public class ContractCallSuite extends HapiSuite {
                                 }));
     }
 
-    private HapiSpec maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return defaultHapiSpec("MaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
-                .given(
-                        UtilVerbs.overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "5"),
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT))
-                .when(
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "set",
-                                        BigInteger.valueOf(5),
-                                        BigInteger.valueOf(42))
-                                .gas(300_000L)
-                                .via(CALL_TX))
-                .then(
-                        withOpContext(
-                                (spec, ignore) -> {
-                                    final var subop01 =
-                                            getTxnRecord(CALL_TX)
-                                                    .saveTxnRecordToRegistry(CALL_TX_REC);
-                                    allRunFor(spec, subop01);
-
-                                    final var gasUsed =
-                                            spec.registry()
-                                                    .getTransactionRecord(CALL_TX_REC)
-                                                    .getContractCallResult()
-                                                    .getGasUsed();
-                                    Assertions.assertEquals(285000, gasUsed);
-                                }),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
-    }
 
     private HapiSpec minChargeIsTXGasUsedByContractCall() {
         return defaultHapiSpec("MinChargeIsTXGasUsedByContractCall")
                 .given(
-                        UtilVerbs.overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT))
                 .when(
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
@@ -2000,30 +1810,10 @@ public class ContractCallSuite extends HapiSuite {
                                                     .getContractCallResult()
                                                     .getGasUsed();
                                     Assertions.assertTrue(gasUsed > 0L);
-                                }),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
-    }
-
-    private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
-                .given(
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT),
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        UtilVerbs.overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
-                .when()
-                .then(
-                        contractCall(
-                                        SIMPLE_UPDATE_CONTRACT,
-                                        "set",
-                                        BigInteger.valueOf(5),
-                                        BigInteger.valueOf(42))
-                                .gas(101L)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_GAS_PER_SEC));
+                                }));
     }
 
     private HapiSpec hscsEvm006ContractHBarTransferToAccount() {
-
         return defaultHapiSpec("HSCS_EVM_006_ContractHBarTransferToAccount")
                 .given(
                         cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
@@ -2696,139 +2486,6 @@ public class ContractCallSuite extends HapiSuite {
                                 () ->
                                         getContractInfo(TRANSFERRING_CONTRACT)
                                                 .has(contractWith().balance(10_000L))));
-    }
-
-    private HapiSpec transferToCaller() {
-        final var transferTxn = TRANSFER_TXN;
-        return defaultHapiSpec(TRANSFER_TO_CALLER)
-                .given(
-                        uploadInitCode(TRANSFERRING_CONTRACT),
-                        contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
-                        getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                .savingSnapshot(ACCOUNT_INFO)
-                                .payingWith(GENESIS))
-                .when(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var transferCall =
-                                            contractCall(
-                                                            TRANSFERRING_CONTRACT,
-                                                            TRANSFER_TO_CALLER,
-                                                            BigInteger.valueOf(10))
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn)
-                                                    .logged();
-
-                                    var saveTxnRecord =
-                                            getTxnRecord(transferTxn)
-                                                    .saveTxnRecordToRegistry("txn")
-                                                    .payingWith(GENESIS);
-                                    var saveAccountInfoAfterCall =
-                                            getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                                    .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
-                                                    .payingWith(GENESIS);
-                                    var saveContractInfo =
-                                            getContractInfo(TRANSFERRING_CONTRACT)
-                                                    .saveToRegistry(CONTRACT_FROM);
-
-                                    allRunFor(
-                                            spec,
-                                            transferCall,
-                                            saveTxnRecord,
-                                            saveAccountInfoAfterCall,
-                                            saveContractInfo);
-                                }))
-                .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var fee =
-                                            spec.registry()
-                                                    .getTransactionRecord("txn")
-                                                    .getTransactionFee();
-                                    final var accountBalanceBeforeCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO)
-                                                    .getBalance();
-                                    final var accountBalanceAfterCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
-                                                    .getBalance();
-
-                                    Assertions.assertEquals(
-                                            accountBalanceAfterCall,
-                                            accountBalanceBeforeCall - fee + 10L);
-                                }),
-                        sourcing(
-                                () ->
-                                        getContractInfo(TRANSFERRING_CONTRACT)
-                                                .has(contractWith().balance(10_000L - 10L))));
-    }
-
-    private HapiSpec transferZeroHbarsToCaller() {
-        final var transferTxn = TRANSFER_TXN;
-        return defaultHapiSpec("transferZeroHbarsToCaller")
-                .given(
-                        uploadInitCode(TRANSFERRING_CONTRACT),
-                        contractCreate(TRANSFERRING_CONTRACT).balance(10_000L),
-                        getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                .savingSnapshot(ACCOUNT_INFO)
-                                .payingWith(GENESIS))
-                .when(
-                        withOpContext(
-                                (spec, log) -> {
-                                    var transferCall =
-                                            contractCall(
-                                                            TRANSFERRING_CONTRACT,
-                                                            TRANSFER_TO_CALLER,
-                                                            BigInteger.ZERO)
-                                                    .payingWith(DEFAULT_CONTRACT_SENDER)
-                                                    .via(transferTxn)
-                                                    .logged();
-
-                                    var saveTxnRecord =
-                                            getTxnRecord(transferTxn)
-                                                    .saveTxnRecordToRegistry("txn_registry")
-                                                    .payingWith(GENESIS);
-                                    var saveAccountInfoAfterCall =
-                                            getAccountInfo(DEFAULT_CONTRACT_SENDER)
-                                                    .savingSnapshot(ACCOUNT_INFO_AFTER_CALL)
-                                                    .payingWith(GENESIS);
-                                    var saveContractInfo =
-                                            getContractInfo(TRANSFERRING_CONTRACT)
-                                                    .saveToRegistry(CONTRACT_FROM);
-
-                                    allRunFor(
-                                            spec,
-                                            transferCall,
-                                            saveTxnRecord,
-                                            saveAccountInfoAfterCall,
-                                            saveContractInfo);
-                                }))
-                .then(
-                        assertionsHold(
-                                (spec, opLog) -> {
-                                    final var fee =
-                                            spec.registry()
-                                                    .getTransactionRecord("txn_registry")
-                                                    .getTransactionFee();
-                                    final var accountBalanceBeforeCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO)
-                                                    .getBalance();
-                                    final var accountBalanceAfterCall =
-                                            spec.registry()
-                                                    .getAccountInfo(ACCOUNT_INFO_AFTER_CALL)
-                                                    .getBalance();
-                                    final var contractBalanceAfterCall =
-                                            spec.registry()
-                                                    .getContractInfo(CONTRACT_FROM)
-                                                    .getBalance();
-
-                                    Assertions.assertEquals(
-                                            accountBalanceAfterCall,
-                                            accountBalanceBeforeCall - fee);
-                                    Assertions.assertEquals(contractBalanceAfterCall, 10_000L);
-                                }));
     }
 
     private HapiSpec transferZeroHbars() {

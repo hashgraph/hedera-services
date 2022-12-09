@@ -392,9 +392,10 @@ public class HapiSpec implements Runnable {
         }
         for (HapiSpecOperation op : ops) {
             Optional<Throwable> error = op.execFor(this);
-            if (error.isPresent() || finishingError.get().isPresent()) {
+            Throwable asyncError = null;
+            if (error.isPresent() || (asyncError = finishingError.get().orElse(null)) != null) {
                 status = FAILED;
-                failure = error.orElse(finishingError.get().get());
+                failure = error.orElse(asyncError);
                 break;
             } else {
                 log.info("'{}' finished initial execution of {}", name, op);

@@ -99,7 +99,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final ByteString VALID_25519_ALIAS = VALID_ED_25519_KEY.toByteString();
     private static final String AUTO_MEMO = "auto-created account";
     public static final String LAZY_MEMO = "lazy-created account";
-    private static final String VALID_ALIAS = "validAlias";
+    public static final String VALID_ALIAS = "validAlias";
     private static final String PAYER = "payer";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String ALIAS = "alias";
@@ -108,25 +108,21 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String PAYER_4 = "payer4";
     private static final String TRANSFER_TXN_2 = "transferTxn2";
     private static final String TRANSFER_ALIAS = "transferAlias";
-    private static final String A_TOKEN = "tokenA";
+    public static final String A_TOKEN = "tokenA";
     private static final String B_TOKEN = "tokenB";
-    private static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
+    public static final String NFT_INFINITE_SUPPLY_TOKEN = "nftA";
     private static final String NFT_FINITE_SUPPLY_TOKEN = "nftB";
     private static final String MULTI_KEY = "multi";
     private static final String PARTY = "party";
     private static final String COUNTERPARTY = "counterparty";
 
     private static final String CIVILIAN = "somebody";
-    private static final String TOKEN_A_CREATE = "tokenACreateTxn";
+    public static final String TOKEN_A_CREATE = "tokenACreateTxn";
 
     private static final String TOKEN_B_CREATE = "tokenBCreateTxn";
-    private static final String NFT_CREATE = "nftCreateTxn";
+    public static final String NFT_CREATE = "nftCreateTxn";
     private static final String SPONSOR = "autoCreateSponsor";
-    private static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
-
-    private static final String FEATURE_FLAG = "tokens.autoCreations.isEnabled";
-    private static final String AUTO_CREATE_FEATURE_FLAG = "autoCreation.enabled";
-    private static final String LAZY_CREATE_FEATURE_FLAG = "lazyCreation.enabled";
+    public static final String LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
 
     private static final long EXPECTED_HBAR_TRANSFER_AUTO_CREATION_FEE = 39418863L;
     private static final long EXPECTED_MULTI_TOKEN_TRANSFER_AUTO_CREATION_FEE = 42427268L;
@@ -136,12 +132,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String FT_XFER = "ftXfer";
 
     public static void main(String... args) {
-        new AutoAccountCreationSuite().runSuiteSync();
+        new AutoAccountCreationSuite().runSuiteAsync();
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     @Override
@@ -167,14 +163,12 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 canGetBalanceAndInfoViaAlias(),
                 noStakePeriodStartIfNotStakingToNode(),
                 hollowAccountCreationWithCryptoTransfer(),
-                hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled(),
                 /* -- HTS auto creates -- */
                 canAutoCreateWithFungibleTokenTransfersToAlias(),
                 multipleTokenTransfersSucceed(),
                 nftTransfersToAlias(),
                 autoCreateWithNftFallBackFeeFails(),
                 repeatedAliasInSameTransferListFails(),
-                tokenTransfersFailWhenFeatureFlagDisabled(),
                 canAutoCreateWithHbarAndTokenTransfers(),
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
@@ -186,7 +180,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final var initialTokenSupply = 1000;
         return defaultHapiSpec("hbarAndTokenTransfers")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(CIVILIAN)
@@ -215,75 +208,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                         getAliasedAccountInfo(VALID_ALIAS)
                                 .has(accountWith().balance(10L))
                                 .hasToken(relationshipWith(A_TOKEN)));
-    }
-
-    private HapiSpec tokenTransfersFailWhenFeatureFlagDisabled() {
-        final var initialTokenSupply = 1000;
-        final var fungibleTokenXfer = "fungibleTokenXfer";
-
-        return defaultHapiSpec("tokenTransfersFailWhenFeatureFlagDisabled")
-                .given(
-                        overriding(FEATURE_FLAG, "false"),
-                        newKeyNamed(VALID_ALIAS),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(A_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(initialTokenSupply)
-                                .treasury(TOKEN_TREASURY)
-                                .via(TOKEN_A_CREATE),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        mintToken(
-                                NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"))),
-                        cryptoCreate(CIVILIAN)
-                                .balance(10 * ONE_HBAR)
-                                .maxAutomaticTokenAssociations(2))
-                .when(
-                        tokenAssociate(CIVILIAN, NFT_INFINITE_SUPPLY_TOKEN),
-                        cryptoTransfer(
-                                moving(100, A_TOKEN).between(TOKEN_TREASURY, CIVILIAN),
-                                movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, CIVILIAN)),
-                        getAccountInfo(CIVILIAN).hasToken(relationshipWith(A_TOKEN).balance(100)),
-                        getAccountInfo(CIVILIAN)
-                                .hasToken(relationshipWith(NFT_INFINITE_SUPPLY_TOKEN)),
-
-                        /* --- transfer token type to alias and expected to fail as the feature flag is off  --- */
-                        cryptoTransfer(moving(10, A_TOKEN).between(CIVILIAN, VALID_ALIAS))
-                                .via(fungibleTokenXfer)
-                                .payingWith(CIVILIAN)
-                                .hasKnownStatus(NOT_SUPPORTED)
-                                .logged(),
-                        cryptoTransfer(
-                                        movingUnique(NFT_INFINITE_SUPPLY_TOKEN, 1, 2)
-                                                .between(CIVILIAN, VALID_ALIAS))
-                                .via(NFT_XFER)
-                                .payingWith(CIVILIAN)
-                                .hasKnownStatus(NOT_SUPPORTED)
-                                .logged(),
-                        getTxnRecord(fungibleTokenXfer).andAllChildRecords().hasChildRecordCount(0),
-                        getTxnRecord(NFT_XFER)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(0),
-                        /* --- hbar auto creations should still pass */
-                        cryptoTransfer(tinyBarsFromToWithAlias(CIVILIAN, VALID_ALIAS, ONE_HBAR))
-                                .payingWith(CIVILIAN)
-                                .signedBy(CIVILIAN, VALID_ALIAS)
-                                .via(TRANSFER_TXN),
-                        getTxnRecord(TRANSFER_TXN)
-                                .andAllChildRecords()
-                                .hasNonStakingChildRecordCount(1))
-                .then(overriding(FEATURE_FLAG, "true"));
     }
 
     private HapiSpec repeatedAliasInSameTransferListFails() {
@@ -465,7 +389,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(VALID_ALIAS),
@@ -549,7 +472,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("multipleTokenTransfersSucceed")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -650,7 +572,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("PayerBalanceIsReflectsAllChangesBeforeFeeCharging")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(A_TOKEN)
@@ -719,7 +640,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("canAutoCreateWithFungibleTokenTransfersToAlias")
                 .given(
-                        overriding(FEATURE_FLAG, "true"),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(A_TOKEN)
@@ -820,7 +740,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private HapiSpec hollowAccountCreationWithCryptoTransfer() {
         return defaultHapiSpec("HollowAccountCreationWithCryptoTransfer")
                 .given(
-                        UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when()
@@ -857,45 +776,8 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                     .memo(LAZY_MEMO));
 
                                     allRunFor(spec, op, op2);
-                                }),
-                        resetToDefault(LAZY_CREATE_FEATURE_FLAG));
+                                }));
     }
-
-    private HapiSpec
-            hollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled() {
-        return defaultHapiSpec(
-                        "HollowAccountCreationFailWhenAutoCreateFlagEnabledAndLazyFeatureFlagDisabled")
-                .given(
-                        overriding(AUTO_CREATE_FEATURE_FLAG, "true"),
-                        overriding(LAZY_CREATE_FEATURE_FLAG, "false"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR))
-                .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry()
-                                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                                    .getECDSASecp256K1()
-                                                    .toByteArray();
-                                    final var evmAddress =
-                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                    final var op =
-                                            cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    ONE_HUNDRED_HBARS))
-                                                    .hasKnownStatus(NOT_SUPPORTED)
-                                                    .via(TRANSFER_TXN);
-
-                                    allRunFor(spec, op);
-                                }),
-                        resetToDefault(LAZY_CREATE_FEATURE_FLAG),
-                        resetToDefault(AUTO_CREATE_FEATURE_FLAG));
-    }
-
     private HapiSpec canGetBalanceAndInfoViaAlias() {
         final var ed25519SourceKey = "ed25519Alias";
         final var secp256k1SourceKey = "secp256k1Alias";
@@ -1311,10 +1193,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final long transferFee = 185030L;
         return defaultHapiSpec("AutoAccountCreationsHappyPath")
                 .given(
-                        overridingAllOf(
-                                Map.of(
-                                        "staking.fees.nodeRewardPercentage", "10",
-                                        "staking.fees.stakingRewardPercentage", "10")),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -1480,7 +1358,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("TransferHbarsToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         withOpContext(
@@ -1514,8 +1391,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(HBAR_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
     private HapiSpec transferFungibleToEVMAddressAlias() {
@@ -1528,7 +1404,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("TransferFungibleToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(fungibleToken).treasury(PARTY).initialSupply(1_000_000),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1565,8 +1440,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(FT_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 
     private HapiSpec transferNonFungibleToEVMAddressAlias() {
@@ -1579,7 +1453,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("TransferNonFungibleToEVMAddressAlias")
                 .given(
-                        overriding(LAZY_CREATION_ENABLED, TRUE),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
@@ -1625,7 +1498,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 .then(
                         getTxnRecord(NFT_XFER)
                                 .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        resetToDefault(LAZY_CREATION_ENABLED));
+                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)));
     }
 }
