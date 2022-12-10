@@ -27,8 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionMetadataTest {
-    @Mock AccountKeyLookup lookup;
-    @Mock TransactionMetadata metadata;
+    @Mock private AccountKeyLookup lookup;
+    @Mock private TransactionMetadata metadata;
 
     @Test
     void testCopy() {
