@@ -158,7 +158,8 @@ class PreHandleDispatcherImplTest {
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testDispatch(
-            final TransactionBody txBody, final Consumer<PreHandleDispatcherImplTest> verification) {
+            final TransactionBody txBody,
+            final Consumer<PreHandleDispatcherImplTest> verification) {
         // when
         dispatcher.dispatch(txBody, txBody.getTransactionID().getAccountID());
 
@@ -175,21 +176,27 @@ class PreHandleDispatcherImplTest {
                                         ConsensusCreateTopicTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.consensusHandler).preHandleCreateTopic(any(), any())),
+                                test ->
+                                        verify(test.consensusHandler)
+                                                .preHandleCreateTopic(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusUpdateTopic(
                                         ConsensusUpdateTopicTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.consensusHandler).preHandleUpdateTopic(any(), any())),
+                                test ->
+                                        verify(test.consensusHandler)
+                                                .preHandleUpdateTopic(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusDeleteTopic(
                                         ConsensusDeleteTopicTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.consensusHandler).preHandleDeleteTopic(any(), any())),
+                                test ->
+                                        verify(test.consensusHandler)
+                                                .preHandleDeleteTopic(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusSubmitMessage(
@@ -224,7 +231,9 @@ class PreHandleDispatcherImplTest {
                                 .mergeContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.contractHandler).preHandleContractCall(any(), any())),
+                                test ->
+                                        verify(test.contractHandler)
+                                                .preHandleContractCall(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeContractDeleteInstance(
@@ -240,7 +249,9 @@ class PreHandleDispatcherImplTest {
                                         EthereumTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.contractHandler).preHandleCallEthereum(any(), any())),
+                                test ->
+                                        verify(test.contractHandler)
+                                                .preHandleCallEthereum(any(), any())),
 
                 // crypto
                 Arguments.of(
@@ -249,27 +260,35 @@ class PreHandleDispatcherImplTest {
                                         CryptoCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoCreate(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleCryptoCreate(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoUpdateAccount(
                                         CryptoUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleUpdateAccount(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleUpdateAccount(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoTransfer(
                                         CryptoTransferTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoTransfer(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleCryptoTransfer(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoDelete(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleCryptoDelete(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoApproveAllowance(
@@ -294,14 +313,18 @@ class PreHandleDispatcherImplTest {
                                         CryptoAddLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleAddLiveHash(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleAddLiveHash(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoDeleteLiveHash(
                                         CryptoDeleteLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.cryptoHandler).preHandleDeleteLiveHash(any(), any())),
+                                test ->
+                                        verify(test.cryptoHandler)
+                                                .preHandleDeleteLiveHash(any(), any())),
 
                 // file
                 Arguments.of(
@@ -327,7 +350,9 @@ class PreHandleDispatcherImplTest {
                                 .mergeFileAppend(FileAppendTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.fileHandler).preHandleAppendContent(any(), any())),
+                                test ->
+                                        verify(test.fileHandler)
+                                                .preHandleAppendContent(any(), any())),
 
                 // freeze
                 Arguments.of(
@@ -362,7 +387,9 @@ class PreHandleDispatcherImplTest {
                                 .mergeScheduleSign(ScheduleSignTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.scheduleHandler).preHandleSignSchedule(any(), any(), any())),
+                                test ->
+                                        verify(test.scheduleHandler)
+                                                .preHandleSignSchedule(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeScheduleDelete(
@@ -379,13 +406,17 @@ class PreHandleDispatcherImplTest {
                                 .mergeTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleCreateToken(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleCreateToken(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleUpdateToken(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleUpdateToken(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenMint(TokenMintTransactionBody.getDefaultInstance())
@@ -403,14 +434,18 @@ class PreHandleDispatcherImplTest {
                                 .mergeTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleDeleteToken(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleDeleteToken(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenWipe(
                                         TokenWipeAccountTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleWipeTokenAccount(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleWipeTokenAccount(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenFreeze(
@@ -453,14 +488,18 @@ class PreHandleDispatcherImplTest {
                                         TokenAssociateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleAssociateTokens(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleAssociateTokens(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenDissociate(
                                         TokenDissociateTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleDissociateTokens(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleDissociateTokens(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenFeeScheduleUpdate(
@@ -475,13 +514,17 @@ class PreHandleDispatcherImplTest {
                                 .mergeTokenPause(TokenPauseTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandlePauseToken(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandlePauseToken(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenUnpause(TokenUnpauseTransactionBody.getDefaultInstance())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.tokenHandler).preHandleUnpauseToken(any(), any())),
+                                test ->
+                                        verify(test.tokenHandler)
+                                                .preHandleUnpauseToken(any(), any())),
 
                 // util
                 Arguments.of(
@@ -500,7 +543,9 @@ class PreHandleDispatcherImplTest {
                                                 .build())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.contractHandler).preHandleSystemDelete(any(), any())),
+                                test ->
+                                        verify(test.contractHandler)
+                                                .preHandleSystemDelete(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeSystemDelete(
@@ -509,7 +554,9 @@ class PreHandleDispatcherImplTest {
                                                 .build())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.fileHandler).preHandleSystemDelete(any(), any())),
+                                test ->
+                                        verify(test.fileHandler)
+                                                .preHandleSystemDelete(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeSystemUndelete(
@@ -529,6 +576,8 @@ class PreHandleDispatcherImplTest {
                                                 .build())
                                 .build(),
                         (Consumer<PreHandleDispatcherImplTest>)
-                                test -> verify(test.fileHandler).preHandleSystemUndelete(any(), any())));
+                                test ->
+                                        verify(test.fileHandler)
+                                                .preHandleSystemUndelete(any(), any())));
     }
 }

@@ -217,7 +217,9 @@ class PreHandleWorkflowImplTest {
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any())).thenReturn(onsetResult);
 
-        when(preTransactionHandler.preHandleCreateTopic(txBody, txBody.getTransactionID().getAccountID())).thenReturn(metadata);
+        when(preTransactionHandler.preHandleCreateTopic(
+                        txBody, txBody.getTransactionID().getAccountID()))
+                .thenReturn(metadata);
         when(consensusService.createPreTransactionHandler(any(), eq(context)))
                 .thenReturn(preTransactionHandler);
 
