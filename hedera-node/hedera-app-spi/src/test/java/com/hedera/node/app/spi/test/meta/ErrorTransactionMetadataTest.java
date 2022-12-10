@@ -46,7 +46,7 @@ class ErrorTransactionMetadataTest {
     }
 
     @Test
-    public void testRequiredKeys() {
+    void testRequiredKeys() {
         assertEquals(0, subject.requiredKeys().size());
     }
 
