@@ -98,7 +98,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer());
+        return List.of(HSCSPREC020RollbackBurnThatFailsAfterAPrecompileTransfer());
     }
 
     List<HapiSpec> positiveSpecs() {
@@ -407,7 +407,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 50));
     }
 
-    private HapiSpec HSCS_PREC_020_rollback_burn_that_fails_after_a_precompile_transfer() {
+    private HapiSpec HSCSPREC020RollbackBurnThatFailsAfterAPrecompileTransfer() {
         final var bob = "bob";
         final var feeCollector = "feeCollector";
         final var tokenWithHbarFee = "tokenWithHbarFee";

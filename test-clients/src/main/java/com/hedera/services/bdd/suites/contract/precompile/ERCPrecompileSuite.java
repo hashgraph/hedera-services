@@ -185,10 +185,10 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(ERC_20(), ERC_721());
+        return allOf(ERC20(), ERC721());
     }
 
-    List<HapiSpec> ERC_20() {
+    List<HapiSpec> ERC20() {
         return List.of(
                 getErc20TokenName(),
                 getErc20TokenSymbol(),
@@ -212,7 +212,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc20TokenNameExceedingLimits());
     }
 
-    List<HapiSpec> ERC_721() {
+    List<HapiSpec> ERC721() {
         return List.of(
                 getErc721TokenName(),
                 getErc721Symbol(),

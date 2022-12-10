@@ -423,9 +423,13 @@ public class UtilVerbs {
 
     public static HapiSpecOperation remembering(
             final Map<String, String> props, final String... ofInterest) {
+        return remembering(props, Arrays.asList(ofInterest));
+    }
+
+    public static HapiSpecOperation remembering(
+            final Map<String, String> props, final List<String> ofInterest) {
         final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
-        final Predicate<String> filter = new HashSet<>(Arrays.asList(ofInterest))::contains;
-        System.out.println(new HashSet<>(Arrays.asList(ofInterest)));
+        final Predicate<String> filter = new HashSet<>(ofInterest)::contains;
         return blockingOrder(
                 getFileContents(APP_PROPERTIES)
                         .payingWith(GENESIS)
@@ -434,13 +438,8 @@ public class UtilVerbs {
                         .addingFilteredConfigListTo(props, filter),
                 sourcing(
                         () -> {
-                            Arrays.asList(ofInterest)
-                                    .forEach(
-                                            prop -> {
-                                                System.out.println("Prop: " + prop);
-                                                props.computeIfAbsent(prop, defaultNodeProps::get);
-                                                System.out.println("NOW: " + props);
-                                            });
+                            ofInterest.forEach(
+                                    prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
                             return logIt("Remembered props: " + props);
                         }));
     }

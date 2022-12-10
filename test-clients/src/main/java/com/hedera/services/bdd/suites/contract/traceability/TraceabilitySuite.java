@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractBytecode;
@@ -42,8 +43,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -139,7 +138,7 @@ public class TraceabilitySuite extends HapiSuite {
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
     private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String RUNTIME_CODE = "runtimeBytecode";
-    private static final String SIDECARS_PROP = "contracts.sidecars";
+    public static final String SIDECARS_PROP = "contracts.sidecars";
     private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
 
     public static void main(final String... args) {
@@ -164,47 +163,33 @@ public class TraceabilitySuite extends HapiSuite {
                                                             "Watch service couldn't be"
                                                                     + " initialized."))));
         }
-        return Stream.concat(
-                        Stream.of(setNeededProps()),
-                        Stream.of(
-                                traceabilityE2EScenario1(),
-                                traceabilityE2EScenario2(),
-                                traceabilityE2EScenario3(),
-                                traceabilityE2EScenario4(),
-                                traceabilityE2EScenario5(),
-                                traceabilityE2EScenario6(),
-                                traceabilityE2EScenario7(),
-                                traceabilityE2EScenario8(),
-                                traceabilityE2EScenario9(),
-                                traceabilityE2EScenario10(),
-                                traceabilityE2EScenario11(),
-                                traceabilityE2EScenario12(),
-                                traceabilityE2EScenario13(),
-                                traceabilityE2EScenario14(),
-                                traceabilityE2EScenario15(),
-                                traceabilityE2EScenario16(),
-                                traceabilityE2EScenario17(),
-                                traceabilityE2EScenario18(),
-                                traceabilityE2EScenario19(),
-                                traceabilityE2EScenario20(),
-                                traceabilityE2EScenario21(),
-                                vanillaBytecodeSidecar(),
-                                vanillaBytecodeSidecar2(),
-                                actionsShowPropagatedRevert(),
-                                assertSidecars()))
+        return Stream.of(
+                        traceabilityE2EScenario1(),
+                        traceabilityE2EScenario2(),
+                        traceabilityE2EScenario3(),
+                        traceabilityE2EScenario4(),
+                        traceabilityE2EScenario5(),
+                        traceabilityE2EScenario6(),
+                        traceabilityE2EScenario7(),
+                        traceabilityE2EScenario8(),
+                        traceabilityE2EScenario9(),
+                        traceabilityE2EScenario10(),
+                        traceabilityE2EScenario11(),
+                        traceabilityE2EScenario12(),
+                        traceabilityE2EScenario13(),
+                        traceabilityE2EScenario14(),
+                        traceabilityE2EScenario15(),
+                        traceabilityE2EScenario16(),
+                        traceabilityE2EScenario17(),
+                        traceabilityE2EScenario18(),
+                        traceabilityE2EScenario19(),
+                        traceabilityE2EScenario20(),
+                        traceabilityE2EScenario21(),
+                        vanillaBytecodeSidecar(),
+                        vanillaBytecodeSidecar2(),
+                        actionsShowPropagatedRevert(),
+                        assertSidecars())
                 .toList();
-    }
-
-    HapiSpec setNeededProps() {
-        return defaultHapiSpec("setNeededProps")
-                .given()
-                .when()
-                .then(
-                        overridingTwo(
-                                SIDECARS_PROP,
-                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE",
-                                COMPRESSION_PROP,
-                                "true"));
     }
 
     private HapiSpec traceabilityE2EScenario1() {
@@ -6182,7 +6167,6 @@ public class TraceabilitySuite extends HapiSuite {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -6232,14 +6216,12 @@ public class TraceabilitySuite extends HapiSuite {
                                                                     .build())));
                                 }),
                         expectContractBytecodeWithMinimalFieldsSidecarFor(
-                                FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
     }
 
     private HapiSpec traceabilityE2EScenario14() {
         return defaultHapiSpec("traceabilityE2EScenario14")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -6290,8 +6272,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                     .build())),
                                             expectContractBytecodeWithMinimalFieldsSidecarFor(
                                                     TRACEABILITY_TXN, PAY_RECEIVABLE_CONTRACT));
-                                }),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                }));
     }
 
     HapiSpec traceabilityE2EScenario15() {
@@ -6384,7 +6365,6 @@ public class TraceabilitySuite extends HapiSuite {
                                                             expectedCreate2Address.set(
                                                                     hexedAddress);
                                                         })),
-                        overriding("contracts.allowCreate2", "true"),
                         sourcing(
                                 () ->
                                         contractCall(
@@ -6818,7 +6798,6 @@ public class TraceabilitySuite extends HapiSuite {
         final var transferTxn = "payTxn";
         return defaultHapiSpec("traceabilityE2EScenario19")
                 .given(
-                        overriding(CHAIN_ID_PROPERTY, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RECEIVER).balance(0L),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
@@ -6868,8 +6847,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                             RECEIVER))
                                                                     .setOutput(EMPTY)
                                                                     .build())));
-                                }),
-                        resetToDefault(CHAIN_ID_PROPERTY));
+                                }));
     }
 
     private HapiSpec traceabilityE2EScenario20() {
@@ -7107,7 +7085,8 @@ public class TraceabilitySuite extends HapiSuite {
         final var serialNumberId =
                 new BigInteger(
                         "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
-        return defaultHapiSpec("ActionsShowPropagatedRevert")
+        return propertyPreservingHapiSpec("ActionsShowPropagatedRevert")
+                .preserving(SIDECARS_PROP)
                 .given(
                         overriding(SIDECARS_PROP, "CONTRACT_ACTION"),
                         uploadInitCode(APPROVE_BY_DELEGATE),
@@ -7330,10 +7309,7 @@ public class TraceabilitySuite extends HapiSuite {
                                                                                             .getBytes()))
                                                                     .setCallDepth(2)
                                                                     .build())));
-                                }),
-                        overriding(
-                                SIDECARS_PROP,
-                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
+                                }));
     }
 
     @SuppressWarnings("java:S5960")
@@ -7341,8 +7317,7 @@ public class TraceabilitySuite extends HapiSuite {
         return defaultHapiSpec("assertSidecars")
                 .given(
                         // send a dummy transaction to trigger externalization of last sidecars
-                        cryptoCreate("externalizeFinalSidecars").delayBy(2000),
-                        resetToDefault(COMPRESSION_PROP, SIDECARS_PROP))
+                        cryptoCreate("externalizeFinalSidecars").delayBy(2000))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {

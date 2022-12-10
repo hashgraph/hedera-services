@@ -77,7 +77,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         return List.of(
                 prngPrecompileHappyPathWorks(),
                 multipleCallsHaveIndependentResults(),
-                prngPrecompileDisabledInV_0_30());
+                prngPrecompileDisabledInV030());
     }
 
     private HapiSpec multipleCallsHaveIndependentResults() {
@@ -89,7 +89,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
                 .given(
                         uploadInitCode(prng),
                         contractCreate(prng),
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
                 .when(
                         withOpContext(
@@ -139,7 +139,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
@@ -168,12 +168,12 @@ public class PrngSeedOperationSuite extends HapiSuite {
                                 .logged());
     }
 
-    private HapiSpec prngPrecompileDisabledInV_0_30() {
+    private HapiSpec prngPrecompileDisabledInV030() {
         final var prng = THE_PRNG_CONTRACT;
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),

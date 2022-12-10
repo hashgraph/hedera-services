@@ -87,7 +87,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     private static final String TOKEN_WITH_CUSTOM_FEE = "tokenWithCustomFee";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String SENDER_TXN = "senderTxn";
-    private static final String SCHEDULING_LONG_TERM_ENABLED = "scheduling.longTermEnabled";
     public static final String SCHEDULED_TXN = "scheduledTxn";
     public static final String NFT_TOKEN_MINT_TXN = "nftTokenMint";
     public static final String FUNGIBLE_TOKEN_MINT_TXN = "tokenMint";

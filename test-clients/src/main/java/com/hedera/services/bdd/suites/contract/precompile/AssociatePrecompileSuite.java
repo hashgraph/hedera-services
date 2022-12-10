@@ -57,7 +57,6 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -332,8 +331,6 @@ public class AssociatePrecompileSuite extends HapiSuite {
 
         return defaultHapiSpec("multipleAssociatePrecompileWithSignatureWorksForFungible")
                 .given(
-                        UtilVerbs.resetToDefault(
-                                "tokens.maxPerAccount", "entities.limitTokenAssociations"),
                         newKeyNamed(FREEZE_KEY),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT)

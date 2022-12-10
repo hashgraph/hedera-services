@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -58,7 +59,8 @@ public class LogsSuite extends HapiSuite {
     }
 
     private HapiSpec log0Works() {
-        return defaultHapiSpec("log0Works")
+        return propertyPreservingHapiSpec("log0Works")
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT)
                 .given(
                         overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
@@ -77,8 +79,7 @@ public class LogsSuite extends HapiSuite {
                                                                                         .noTopics()
                                                                                         .longValue(
                                                                                                 15)))
-                                                                .gasUsed(22_285))),
-                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
+                                                                .gasUsed(22_285))));
     }
 
     private HapiSpec log1Works() {

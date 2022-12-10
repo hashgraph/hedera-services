@@ -101,8 +101,10 @@ import org.junit.jupiter.api.Assertions;
 
 public class LeakyContractTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
-
-    private static final String FALSE = "false";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 =
+            "contracts.maxRefundPercentOfGasLimit";
+    public static final String CREATE_TX = "createTX";
+    public static final String CREATE_TX_REC = "createTXRec";
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -113,6 +115,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return List.of(
                 transferToCaller(),
                 resultSizeAffectsFees(),
+                propagatesNestedCreations(),
                 temporarySStoreRefundTest(),
                 canCallPendingContractSafely(),
                 transferZeroHbarsToCaller(),
@@ -132,7 +135,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return defaultHapiSpec(
                         "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
                 .given(
-                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
                 .when(
@@ -513,49 +516,49 @@ public class LeakyContractTestsSuite extends HapiSuite {
     private HapiSpec createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
         return defaultHapiSpec("CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller")
                 .given(
-                        overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "5"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX"))
+                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
                 .then(
                         withOpContext(
                                 (spec, ignore) -> {
                                     final var subop01 =
-                                            getTxnRecord("createTX")
-                                                    .saveTxnRecordToRegistry("createTXRec");
+                                            getTxnRecord(CREATE_TX)
+                                                    .saveTxnRecordToRegistry(CREATE_TX_REC);
                                     allRunFor(spec, subop01);
 
                                     final var gasUsed =
                                             spec.registry()
-                                                    .getTransactionRecord("createTXRec")
+                                                    .getTransactionRecord(CREATE_TX_REC)
                                                     .getContractCreateResult()
                                                     .getGasUsed();
                                     assertEquals(285_000L, gasUsed);
                                 }),
-                        resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
     private HapiSpec createMinChargeIsTXGasUsedByContractCreate() {
         return defaultHapiSpec("CreateMinChargeIsTXGasUsedByContractCreate")
                 .given(
-                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via("createTX"))
+                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
                 .then(
                         withOpContext(
                                 (spec, ignore) -> {
                                     final var subop01 =
-                                            getTxnRecord("createTX")
-                                                    .saveTxnRecordToRegistry("createTXRec");
+                                            getTxnRecord(CREATE_TX)
+                                                    .saveTxnRecordToRegistry(CREATE_TX_REC);
                                     allRunFor(spec, subop01);
 
                                     final var gasUsed =
                                             spec.registry()
-                                                    .getTransactionRecord("createTXRec")
+                                                    .getTransactionRecord(CREATE_TX_REC)
                                                     .getContractCreateResult()
                                                     .getGasUsed();
                                     assertTrue(gasUsed > 0L);
                                 }),
-                        resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
     private HapiSpec propagatesNestedCreations() {
@@ -635,7 +638,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var contract = "TemporarySStoreRefund";
         return defaultHapiSpec("TemporarySStoreRefundTest")
                 .given(
-                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
                         uploadInitCode(contract),
                         contractCreate(contract))
                 .when(
@@ -671,7 +674,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                     Assertions.assertTrue(gasUsedForTemporaryHoldTx < 23535L);
                                     Assertions.assertTrue(gasUsedForPermanentHoldTx > 20000L);
                                 }),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
     private HapiSpec deletedContractsCannotBeUpdated() {

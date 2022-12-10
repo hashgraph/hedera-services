@@ -143,24 +143,22 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    nonNestedCryptoTransferForFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                    nonNestedCryptoTransferForNonFungibleToken(),
-                    nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                    nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                    nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                    repeatedTokenIdsAreAutomaticallyConsolidated(),
-                    activeContractInFrameIsVerifiedWithoutNeedForSignature(),
-                    hapiTransferFromForFungibleToken(),
-                    hapiTransferFromForNFT(),
-                    cryptoTransferNFTsWithCustomFeesMixedScenario(),
-                    hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
-                    hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
-                    hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                    hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                    hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender()
-                });
+                nonNestedCryptoTransferForFungibleToken(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
+                nonNestedCryptoTransferForNonFungibleToken(),
+                nonNestedCryptoTransferForMultipleNonFungibleTokens(),
+                nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
+                nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
+                repeatedTokenIdsAreAutomaticallyConsolidated(),
+                activeContractInFrameIsVerifiedWithoutNeedForSignature(),
+                hapiTransferFromForFungibleToken(),
+                hapiTransferFromForNFT(),
+                cryptoTransferNFTsWithCustomFeesMixedScenario(),
+                hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForNFTWithCustomFeesWithApproveForAll(),
+                hapiTransferFromForNFTWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
+                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender());
     }
 
     private HapiSpec hapiTransferFromForFungibleToken() {

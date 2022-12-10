@@ -36,8 +36,9 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
@@ -96,9 +97,13 @@ public class FeatureFlagSuite extends HapiSuite {
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allEnabled()))
                 .when()
                 .then(
-                        overridingTwo(
-                                "contracts.throttle.throttleByGas", FALSE,
-                                "contracts.enforceCreationThrottle", FALSE));
+                        overridingThree(
+                                "contracts.throttle.throttleByGas",
+                                FALSE,
+                                "contracts.enforceCreationThrottle",
+                                FALSE,
+                                SIDECARS_PROP,
+                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {
@@ -235,6 +240,7 @@ public class FeatureFlagSuite extends HapiSuite {
             "contracts.throttle.throttleByGas",
             // Not being tested
             "hedera.allowances.isEnabled",
+            "hedera.recordStream.compressFilesOnCreation",
             // Behavior doesn't make sense, but is tested
             "utilPrng.isEnabled",
             "tokens.autoCreations.isEnabled",

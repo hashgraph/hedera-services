@@ -57,10 +57,10 @@ public class MixedSmartContractOpsLoadTest extends LoadTest {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(RunMixedSmartContractOps());
+        return List.of(runMixedSmartContractOps());
     }
 
-    protected HapiSpec RunMixedSmartContractOps() {
+    protected HapiSpec runMixedSmartContractOps() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger createdSoFar = new AtomicInteger(0);
         final String SOME_BYTE_CODE = "contractByteCode";

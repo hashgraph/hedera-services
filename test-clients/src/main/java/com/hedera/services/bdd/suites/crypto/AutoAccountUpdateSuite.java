@@ -45,7 +45,7 @@ import org.apache.logging.log4j.Logger;
 
 public class AutoAccountUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AutoAccountUpdateSuite.class);
-    public static final long initialBalance = 1000L;
+    public static final long INITIAL_BALANCE = 1000L;
 
     private static final String PAYER = "payer";
     private static final String ALIAS = "testAlias";
@@ -73,7 +73,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
 
     private HapiSpec modifySigRequiredAfterAutoAccountCreation() {
         return defaultHapiSpec("modifySigRequiredAfterAutoAccountCreation")
-                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                .given(newKeyNamed(ALIAS), cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
                                 .via(TRANSFER_TXN),
@@ -134,7 +134,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                                 .overridingProps(
                                         propsForAccountAutoRenewOnWith(
                                                 briefAutoRenew, 20 * briefAutoRenew)),
-                        cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         /* auto account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))
@@ -184,7 +184,7 @@ public class AutoAccountUpdateSuite extends HapiSuite {
                 .given(
                         newKeyNamed(ALIAS),
                         newKeyNamed(complexKey).shape(ENOUGH_UNIQUE_SIGS),
-                        cryptoCreate(PAYER).balance(initialBalance * ONE_HBAR))
+                        cryptoCreate(PAYER).balance(INITIAL_BALANCE * ONE_HBAR))
                 .when(
                         /* auto account is created */
                         cryptoTransfer(tinyBarsFromToWithAlias(PAYER, ALIAS, ONE_HUNDRED_HBARS))

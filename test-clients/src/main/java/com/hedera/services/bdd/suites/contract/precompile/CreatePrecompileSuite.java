@@ -17,6 +17,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -46,7 +47,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -310,7 +310,8 @@ public class CreatePrecompileSuite extends HapiSuite {
     private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
-        return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+        return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -415,8 +416,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                             OptionalLong.of(30),
                                                             true,
                                                             feeCollector));
-                                }),
-                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                                }));
     }
 
     private HapiSpec inheritsSenderAutoRenewAccountIfAnyForNftCreate() {
@@ -742,7 +742,8 @@ public class CreatePrecompileSuite extends HapiSuite {
         final var createTokenNum = new AtomicLong();
         final var feeCollector = ACCOUNT_2;
         final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
-        return defaultHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
+        return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -856,8 +857,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                             .hasCustom(
                                                     royaltyFeeWithoutFallbackInSchedule(
                                                             4, 5, feeCollector));
-                                }),
-                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                                }));
     }
 
     // TEST-005
@@ -1341,7 +1341,8 @@ public class CreatePrecompileSuite extends HapiSuite {
         final String feeCollector = ACCOUNT_2;
         AtomicReference<String> existingToken = new AtomicReference<>();
         final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
-        return defaultHapiSpec("createTokenWithInvalidRoyaltyFee")
+        return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -1415,8 +1416,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 CUSTOM_FEE_MUST_BE_POSITIVE
-                                                                        .name()))),
-                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                                                                        .name()))));
     }
 
     // TEST-013
@@ -1477,7 +1477,8 @@ public class CreatePrecompileSuite extends HapiSuite {
     // TEST-014
     private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
         final String feeCollector = ACCOUNT_2;
-        return defaultHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
+        return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -1537,13 +1538,13 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON
-                                                                        .name()))),
-                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                                                                        .name()))));
     }
 
     // TEST-015
     private HapiSpec createTokenWithInvalidFeeCollector() {
-        return defaultHapiSpec("createTokenWithInvalidFeeCollector")
+        return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
@@ -1603,8 +1604,7 @@ public class CreatePrecompileSuite extends HapiSuite {
                                                 ContractFnResultAsserts.resultWith()
                                                         .error(
                                                                 INVALID_CUSTOM_FEE_COLLECTOR
-                                                                        .name()))),
-                        resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
+                                                                        .name()))));
     }
 
     // TEST-018

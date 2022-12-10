@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.file;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -51,10 +52,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -95,7 +94,6 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import java.math.BigInteger;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -378,7 +376,8 @@ public class FileUpdateSuite extends HapiSuite {
     }
 
     private HapiSpec maxRefundIsEnforced() {
-        return defaultHapiSpec("MaxRefundIsEnforced")
+        return propertyPreservingHapiSpec("MaxRefundIsEnforced")
+                .preserving(MAX_REFUND_GAS_PROP)
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "5"),
                         uploadInitCode(CONTRACT),
@@ -387,12 +386,12 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(300_000L)
-                                .has(resultWith().gasUsed(285_000L)),
-                        resetToDefault(MAX_REFUND_GAS_PROP));
+                                .has(resultWith().gasUsed(285_000L)));
     }
 
     private HapiSpec allUnusedGasIsRefundedIfSoConfigured() {
-        return defaultHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
+        return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
+                .preserving(MAX_REFUND_GAS_PROP)
                 .given(
                         overriding(MAX_REFUND_GAS_PROP, "100"),
                         uploadInitCode(CONTRACT),
@@ -401,12 +400,12 @@ public class FileUpdateSuite extends HapiSuite {
                 .then(
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(300_000L)
-                                .has(resultWith().gasUsed(26_451)),
-                        resetToDefault(MAX_REFUND_GAS_PROP));
+                                .has(resultWith().gasUsed(26_451)));
     }
 
     private HapiSpec gasLimitOverMaxGasLimitFailsPrecheck() {
-        return defaultHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+        return propertyPreservingHapiSpec("GasLimitOverMaxGasLimitFailsPrecheck")
+                .preserving(CONS_MAX_GAS_PROP)
                 .given(
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).gas(1_000_000L),
@@ -416,8 +415,7 @@ public class FileUpdateSuite extends HapiSuite {
                         contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                                 .gas(101L)
                                 // for some reason BUSY is returned in CI
-                                .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY),
-                        resetToDefault(CONS_MAX_GAS_PROP));
+                                .hasCostAnswerPrecheckFrom(MAX_GAS_LIMIT_EXCEEDED, BUSY));
     }
 
     private HapiSpec kvLimitsEnforced() {
@@ -510,11 +508,10 @@ public class FileUpdateSuite extends HapiSuite {
         final var civilian = "payer";
         final var unrefundedTxn = "unrefundedTxn";
         final var refundedTxn = "refundedTxn";
-        final Map<String, String> startingProps = new HashMap<>();
 
-        return defaultHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
+        return propertyPreservingHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
+                .preserving(CONS_MAX_GAS_PROP, USE_GAS_THROTTLE_PROP)
                 .given(
-                        remembering(startingProps, CONS_MAX_GAS_PROP, USE_GAS_THROTTLE_PROP),
                         overridingTwo(
                                 CONS_MAX_GAS_PROP,
                                 DEFAULT_MAX_CONS_GAS,
@@ -573,8 +570,7 @@ public class FileUpdateSuite extends HapiSuite {
                                                         + " was not less than "
                                                         + origFee);
                                     }
-                                }),
-                        overridingAllOfDeferred(() -> startingProps));
+                                }));
     }
 
     private HapiSpec chainIdChangesDynamically() {
@@ -582,10 +578,9 @@ public class FileUpdateSuite extends HapiSuite {
         final var otherChainId = 0xABCDL;
         final var firstCallTxn = "firstCallTxn";
         final var secondCallTxn = "secondCallTxn";
-        final Map<String, String> startingProps = new HashMap<>();
-        return defaultHapiSpec("ChainIdChangesDynamically")
+        return propertyPreservingHapiSpec("ChainIdChangesDynamically")
+                .preserving(CHAIN_ID_PROP)
                 .given(
-                        remembering(startingProps, CHAIN_ID_PROP),
                         resetToDefault(CHAIN_ID_PROP),
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
@@ -624,12 +619,19 @@ public class FileUpdateSuite extends HapiSuite {
                                                                                 otherChainId)))),
                         contractCallLocal(chainIdUser, "getSavedChainID")
                                 .has(resultWith().contractCallResult(bigIntResult(otherChainId))))
-                .then(overridingAllOfDeferred(() -> startingProps));
+                .then();
     }
 
     private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
         final var notToBe = "ne'erToBe";
-        return defaultHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
+        return propertyPreservingHapiSpec("EntitiesNotCreatableAfterUsageLimitsReached")
+                .preserving(
+                        "accounts.maxNumber",
+                        "contracts.maxNumber",
+                        "files.maxNumber",
+                        "scheduling.maxNumber",
+                        "tokens.maxNumber",
+                        "topics.maxNumber")
                 .given(
                         uploadInitCode("Multipurpose"),
                         overridingAllOf(
@@ -656,14 +658,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED),
                         createTopic(notToBe)
                                 .hasKnownStatus(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED))
-                .then(
-                        resetToDefault(
-                                "accounts.maxNumber",
-                                "contracts.maxNumber",
-                                "files.maxNumber",
-                                "scheduling.maxNumber",
-                                "tokens.maxNumber",
-                                "topics.maxNumber"));
+                .then();
     }
 
     private HapiSpec rentItemizedAsExpectedWithOverridePriceTiers() {
@@ -679,13 +674,13 @@ public class FileUpdateSuite extends HapiSuite {
                         + "[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],"
                         + "\"stateMutability\":\"view\",\"type\":\"function\"}";
         final AtomicLong expectedStorageFee = new AtomicLong();
-        final Map<String, String> startingProps = new HashMap<>();
-        return defaultHapiSpec("RentItemizedAsExpectedWithOverridePriceTiers")
+        return propertyPreservingHapiSpec("RentItemizedAsExpectedWithOverridePriceTiers")
+                .preserving(
+                        FREE_PRICE_TIER_PROP,
+                        STORAGE_PRICE_TIERS_PROP,
+                        STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                        STAKING_FEES_STAKING_REWARD_PERCENTAGE)
                 .given(
-                        remembering(
-                                startingProps,
-                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
-                                STAKING_FEES_STAKING_REWARD_PERCENTAGE),
                         uploadInitCode(slotUser),
                         cryptoCreate(autoRenew).balance(0L),
                         contractCreate(slotUser)
@@ -772,9 +767,7 @@ public class FileUpdateSuite extends HapiSuite {
                                                                                         FUNDING,
                                                                                         expectedStorageFee
                                                                                                 .get()))))))
-                .then(
-                        resetToDefault(STORAGE_PRICE_TIERS_PROP, FREE_PRICE_TIER_PROP),
-                        overridingAllOfDeferred(() -> startingProps));
+                .then();
     }
 
     private HapiSpec messageSubmissionSizeChange() {

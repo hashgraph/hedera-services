@@ -122,18 +122,18 @@ public class EthereumSuite extends HapiSuite {
                         feePaymentMatrix().stream(),
                         Stream.of(
                                 invalidTxData(),
-                                ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                ETX_009_callsToTokenAddresses(),
-                                ETX_010_transferToCryptoAccountSucceeds(),
-                                ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                ETX_014_contractCreateInheritsSignerProperties(),
-                                ETX_009_callsToTokenAddresses(),
+                                ETX007FungibleTokenCreateWithFeesHappyPath(),
+                                ETX008ContractCreateExecutesWithExpectedRecord(),
+                                ETX009CallsToTokenAddresses(),
+                                ETX010TransferToCryptoAccountSucceeds(),
+                                ETX012PrecompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                ETX013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                ETX013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                ETX014ContractCreateInheritsSignerProperties(),
+                                ETX009CallsToTokenAddresses(),
                                 originAndSenderAreEthereumSigner(),
-                                ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                ETX031InvalidNonceEthereumTxFailsAndChargesRelayer(),
+                                ETXSVC003ContractGetBytecodeQueryReturnsDeployedCode(),
                                 setApproveForAllUsingLocalNodeSetupPasses()))
                 .toList();
     }
@@ -391,7 +391,7 @@ public class EthereumSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {}));
     }
 
-    HapiSpec ETX_010_transferToCryptoAccountSucceeds() {
+    HapiSpec ETX010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("ETX_010_transferToCryptoAccountSucceeds")
@@ -601,7 +601,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    HapiSpec ETX_014_contractCreateInheritsSignerProperties() {
+    HapiSpec ETX014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
         final String PROXY = "proxy";
@@ -658,7 +658,7 @@ public class EthereumSuite extends HapiSuite {
                                                                 .memo(MEMO))));
     }
 
-    HapiSpec ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer() {
+    HapiSpec ETX031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
         return defaultHapiSpec("ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer")
@@ -714,7 +714,7 @@ public class EthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-    HapiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
+    HapiSpec ETX012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -780,7 +780,7 @@ public class EthereumSuite extends HapiSuite {
                                                                                                         ETH_HASH_KEY)))))));
     }
 
-    HapiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+    HapiSpec ETX013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -849,7 +849,7 @@ public class EthereumSuite extends HapiSuite {
                                                                                                         ETH_HASH_KEY)))))));
     }
 
-    HapiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
+    HapiSpec ETX013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -916,7 +916,7 @@ public class EthereumSuite extends HapiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    HapiSpec ETX_009_callsToTokenAddresses() {
+    HapiSpec ETX009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -1041,7 +1041,7 @@ public class EthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiSpec ETX_008_contractCreateExecutesWithExpectedRecord() {
+    private HapiSpec ETX008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -1075,7 +1075,7 @@ public class EthereumSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec ETX_007_fungibleTokenCreateWithFeesHappyPath() {
+    private HapiSpec ETX007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
         final var contract = "TokenCreateContract";
@@ -1165,7 +1165,7 @@ public class EthereumSuite extends HapiSuite {
                                 }));
     }
 
-    private HapiSpec ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode() {
+    private HapiSpec ETXSVC003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
         return HapiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")

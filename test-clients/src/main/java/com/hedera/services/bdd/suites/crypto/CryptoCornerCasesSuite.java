@@ -48,14 +48,12 @@ public class CryptoCornerCasesSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    invalidNodeAccount(),
-                    invalidTransactionBody(),
-                    invalidTransactionPayerAccountNotFound(),
-                    invalidTransactionMemoTooLong(),
-                    invalidTransactionDuration(),
-                    invalidTransactionStartTime(),
-                });
+                invalidNodeAccount(),
+                invalidTransactionBody(),
+                invalidTransactionPayerAccountNotFound(),
+                invalidTransactionMemoTooLong(),
+                invalidTransactionDuration(),
+                invalidTransactionStartTime());
     }
 
     private static Transaction removeTransactionBody(Transaction txn) {
