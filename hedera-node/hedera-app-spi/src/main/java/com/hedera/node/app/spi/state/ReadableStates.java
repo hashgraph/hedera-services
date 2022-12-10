@@ -17,11 +17,13 @@ package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/** Essentially, a map of {@link ReadableState}s. Each state may be retrieved by key. */
 public interface ReadableStates {
     /**
-     * Gets the {@link ReadableState} or {@link WritableState} associated with the given stateKey.
-     * If the state cannot be found, an exception is thrown. This should **never** happen in an
-     * application, and represents a fatal bug.
+     * Gets the {@link ReadableState} associated with the given stateKey. If the state cannot be
+     * found, an exception is thrown. This should **never** happen in an application, and represents
+     * a fatal bug. Applications must only ask for states that they have previously registered with
+     * the {@link StateRegistry}.
      *
      * @param stateKey The key used for looking up state
      * @return The state for that key. This will never be null.
@@ -31,5 +33,29 @@ public interface ReadableStates {
      * @throws IllegalArgumentException if the state cannot be found.
      */
     @NonNull
-    <K, V, S extends ReadableState<K, V>> S get(@NonNull String stateKey);
+    <K, V> ReadableState<K, V> get(@NonNull String stateKey);
+
+    /**
+     * Gets whether the given state key is a member of this set.
+     *
+     * @param stateKey The state key
+     * @return true if a subsequent call to {@link #get(String)} with this state key would succeed.
+     */
+    boolean contains(@NonNull String stateKey);
+
+    /**
+     * Gets the number of states contained in this instance.
+     *
+     * @return The number of states. The value will be non-negative.
+     */
+    int size();
+
+    /**
+     * Gets whether this instance is empty, that is, it has no states.
+     *
+     * @return True if there are no states in this instance.
+     */
+    default boolean isEmpty() {
+        return size() == 0;
+    }
 }

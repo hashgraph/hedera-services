@@ -16,6 +16,7 @@
 package com.hedera.node.app.spi.state;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Iterator;
 import java.util.Optional;
 
 /**
@@ -29,7 +30,6 @@ import java.util.Optional;
  *     memory, or on disk.
  */
 public interface ReadableState<K, V> {
-
     /**
      * Gets the "state key" that uniquely identifies this {@link ReadableState} within the {@link
      * StateRegistry} which are scoped to the service implementation. The key is therefore not
@@ -65,4 +65,13 @@ public interface ReadableState<K, V> {
      */
     @NonNull
     Optional<V> get(@NonNull K key);
+
+    /**
+     * Used during migration ONLY. PLEASE DO NOT COME TO RELY ON THIS METHOD! It will be hopelessly
+     * slow on large data sets like on disk!
+     *
+     * @return an iterator over all keys in the state
+     */
+    @NonNull
+    Iterator<K> keys();
 }

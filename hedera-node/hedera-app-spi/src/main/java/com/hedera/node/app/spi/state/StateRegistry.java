@@ -32,32 +32,29 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  *   <li>{@link Character#isDigit(int)}
  * </ul>
  *
- * <pre>
- *     public MyConstructor(StateRegistry r) {
- *         final var oldFoo = r.readableState("OLD_FOO", OldFooKeyParser::new, OldFooParser::new);
+ * <pre>{@code
+ * public MyConstructor(StateRegistry r) {
+ *     final var oldFoo = r.readableState("OLD_FOO", OldFooKeyParser::new, OldFooParser::new);
  *
- *         // Every state you want, must be registered
- *         r.register("FOO")
- *              .inMemory()
- *              .keyWriter(FooKey::write)
- *              .valueWriter(Foo::write)
- *              .keyParser(FooKeyParser::new)
- *              .valueParser(FooParser::new)
- *              .onMigrate(OldFooKeyParser::new, OldFooParser::new, (state) -> {
- *
- *              })
- *              .onMigrate(newState -> {
- *                  ... do migration, using oldFoo, or whatever I want
- *              })
- *              .complete();
- *     }
- * </pre>
+ *     // Every state you want, must be registered
+ *     r.register("FOO")
+ *          .memory() // use in-memory state
+ *          .keyWriter(FooKey::write)
+ *          .valueWriter(Foo::write)
+ *          .keyParser(FooKeyParser::new)
+ *          .valueParser(FooParser::new)
+ *          .onMigrate((oldState, newState) -> {
+ *              // ... do migration
+ *          })
+ *          .complete();
+ * }
+ * }</pre>
  */
 public interface StateRegistry {
 
     /**
      * Gets the current {@link SoftwareVersion} of this application at the time of startup. This may
-     * be different from the {@link #getExistingVersion()} if the system is starting with an older,
+     * be different from the {@link #getPreviousVersion()} if the system is starting with an older,
      * existing body of state from an older version.
      *
      * @return The version of the current system.
@@ -74,7 +71,7 @@ public interface StateRegistry {
      *     SoftwareVersion#NO_VERSION}.
      */
     @Nullable
-    SoftwareVersion getExistingVersion();
+    SoftwareVersion getPreviousVersion();
 
     /**
      * Register every state the service supports. If the state file being loaded by the system
@@ -85,17 +82,24 @@ public interface StateRegistry {
      * @param stateKey The state key. Cannot be null and must be a valid state key.
      * @return A {@link StateRegistrationBuilder} for specifying the registration details.
      */
+    @NonNull
     StateRegistrationBuilder register(@NonNull String stateKey);
 
     /**
      * Removes the specified state from the registry.
      *
      * @param stateKey The key of the state to remove
+     * @param keyParser The key parser used with the old state
+     * @param valueParser The value parser used with the old state
+     * @param keyWriter The key writer used with the old state
+     * @param valueWriter The value writer used with the old state
+     * @param keyRuler The key ruler used with the old state
      */
     <K, V> void remove(
             @NonNull String stateKey,
             @NonNull Parser<K> keyParser,
             @NonNull Parser<V> valueParser,
             @NonNull Writer<K> keyWriter,
-            @NonNull Writer<V> valueWriter);
+            @NonNull Writer<V> valueWriter,
+            @Nullable Ruler keyRuler);
 }

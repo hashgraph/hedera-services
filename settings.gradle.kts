@@ -83,7 +83,7 @@ dependencyResolutionManagement {
             version("netty-version", "4.1.66.Final")
             version("protobuf-java-version", "3.19.4")
             version("slf4j-version", "2.0.3")
-            version("swirlds-version", "0.33.0-adhoc.x309652fc")
+            version("swirlds-version", "0.33.0-adhoc.xe9a470ae")
             version("tuweni-version", "2.2.0")
             version("jna-version", "5.12.1")
             version("jsr305-version", "3.0.2")
@@ -194,6 +194,7 @@ dependencyResolutionManagement {
 
         // The libs of this catalog can be used for test or build uses.
         create("testLibs") {
+            version("assertj-version", "3.23.1")
             version("awaitility-version", "4.2.0")
             version("besu-internal-version", "22.1.1")
             version("commons-collections4-version", "4.4")
@@ -214,6 +215,7 @@ dependencyResolutionManagement {
             bundle(
                 "testing",
                 listOf(
+                    "assertj",
                     "junit-jupiter",
                     "junit-jupiter-api",
                     "junit-jupiter-params",
@@ -225,6 +227,7 @@ dependencyResolutionManagement {
                 )
             )
 
+            library("assertj", "org.assertj", "assertj-core").versionRef("assertj-version")
             library("awaitility", "org.awaitility", "awaitility").versionRef("awaitility-version")
             library("besu-internal", "org.hyperledger.besu.internal", "crypto").versionRef("besu-internal-version")
             library(

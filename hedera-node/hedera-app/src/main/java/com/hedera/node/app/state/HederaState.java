@@ -20,7 +20,7 @@ import com.hedera.node.app.spi.state.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The full state used by Hedera. The current implementation is based on a merkle tree, and the data
+ * The full state used by Hedera. The primary implementation is based on a merkle tree, and the data
  * structures provided by the hashgraph platform. But most of our code doesn't need to know that
  * detail, and are happy with just the API provided by this interface.
  */
@@ -30,7 +30,7 @@ public interface HederaState {
      * exist, an empty {@link ReadableStates} is returned.
      *
      * @param serviceName The name of the service.
-     * @return A collection of {@link com.hedera.node.app.spi.state.ReadableState} instance
+     * @return A collection of {@link com.hedera.node.app.spi.state.ReadableState} instances
      *     belonging to the service.
      */
     @NonNull

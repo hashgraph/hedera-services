@@ -52,8 +52,8 @@ dependencies {
     itestCompileOnly(libs.spotbugs.annotations)
 
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
-    testImplementation(testLibs.bundles.mockito)
-    testImplementation(testLibs.bundles.junit5)
+    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
+    testImplementation(testLibs.bundles.testing)
 
     testCompileOnly(libs.spotbugs.annotations)
 }
