@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
@@ -194,7 +194,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .cryptoAllowancesContaining(SPENDER, 200L)),
                         cryptoApproveAllowance()
@@ -207,7 +207,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .cryptoAllowancesContaining(SPENDER, 300L)
                                                 .tokenAllowancesCount(1)
@@ -234,7 +234,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .cryptoAllowancesContaining(SPENDER, 500L)
                                                 .tokenAllowancesCount(1)
@@ -370,14 +370,14 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(TOKEN_TREASURY)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 80))
                                 .logged(),
                         getAccountDetails(TOKEN_TREASURY)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 80))
                                 .logged());
@@ -436,7 +436,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .signedBy(SPENDER),
                         getAccountDetails(TOKEN_TREASURY)
                                 .payingWith(GENESIS)
-                                .has(accountWith().nftApprovedForAllAllowancesCount(0))
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(0))
                                 .logged());
     }
 
@@ -627,7 +627,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(PAYER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(1)
@@ -751,14 +751,14 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 100L)
                                                 .cryptoAllowancesContaining(SPENDER, ONE_HBAR)),
                         getAccountDetails(SECOND_OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 300L)
                                                 .cryptoAllowancesContaining(
@@ -859,7 +859,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(2)
@@ -899,7 +899,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(2)
@@ -959,7 +959,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .logged()
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .nftApprovedAllowancesContaining(
                                                         NON_FUNGIBLE_TOKEN, SPENDER)));
@@ -1069,7 +1069,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(4)));
@@ -1275,7 +1275,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(0)));
@@ -1339,7 +1339,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(0)));
@@ -1398,7 +1398,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(0)));
@@ -1465,7 +1465,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(1)
@@ -1526,7 +1526,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(1)
@@ -1550,7 +1550,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(0)
                                                 .tokenAllowancesCount(1)
@@ -1568,7 +1568,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(0)
@@ -1626,7 +1626,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
-                                .has(accountWith().nftApprovedForAllAllowancesCount(2)))
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(2)))
                 .then(
                         cryptoTransfer(
                                         movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
@@ -1648,7 +1648,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                                 .signedBy(DEFAULT_PAYER, OWNER),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
-                                .has(accountWith().nftApprovedForAllAllowancesCount(1)),
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)),
                         cryptoTransfer(
                                 movingUnique(NON_FUNGIBLE_TOKEN, 1).between(RECEIVER, OWNER)),
                         cryptoTransfer(
@@ -1717,7 +1717,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender().logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
-                                .has(accountWith().nftApprovedForAllAllowancesCount(1)))
+                                .has(accountDetailsWith().nftApprovedForAllAllowancesCount(1)))
                 .then(
                         cryptoTransfer(
                                         movingUniqueWithAllowance(NON_FUNGIBLE_TOKEN, 1)
@@ -1899,7 +1899,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .tokenAllowancesCount(0)),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
@@ -1909,7 +1909,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .cryptoAllowancesContaining(SPENDER, 10 * ONE_HBAR)
                                                 .tokenAllowancesCount(2)

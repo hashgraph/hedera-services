@@ -17,7 +17,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetailsNoPayment;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -136,7 +136,7 @@ public class RandomOps extends HapiSuite {
                         getAccountDetails(owner)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(1)
@@ -145,7 +145,7 @@ public class RandomOps extends HapiSuite {
                         getAccountDetailsNoPayment(owner)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(2)

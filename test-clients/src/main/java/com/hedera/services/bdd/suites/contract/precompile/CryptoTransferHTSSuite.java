@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -200,7 +200,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN,
                                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -279,7 +279,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                         .hasKnownStatus(SUCCESS),
                                                 getAccountDetails(OWNER)
                                                         .payingWith(GENESIS)
-                                                        .has(accountWith().noAllowances()),
+                                                        .has(accountDetailsWith().noAllowances()),
                                                 // no allowance left, should fail
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,

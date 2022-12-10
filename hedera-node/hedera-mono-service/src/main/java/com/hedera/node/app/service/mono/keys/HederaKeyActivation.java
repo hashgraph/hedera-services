@@ -19,7 +19,6 @@ import static com.hedera.node.app.service.mono.keys.DefaultActivationCharacteris
 import static com.swirlds.common.crypto.VerificationStatus.INVALID;
 import static com.swirlds.common.crypto.VerificationStatus.VALID;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JThresholdKey;
@@ -137,14 +136,11 @@ public final class HederaKeyActivation {
     public static Function<byte[], TransactionSignature> pkToSigMapFrom(
             final List<TransactionSignature> sigs) {
         return pk -> {
-            System.out.println("Looking for a sig matching key " + ByteString.copyFrom(pk));
             for (final var sig : sigs) {
-                System.out.println(" - comparing with " + ByteString.copyFrom(sig.getExpandedPublicKeyDirect()));
                 if (keysMatch(pk, sig.getExpandedPublicKeyDirect())) {
                     return sig;
                 }
             }
-            System.out.println("NOPE for " + ByteString.copyFrom(pk));
             return INVALID_MISSING_SIG;
         };
     }

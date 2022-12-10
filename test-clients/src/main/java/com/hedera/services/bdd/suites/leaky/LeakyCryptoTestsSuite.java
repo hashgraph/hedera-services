@@ -15,10 +15,13 @@
  */
 package com.hedera.services.bdd.suites.leaky;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
+import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -29,11 +32,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ANOTHER_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN_MINT_TXN;
@@ -45,21 +52,31 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SECOND_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.THIRD_SPENDER;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -68,7 +85,10 @@ import org.apache.logging.log4j.Logger;
 public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
 
-    private static final String FALSE = "false";
+    private static final String ALIAS = "testAlias";
+    private static final String associationsLimitProperty = "entities.limitTokenAssociations";
+    private static final String defaultAssociationsLimit =
+            HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -77,9 +97,123 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
+                maxAutoAssociationSpec(),
                 canDissociateFromMultipleExpiredTokens(),
                 cannotExceedAccountAllowanceLimit(),
-                cannotExceedAllowancesTransactionLimit());
+                cannotExceedAllowancesTransactionLimit(),
+                createAnAccountWithEVMAddressAliasAndECKey(),
+                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled());
+    }
+
+    private HapiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
+        final Map<String, String> startingProps = new HashMap<>();
+        return defaultHapiSpec("txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled")
+                .given(
+                        remembering(
+                                startingProps,
+                                LAZY_CREATION_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                        overridingTwo(
+                                LAZY_CREATION_ENABLED,
+                                FALSE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                FALSE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    // create with ECDSA alias and no key
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with EVM address alias and no key
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var evmAddress =
+                                            ByteString.copyFrom(recoverAddressFromPubKey(tmp));
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(evmAddress)
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ED alias and no key
+                                    final var ed25519Key = spec.registry().getKey(ED_25519_KEY);
+                                    final var op3 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ed25519Key.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with evm address alias and ECDSA key
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddress)
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ED alias and ED key
+                                    final var op5 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(ED_25519_KEY)
+                                                    .alias(ed25519Key.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // create with ECDSA alias and key
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(NOT_SUPPORTED);
+                                    // assert that an account created with ECDSA key and no alias
+                                    // does not automagically set alias to evm address
+                                    final var op7 =
+                                            cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .noAlias());
+                                    allRunFor(
+                                            spec,
+                                            op,
+                                            op2,
+                                            op3,
+                                            op4,
+                                            op5,
+                                            op6,
+                                            op7,
+                                            hapiGetAccountInfo);
+                                }))
+                .then(overridingAllOfDeferred(() -> startingProps));
+    }
+
+    private HapiSpec maxAutoAssociationSpec() {
+        final int MONOGAMOUS_NETWORK = 1;
+        final int maxAutoAssociations = 100;
+        final int ADVENTUROUS_NETWORK = 1_000;
+        final String user1 = "user1";
+
+        return defaultHapiSpec("MaxAutoAssociationSpec")
+                .given(
+                        overridingTwo(
+                                associationsLimitProperty,
+                                TRUE_VALUE,
+                                "tokens.maxPerAccount",
+                                "" + MONOGAMOUS_NETWORK))
+                .when()
+                .then(
+                        cryptoCreate(user1)
+                                .balance(ONE_HBAR)
+                                .maxAutomaticTokenAssociations(maxAutoAssociations)
+                                .hasPrecheck(
+                                        REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        // Default is NOT to limit associations
+                        overriding(associationsLimitProperty, defaultAssociationsLimit),
+                        cryptoCreate(user1)
+                                .balance(ONE_HBAR)
+                                .maxAutomaticTokenAssociations(maxAutoAssociations),
+                        getAccountInfo(user1).hasMaxAutomaticAssociations(maxAutoAssociations),
+                        // Restore default
+                        overriding("tokens.maxPerAccount", "" + ADVENTUROUS_NETWORK));
     }
 
     public HapiSpec canDissociateFromMultipleExpiredTokens() {
@@ -189,7 +323,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(2)
                                                 .tokenAllowancesCount(1)
                                                 .nftApprovedForAllAllowancesCount(0)))
@@ -204,6 +338,72 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overridingTwo(
                                 HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT, "20",
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
+    }
+
+    private HapiSpec createAnAccountWithEVMAddressAliasAndECKey() {
+        final Map<String, String> startingProps = new HashMap<>();
+        return defaultHapiSpec("CreateAnAccountWithEVMAddressAliasAndECKey")
+                .given(
+                        remembering(
+                                startingProps,
+                                LAZY_CREATION_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                        overridingTwo(
+                                LAZY_CREATION_ENABLED,
+                                FALSE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                TRUE_VALUE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    assert addressBytes.length > 0;
+                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                                    final var op =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op2 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(ecdsaKey.toByteString())
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op3 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .alias(evmAddressBytes)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op4 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+                                    final var op5 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(ByteString.copyFromUtf8("Invalid alias"))
+                                                    .hasPrecheck(INVALID_ALIAS_KEY)
+                                                    .balance(100 * ONE_HBAR);
+
+                                    allRunFor(spec, op, op2, op3, op4, op5);
+                                    var hapiGetAccountInfo =
+                                            getAccountInfo(ACCOUNT)
+                                                    .has(
+                                                            accountWith()
+                                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                                    .evmAddressAlias(
+                                                                            evmAddressBytes)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false));
+                                    allRunFor(spec, hapiGetAccountInfo);
+                                }))
+                .then(overridingAllOfDeferred(() -> startingProps));
     }
 
     private HapiSpec cannotExceedAllowancesTransactionLimit() {

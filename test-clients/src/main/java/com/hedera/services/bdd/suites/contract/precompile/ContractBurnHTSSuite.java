@@ -103,12 +103,12 @@ public class ContractBurnHTSSuite extends HapiSuite {
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
-                HSCS_PREC_004_token_burn_of_fungible_token_units(),
-                HSCS_PREC_005_token_burn_of_NFT(),
-                HSCS_PREC_011_burn_after_nested_mint());
+                hscsPrec004TokenBurnOfFungibleTokenUnits(),
+                hscsPrec005TokenBurnOfNft(),
+                hscsPrec011BurnAfterNestedMint());
     }
 
-    private HapiSpec HSCS_PREC_004_token_burn_of_fungible_token_units() {
+    private HapiSpec hscsPrec004TokenBurnOfFungibleTokenUnits() {
         final var gasUsed = 14085L;
         return defaultHapiSpec("HSCS_PREC_004_token_burn_of_fungible_token_units")
                 .given(
@@ -248,7 +248,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 48));
     }
 
-    private HapiSpec HSCS_PREC_005_token_burn_of_NFT() {
+    private HapiSpec hscsPrec005TokenBurnOfNft() {
         final var gasUsed = 14085;
         return defaultHapiSpec("HSCS_PREC_005_token_burn_of_NFT")
                 .given(
@@ -313,7 +313,7 @@ public class ContractBurnHTSSuite extends HapiSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN, 1));
     }
 
-    private HapiSpec HSCS_PREC_011_burn_after_nested_mint() {
+    private HapiSpec hscsPrec011BurnAfterNestedMint() {
         final var innerContract = "MintToken";
         final var outerContract = "NestedBurn";
         final var revisedKey = KeyShape.threshOf(1, SIMPLE, DELEGATE_CONTRACT, DELEGATE_CONTRACT);

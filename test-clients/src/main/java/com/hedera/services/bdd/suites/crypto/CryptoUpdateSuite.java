@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
@@ -290,7 +290,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                                 .payingWith(GENESIS)
                                 .hasAlreadyUsedAutomaticAssociations(originalMax)
                                 .hasMaxAutomaticAssociations(originalMax)
-                                .has(accountWith().noAllowances()),
+                                .has(accountDetailsWith().noAllowances()),
                         cryptoUpdate(firstUser)
                                 .maxAutomaticAssociations(newBadMax)
                                 .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
@@ -355,7 +355,7 @@ public class CryptoUpdateSuite extends HapiSuite {
                 .then(
                         getAccountDetails(TARGET_ACCOUNT)
                                 .payingWith(GENESIS)
-                                .has(accountWith().memo(secondMemo)));
+                                .has(accountDetailsWith().memo(secondMemo)));
     }
 
     private HapiSpec updateWithUniqueSigs() {

@@ -115,26 +115,21 @@ public class ContractHTSSuite extends HapiSuite {
     }
 
     List<HapiSpec> negativeSpecs() {
-        return List.of(
-                new HapiSpec[] {
-                    HSCS_PREC_017_rollback_after_insufficient_balance(), nonZeroTransfersFail()
-                });
+        return List.of(hscsPrec017RollbackAfterInsufficientBalance(), nonZeroTransfersFail());
     }
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
-                new HapiSpec[] {
-                    distributeMultipleTokens(),
-                    depositAndWithdrawFungibleTokens(),
-                    transferNft(),
-                    transferMultipleNfts(),
-                    tokenTransferFromFeeCollector(),
-                    tokenTransferFromFeeCollectorStaticNestedCall(),
-                    hbarTransferFromFeeCollector()
-                });
+                distributeMultipleTokens(),
+                depositAndWithdrawFungibleTokens(),
+                transferNft(),
+                transferMultipleNfts(),
+                tokenTransferFromFeeCollector(),
+                tokenTransferFromFeeCollectorStaticNestedCall(),
+                hbarTransferFromFeeCollector());
     }
 
-    private HapiSpec HSCS_PREC_017_rollback_after_insufficient_balance() {
+    private HapiSpec hscsPrec017RollbackAfterInsufficientBalance() {
         final var alice = "alice";
         final var bob = "bob";
         final var treasuryForToken = "treasuryForToken";

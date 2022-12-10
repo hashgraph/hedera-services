@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -1823,7 +1823,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                 .gasUsed(4_000_000))),
                         getAccountDetails(ACCOUNT)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .balanceLessThan(
                                                         INIT_ACCOUNT_BALANCE
                                                                 - REDUCED_NETWORK_FEE
@@ -4282,7 +4282,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountDetails(A_CIVILIAN)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(0)
@@ -4568,7 +4568,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(0)
@@ -5334,7 +5334,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                 getAccountDetails(OWNER)
                                                         .payingWith(GENESIS)
                                                         .has(
-                                                                accountWith()
+                                                                accountDetailsWith()
                                                                         .nftApprovedForAllAllowancesCount(
                                                                                 1)),
                                                 contractCall(

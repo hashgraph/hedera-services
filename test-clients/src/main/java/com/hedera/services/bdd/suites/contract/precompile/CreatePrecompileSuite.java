@@ -134,34 +134,30 @@ public class CreatePrecompileSuite extends HapiSuite {
 
     List<HapiSpec> positiveSpecs() {
         return List.of(
-                new HapiSpec[] {
-                    fungibleTokenCreateHappyPath(),
-                    fungibleTokenCreateWithFeesHappyPath(),
-                    nonFungibleTokenCreateHappyPath(),
-                    nonFungibleTokenCreateWithFeesHappyPath(),
-                    fungibleTokenCreateThenQueryAndTransfer(),
-                    nonFungibleTokenCreateThenQuery(),
-                    inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
-                    inheritsSenderAutoRenewAccountForTokenCreate(),
-                    createTokenWithDefaultExpiryAndEmptyKeys()
-                });
+                fungibleTokenCreateHappyPath(),
+                fungibleTokenCreateWithFeesHappyPath(),
+                nonFungibleTokenCreateHappyPath(),
+                nonFungibleTokenCreateWithFeesHappyPath(),
+                fungibleTokenCreateThenQueryAndTransfer(),
+                nonFungibleTokenCreateThenQuery(),
+                inheritsSenderAutoRenewAccountIfAnyForNftCreate(),
+                inheritsSenderAutoRenewAccountForTokenCreate(),
+                createTokenWithDefaultExpiryAndEmptyKeys());
     }
 
     List<HapiSpec> negativeSpecs() {
         return List.of(
-                new HapiSpec[] {
-                    tokenCreateWithEmptyKeysReverts(),
-                    tokenCreateWithKeyWithMultipleKeyValuesReverts(),
-                    tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
-                    createTokenWithEmptyTokenStruct(),
-                    createTokenWithInvalidExpiry(),
-                    createTokenWithInvalidRoyaltyFee(),
-                    createTokenWithInvalidTreasury(),
-                    createTokenWithInvalidFixedFeeWithERC721Denomination(),
-                    createTokenWithInvalidFeeCollector(),
-                    createTokenWithInsufficientValueSent(),
-                    delegateCallTokenCreateFails()
-                });
+                tokenCreateWithEmptyKeysReverts(),
+                tokenCreateWithKeyWithMultipleKeyValuesReverts(),
+                tokenCreateWithFixedFeeWithMultiplePaymentsReverts(),
+                createTokenWithEmptyTokenStruct(),
+                createTokenWithInvalidExpiry(),
+                createTokenWithInvalidRoyaltyFee(),
+                createTokenWithInvalidTreasury(),
+                createTokenWithInvalidFixedFeeWithERC721Denomination(),
+                createTokenWithInvalidFeeCollector(),
+                createTokenWithInsufficientValueSent(),
+                delegateCallTokenCreateFails());
     }
 
     // TEST-001

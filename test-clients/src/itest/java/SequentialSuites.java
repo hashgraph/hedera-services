@@ -21,7 +21,6 @@ import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
 import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
@@ -69,7 +68,6 @@ public class SequentialSuites {
                     ThrottleDefValidationSuite::new,
                     PrivilegedOpsSuite::new,
                     CongestionPricingSuite::new,
-                    CryptoCreateSuite::new,
                     UmbrellaRedux::new,
                     ScheduleCreateSpecs::new,
                     ScheduleSignSpecs::new,

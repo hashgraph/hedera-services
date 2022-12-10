@@ -71,8 +71,6 @@ public final class TokenPauseSpecs extends HapiSuite {
     private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
 
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
-    private static final String DEFAULT_ASSOCIATIONS_LIMIT =
-            HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
     public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION =
             "ledger.autoRenewPeriod.minDuration";
     public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =

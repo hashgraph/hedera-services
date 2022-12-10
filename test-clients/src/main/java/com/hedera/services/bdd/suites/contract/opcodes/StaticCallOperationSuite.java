@@ -43,7 +43,7 @@ public class StaticCallOperationSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {verifiesExistence()});
+        return List.of(verifiesExistence());
     }
 
     @Override

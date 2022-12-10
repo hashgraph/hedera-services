@@ -51,8 +51,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -93,6 +95,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -130,8 +133,6 @@ public class FileUpdateSuite extends HapiSuite {
     private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
     private static final String CONS_MAX_GAS_PROP = "contracts.maxGasPerSec";
     private static final String CHAIN_ID_PROP = "contracts.chainId";
-    private static final String AUTO_CREATION_PROP = "autoCreation.enabled";
-    private static final String LAZY_CREATION_PROP = "lazyCreation.enabled";
 
     private static final long DEFAULT_CHAIN_ID =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
@@ -150,6 +151,10 @@ public class FileUpdateSuite extends HapiSuite {
     private static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
     public static final String CIVILIAN = "civilian";
     public static final String TEST_TOPIC = "testTopic";
+    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE =
+            "staking.fees.nodeRewardPercentage";
+    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE =
+            "staking.fees.stakingRewardPercentage";
 
     public static void main(String... args) {
         new FileUpdateSuite().runSuiteSync();
@@ -159,24 +164,22 @@ public class FileUpdateSuite extends HapiSuite {
     @SuppressWarnings("java:S3878")
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    vanillaUpdateSucceeds(),
-                    updateFeesCompatibleWithCreates(),
-                    apiPermissionsChangeDynamically(),
-                    cannotUpdateExpirationPastMaxLifetime(),
-                    optimisticSpecialFileUpdate(),
-                    associateHasExpectedSemantics(),
-                    notTooManyFeeScheduleCanBeCreated(),
-                    allUnusedGasIsRefundedIfSoConfigured(),
-                    maxRefundIsEnforced(),
-                    gasLimitOverMaxGasLimitFailsPrecheck(),
-                    kvLimitsEnforced(),
-                    serviceFeeRefundedIfConsGasExhausted(),
-                    chainIdChangesDynamically(),
-                    entitiesNotCreatableAfterUsageLimitsReached(),
-                    rentItemizedAsExpectedWithOverridePriceTiers(),
-                    messageSubmissionSizeChange()
-                });
+                vanillaUpdateSucceeds(),
+                updateFeesCompatibleWithCreates(),
+                apiPermissionsChangeDynamically(),
+                cannotUpdateExpirationPastMaxLifetime(),
+                optimisticSpecialFileUpdate(),
+                associateHasExpectedSemantics(),
+                notTooManyFeeScheduleCanBeCreated(),
+                allUnusedGasIsRefundedIfSoConfigured(),
+                maxRefundIsEnforced(),
+                gasLimitOverMaxGasLimitFailsPrecheck(),
+                kvLimitsEnforced(),
+                serviceFeeRefundedIfConsGasExhausted(),
+                chainIdChangesDynamically(),
+                entitiesNotCreatableAfterUsageLimitsReached(),
+                rentItemizedAsExpectedWithOverridePriceTiers(),
+                messageSubmissionSizeChange());
     }
 
     private HapiSpec associateHasExpectedSemantics() {
@@ -507,9 +510,11 @@ public class FileUpdateSuite extends HapiSuite {
         final var civilian = "payer";
         final var unrefundedTxn = "unrefundedTxn";
         final var refundedTxn = "refundedTxn";
+        final Map<String, String> startingProps = new HashMap<>();
 
         return defaultHapiSpec("ServiceFeeRefundedIfConsGasExhausted")
                 .given(
+                        remembering(startingProps, CONS_MAX_GAS_PROP, USE_GAS_THROTTLE_PROP),
                         overridingTwo(
                                 CONS_MAX_GAS_PROP,
                                 DEFAULT_MAX_CONS_GAS,
@@ -568,7 +573,8 @@ public class FileUpdateSuite extends HapiSuite {
                                                         + " was not less than "
                                                         + origFee);
                                     }
-                                }));
+                                }),
+                        overridingAllOfDeferred(() -> startingProps));
     }
 
     private HapiSpec chainIdChangesDynamically() {
@@ -576,8 +582,10 @@ public class FileUpdateSuite extends HapiSuite {
         final var otherChainId = 0xABCDL;
         final var firstCallTxn = "firstCallTxn";
         final var secondCallTxn = "secondCallTxn";
+        final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("ChainIdChangesDynamically")
                 .given(
+                        remembering(startingProps, CHAIN_ID_PROP),
                         resetToDefault(CHAIN_ID_PROP),
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
@@ -616,7 +624,7 @@ public class FileUpdateSuite extends HapiSuite {
                                                                                 otherChainId)))),
                         contractCallLocal(chainIdUser, "getSavedChainID")
                                 .has(resultWith().contractCallResult(bigIntResult(otherChainId))))
-                .then(resetToDefault(CHAIN_ID_PROP));
+                .then(overridingAllOfDeferred(() -> startingProps));
     }
 
     private HapiSpec entitiesNotCreatableAfterUsageLimitsReached() {
@@ -671,9 +679,13 @@ public class FileUpdateSuite extends HapiSuite {
                         + "[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],"
                         + "\"stateMutability\":\"view\",\"type\":\"function\"}";
         final AtomicLong expectedStorageFee = new AtomicLong();
+        final Map<String, String> startingProps = new HashMap<>();
         return defaultHapiSpec("RentItemizedAsExpectedWithOverridePriceTiers")
                 .given(
-                        resetToDefault(STORAGE_PRICE_TIERS_PROP, FREE_PRICE_TIER_PROP),
+                        remembering(
+                                startingProps,
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE),
                         uploadInitCode(slotUser),
                         cryptoCreate(autoRenew).balance(0L),
                         contractCreate(slotUser)
@@ -685,9 +697,9 @@ public class FileUpdateSuite extends HapiSuite {
                         overridingThree(
                                 STORAGE_PRICE_TIERS_PROP,
                                 "10000til100M",
-                                "staking.fees.nodeRewardPercentage",
+                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
                                 "0",
-                                "staking.fees.stakingRewardPercentage",
+                                STAKING_FEES_STAKING_REWARD_PERCENTAGE,
                                 "0"),
                         // Validate free tier is respected
                         contractCall(slotUser, "consumeB", BigInteger.ONE).via(bSet),
@@ -762,9 +774,7 @@ public class FileUpdateSuite extends HapiSuite {
                                                                                                 .get()))))))
                 .then(
                         resetToDefault(STORAGE_PRICE_TIERS_PROP, FREE_PRICE_TIER_PROP),
-                        overridingTwo(
-                                "staking.fees.nodeRewardPercentage", "10",
-                                "staking.fees.stakingRewardPercentage", "10"));
+                        overridingAllOfDeferred(() -> startingProps));
     }
 
     private HapiSpec messageSubmissionSizeChange() {

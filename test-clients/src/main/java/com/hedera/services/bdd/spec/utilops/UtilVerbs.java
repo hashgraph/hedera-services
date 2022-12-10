@@ -136,8 +136,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -150,6 +152,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ObjIntConsumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -364,17 +367,29 @@ public class UtilVerbs {
                 .overridingProps(explicit);
     }
 
+    public static HapiSpecOperation overridingAllOfDeferred(
+            Supplier<Map<String, String>> explicit) {
+        return fileUpdate(APP_PROPERTIES)
+                .payingWith(ADDRESS_BOOK_CONTROL)
+                .overridingProps(explicit.get());
+    }
+
     public static HapiSpecOperation resetToDefault(String... properties) {
         var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
         final Map<String, String> defaultValues = new HashMap<>();
         for (final var prop : properties) {
             final var defaultValue = defaultNodeProps.get(prop);
-            log.info("Resetting {} to default value {}", prop, defaultValue);
             defaultValues.put(prop, defaultValue);
         }
         return fileUpdate(APP_PROPERTIES)
                 .payingWith(ADDRESS_BOOK_CONTROL)
-                .overridingProps(defaultValues);
+                .overridingProps(defaultValues)
+                .alertingPost(
+                        status -> {
+                            if (status == SUCCESS) {
+                                log.info("Reset {} default values", defaultValues);
+                            }
+                        });
     }
 
     public static HapiSpecOperation overridingTwo(
@@ -404,6 +419,30 @@ public class UtilVerbs {
                                 aProperty, aValue,
                                 bProperty, bValue,
                                 cProperty, cValue));
+    }
+
+    public static HapiSpecOperation remembering(
+            final Map<String, String> props, final String... ofInterest) {
+        final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
+        final Predicate<String> filter = new HashSet<>(Arrays.asList(ofInterest))::contains;
+        System.out.println(new HashSet<>(Arrays.asList(ofInterest)));
+        return blockingOrder(
+                getFileContents(APP_PROPERTIES)
+                        .payingWith(GENESIS)
+                        .nodePayment(ONE_HBAR)
+                        .fee(ONE_HBAR)
+                        .addingFilteredConfigListTo(props, filter),
+                sourcing(
+                        () -> {
+                            Arrays.asList(ofInterest)
+                                    .forEach(
+                                            prop -> {
+                                                System.out.println("Prop: " + prop);
+                                                props.computeIfAbsent(prop, defaultNodeProps::get);
+                                                System.out.println("NOW: " + props);
+                                            });
+                            return logIt("Remembered props: " + props);
+                        }));
     }
 
     public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {

@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +55,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     private static final Map<String, String> IMMUTABLE_MAP = Collections.emptyMap();
 
     private Map<String, String> props = IMMUTABLE_MAP;
+    private Predicate<String> includeProp = ignore -> true;
 
     private boolean saveIn4kChunks = false;
     private int sizeLookup = -1;
@@ -107,6 +109,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
 
     public HapiGetFileContents addingConfigListTo(Map<String, String> props) {
         this.props = props;
+        return this;
+    }
+
+    public HapiGetFileContents addingFilteredConfigListTo(
+            final Map<String, String> props, final Predicate<String> includeProp) {
+        this.props = props;
+        this.includeProp = includeProp;
         return this;
     }
 
@@ -182,7 +191,12 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                 var configList = ServicesConfigurationList.parseFrom(bytes);
                 configList
                         .getNameValueList()
-                        .forEach(setting -> props.put(setting.getName(), setting.getValue()));
+                        .forEach(
+                                setting -> {
+                                    if (includeProp.test(setting.getName())) {
+                                        props.put(setting.getName(), setting.getValue());
+                                    }
+                                });
             } catch (Exception impossible) {
                 throw new IllegalStateException(impossible);
             }

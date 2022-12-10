@@ -233,6 +233,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     @Override
     protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountInfoQuery(spec, payment, false);
+        System.out.println(query);
         response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
         final var infoResponse = response.getCryptoGetInfo();

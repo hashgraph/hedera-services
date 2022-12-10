@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -266,7 +266,7 @@ public class RecordCreationSuite extends HapiSuite {
                             getAccountDetails(STAKING_REWARD)
                                     .payingWith(GENESIS)
                                     .has(
-                                            accountWith()
+                                            accountDetailsWith()
                                                     .expiry(33197904000L, 0)
                                                     .key(EMPTY_KEY)
                                                     .memo("")
@@ -275,7 +275,7 @@ public class RecordCreationSuite extends HapiSuite {
                             getAccountDetails(NODE_REWARD)
                                     .payingWith(GENESIS)
                                     .has(
-                                            accountWith()
+                                            accountDetailsWith()
                                                     .expiry(33197904000L, 0)
                                                     .key(EMPTY_KEY)
                                                     .memo("")

@@ -881,7 +881,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(925))
                                 .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN).balance(0))
                                 .has(
-                                        AccountDetailsAsserts.accountWith()
+                                        AccountDetailsAsserts.accountDetailsWith()
                                                 .balanceLessThan(98 * ONE_HBAR)
                                                 .cryptoAllowancesContaining(SPENDER, 9 * ONE_HBAR)
                                                 .tokenAllowancesContaining(
@@ -891,7 +891,7 @@ public class CryptoTransferSuite extends HapiSuite {
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(970))
                                 .hasToken(relationshipWith(NON_FUNGIBLE_TOKEN).balance(0))
                                 .has(
-                                        AccountDetailsAsserts.accountWith()
+                                        AccountDetailsAsserts.accountDetailsWith()
                                                 .balanceLessThan(98 * ONE_HBAR)
                                                 .cryptoAllowancesContaining(SPENDER, 4 * ONE_HBAR)
                                                 .tokenAllowancesContaining(
@@ -1120,7 +1120,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        AccountDetailsAsserts.accountWith()
+                                        AccountDetailsAsserts.accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 1450))
                                 .hasToken(relationshipWith(FUNGIBLE_TOKEN).balance(950L)),
@@ -1177,7 +1177,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        AccountDetailsAsserts.accountWith()
+                                        AccountDetailsAsserts.accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, SPENDER, 1400)
@@ -2143,7 +2143,7 @@ public class CryptoTransferSuite extends HapiSuite {
                         getAccountDetails(PAYEE_NO_SIG_REQ)
                                 .payingWith(GENESIS)
                                 .has(
-                                        AccountDetailsAsserts.accountWith()
+                                        AccountDetailsAsserts.accountDetailsWith()
                                                 .balance(initialBalance + 2_000L)
                                                 .noAllowances()));
     }

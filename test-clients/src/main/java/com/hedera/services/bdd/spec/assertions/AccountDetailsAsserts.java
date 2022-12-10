@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.GrantedTokenAllowance;
 import com.hederahashgraph.api.proto.java.Key;
 
 public class AccountDetailsAsserts extends BaseErroringAssertsProvider<AccountDetails> {
-    public static AccountDetailsAsserts accountWith() {
+    public static AccountDetailsAsserts accountDetailsWith() {
         return new AccountDetailsAsserts();
     }
 

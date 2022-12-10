@@ -129,18 +129,18 @@ public class ContractKeysHTSSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return allOf(
-                HSCS_KEY_1(),
-                HSCS_KEY_2(),
-                HSCS_KEY_3(),
-                HSCS_KEY_4(),
-                HSCS_KEY_5(),
-                HSCS_KEY_6(),
-                HSCS_KEY_7(),
-                HSCS_KEY_8(),
-                HSCS_KEY_10());
+                hscsKey1(),
+                hscsKey2(),
+                hscsKey3(),
+                hscsKey4(),
+                hscsKey5(),
+                hscsKey6(),
+                hscsKey7(),
+                hscsKey8(),
+                hscsKey10());
     }
 
-    List<HapiSpec> HSCS_KEY_1() {
+    List<HapiSpec> hscsKey1() {
         return List.of(
                 callForMintWithContractKey(),
                 callForTransferWithContractKey(),
@@ -151,7 +151,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 delegateCallForDissociatePrecompileSignedWithContractKeyFails());
     }
 
-    List<HapiSpec> HSCS_KEY_2() {
+    List<HapiSpec> hscsKey2() {
         return List.of(
                 staticCallForTransferWithContractKey(),
                 staticCallForBurnWithContractKey(),
@@ -162,7 +162,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 staticCallForDissociatePrecompileFails());
     }
 
-    List<HapiSpec> HSCS_KEY_3() {
+    List<HapiSpec> hscsKey3() {
         return List.of(
                 callForMintWithDelegateContractKey(),
                 callForTransferWithDelegateContractKey(),
@@ -173,7 +173,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 delegateCallForDissociatePrecompileSignedWithDelegateContractKeyWorks());
     }
 
-    List<HapiSpec> HSCS_KEY_4() {
+    List<HapiSpec> hscsKey4() {
         return List.of(
                 associatePrecompileWithDelegateContractKeyForFungibleVanilla(),
                 associatePrecompileWithDelegateContractKeyForFungibleFrozen(),
@@ -189,7 +189,7 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 dissociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC());
     }
 
-    List<HapiSpec> HSCS_KEY_5() {
+    List<HapiSpec> hscsKey5() {
         return List.of(
                 staticCallForTransferWithDelegateContractKey(),
                 staticCallForBurnWithDelegateContractKey(),
@@ -197,19 +197,19 @@ public class ContractKeysHTSSuite extends HapiSuite {
                 staticCallForAssociatePrecompileFails());
     }
 
-    List<HapiSpec> HSCS_KEY_6() {
+    List<HapiSpec> hscsKey6() {
         return List.of(burnWithKeyAsPartOf1OfXThreshold());
     }
 
-    List<HapiSpec> HSCS_KEY_7() {
+    List<HapiSpec> hscsKey7() {
         return List.of(transferWithKeyAsPartOf2OfXThreshold());
     }
 
-    List<HapiSpec> HSCS_KEY_8() {
+    List<HapiSpec> hscsKey8() {
         return List.of(burnTokenWithFullPrefixAndPartialPrefixKeys());
     }
 
-    List<HapiSpec> HSCS_KEY_10() {
+    List<HapiSpec> hscsKey10() {
         return List.of(mixedFramesScenarios());
     }
 

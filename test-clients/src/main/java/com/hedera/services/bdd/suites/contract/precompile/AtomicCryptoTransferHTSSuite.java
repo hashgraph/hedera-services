@@ -16,7 +16,7 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
@@ -717,7 +717,9 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                 .logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
-                                .has(accountWith().cryptoAllowancesContaining(CONTRACT, allowance))
+                                .has(
+                                        accountDetailsWith()
+                                                .cryptoAllowancesContaining(CONTRACT, allowance))
                                 .logged(),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -819,7 +821,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
-                                                    .has(accountWith().noAllowances()),
+                                                    .has(accountDetailsWith().noAllowances()),
                                             // Try to send 1 hbar from owner to receiver
                                             // should fail as all allowance has been spent
                                             contractCall(
@@ -934,7 +936,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, CONTRACT, allowance)))
                 .when(
@@ -1064,7 +1066,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
-                                                    .has(accountWith().noAllowances()),
+                                                    .has(accountDetailsWith().noAllowances()),
                                             // Try to send 1 token from owner to receiver
                                             // should fail as all allowance has been spent
                                             contractCall(

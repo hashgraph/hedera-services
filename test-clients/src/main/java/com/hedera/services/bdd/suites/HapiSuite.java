@@ -39,6 +39,8 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class HapiSuite {
 
+    public static final String TRUE_VALUE = "true";
+    public static final String FALSE_VALUE = "false";
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
     public enum FinalOutcome {

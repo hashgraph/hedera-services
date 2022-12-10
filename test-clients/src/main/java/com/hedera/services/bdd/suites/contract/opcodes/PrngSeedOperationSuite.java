@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -90,7 +89,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
                 .given(
                         uploadInitCode(prng),
                         contractCreate(prng),
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31))
                 .when(
                         withOpContext(
@@ -140,7 +139,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileHappyPathWorks")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
@@ -174,7 +173,7 @@ public class PrngSeedOperationSuite extends HapiSuite {
         final var randomBits = "randomBits";
         return defaultHapiSpec("prngPrecompileDisabledInV_0_30")
                 .given(
-                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE.toString()),
+                        overriding(CONTRACTS_DYNAMIC_EVM_VERSION, TRUE_VALUE.toString()),
                         overriding(CONTRACTS_EVM_VERSION, EVM_VERSION_0_31),
                         cryptoCreate(BOB),
                         uploadInitCode(prng),
