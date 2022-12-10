@@ -31,6 +31,7 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
     private final ResponseCodeEnum responseCode;
     private final Throwable throwable;
     private final TransactionBody txBody;
+    private final AccountID payer;
 
     /**
      * Constructor of {@code ErrorTransactionMetadata}
@@ -38,15 +39,18 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
      * @param responseCode the {@link ResponseCodeEnum} of the error
      * @param throwable the {@link Throwable} that caused the error
      * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
+     * @param payer the {@link AccountID} of the payer if known, {@code null} otherwise
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public ErrorTransactionMetadata(
             @NonNull final ResponseCodeEnum responseCode,
             @NonNull final Throwable throwable,
-            @Nullable final TransactionBody txBody) {
+            @Nullable final TransactionBody txBody,
+            @Nullable final AccountID payer) {
         this.txBody = txBody;
         this.throwable = requireNonNull(throwable);
         this.responseCode = requireNonNull(responseCode);
+        this.payer = payer;
     }
 
     /**
@@ -80,7 +84,6 @@ public final class ErrorTransactionMetadata implements TransactionMetadata {
     @Nullable
     @Override
     public AccountID payer() {
-        return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
-        // method.
+        return payer;
     }
 }

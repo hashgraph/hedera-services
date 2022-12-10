@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;

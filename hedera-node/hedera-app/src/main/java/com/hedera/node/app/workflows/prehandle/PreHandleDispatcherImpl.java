@@ -29,6 +29,7 @@ import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.PreHandleDispatcher;
+import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -107,6 +108,7 @@ public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
     @NonNull
     public TransactionMetadata dispatch(@NonNull final TransactionBody transactionBody, final AccountID payer) {
         requireNonNull(transactionBody);
+        //FUTURE : Replace the arguments with SigTransactionMetadataBuilder once the createStore() is implemented.
         return switch (transactionBody.getDataCase()) {
             case CONSENSUSCREATETOPIC -> consensusHandler.preHandleCreateTopic(transactionBody, payer);
             case CONSENSUSUPDATETOPIC -> consensusHandler.preHandleUpdateTopic(transactionBody, payer);

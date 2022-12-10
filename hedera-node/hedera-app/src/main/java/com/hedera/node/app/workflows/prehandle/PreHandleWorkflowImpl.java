@@ -107,6 +107,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             final PreHandleDispatcherImpl dispatcher,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
+        AccountID payer = null;
         try {
             final var ctx = SESSION_CONTEXT_THREAD_LOCAL.get();
             final var txBytes = platformTx.getContents();
@@ -117,7 +118,8 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var metadata = dispatcher.dispatch(txBody, txBody.getTransactionID().getAccountID());
+            payer = txBody.getTransactionID().getAccountID();
+            final var metadata = dispatcher.dispatch(txBody, payer);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented
@@ -130,13 +132,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         } catch (PreCheckException preCheckException) {
             return new ErrorTransactionMetadata(
-                    preCheckException.responseCode(), preCheckException, txBody);
+                    preCheckException.responseCode(), preCheckException, txBody, payer);
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return new ErrorTransactionMetadata(ResponseCodeEnum.UNKNOWN, ex, txBody);
+            return new ErrorTransactionMetadata(ResponseCodeEnum.UNKNOWN, ex, txBody, payer);
         }
     }
 }
