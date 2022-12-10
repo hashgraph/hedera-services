@@ -31,8 +31,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Builds {@link SigTransactionMetadata} by collecting needed information collected when
- * transactions are handled as part of "pre-handle" needed for signature verification.
+ * Builds {@link SigTransactionMetadata} by collecting information that is needed when transactions
+ * are handled as part of "pre-handle" needed for signature verification.
  *
  * <p>NOTE : This class is designed to be subclassed For e.g., we need a {@link TransactionMetadata}
  * with an inner {@link TransactionMetadata} for schedule transactions.
@@ -76,7 +76,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
     }
 
     /**
-     * Add a list of keys to require keys
+     * Add a keys to required keys list
      *
      * @param keys list of keys to add
      * @return builder object
