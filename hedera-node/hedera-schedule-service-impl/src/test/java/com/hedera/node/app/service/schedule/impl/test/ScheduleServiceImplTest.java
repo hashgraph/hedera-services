@@ -15,10 +15,8 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -31,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
@@ -57,24 +57,23 @@ class ScheduleServiceImplTest {
 
     @Test
     void createsNewInstance() {
-        final ScheduleService service = ScheduleService.getInstance();
+        final ScheduleServiceImpl service = new ScheduleServiceImpl();
         final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx);
         final var serviceImpl1 =
                 service.createPreTransactionHandler(states, preHandleCtx);
         assertNotEquals(serviceImpl1, serviceImpl);
+        assertTrue(serviceImpl1 instanceof SchedulePreTransactionHandlerImpl);
     }
 
     @Test
     void throwsNPEIfArgsAreNull() {
-        final ScheduleService service = ScheduleService.getInstance();
+        final ScheduleServiceImpl service = new ScheduleServiceImpl();
         assertThrows(
                 NullPointerException.class,
                 () -> service.createPreTransactionHandler(null, preHandleCtx));
         assertThrows(
                 NullPointerException.class,
                 () -> service.createPreTransactionHandler(states, null));
-        assertThrows(
-                NullPointerException.class,
-                () -> service.createPreTransactionHandler(states, preHandleCtx));
+        assertDoesNotThrow(() -> service.createPreTransactionHandler(states, preHandleCtx));
     }
 }

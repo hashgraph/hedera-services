@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 
 /**
- * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification. This class may have subclasses in the future.
- *
- * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
- * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
- * because doing so would cause service modules to have a circular dependency on the app module.
- * Maybe we need some kind of base module from which services can extend and put it there?
+ * Metadata collected when schedule transactions are handled as part of "pre-handle" needed for signature
+ * verification. It builds {@link SigTransactionMetadata} for the transaction that is being scheduled,
+ * in addition to all fields in {@link SigTransactionMetadata}.
  */
 public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder>{
     private TransactionMetadata scheduledTxnMeta;
@@ -39,6 +36,12 @@ public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadat
         return this;
     }
 
+    /**
+     * Creates and returns a new {@link ScheduleSigTransactionMetadata} based on the values configured in
+     * this builder.
+     *
+     * @return a new {@link ScheduleSigTransactionMetadata}
+     */
     @Override
     public ScheduleSigTransactionMetadata build(){
         return new ScheduleSigTransactionMetadata(txn, payer, status, scheduledTxnMeta);

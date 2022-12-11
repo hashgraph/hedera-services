@@ -22,13 +22,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Collections;
 
 /**
- * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
- * verification. This class may have subclasses in the future.
- *
- * <p>NOTE: This class shouldn't exist here, and is something of a puzzle. We cannot add it to SPI,
- * because it includes a dependency on AccountStore. But we also cannot put it in the app module,
- * because doing so would cause service modules to have a circular dependency on the app module.
- * Maybe we need some kind of base module from which services can extend and put it there?
+ * Metadata collected when scheduled transactions are handled as part of "pre-handle" needed for signature
+ * verification. It contains {@link SigTransactionMetadata} to add the required keys for the
+ * transaction that is being scheduled.
+ * This extends {@link SigTransactionMetadata} to add the required keys for the transaction.
  */
 public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
         implements ScheduleTransactionMetadata {
