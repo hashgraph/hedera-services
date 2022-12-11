@@ -1,25 +1,19 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.suites.regression;
-
-
-import com.hedera.node.app.hapi.utils.fee.FeeObject;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
@@ -40,6 +34,25 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_NODE_REWARD_PERCENTAGE;
 import static com.hedera.services.bdd.suites.records.RecordCreationSuite.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
+
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
+import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.utils.sysfiles.serdes.StandardSerdes;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class TargetNetworkPrep extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TargetNetworkPrep.class);
@@ -105,10 +118,10 @@ public class TargetNetworkPrep extends HapiSuite {
                                                                     (long)
                                                                             (ONE_HBAR
                                                                                     + ((feeObs.get()
-                                                                                    .getNetworkFee()
-                                                                                    + feeObs.get()
-                                                                                    .getServiceFee())
-                                                                                    * 0.1))))),
+                                                                                                            .getNetworkFee()
+                                                                                                    + feeObs.get()
+                                                                                                            .getServiceFee())
+                                                                                            * 0.1))))),
                             balanceSnapshot(snapshot801, NODE_REWARD),
                             cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
                                     .payingWith(civilian)
@@ -123,10 +136,10 @@ public class TargetNetworkPrep extends HapiSuite {
                                                                     (long)
                                                                             (ONE_HBAR
                                                                                     + ((feeObs.get()
-                                                                                    .getNetworkFee()
-                                                                                    + feeObs.get()
-                                                                                    .getServiceFee())
-                                                                                    * 0.1))))))
+                                                                                                            .getNetworkFee()
+                                                                                                    + feeObs.get()
+                                                                                                            .getServiceFee())
+                                                                                            * 0.1))))))
                     .then(
                             getAccountDetails(STAKING_REWARD)
                                     .payingWith(GENESIS)
@@ -163,8 +176,8 @@ public class TargetNetworkPrep extends HapiSuite {
                                                                 .mapToObj(
                                                                         i ->
                                                                                 getAccountInfo(
-                                                                                        "0.0."
-                                                                                                + i)
+                                                                                                "0.0."
+                                                                                                        + i)
                                                                                         .noLogging()
                                                                                         .payingWith(
                                                                                                 GENESIS)

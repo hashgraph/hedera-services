@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
-import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
-import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
-import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
-import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
-import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
-import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
-import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
-import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
@@ -31,23 +23,10 @@ import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
-import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
-import com.hedera.services.bdd.suites.file.FetchSystemFiles;
-import com.hedera.services.bdd.suites.file.FileAppendSuite;
-import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
-import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
-import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
-import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
-import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
@@ -55,7 +34,6 @@ import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
-import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
@@ -64,13 +42,6 @@ import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
-import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
-import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
-import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
-import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
-import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
@@ -88,8 +59,7 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> networkSetup() {
         return List.of(
                 extractSpecsFromSuite(TargetNetworkPrep::new),
-                extractSpecsFromSuite(FeatureFlagSuite::new)
-        );
+                extractSpecsFromSuite(FeatureFlagSuite::new));
     }
 
     // These tests need to run first since they are hyper-sensitive to the tests in the
@@ -148,7 +118,7 @@ class EndToEndTests extends E2ETestBase {
                 //              extractSpecsFromSuite(TopicDeleteSuite::new),
                 //              extractSpecsFromSuite(TopicGetInfoSuite::new),
                 //              extractSpecsFromSuite(TopicUpdateSuite::new)
-                              );
+                );
     }
 
     @Tag("contract")
@@ -173,12 +143,12 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompileEth() {
         return List.of(
                 new DynamicContainer[] {
-                            extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
+                    extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
+                    extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
+                    extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
+                    extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
                 });
     }
 
@@ -377,7 +347,7 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(CreateSuccessSpec::new),
                 //              extractSpecsFromSuite(SysDelSysUndelSpec::new)
-        );
+                );
     }
 
     @Tag("file")
@@ -390,7 +360,7 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(DeleteFailuresSpec::new),
                 //              extractSpecsFromSuite(QueryFailuresSpec::new),
                 //              extractSpecsFromSuite(UpdateFailuresSpec::new)
-                              );
+                );
     }
 
     // TODO MISSING: NewOpInConstructorSpecs, ChildStorageSpecs, BigArraySpec,
@@ -548,7 +518,7 @@ class EndToEndTests extends E2ETestBase {
                 extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new)
                 //				extractSpecsFromSuite(DuplicateManagementTest::new),
                 // extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new)
-                 );
+                );
     }
 
     @Tag("regression")

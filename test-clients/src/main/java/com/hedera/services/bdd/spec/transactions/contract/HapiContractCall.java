@@ -36,8 +36,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,13 +47,13 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
-    @Nullable
-    private Function<HapiSpec, Tuple> tupleFn = null;
+    @Nullable private Function<HapiSpec, Tuple> tupleFn = null;
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
     private Optional<Long> valueSent = Optional.of(0L);
     private boolean convertableToEthCall = true;
@@ -258,8 +256,7 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
         } else {
-            paramsFn.ifPresent(hapiApiSpecFunction -> params =
-                hapiApiSpecFunction.apply(spec));
+            paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
         }
 
         final byte[] callData;

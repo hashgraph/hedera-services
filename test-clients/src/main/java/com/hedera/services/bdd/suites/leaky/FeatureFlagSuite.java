@@ -39,9 +39,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.enableAllFeatureFla
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_CREATE_SPONSOR;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
@@ -62,9 +60,7 @@ import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-
 import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -97,7 +93,9 @@ public class FeatureFlagSuite extends HapiSuite {
 
     private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("EnablesAllFeatureFlagsForFurtherCiTesting")
-                .given() .when() .then(enableAllFeatureFlagsAndDisableContractThrottles());
+                .given()
+                .when()
+                .then(enableAllFeatureFlagsAndDisableContractThrottles());
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {

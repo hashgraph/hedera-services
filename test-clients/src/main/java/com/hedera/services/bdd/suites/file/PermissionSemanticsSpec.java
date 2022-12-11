@@ -66,10 +66,9 @@ public class PermissionSemanticsSpec extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                    allowsDeleteWithOneTopLevelSig(),
-                    supportsImmutableFiles(),
-                    addressBookAdminExemptFromFeesGivenAuthorizedOps()
-                );
+                allowsDeleteWithOneTopLevelSig(),
+                supportsImmutableFiles(),
+                addressBookAdminExemptFromFeesGivenAuthorizedOps());
     }
 
     private HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {

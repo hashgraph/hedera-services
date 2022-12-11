@@ -45,9 +45,7 @@ public class FetchSystemFiles extends HapiSuite {
         return List.of(fetchFiles());
     }
 
-    /**
-     * Fetches the system files from a running network and saves them to the local file system.
-     */
+    /** Fetches the system files from a running network and saves them to the local file system. */
     private HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(

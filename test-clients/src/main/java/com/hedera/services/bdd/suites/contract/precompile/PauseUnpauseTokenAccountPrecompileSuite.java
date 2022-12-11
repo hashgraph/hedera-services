@@ -80,7 +80,6 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     public static final String UNPAUSE_TX = "UnpauseTx";
     public static final String PAUSE_TX = "PauseTx";
 
-
     public static void main(String... args) {
         new PauseUnpauseTokenAccountPrecompileSuite().runSuiteAsync();
     }

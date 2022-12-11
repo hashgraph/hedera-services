@@ -16,7 +16,6 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithTuple;
@@ -60,12 +59,11 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                    contractCallWithSendRecordSanityChecks(),
-                    circularTransfersRecordSanityChecks(),
-                    contractCreateRecordSanityChecks(),
-                    contractUpdateRecordSanityChecks(),
-                    contractDeleteRecordSanityChecks()
-                );
+                contractCallWithSendRecordSanityChecks(),
+                circularTransfersRecordSanityChecks(),
+                contractCreateRecordSanityChecks(),
+                contractUpdateRecordSanityChecks(),
+                contractDeleteRecordSanityChecks());
     }
 
     private HapiSpec contractDeleteRecordSanityChecks() {
@@ -157,11 +155,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
         String[] canonicalAccounts = {FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER};
         String[] altruists =
                 IntStream.range(0, numAltruists)
-                        .mapToObj(
-                                i ->
-                                        String.format(
-                                                "Altruist%s",
-                                                (char) ('A' + i)))
+                        .mapToObj(i -> String.format("Altruist%s", (char) ('A' + i)))
                         .toArray(String[]::new);
 
         return defaultHapiSpec("CircularTransfersRecordSanityChecks")
@@ -169,8 +163,10 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         flattened(
                                 uploadInitCode(contractName),
                                 Stream.of(altruists)
-                                        .map(suffix -> createDefaultContract(contractName + suffix)
-                                                .bytecode(contractName))
+                                        .map(
+                                                suffix ->
+                                                        createDefaultContract(contractName + suffix)
+                                                                .bytecode(contractName))
                                         .toArray(HapiSpecOperation[]::new),
                                 Stream.of(altruists)
                                         .map(
@@ -179,16 +175,22 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                                                                         contractName + suffix,
                                                                         SET_NODES_ABI,
                                                                         spec ->
-                                                                                Tuple.singleton(Stream.of(
-                                                                                                    altruists)
-                                                                                            .map(
-                                                                                                    a ->
-                                                                                                            BigInteger.valueOf(spec.registry()
-                                                                                                                    .getContractId(
-                                                                                                                            contractName
-                                                                                                                                    + a)
-                                                                                                                    .getContractNum()))
-                                                                                            .toArray(BigInteger[]::new)))
+                                                                                Tuple.singleton(
+                                                                                        Stream.of(
+                                                                                                        altruists)
+                                                                                                .map(
+                                                                                                        a ->
+                                                                                                                BigInteger
+                                                                                                                        .valueOf(
+                                                                                                                                spec.registry()
+                                                                                                                                        .getContractId(
+                                                                                                                                                contractName
+                                                                                                                                                        + a)
+                                                                                                                                        .getContractNum()))
+                                                                                                .toArray(
+                                                                                                        BigInteger
+                                                                                                                        []
+                                                                                                                ::new)))
                                                                 .gas(120_000)
                                                                 .via(
                                                                         "txnFor"
@@ -202,7 +204,10 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                                 UtilVerbs.takeBalanceSnapshots(
                                         Stream.of(
                                                         Stream.of(altruists)
-                                                                .map(suffix -> contractName + suffix),
+                                                                .map(
+                                                                        suffix ->
+                                                                                contractName
+                                                                                        + suffix),
                                                         Stream.of(canonicalAccounts))
                                                 .flatMap(identity())
                                                 .toArray(String[]::new))))
@@ -217,14 +222,17 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                         validateTransferListForBalances(
                                 ALTRUISTIC_TXN,
                                 Stream.concat(
-                                        Stream.of(canonicalAccounts),
-                                        Stream.of(altruists).map(suffix -> contractName + suffix)).toList()),
+                                                Stream.of(canonicalAccounts),
+                                                Stream.of(altruists)
+                                                        .map(suffix -> contractName + suffix))
+                                        .toList()),
                         validateRecordTransactionFees(ALTRUISTIC_TXN),
                         addLogInfo(
                                 (spec, infoLog) -> {
                                     long[] finalBalances =
                                             IntStream.range(0, numAltruists)
-                                                    .mapToLong(ignore -> initBalanceFn.applyAsLong(""))
+                                                    .mapToLong(
+                                                            ignore -> initBalanceFn.applyAsLong(""))
                                                     .toArray();
                                     int i = 0;
                                     long divisor = initKeepAmountDivisor;
@@ -243,8 +251,7 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
                                     infoLog.info("Expected Final Balances");
                                     infoLog.info("-----------------------");
                                     for (i = 0; i < numAltruists; i++) {
-                                        infoLog.info(
-                                                "  {} = {} tinyBars", i, finalBalances[i]);
+                                        infoLog.info("  {} = {} tinyBars", i, finalBalances[i]);
                                     }
                                 }));
     }
@@ -271,7 +278,16 @@ public class ContractRecordsSanityCheckSuite extends HapiSuite {
         return log;
     }
 
-    private static final String SET_NODES_ABI = "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint64[]\", \"name\": \"accounts\", \"type\": \"uint64[]\" }     ], \"name\": \"setNodes\", \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+    private static final String SET_NODES_ABI =
+            "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint64[]\", \"name\":"
+                + " \"accounts\", \"type\": \"uint64[]\" }     ], \"name\": \"setNodes\","
+                + " \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\":"
+                + " \"function\" }";
 
-    private static final String RECEIVE_AND_SEND_ABI = "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint32\", \"name\": \"keepAmountDivisor\", \"type\": \"uint32\" }, { \"internalType\": \"uint256\", \"name\": \"stopBalance\", \"type\": \"uint256\" } ], \"name\": \"receiveAndSend\", \"outputs\": [], \"payable\": true, \"stateMutability\": \"payable\", \"type\": \"function\" }";
+    private static final String RECEIVE_AND_SEND_ABI =
+            "{ \"constant\": false, \"inputs\": [ { \"internalType\": \"uint32\", \"name\":"
+                + " \"keepAmountDivisor\", \"type\": \"uint32\" }, { \"internalType\": \"uint256\","
+                + " \"name\": \"stopBalance\", \"type\": \"uint256\" } ], \"name\":"
+                + " \"receiveAndSend\", \"outputs\": [], \"payable\": true, \"stateMutability\":"
+                + " \"payable\", \"type\": \"function\" }";
 }

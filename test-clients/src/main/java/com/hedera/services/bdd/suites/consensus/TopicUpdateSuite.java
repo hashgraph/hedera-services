@@ -60,19 +60,18 @@ public class TopicUpdateSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                    validateMultipleFields(),
-                    topicUpdateSigReqsEnforcedAtConsensus(),
-                    updateSubmitKeyToDiffKey(),
-                    updateAdminKeyToDiffKey(),
-                    updateAdminKeyToEmpty(),
-                    updateMultipleFields(),
-                    expirationTimestampIsValidated(),
-                    updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-                    clearingAdminKeyWhenAutoRenewAccountPresent(),
-                    feeAsExpected(),
-                    updateExpiryOnTopicWithNoAdminKey(),
-                    updateToMissingTopicFails()
-                );
+                validateMultipleFields(),
+                topicUpdateSigReqsEnforcedAtConsensus(),
+                updateSubmitKeyToDiffKey(),
+                updateAdminKeyToDiffKey(),
+                updateAdminKeyToEmpty(),
+                updateMultipleFields(),
+                expirationTimestampIsValidated(),
+                updateSubmitKeyOnTopicWithNoAdminKeyFails(),
+                clearingAdminKeyWhenAutoRenewAccountPresent(),
+                feeAsExpected(),
+                updateExpiryOnTopicWithNoAdminKey(),
+                updateToMissingTopicFails());
     }
 
     @Override

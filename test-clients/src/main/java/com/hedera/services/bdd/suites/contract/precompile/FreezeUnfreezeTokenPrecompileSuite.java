@@ -84,7 +84,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
-
     public static void main(String... args) {
         new FreezeUnfreezeTokenPrecompileSuite().runSuiteAsync();
     }
