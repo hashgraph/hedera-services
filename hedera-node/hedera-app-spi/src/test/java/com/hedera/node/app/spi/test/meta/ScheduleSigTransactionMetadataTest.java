@@ -39,7 +39,6 @@ class ScheduleSigTransactionMetadataTest {
     @Mock private HederaKey payerKey;
     private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
     private AccountID schedulePayer = AccountID.newBuilder().setAccountNum(4L).build();
-    private ScheduleSigTransactionMetadata subject;
 
     @Test
     void getsInnerMetadata() {
