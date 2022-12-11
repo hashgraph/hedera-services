@@ -38,18 +38,21 @@ public class FetchSystemFiles extends HapiSuite {
         new FetchSystemFiles().runSuiteSync();
     }
 
-    final String TARGET_DIR = "./remote-system-files";
+    private static final String TARGET_DIR = "./remote-system-files";
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(fetchFiles());
     }
 
+    /**
+     * Fetches the system files from a running network and saves them to the local file system.
+     */
     private HapiSpec fetchFiles() {
         return customHapiSpec("FetchFiles")
                 .withProperties(
                         Map.of(
-                                "fees.useFixedOffer", "false",
+                                "fees.useFixedOffer", "true",
                                 "fees.fixedOffer", "100000000"))
                 .given()
                 .when()

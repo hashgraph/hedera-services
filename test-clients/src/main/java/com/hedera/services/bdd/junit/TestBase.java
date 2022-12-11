@@ -35,6 +35,16 @@ import org.junit.jupiter.api.DynamicTest;
 
 /** Base class with some utility methods that can be used by JUnit-based test classes. */
 public abstract class TestBase {
+    /**
+     * This factory takes a list of suite suppliers and returns a dynamic test that
+     * runs all specs from the suites concurrently. If any spec fails, the test fails.
+     * The assertion message will list all the failed specs, organized by suite, with
+     * details about the cause of each failure, including the exception detail message
+     * and the {@code toString()} of the failed operation.
+     *
+     * @param suiteSuppliers the suites to run concurrently
+     * @return a dynamic test that runs all specs from the suites concurrently
+     */
     @SafeVarargs
     @SuppressWarnings("java:S3864")
     protected final DynamicTest specsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
@@ -63,6 +73,10 @@ public abstract class TestBase {
                     %s
                     """;
             final var details = new StringBuilder();
+            // The stream below is a bit tricky. It is grouping the specs by suite name, and then
+            // for each suite, it is collecting the specs that failed, and then for each failed spec,
+            // it is collecting the details of the failure. The details are the exception message and
+            // the toString() of the failed operation.
             failures.stream()
                     .collect(Collectors.groupingBy(HapiSpec::getSuitePrefix, Collectors.toList()))
                     .forEach(
@@ -71,13 +85,14 @@ public abstract class TestBase {
                                         .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
                                         .append(" -> ")
                                         .append(failedSpecs.size())
-                                        .append(" failures:\n    ");
+                                        .append(" failures:\n");
                                 failedSpecs.forEach(
                                         failure ->
-                                                details.append(failure.getName())
+                                                details.append("    ")
+                                                        .append(failure.getName())
                                                         .append(": ")
                                                         .append(failure.getCause())
-                                                        .append("\n    "));
+                                                        .append("\n"));
                             });
             Assertions.fail(String.format(failureReport, failures.size(), details));
         }
@@ -154,7 +169,8 @@ public abstract class TestBase {
                                                                     + "SPEC {"
                                                                     + s.getName()
                                                                     + ETH_SUFFIX
-                                                                    + "}");
+                                                                    + "}: "
+                                                                    + s.getCause());
                                                 }));
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }

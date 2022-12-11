@@ -53,11 +53,9 @@ public class SysDelSysUndelSpec extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
                     systemDeleteThenUndeleteRestoresContentsAndExpiry(),
                     systemDeleteWithPastExpiryDestroysFile(),
-                    distinguishesAdminPrivileges(),
-                });
+                    distinguishesAdminPrivileges());
     }
 
     private HapiSpec distinguishesAdminPrivileges() {

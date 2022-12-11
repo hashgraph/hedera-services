@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -35,6 +36,8 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,6 +54,8 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     protected List<String> otherSigs = Collections.emptyList();
     private Optional<String> details = Optional.empty();
     private Optional<Function<HapiSpec, Object[]>> paramsFn = Optional.empty();
+    @Nullable
+    private Function<HapiSpec, Tuple> tupleFn = null;
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
     private Optional<Long> valueSent = Optional.of(0L);
     private boolean convertableToEthCall = true;
@@ -89,6 +94,11 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     public HapiContractCall(String abi, String contract, Function<HapiSpec, Object[]> fn) {
         this(abi, contract);
         paramsFn = Optional.of(fn);
+    }
+
+    public HapiContractCall(String abi, Function<HapiSpec, Tuple> fn, String contract) {
+        this(abi, contract);
+        tupleFn = fn;
     }
 
     public HapiContractCall exposingResultTo(final Consumer<Object[]> observer) {
@@ -247,9 +257,19 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
             contract = actionable.getContract();
             abi = actionable.getDetails().getAbi();
             params = actionable.getDetails().getExampleArgs();
-        } else paramsFn.ifPresent(hapiApiSpecFunction -> params = hapiApiSpecFunction.apply(spec));
+        } else {
+            paramsFn.ifPresent(hapiApiSpecFunction -> params =
+                hapiApiSpecFunction.apply(spec));
+        }
 
-        byte[] callData = initializeCallData();
+        final byte[] callData;
+        if (tupleFn == null) {
+            callData = initializeCallData();
+        } else {
+            final var abiFunction = com.esaulpaugh.headlong.abi.Function.fromJson(abi);
+            final var inputTuple = tupleFn.apply(spec);
+            callData = abiFunction.encodeCall(inputTuple).array();
+        }
 
         ContractCallTransactionBody opBody =
                 spec.txns()

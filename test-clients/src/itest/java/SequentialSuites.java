@@ -36,6 +36,7 @@ import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
+import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
@@ -51,30 +52,13 @@ public class SequentialSuites {
     static Supplier<HapiSuite>[] all() {
         return (Supplier<HapiSuite>[])
                 new Supplier[] {
-                    RecordCreationSuite::new,
+                    TargetNetworkPrep::new,
                     FeatureFlagSuite::new,
                     AutoAccountUpdateSuite::new,
-                    GracePeriodRestrictionsSuite::new,
-                    FileUpdateSuite::new,
-                    ProtectedFilesUpdateSuite::new,
-                    ExchangeRateControlSuite::new,
-                    FileRecordsSanityCheckSuite::new,
-                    FetchSystemFiles::new,
-                    VersionInfoSpec::new,
-                    ContractRecordsSanityCheckSuite::new,
                     SpecialAccountsAreExempted::new,
                     CryptoUpdateSuite::new,
-                    CryptoRecordsSanityCheckSuite::new,
-                    ThrottleDefValidationSuite::new,
                     PrivilegedOpsSuite::new,
-                    CongestionPricingSuite::new,
-                    UmbrellaRedux::new,
-                    ScheduleCreateSpecs::new,
-                    ScheduleSignSpecs::new,
                     TraceabilitySuite::new,
-                    ScheduleRecordSpecs::new,
-                    ScheduleExecutionSpecs::new,
-                    ScheduleDeleteSpecs::new,
                     LogsSuite::new,
                     SelfDestructSuite::new,
                     CreatePrecompileSuite::new,

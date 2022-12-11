@@ -49,6 +49,10 @@ import org.apache.logging.log4j.Logger;
 
 public class PermissionSemanticsSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(PermissionSemanticsSpec.class);
+    public static final String NEVER_TO_BE_USED = "neverToBeUsed";
+    public static final String CIVILIAN = "civilian";
+    public static final String ETERNAL = "eternal";
+    public static final String WACL = "wacl";
 
     public static void main(String... args) {
         new PermissionSemanticsSpec().runSuiteAsync();
@@ -62,11 +66,10 @@ public class PermissionSemanticsSpec extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
                     allowsDeleteWithOneTopLevelSig(),
                     supportsImmutableFiles(),
-                    addressBookAdminExemptFromFeesGivenAuthorizedOps(),
-                });
+                    addressBookAdminExemptFromFeesGivenAuthorizedOps()
+                );
     }
 
     private HapiSpec addressBookAdminExemptFromFeesGivenAuthorizedOps() {
@@ -99,40 +102,40 @@ public class PermissionSemanticsSpec extends HapiSuite {
 
         return defaultHapiSpec("SupportsImmutableFiles")
                 .given(
-                        newKeyNamed("neverToBeUsed").type(KeyFactory.KeyType.LIST),
-                        cryptoCreate("civilian"),
-                        fileCreate("eternal").payingWith("civilian").unmodifiable())
+                        newKeyNamed(NEVER_TO_BE_USED).type(KeyFactory.KeyType.LIST),
+                        cryptoCreate(CIVILIAN),
+                        fileCreate(ETERNAL).payingWith(CIVILIAN).unmodifiable())
                 .when(
-                        fileDelete("eternal")
-                                .payingWith("civilian")
-                                .signedBy("civilian")
+                        fileDelete(ETERNAL)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN)
                                 .hasKnownStatus(UNAUTHORIZED),
-                        fileAppend("eternal")
-                                .payingWith("civilian")
-                                .signedBy("civilian")
+                        fileAppend(ETERNAL)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN)
                                 .content("Ignored.")
                                 .hasKnownStatus(UNAUTHORIZED),
-                        fileUpdate("eternal")
-                                .payingWith("civilian")
-                                .signedBy("civilian")
+                        fileUpdate(ETERNAL)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN)
                                 .contents("Ignored.")
                                 .hasKnownStatus(UNAUTHORIZED),
-                        fileUpdate("eternal")
-                                .payingWith("civilian")
-                                .signedBy("civilian", "neverToBeUsed")
-                                .wacl("neverToBeUsed")
+                        fileUpdate(ETERNAL)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN, NEVER_TO_BE_USED)
+                                .wacl(NEVER_TO_BE_USED)
                                 .hasKnownStatus(UNAUTHORIZED))
                 .then(
                         withOpContext(
                                 (spec, opLog) -> {
                                     approxExpiry.set(
-                                            spec.registry().getTimestamp("eternal").getSeconds());
+                                            spec.registry().getTimestamp(ETERNAL).getSeconds());
                                 }),
-                        fileUpdate("eternal")
-                                .payingWith("civilian")
-                                .signedBy("civilian")
+                        fileUpdate(ETERNAL)
+                                .payingWith(CIVILIAN)
+                                .signedBy(CIVILIAN)
                                 .extendingExpiryBy(extensionSecs),
-                        getFileInfo("eternal")
+                        getFileInfo(ETERNAL)
                                 .isUnmodifiable()
                                 .hasExpiryPassing(
                                         l -> Math.abs(l - approxExpiry.get() - extensionSecs) < 5));
@@ -148,25 +151,25 @@ public class PermissionSemanticsSpec extends HapiSuite {
         var failedUpdateSig = wacl.signedWith(sigs(ON, sigs(OFF, ON)));
 
         return defaultHapiSpec("AllowsDeleteWithOneTopLevelSig")
-                .given(newKeyNamed("wacl").shape(wacl))
-                .when(fileCreate("tbd").key("wacl"))
+                .given(newKeyNamed(WACL).shape(wacl))
+                .when(fileCreate("tbd").key(WACL))
                 .then(
                         fileUpdate("tbd")
                                 .contents("Some more contents!")
-                                .signedBy(GENESIS, "wacl")
-                                .sigControl(ControlForKey.forKey("wacl", failedUpdateSig))
+                                .signedBy(GENESIS, WACL)
+                                .sigControl(ControlForKey.forKey(WACL, failedUpdateSig))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         fileUpdate("tbd")
                                 .contents("Some new contents!")
-                                .signedBy(GENESIS, "wacl")
-                                .sigControl(ControlForKey.forKey("wacl", updateSig)),
+                                .signedBy(GENESIS, WACL)
+                                .sigControl(ControlForKey.forKey(WACL, updateSig)),
                         fileDelete("tbd")
-                                .signedBy(GENESIS, "wacl")
-                                .sigControl(ControlForKey.forKey("wacl", failedDeleteSig))
+                                .signedBy(GENESIS, WACL)
+                                .sigControl(ControlForKey.forKey(WACL, failedDeleteSig))
                                 .hasKnownStatus(INVALID_SIGNATURE),
                         fileDelete("tbd")
-                                .signedBy(GENESIS, "wacl")
-                                .sigControl(ControlForKey.forKey("wacl", deleteSig)));
+                                .signedBy(GENESIS, WACL)
+                                .sigControl(ControlForKey.forKey(WACL, deleteSig)));
     }
 
     @Override

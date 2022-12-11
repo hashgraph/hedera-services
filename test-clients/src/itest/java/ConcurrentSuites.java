@@ -19,6 +19,7 @@ import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
 import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
+import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -72,8 +73,10 @@ import com.hedera.services.bdd.suites.ethereum.HelloWorldEthereumSuite;
 import com.hedera.services.bdd.suites.file.FileAppendSuite;
 import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
+import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
 import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
 import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
+import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
@@ -104,12 +107,14 @@ public class ConcurrentSuites {
                     TokenManagementSpecs::new,
                     TokenTransactSpecs::new,
                     FileCreateSuite::new,
+                    QueryFailuresSpec::new,
                     PermissionSemanticsSpec::new,
                     SysDelSysUndelSpec::new,
                     UpdateFailuresSpec::new,
                     SignedTransactionBytesRecordsSuite::new,
                     TopicCreateSuite::new,
                     TopicDeleteSuite::new,
+                    TopicUpdateSuite::new,
                     SubmitMessageSuite::new,
                     ChunkingSuite::new,
                     CryptoTransferSuite::new,
@@ -168,6 +173,8 @@ public class ConcurrentSuites {
                     // contract.ethereum
                     EthereumSuite::new,
                     HelloWorldEthereumSuite::new,
+                    // network info
+                    VersionInfoSpec::new,
                 };
     }
 }

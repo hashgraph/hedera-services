@@ -390,6 +390,11 @@ public class TxnVerbs {
         return new HapiContractCall(abi, contract, fn);
     }
 
+    public static HapiContractCall contractCallWithTuple(
+            String contract, String abi, Function<HapiSpec, Tuple> fn) {
+        return new HapiContractCall(abi, fn, contract);
+    }
+
     public static HapiContractCall explicitContractCall(
             String contract, String abi, Object... params) {
         return new HapiContractCall(abi, contract, params);

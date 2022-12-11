@@ -136,10 +136,8 @@ public class TraceabilitySuite extends HapiSuite {
     private static final String SET_SECOND_SLOT = "setSlot2";
     private static final String DELEGATE_CALL_ADDRESS_GET_SLOT_2 = "delegateCallAddressGetSlot2";
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
-    private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String RUNTIME_CODE = "runtimeBytecode";
     public static final String SIDECARS_PROP = "contracts.sidecars";
-    private static final String COMPRESSION_PROP = "hedera.recordStream.compressFilesOnCreation";
 
     public static void main(final String... args) {
         new TraceabilitySuite().runSuiteSync();

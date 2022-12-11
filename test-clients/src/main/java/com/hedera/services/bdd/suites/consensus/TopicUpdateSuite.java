@@ -54,13 +54,12 @@ public class TopicUpdateSuite extends HapiSuite {
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     public static void main(String... args) {
-        new TopicUpdateSuite().runSuiteSync();
+        new TopicUpdateSuite().runSuiteAsync();
     }
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
                     validateMultipleFields(),
                     topicUpdateSigReqsEnforcedAtConsensus(),
                     updateSubmitKeyToDiffKey(),
@@ -73,12 +72,12 @@ public class TopicUpdateSuite extends HapiSuite {
                     feeAsExpected(),
                     updateExpiryOnTopicWithNoAdminKey(),
                     updateToMissingTopicFails()
-                });
+                );
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
     private HapiSpec updateToMissingTopicFails() {

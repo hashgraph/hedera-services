@@ -92,9 +92,10 @@ public class RecordCreationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
     private static final long SLEEP_MS = 1_000L;
-    private static final String PAY_RECEIVABLE_NAME = "PayReceivable";
     private static final String DEFAULT_RECORDS_TTL =
             HapiSpecSetup.getDefaultNodeProps().get("cache.records.ttl");
+    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
+    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
 
     public static void main(String... args) {
         new RecordCreationSuite().runSuiteSync();
@@ -103,217 +104,12 @@ public class RecordCreationSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiSpec[] {
-                    ensureSystemStateAsExpected(),
-                    confirmNftToggleIsWorksThenReenable(),
                     payerRecordCreationSanityChecks(),
                     accountsGetPayerRecordsIfSoConfigured(),
-                    calledContractNoLongerGetsRecord(),
-                    thresholdRecordsDontExistAnymore(),
                     submittingNodeChargedNetworkFeeForLackOfDueDiligence(),
                     submittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness(),
-                    submittingNodeStillPaidIfServiceFeesOmitted(),
-
-                    /* This last spec requires sleeping for the default TTL (180s) so that the
-                    expiration queue will be purged of all entries for existing records.
-
-                    Especially since we are _very_ unlikely to make a dynamic change to
-                    cache.records.ttl in practice, this test is not worth running in CircleCI.
-
-                    However, it is a good sanity check to have available locally when making
-                    changes to record expiration.  */
-                    //						recordsTtlChangesAsExpected(),
-                });
-    }
-
-    private HapiSpec confirmNftToggleIsWorksThenReenable() {
-        final var acceptedTokenAttempt = "someSuch";
-        final var blockedTokenAttempt = "neverToBe";
-        final var supplyKey = "supplyKey";
-        final var wipeKey = "wipeKey";
-        final var miscAccount = "civilian";
-
-        return defaultHapiSpec("ConfirmNftToggleIsWorksThenReenable")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "false")),
-                        tokenCreate(blockedTokenAttempt)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .hasPrecheck(NOT_SUPPORTED),
-                        mintToken("1.2.3", List.of(ByteString.copyFromUtf8("NOPE")))
-                                .signedBy(DEFAULT_PAYER)
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED),
-                        burnToken("1.2.3", List.of(1L, 2L, 3L))
-                                .signedBy(DEFAULT_PAYER)
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED),
-                        wipeTokenAccount("1.2.3", "2.3.4", List.of(1L, 2L, 3L))
-                                .signedBy(DEFAULT_PAYER)
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED),
-                        cryptoTransfer(movingUnique("1.2.3", 1L).between("2.3.4", "3.4.5"))
-                                .signedBy(DEFAULT_PAYER)
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(NOT_SUPPORTED))
-                .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.nfts.areEnabled", "true")))
-                .then(
-                        newKeyNamed(supplyKey),
-                        newKeyNamed(wipeKey),
-                        cryptoCreate(miscAccount),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(acceptedTokenAttempt)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0L)
-                                .wipeKey(wipeKey)
-                                .supplyKey(supplyKey)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(
-                                acceptedTokenAttempt,
-                                List.of(
-                                        ByteString.copyFromUtf8("A"),
-                                        ByteString.copyFromUtf8("B"),
-                                        ByteString.copyFromUtf8("C"))),
-                        burnToken(acceptedTokenAttempt, List.of(2L)),
-                        tokenAssociate(miscAccount, acceptedTokenAttempt),
-                        cryptoTransfer(
-                                movingUnique(acceptedTokenAttempt, 1L)
-                                        .between(TOKEN_TREASURY, miscAccount)),
-                        wipeTokenAccount(acceptedTokenAttempt, miscAccount, List.of(1L)),
-                        getAccountBalance(miscAccount).hasTokenBalance(acceptedTokenAttempt, 0L),
-                        getAccountBalance(TOKEN_TREASURY)
-                                .hasTokenBalance(acceptedTokenAttempt, 1L));
-    }
-
-    private HapiSpec ensureSystemStateAsExpected() {
-        final var EMPTY_KEY = Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-        final var snapshot800 = "800startBalance";
-        final var snapshot801 = "801startBalance";
-        final var civilian = "civilian";
-        final AtomicReference<FeeObject> feeObs = new AtomicReference<>();
-        try {
-            final var defaultPermissionsLoc = "src/main/resource/api-permission.properties";
-            final var stylized121 = Files.readString(Paths.get(defaultPermissionsLoc));
-            final var serde = StandardSerdes.SYS_FILE_SERDES.get(122L);
-
-            return defaultHapiSpec("EnsureDefaultSystemFiles")
-                    .given(
-                            uploadDefaultFeeSchedules(GENESIS),
-                            fileUpdate(API_PERMISSIONS)
-                                    .payingWith(GENESIS)
-                                    .contents(serde.toValidatedRawFile(stylized121)),
-                            overridingAllOf(
-                                    Map.of(
-                                            CHAIN_ID_PROP,
-                                            "298",
-                                            "staking.fees.nodeRewardPercentage",
-                                            "10",
-                                            "staking.fees.stakingRewardPercentage",
-                                            "10",
-                                            "staking.isEnabled",
-                                            "true",
-                                            "staking.maxDailyStakeRewardThPerH",
-                                            "100",
-                                            "staking.rewardRate",
-                                            "100_000_000_000",
-                                            "staking.startThreshold",
-                                            "100_000_000")))
-                    .when(
-                            cryptoCreate(civilian),
-                            balanceSnapshot(snapshot800, STAKING_REWARD),
-                            cryptoTransfer(tinyBarsFromTo(civilian, STAKING_REWARD, ONE_HBAR))
-                                    .payingWith(civilian)
-                                    .signedBy(civilian)
-                                    .exposingFeesTo(feeObs)
-                                    .logged(),
-                            sourcing(
-                                    () ->
-                                            getAccountBalance(STAKING_REWARD)
-                                                    .hasTinyBars(
-                                                            changeFromSnapshot(
-                                                                    snapshot800,
-                                                                    (long)
-                                                                            (ONE_HBAR
-                                                                                    + ((feeObs.get()
-                                                                                                            .getNetworkFee()
-                                                                                                    + feeObs.get()
-                                                                                                            .getServiceFee())
-                                                                                            * 0.1))))),
-                            balanceSnapshot(snapshot801, NODE_REWARD),
-                            cryptoTransfer(tinyBarsFromTo(civilian, NODE_REWARD, ONE_HBAR))
-                                    .payingWith(civilian)
-                                    .signedBy(civilian)
-                                    .logged(),
-                            sourcing(
-                                    () ->
-                                            getAccountBalance(NODE_REWARD)
-                                                    .hasTinyBars(
-                                                            changeFromSnapshot(
-                                                                    snapshot801,
-                                                                    (long)
-                                                                            (ONE_HBAR
-                                                                                    + ((feeObs.get()
-                                                                                                            .getNetworkFee()
-                                                                                                    + feeObs.get()
-                                                                                                            .getServiceFee())
-                                                                                            * 0.1))))))
-                    .then(
-                            getAccountDetails(STAKING_REWARD)
-                                    .payingWith(GENESIS)
-                                    .has(
-                                            accountDetailsWith()
-                                                    .expiry(33197904000L, 0)
-                                                    .key(EMPTY_KEY)
-                                                    .memo("")
-                                                    .noAlias()
-                                                    .noAllowances()),
-                            getAccountDetails(NODE_REWARD)
-                                    .payingWith(GENESIS)
-                                    .has(
-                                            accountDetailsWith()
-                                                    .expiry(33197904000L, 0)
-                                                    .key(EMPTY_KEY)
-                                                    .memo("")
-                                                    .noAlias()
-                                                    .noAllowances()),
-                            withOpContext(
-                                    (spec, opLog) -> {
-                                        final var genesisInfo = getAccountInfo("0.0.2");
-                                        allRunFor(spec, genesisInfo);
-                                        final var key =
-                                                genesisInfo
-                                                        .getResponse()
-                                                        .getCryptoGetInfo()
-                                                        .getAccountInfo()
-                                                        .getKey();
-                                        final var cloneConfirmations =
-                                                inParallel(
-                                                        IntStream.rangeClosed(200, 750)
-                                                                .filter(i -> i < 350 || i >= 400)
-                                                                .mapToObj(
-                                                                        i ->
-                                                                                getAccountInfo(
-                                                                                                "0.0."
-                                                                                                        + i)
-                                                                                        .noLogging()
-                                                                                        .payingWith(
-                                                                                                GENESIS)
-                                                                                        .has(
-                                                                                                AccountInfoAsserts
-                                                                                                        .accountWith()
-                                                                                                        .key(
-                                                                                                                key)))
-                                                                .toArray(HapiSpecOperation[]::new));
-                                        allRunFor(spec, cloneConfirmations);
-                                    }));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+                    submittingNodeStillPaidIfServiceFeesOmitted()
+                );
     }
 
     private HapiSpec submittingNodeStillPaidIfServiceFeesOmitted() {
@@ -322,12 +118,6 @@ public class RecordCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("submittingNodeStillPaidIfServiceFeesOmitted")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "staking.fees.stakingRewardPercentage", "10",
-                                                "staking.fees.nodeRewardPercentage", "10")),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate("payer"),
@@ -418,12 +208,6 @@ public class RecordCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForLackOfDueDiligence")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "staking.fees.stakingRewardPercentage", "10",
-                                                "staking.fees.nodeRewardPercentage", "20")),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate("payer"),
@@ -461,7 +245,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                                 .getNetworkFee()
-                                                                                        * 0.7
+                                                                                        * 0.8
                                                                                 + 1)))
                                                 .logged()),
                         sourcing(
@@ -484,7 +268,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.2)))
+                                                                                * 0.1)))
                                                 .logged()),
                         sourcing(
                                 () ->
@@ -508,12 +292,6 @@ public class RecordCreationSuite extends HapiSuite {
 
         return defaultHapiSpec("SubmittingNodeChargedNetworkFeeForIgnoringPayerUnwillingness")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(
-                                        Map.of(
-                                                "staking.fees.stakingRewardPercentage", "10",
-                                                "staking.fees.nodeRewardPercentage", "20")),
                         cryptoTransfer(tinyBarsFromTo(GENESIS, "0.0.3", ONE_HBAR))
                                 .payingWith(GENESIS),
                         cryptoCreate("payer"),
@@ -559,7 +337,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                                 .getNetworkFee()
-                                                                                        * 0.7
+                                                                                        * 0.8
                                                                                 + 1)))
                                                 .logged()),
                         sourcing(
@@ -582,7 +360,7 @@ public class RecordCreationSuite extends HapiSuite {
                                                                 (long)
                                                                         (+feeObs.get()
                                                                                         .getNetworkFee()
-                                                                                * 0.2)))
+                                                                                * 0.1)))
                                                 .logged()),
                         sourcing(
                                 () ->
@@ -643,79 +421,6 @@ public class RecordCreationSuite extends HapiSuite {
                                 .payingWith("payer")
                                 .via(txn))
                 .then(getAccountRecords("payer").has(inOrder(recordWith().txnId(txn))));
-    }
-
-    private HapiSpec calledContractNoLongerGetsRecord() {
-        return defaultHapiSpec("CalledContractNoLongerGetsRecord")
-                .given(uploadInitCode(PAY_RECEIVABLE_NAME))
-                .when(contractCreate(PAY_RECEIVABLE_NAME).via("createTxn"))
-                .then(
-                        contractCall(PAY_RECEIVABLE_NAME, "deposit", BigInteger.valueOf(1_000L))
-                                .via("callTxn")
-                                .sending(1_000L));
-    }
-
-    private HapiSpec thresholdRecordsDontExistAnymore() {
-        final var lowSendThreshold = "lowSendThreshold";
-        final var lowReceiveThreshold = "lowReceiveThreshold";
-        return defaultHapiSpec("OnlyNetAdjustmentIsComparedToThresholdWhenCreating")
-                .given(
-                        cryptoCreate("payer"),
-                        cryptoCreate(lowSendThreshold).sendThreshold(1L),
-                        cryptoCreate(lowReceiveThreshold).receiveThreshold(1L))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(lowSendThreshold, lowReceiveThreshold, 2L))
-                                .payingWith("payer")
-                                .via("testTxn"))
-                .then(
-                        getAccountRecords("payer").has(inOrder(recordWith().txnId("testTxn"))),
-                        getAccountRecords(lowSendThreshold).has(inOrder()),
-                        getAccountRecords(lowReceiveThreshold).has(inOrder()));
-    }
-
-    private HapiSpec recordsTtlChangesAsExpected() {
-        final int abbrevCacheTtl = 3;
-        final String brieflyAvailMemo = "I can't stay for long...";
-        final AtomicReference<byte[]> origPropContents = new AtomicReference<>();
-
-        return defaultHapiSpec("RecordsTtlChangesAsExpected")
-                .given(
-                        getFileContents(APP_PROPERTIES).consumedBy(origPropContents::set),
-                        sleepFor((Long.parseLong(DEFAULT_RECORDS_TTL) + 1) * 1_000L),
-                        sourcing(
-                                () ->
-                                        fileUpdate(APP_PROPERTIES)
-                                                .fee(ONE_HUNDRED_HBARS)
-                                                .contents(
-                                                        rawConfigPlus(
-                                                                origPropContents.get(),
-                                                                "cache.records.ttl",
-                                                                "" + abbrevCacheTtl))
-                                                .payingWith(GENESIS)),
-                        cryptoCreate("payer"))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo("payer", ADDRESS_BOOK_CONTROL, 1L))
-                                .memo(brieflyAvailMemo)
-                                .payingWith("payer"),
-                        getAccountRecords("payer")
-                                .has(inOrder(recordWith().memo(brieflyAvailMemo))),
-                        sleepFor(abbrevCacheTtl * 1_000L),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1L))
-                                .payingWith(GENESIS),
-                        getAccountRecords("payer").has(inOrder()))
-                .then(sourcing(() -> fileUpdate(APP_PROPERTIES).contents(origPropContents.get())));
-    }
-
-    private byte[] rawConfigPlus(byte[] rawBase, String extraName, String extraValue) {
-        try {
-            final var rawConfig = ServicesConfigurationList.parseFrom(rawBase);
-            return rawConfig.toBuilder()
-                    .addNameValue(Setting.newBuilder().setName(extraName).setValue(extraValue))
-                    .build()
-                    .toByteArray();
-        } catch (InvalidProtocolBufferException e) {
-            throw new IllegalStateException("Existing 0.0.121 wasn't valid protobuf!", e);
-        }
     }
 
     @Override

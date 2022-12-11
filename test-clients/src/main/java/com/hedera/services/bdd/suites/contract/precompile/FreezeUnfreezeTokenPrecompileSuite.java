@@ -84,8 +84,6 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
 
-    private final AtomicReference<AccountID> accountID = new AtomicReference<>();
-    private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
     public static void main(String... args) {
         new FreezeUnfreezeTokenPrecompileSuite().runSuiteAsync();
@@ -111,6 +109,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec noTokenIdReverts() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -167,7 +167,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
 
     private HapiSpec freezeUnfreezeFungibleWithNegativeCases() {
         final AtomicReference<TokenID> withoutKeyID = new AtomicReference<>();
-
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("freezeUnfreezeFungibleWithNegativeCases")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -311,6 +312,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec freezeUnfreezeNftsWithNegativeCases() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
         return defaultHapiSpec("freezeUnfreezeNftsWithNegativeCases")
                 .given(
                         newKeyNamed(FREEZE_KEY),
@@ -423,6 +426,8 @@ public class FreezeUnfreezeTokenPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec isFrozenHappyPathWithLocalCall() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("isFrozenHappyPathWithLocalCall")
                 .given(
                         newKeyNamed(FREEZE_KEY),

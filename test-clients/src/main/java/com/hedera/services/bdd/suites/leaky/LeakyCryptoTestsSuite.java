@@ -84,11 +84,9 @@ import org.apache.logging.log4j.Logger;
 
 public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
-
-    private static final String ALIAS = "testAlias";
-    private static final String associationsLimitProperty = "entities.limitTokenAssociations";
-    private static final String defaultAssociationsLimit =
-            HapiSpecSetup.getDefaultNodeProps().get(associationsLimitProperty);
+    private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
+    private static final String DEFAULT_ASSOCIATIONS_LIMIT =
+            HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -195,7 +193,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         return defaultHapiSpec("MaxAutoAssociationSpec")
                 .given(
                         overridingTwo(
-                                associationsLimitProperty,
+                                ASSOCIATIONS_LIMIT_PROPERTY,
                                 TRUE_VALUE,
                                 "tokens.maxPerAccount",
                                 "" + MONOGAMOUS_NETWORK))
@@ -207,7 +205,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .hasPrecheck(
                                         REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
                         // Default is NOT to limit associations
-                        overriding(associationsLimitProperty, defaultAssociationsLimit),
+                        overriding(ASSOCIATIONS_LIMIT_PROPERTY, DEFAULT_ASSOCIATIONS_LIMIT),
                         cryptoCreate(user1)
                                 .balance(ONE_HBAR)
                                 .maxAutomaticTokenAssociations(maxAutoAssociations),

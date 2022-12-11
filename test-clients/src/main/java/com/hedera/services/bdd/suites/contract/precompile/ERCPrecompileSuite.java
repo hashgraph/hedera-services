@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -175,7 +176,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     static final String TRANSFER_SIGNATURE = "Transfer(address,address,uint256)";
 
     public static void main(String... args) {
-        new ERCPrecompileSuite().runSuiteSync();
+        new ERCPrecompileSuite().runSuiteAsync();
     }
 
     @Override
@@ -185,10 +186,10 @@ public class ERCPrecompileSuite extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return allOf(ERC20(), ERC721());
+        return allOf(erc20(), erc721());
     }
 
-    List<HapiSpec> ERC20() {
+    List<HapiSpec> erc20() {
         return List.of(
                 getErc20TokenName(),
                 getErc20TokenSymbol(),
@@ -209,10 +210,11 @@ public class ERCPrecompileSuite extends HapiSuite {
                 directCallsWorkForERC20(),
                 erc20TransferFrom(),
                 erc20TransferFromSelf(),
-                getErc20TokenNameExceedingLimits());
+                getErc20TokenNameExceedingLimits(),
+                transferErc20TokenFromContract());
     }
 
-    List<HapiSpec> ERC721() {
+    List<HapiSpec> erc721() {
         return List.of(
                 getErc721TokenName(),
                 getErc721Symbol(),
@@ -1024,304 +1026,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                         getAccountBalance(ACCOUNT_A).hasTokenBalance(TOKEN_NAME, 8500));
     }
 
-    private HapiSpec transferErc20TokenFrom() {
-        final var accountNotAssignedToTokenTxn = "accountNotAssignedToTokenTxn";
-        final var transferFromOtherAccountWithSignaturesTxn =
-                "transferFromOtherAccountWithSignaturesTxn";
-        final var transferWithZeroAddressesTxn = "transferWithZeroAddressesTxn";
-        final var transferWithAccountWithZeroAddressTxn = "transferWithAccountWithZeroAddressTxn";
-        final var transferWithRecipientWithZeroAddressTxn =
-                "transferWithRecipientWithZeroAddressTxn";
-
-        return defaultHapiSpec("ERC_20_TRANSFER_FROM")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(10 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(35)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(GENESIS)
-                                                        .via(accountNotAssignedToTokenTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                tokenAssociate(ACCOUNT, List.of(FUNGIBLE_TOKEN)),
-                                                tokenAssociate(RECIPIENT, List.of(FUNGIBLE_TOKEN)),
-                                                cryptoTransfer(
-                                                                TokenMovement.moving(
-                                                                                20, FUNGIBLE_TOKEN)
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                ACCOUNT))
-                                                        .payingWith(ACCOUNT),
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                                        .hasKnownStatus(SUCCESS),
-                                                newKeyNamed(TRANSFER_SIG_NAME)
-                                                        .shape(SIMPLE.signedWith(ON)),
-                                                cryptoUpdate(ACCOUNT).key(TRANSFER_SIG_NAME),
-                                                cryptoUpdate(RECIPIENT).key(TRANSFER_SIG_NAME),
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(GENESIS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                TRANSFER_SIG_NAME)
-                                                        .via(
-                                                                transferFromOtherAccountWithSignaturesTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(GENESIS)
-                                                        .via(transferWithZeroAddressesTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(GENESIS)
-                                                        .via(transferWithAccountWithZeroAddressTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                                contractCall(
-                                                                ERC_20_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                ACCOUNT))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                BigInteger.valueOf(5))
-                                                        .payingWith(ACCOUNT)
-                                                        .via(
-                                                                transferWithRecipientWithZeroAddressTxn)
-                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(
-                        getAccountInfo(ACCOUNT).savingSnapshot(ACCOUNT),
-                        getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
-                        withOpContext(
-                                (spec, log) -> {
-                                    final var sender =
-                                            spec.registry().getAccountInfo(ACCOUNT).getAccountID();
-                                    final var receiver =
-                                            spec.registry()
-                                                    .getAccountInfo(RECIPIENT)
-                                                    .getAccountID();
-
-                                    var accountNotAssignedToTokenRecord =
-                                            getTxnRecord(accountNotAssignedToTokenTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_SIGNATURE))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithZeroAddressesRecord =
-                                            getTxnRecord(transferWithZeroAddressesTxn)
-                                                    .hasChildRecords(
-                                                            recordWith()
-                                                                    .status(
-                                                                            ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithAccountWithZeroAddressRecord =
-                                            getTxnRecord(transferWithAccountWithZeroAddressTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_ACCOUNT_ID))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithRecipientWithZeroAddressRecord =
-                                            getTxnRecord(transferWithRecipientWithZeroAddressTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_ACCOUNT_ID))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferFromAccountRecord =
-                                            getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            TRANSFER_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum())))
-                                                                                                            .longValue(
-                                                                                                                    5)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    var transferFromNotOwnerWithSignaturesRecord =
-                                            getTxnRecord(transferFromOtherAccountWithSignaturesTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            TRANSFER_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum())))
-                                                                                                            .longValue(
-                                                                                                                    5)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    allRunFor(
-                                            spec,
-                                            accountNotAssignedToTokenRecord,
-                                            transferWithZeroAddressesRecord,
-                                            transferWithAccountWithZeroAddressRecord,
-                                            transferWithRecipientWithZeroAddressRecord,
-                                            transferFromAccountRecord,
-                                            transferFromNotOwnerWithSignaturesRecord);
-                                }),
-                        childRecordsCheck(
-                                TRANSFER_FROM_ACCOUNT_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .ERC_TRANSFER)
-                                                                        .withErcFungibleTransferStatus(
-                                                                                true)))),
-                        childRecordsCheck(
-                                transferFromOtherAccountWithSignaturesTxn,
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(
-                                                resultWith()
-                                                        .contractCallResult(
-                                                                htsPrecompileResult()
-                                                                        .forFunction(
-                                                                                FunctionType
-                                                                                        .ERC_TRANSFER)
-                                                                        .withErcFungibleTransferStatus(
-                                                                                true)))),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(FUNGIBLE_TOKEN, 15),
-                        getAccountBalance(ACCOUNT).hasTokenBalance(FUNGIBLE_TOKEN, 10),
-                        getAccountBalance(RECIPIENT).hasTokenBalance(FUNGIBLE_TOKEN, 10));
-    }
-
     private HapiSpec transferErc20TokenFromContract() {
         final var transferFromOtherContractWithSignaturesTxn =
                 "transferFromOtherContractWithSignaturesTxn";
@@ -1442,8 +1146,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getContractNum())))
                                                                                                             .longValue(
                                                                                                                     5)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                                    .andAllChildRecords();
 
                                     var transferFromOtherContractWithSignaturesTxnRecord =
                                             getTxnRecord(transferFromOtherContractWithSignaturesTxn)
@@ -1467,8 +1170,7 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                                                     .getContractNum())))
                                                                                                             .longValue(
                                                                                                                     5)))))
-                                                    .andAllChildRecords()
-                                                    .logged();
+                                                    .andAllChildRecords();
 
                                     allRunFor(
                                             spec,
@@ -2177,279 +1879,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                         BigInteger.ONE)
                                                 .payingWith(OWNER)
                                                 .gas(GAS_TO_OFFER)));
-    }
-
-    private HapiSpec getErc721TransferFrom() {
-        final var ownerNotAssignedToTokenTxn = "ownerNotAssignedToTokenTxn";
-        final var transferFromOwnerTxn = "transferFromToAccountTxn";
-        final var transferFromNotOwnerWithSignaturesTxn = "transferFromNotOwnerWithSignaturesTxn";
-        final var transferWithZeroAddressesTxn = "transferWithZeroAddressesTxn";
-        final var transferWithOwnerWithZeroAddressTxn = "transferWithOwnerWithZeroAddressTxn";
-        final var transferWithRecipientWithZeroAddressTxn =
-                "transferWithRecipientWithZeroAddressTxn";
-
-        return defaultHapiSpec("ERC_721_TRANSFER_FROM")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(10 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.ONE)
-                                                        .payingWith(GENESIS)
-                                                        .via(ownerNotAssignedToTokenTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
-                                                tokenAssociate(
-                                                        RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
-                                                cryptoTransfer(
-                                                                movingUnique(
-                                                                                NON_FUNGIBLE_TOKEN,
-                                                                                1,
-                                                                                2)
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                OWNER))
-                                                        .payingWith(OWNER),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.ONE)
-                                                        .payingWith(OWNER)
-                                                        .via(transferFromOwnerTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                newKeyNamed(TRANSFER_SIG_NAME)
-                                                        .shape(SIMPLE.signedWith(ON)),
-                                                cryptoUpdate(OWNER).key(TRANSFER_SIG_NAME),
-                                                cryptoUpdate(RECIPIENT).key(TRANSFER_SIG_NAME),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.TWO)
-                                                        .payingWith(GENESIS)
-                                                        .alsoSigningWithFullPrefix(
-                                                                TRANSFER_SIG_NAME)
-                                                        .via(transferFromNotOwnerWithSignaturesTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                BigInteger.ONE)
-                                                        .payingWith(GENESIS)
-                                                        .via(transferWithZeroAddressesTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.ONE)
-                                                        .payingWith(GENESIS)
-                                                        .via(transferWithOwnerWithZeroAddressTxn)
-                                                        .hasKnownStatus(SUCCESS),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                BigInteger.ONE)
-                                                        .payingWith(OWNER)
-                                                        .via(
-                                                                transferWithRecipientWithZeroAddressTxn)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then(
-                        getAccountInfo(OWNER).savingSnapshot(OWNER),
-                        getAccountInfo(RECIPIENT).savingSnapshot(RECIPIENT),
-                        withOpContext(
-                                (spec, log) -> {
-                                    final var sender =
-                                            spec.registry().getAccountInfo(OWNER).getAccountID();
-                                    final var receiver =
-                                            spec.registry()
-                                                    .getAccountInfo(RECIPIENT)
-                                                    .getAccountID();
-
-                                    var ownerNotAssignedToTokenRecord =
-                                            getTxnRecord(ownerNotAssignedToTokenTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_SIGNATURE))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithZeroAddressesRecord =
-                                            getTxnRecord(transferWithZeroAddressesTxn)
-                                                    .hasChildRecords(
-                                                            recordWith()
-                                                                    .status(
-                                                                            ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithOwnerWithZeroAddressRecord =
-                                            getTxnRecord(transferWithOwnerWithZeroAddressTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_ACCOUNT_ID))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferWithRecipientWithZeroAddressRecord =
-                                            getTxnRecord(transferWithRecipientWithZeroAddressTxn)
-                                                    .hasChildRecords(
-                                                            recordWith().status(INVALID_ACCOUNT_ID))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    var transferFromOwnerRecord =
-                                            getTxnRecord(transferFromOwnerTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            TRANSFER_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            1)))))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    var transferFromNotOwnerWithSignaturesRecord =
-                                            getTxnRecord(transferFromNotOwnerWithSignaturesTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .contractCallResult(
-                                                                            resultWith()
-                                                                                    .logs(
-                                                                                            inOrder(
-                                                                                                    logWith()
-                                                                                                            .withTopicsInOrder(
-                                                                                                                    List
-                                                                                                                            .of(
-                                                                                                                                    eventSignatureOf(
-                                                                                                                                            TRANSFER_SIGNATURE),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            sender
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            receiver
-                                                                                                                                                    .getAccountNum()),
-                                                                                                                                    parsedToByteString(
-                                                                                                                                            2)))))))
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    allRunFor(
-                                            spec,
-                                            ownerNotAssignedToTokenRecord,
-                                            transferWithZeroAddressesRecord,
-                                            transferWithOwnerWithZeroAddressRecord,
-                                            transferWithRecipientWithZeroAddressRecord,
-                                            transferFromOwnerRecord,
-                                            transferFromNotOwnerWithSignaturesRecord);
-                                }),
-                        getAccountBalance(TOKEN_TREASURY).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
-                        getAccountBalance(OWNER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
-                        getAccountBalance(RECIPIENT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2));
     }
 
     private HapiSpec getErc721TokenURIFromErc20TokenFails() {

@@ -35,6 +35,7 @@ import org.apache.logging.log4j.Logger;
 public class ValidatePermissionStateAfterReconnect extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(ValidatePermissionStateAfterReconnect.class);
+    public static final String NODE_ACCOUNT = "0.0.6";
 
     public static void main(String... args) {
         new ValidatePermissionStateAfterReconnect().runSuiteSync();
@@ -50,21 +51,21 @@ public class ValidatePermissionStateAfterReconnect extends HapiSuite {
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .when(
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode(),
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode(),
                         fileCreate("effectivelyImmutable").contents("Can't touch me!"),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("updateFile", "2-50")),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .then(
-                        withLiveNode("0.0.6")
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(180, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
                         fileUpdate("effectivelyImmutable")
-                                .setNode("0.0.6")
+                                .setNode(NODE_ACCOUNT)
                                 .hasPrecheck(NOT_SUPPORTED));
     }
 

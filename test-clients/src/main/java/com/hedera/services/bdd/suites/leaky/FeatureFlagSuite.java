@@ -21,18 +21,21 @@ import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.R
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel.relationshipWith;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.hapiPrng;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.enableAllFeatureFlagsAndDisableContractThrottles;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -54,20 +57,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.utilops.FeatureFlags;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.Arrays;
+
 import java.util.List;
-import java.util.Map;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FeatureFlagSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FeatureFlagSuite.class);
-
-    private static final String FALSE = "false";
 
     public static void main(String... args) {
         new FeatureFlagSuite().runSuiteSync();
@@ -76,11 +78,11 @@ public class FeatureFlagSuite extends HapiSuite {
     @Override
     public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                disablesAllFeatureFlagsAndConfirmsNotSupported(),
-                enablesAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
+                disableAllFeatureFlagsAndConfirmNotSupported(),
+                enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting());
     }
 
-    private HapiSpec disablesAllFeatureFlagsAndConfirmsNotSupported() {
+    private HapiSpec disableAllFeatureFlagsAndConfirmNotSupported() {
         return defaultHapiSpec("DisablesAllFeatureFlagsAndConfirmsNotSupported")
                 .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allDisabled()))
                 .when()
@@ -89,21 +91,13 @@ public class FeatureFlagSuite extends HapiSuite {
                                 confirmAutoCreationNotSupported(),
                                 confirmUtilPrngNotSupported(),
                                 confirmKeyAliasAutoCreationNotSupported(),
-                                confirmHollowAccountCreationNotSupported()));
+                                confirmHollowAccountCreationNotSupported(),
+                                confirmNftsNotSupported()));
     }
 
-    private HapiSpec enablesAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
+    private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
         return defaultHapiSpec("EnablesAllFeatureFlagsForFurtherCiTesting")
-                .given(overridingAllOf(FeatureFlags.FEATURE_FLAGS.allEnabled()))
-                .when()
-                .then(
-                        overridingThree(
-                                "contracts.throttle.throttleByGas",
-                                FALSE,
-                                "contracts.enforceCreationThrottle",
-                                FALSE,
-                                SIDECARS_PROP,
-                                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
+                .given() .when() .then(enableAllFeatureFlagsAndDisableContractThrottles());
     }
 
     private HapiSpecOperation confirmAutoCreationNotSupported() {
@@ -112,6 +106,31 @@ public class FeatureFlagSuite extends HapiSuite {
                 newKeyNamed(aliasKey),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR))
                         .hasKnownStatus(NOT_SUPPORTED));
+    }
+
+    private HapiSpecOperation confirmNftsNotSupported() {
+        final var blockedTokenAttempt = "neverToBe";
+        return UtilVerbs.blockingOrder(
+                tokenCreate(blockedTokenAttempt)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0L)
+                        .hasPrecheck(NOT_SUPPORTED),
+                mintToken("1.2.3", List.of(ByteString.copyFromUtf8("NOPE")))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(ONE_HBAR)
+                        .hasPrecheck(NOT_SUPPORTED),
+                burnToken("1.2.3", List.of(1L, 2L, 3L))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(ONE_HBAR)
+                        .hasPrecheck(NOT_SUPPORTED),
+                wipeTokenAccount("1.2.3", "2.3.4", List.of(1L, 2L, 3L))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(ONE_HBAR)
+                        .hasPrecheck(NOT_SUPPORTED),
+                cryptoTransfer(movingUnique("1.2.3", 1L).between("2.3.4", "3.4.5"))
+                        .signedBy(DEFAULT_PAYER)
+                        .fee(ONE_HBAR)
+                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     private HapiSpecOperation confirmUtilPrngNotSupported() {
@@ -208,48 +227,5 @@ public class FeatureFlagSuite extends HapiSuite {
     @Override
     protected Logger getResultsLogger() {
         return log;
-    }
-
-    private enum FeatureFlags {
-        FEATURE_FLAGS;
-
-        public Map<String, String> allEnabled() {
-            return all("true");
-        }
-
-        public Map<String, String> allDisabled() {
-            return all(FALSE);
-        }
-
-        @SuppressWarnings("unchecked")
-        private Map<String, String> all(final String choice) {
-            return Map.ofEntries(
-                    Arrays.stream(NAMES)
-                            .map(name -> Map.entry(name, choice))
-                            .toArray(Map.Entry[]::new));
-        }
-
-        private static final String[] NAMES = {
-            "autoCreation.enabled",
-            // Not being tested
-            "contracts.itemizeStorageFees",
-            // Not being tested
-            "contracts.precompile.htsEnableTokenCreate",
-            // Not being tested
-            "contracts.redirectTokenCalls",
-            "contracts.throttle.throttleByGas",
-            // Not being tested
-            "hedera.allowances.isEnabled",
-            "hedera.recordStream.compressFilesOnCreation",
-            // Behavior doesn't make sense, but is tested
-            "utilPrng.isEnabled",
-            "tokens.autoCreations.isEnabled",
-            "lazyCreation.enabled",
-            "cryptoCreateWithAlias.enabled",
-            "contracts.allowAutoAssociations",
-            "contracts.enforceCreationThrottle",
-            "contracts.precompile.atomicCryptoTransfer.enabled",
-            "scheduling.longTermEnabled",
-        };
     }
 }

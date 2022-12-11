@@ -45,6 +45,7 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 
     public static final String DEFAULT_PROPERTIES = "regression-file_ops.properties";
+    public static final String MESSAGE_SUBMISSION_SIMPLE = "messageSubmissionSimple";
 
     public static String nodeId = "0.0.";
     public static String nodeAddress = "";
@@ -85,11 +86,11 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
 
     @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {UmbrellaReduxWithCustomNodes(), messageSubmissionSimple()});
+        return List.of(runUmbrellaReduxWithCustomNodes(), messageSubmissionSimple());
     }
 
     private HapiSpec messageSubmissionSimple() {
-        return HapiSpec.customHapiSpec("messageSubmissionSimple")
+        return HapiSpec.customHapiSpec(MESSAGE_SUBMISSION_SIMPLE)
                 .withProperties(
                         Map.of(
                                 "default.topic.runningHash.version", topic_running_hash_version,
@@ -105,8 +106,8 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                 .message("testmessage")
                                 .payingWith("civilian")
                                 .hasKnownStatus(SUCCESS)
-                                .via("messageSubmissionSimple"),
-                        QueryVerbs.getTxnRecord("messageSubmissionSimple")
+                                .via(MESSAGE_SUBMISSION_SIMPLE),
+                        QueryVerbs.getTxnRecord(MESSAGE_SUBMISSION_SIMPLE)
                                 .logged()
                                 .hasPriority(
                                         TransactionRecordAsserts.recordWith()
@@ -114,8 +115,8 @@ public class UmbrellaReduxWithCustomNodes extends HapiSuite {
                                                         topic_running_hash_version)));
     }
 
-    private HapiSpec UmbrellaReduxWithCustomNodes() {
-        return HapiSpec.customHapiSpec("UmbrellaReduxWithCustomNodes")
+    private HapiSpec runUmbrellaReduxWithCustomNodes() {
+        return HapiSpec.customHapiSpec("RunUmbrellaReduxWithCustomNodes")
                 .withProperties(
                         Map.of(
                                 "status.wait.timeout.ms",

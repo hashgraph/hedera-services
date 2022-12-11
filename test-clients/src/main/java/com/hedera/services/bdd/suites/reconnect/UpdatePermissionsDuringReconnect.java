@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 
 public class UpdatePermissionsDuringReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UpdatePermissionsDuringReconnect.class);
+    public static final String NODE_ACCOUNT = "0.0.6";
 
     public static void main(String... args) {
         new UpdatePermissionsDuringReconnect().runSuiteSync();
@@ -49,20 +50,20 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
         return defaultHapiSpec("updateApiPermissionsDuringReconnect")
                 .given(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("updateFile", "1-1011"))
                                 .payingWith(SYSTEM_ADMIN)
                                 .logged(),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .then(
-                        withLiveNode("0.0.6")
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
                         UtilVerbs.sleepFor(30 * 1000L),
-                        withLiveNode("0.0.6")
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
@@ -73,7 +74,7 @@ public class UpdatePermissionsDuringReconnect extends HapiSuite {
                                 .saveToRegistry(fileInfoRegistry),
                         getFileContents(API_PERMISSIONS)
                                 .logged()
-                                .setNode("0.0.6")
+                                .setNode(NODE_ACCOUNT)
                                 .payingWith(SYSTEM_ADMIN)
                                 .hasContents(fileInfoRegistry));
     }

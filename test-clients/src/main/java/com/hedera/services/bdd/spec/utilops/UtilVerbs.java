@@ -41,11 +41,13 @@ import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.unti
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hedera.services.yahcli.output.CommonMessages.COMMON_MESSAGES;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -390,6 +392,18 @@ public class UtilVerbs {
                                 log.info("Reset {} default values", defaultValues);
                             }
                         });
+    }
+
+    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles() {
+        return blockingOrder(
+                overridingAllOf(FeatureFlags.FEATURE_FLAGS.allEnabled()),
+                overridingThree(
+                        "contracts.throttle.throttleByGas",
+                        FALSE_VALUE,
+                        "contracts.enforceCreationThrottle",
+                        FALSE_VALUE,
+                        SIDECARS_PROP,
+                        "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
     }
 
     public static HapiSpecOperation overridingTwo(

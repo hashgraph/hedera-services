@@ -37,11 +37,13 @@ public class QueryFailuresSpec extends HapiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiSpec[] {
-                    getsExpectedRejections(),
-                });
+        return List.of(getsExpectedRejections());
     }
 
     private HapiSpec getsExpectedRejections() {

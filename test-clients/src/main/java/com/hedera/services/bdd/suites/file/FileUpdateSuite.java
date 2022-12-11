@@ -182,7 +182,7 @@ public class FileUpdateSuite extends HapiSuite {
 
     private HapiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
-                .given(flattened(TokenAssociationSpecs.basicKeysAndTokens()))
+                .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
                         cryptoCreate("misc").balance(0L),
                         TxnVerbs.tokenAssociate(

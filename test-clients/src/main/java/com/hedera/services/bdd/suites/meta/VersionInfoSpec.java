@@ -43,8 +43,13 @@ public class VersionInfoSpec extends HapiSuite {
     }
 
     @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
     public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {discoversExpectedVersions()});
+        return List.of(discoversExpectedVersions());
     }
 
     private HapiSpec discoversExpectedVersions() {
