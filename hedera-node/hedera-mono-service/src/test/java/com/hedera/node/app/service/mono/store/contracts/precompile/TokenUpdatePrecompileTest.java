@@ -125,7 +125,7 @@ class TokenUpdatePrecompileTest {
     @Mock private ExchangeRate exchangeRate;
     @Mock private AccessorFactory accessorFactory;
     private final TokenUpdateWrapper updateWrapper =
-            HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(null);
+            HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(Collections.emptyList());
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
@@ -316,11 +316,13 @@ class TokenUpdatePrecompileTest {
     @Test
     void failsWithWrongValidityForUpdateFungibleTokenV2() {
         // given
-        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO_V2));
         givenFrameContext();
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenUpdateTokenContextV2();
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         given(worldUpdater.aliases()).willReturn(aliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));

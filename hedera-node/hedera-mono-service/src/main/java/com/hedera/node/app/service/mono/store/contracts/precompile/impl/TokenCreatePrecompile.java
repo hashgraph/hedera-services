@@ -497,21 +497,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
          * keys values for the same key type (e.g. multiple `TokenKey` instances have the adminKey bit set)
          */
         final var tokenKeys = tokenCreateOp.getTokenKeys();
-        if (!tokenKeys.isEmpty()) {
-            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
-                final var tokenKey = tokenKeys.get(i);
-                validateTrue(
-                        tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
-                final var tokenKeyBitField = tokenKey.keyType();
-                validateTrue(
-                        tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
-                for (int j = i + 1; j < tokenKeysSize; j++) {
-                    validateTrue(
-                            (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
-                            INVALID_TRANSACTION_BODY);
-                }
-            }
-        }
+        validateTokenKeysInput(tokenKeys);
 
         /*
          * The denomination of a fixed fee depends on the values of tokenId, useHbarsForPayment
@@ -533,6 +519,24 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 if (royaltyFee.fallbackFixedFee() != null) {
                     validateTrue(
                             royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT,
+                            INVALID_TRANSACTION_BODY);
+                }
+            }
+        }
+    }
+
+    static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
+        if (!tokenKeys.isEmpty()) {
+            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+                final var tokenKey = tokenKeys.get(i);
+                validateTrue(
+                        tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
+                final var tokenKeyBitField = tokenKey.keyType();
+                validateTrue(
+                        tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
+                for (int j = i + 1; j < tokenKeysSize; j++) {
+                    validateTrue(
+                            (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
                             INVALID_TRANSACTION_BODY);
                 }
             }

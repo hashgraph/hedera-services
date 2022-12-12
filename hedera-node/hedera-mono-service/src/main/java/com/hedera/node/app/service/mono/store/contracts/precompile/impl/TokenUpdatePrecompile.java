@@ -28,6 +28,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.validateTokenKeysInput;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
@@ -38,18 +40,24 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.AbiConstants;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
@@ -71,16 +79,18 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     private TokenUpdateWrapper updateOp;
     private final int functionId;
+    private final Address senderAddress;
 
     public TokenUpdatePrecompile(
-            WorldLedgers ledgers,
-            ContractAliases aliases,
-            EvmSigsVerifier sigsVerifier,
-            SideEffectsTracker sideEffectsTracker,
-            SyntheticTxnFactory syntheticTxnFactory,
-            InfrastructureFactory infrastructureFactory,
-            PrecompilePricingUtils precompilePricingUtils,
-            final int functionId) {
+            final WorldLedgers ledgers,
+            final ContractAliases aliases,
+            final EvmSigsVerifier sigsVerifier,
+            final SideEffectsTracker sideEffectsTracker,
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final InfrastructureFactory infrastructureFactory,
+            final PrecompilePricingUtils precompilePricingUtils,
+            final int functionId,
+            final Address senderAddress) {
         super(
                 ledgers,
                 aliases,
@@ -91,6 +101,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                 precompilePricingUtils);
 
         this.functionId = functionId;
+        this.senderAddress = senderAddress;
     }
 
     @Override
@@ -105,6 +116,9 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                             input, aliasResolver);
                     default -> null;
                 };
+        Objects.requireNonNull(updateOp);
+        final var tokenKeys = updateOp.tokenKeys();
+        validateTokenKeysInput(tokenKeys);
         transactionBody = syntheticTxnFactory.createTokenUpdate(updateOp);
         return transactionBody;
     }
@@ -132,7 +146,48 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                     "Token update");
         }
 
+        updateOp.tokenKeys().stream()
+                .filter(TokenKeyWrapper::isUsedForAdminKey)
+                .findFirst()
+                .ifPresent(
+                        key ->
+                                validateTrue(
+                                        validateAdminKey(frame, key),
+                                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                                        "Token update"));
+
         super.run(frame);
+    }
+
+    private boolean validateAdminKey(
+            final MessageFrame frame, final TokenKeyWrapper tokenKeyWrapper) {
+        final var key = tokenKeyWrapper.key();
+        return switch (key.getKeyValueType()) {
+            case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
+                    frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, aliases);
+            case CONTRACT_ID -> KeyActivationUtils.validateKey(
+                    frame,
+                    asTypedEvmAddress(key.getContractID()),
+                    sigsVerifier::hasActiveKey,
+                    ledgers,
+                    aliases);
+            case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
+                    frame,
+                    asTypedEvmAddress(key.getDelegatableContractID()),
+                    sigsVerifier::hasActiveKey,
+                    ledgers,
+                    aliases);
+            case ED25519 -> validateCryptoKey(
+                    new JEd25519Key(key.getEd25519Key()), sigsVerifier::cryptoKeyIsActive);
+            case ECDSA_SECPK256K1 -> validateCryptoKey(
+                    new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
+                    sigsVerifier::cryptoKeyIsActive);
+            default -> false;
+        };
+    }
+
+    private boolean validateCryptoKey(final JKey key, final Predicate<JKey> keyActiveTest) {
+        return keyActiveTest.test(key);
     }
 
     /**
