@@ -354,7 +354,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -585,7 +586,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .payingWith(ACCOUNT)
                                                         .via(UPDATE_ANG_GET_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))
@@ -865,7 +867,8 @@ public class TokenInfoHTSSuite extends HapiApiSuite {
                                                                                         .getAccountID(
                                                                                                 UPDATED_TREASURY))),
                                                                 UPDATE_MEMO)
-                                                        .alsoSigningWithFullPrefix(ADMIN_KEY)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ADMIN_KEY, UPDATED_TREASURY)
                                                         .via(
                                                                 UPDATE_ANG_GET_NON_FUNGIBLE_TOKEN_INFO_TXN)
                                                         .gas(1_000_000L))))

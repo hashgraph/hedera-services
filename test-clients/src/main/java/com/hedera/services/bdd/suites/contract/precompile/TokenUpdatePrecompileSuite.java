@@ -109,6 +109,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
     public static final String UPDATE_TOKEN_WITH_ALL_FIELDS = "updateTokenWithAllFields";
+    public static final String UPDATE_TOKEN_TREASURY = "updateTokenTreasury";
     private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
     final AtomicReference<TokenID> nftToken = new AtomicReference<>();
     private static final String CUSTOM_NAME = "customName";
@@ -381,7 +382,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                 spec,
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenTreasury",
+                                                                UPDATE_TOKEN_TREASURY,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(
                                                                                 noAdminKeyToken
@@ -399,7 +400,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenTreasury",
+                                                                UPDATE_TOKEN_TREASURY,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 HapiParserUtil.asHeadlongAddress(
@@ -414,7 +415,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 TOKEN_UPDATE_CONTRACT,
-                                                                "updateTokenTreasury",
+                                                                UPDATE_TOKEN_TREASURY,
                                                                 HapiParserUtil.asHeadlongAddress(
                                                                         asAddress(nftToken.get())),
                                                                 HapiParserUtil.asHeadlongAddress(
