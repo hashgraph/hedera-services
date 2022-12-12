@@ -19,7 +19,6 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -53,7 +52,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_ALLOWANC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -81,10 +79,10 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
     public static final String OWNER = "owner";
     public static final String SPENDER = "spender";
     private static final String RECEIVER = "receiver";
-    private static final String OTHER_RECEIVER = "otherReceiver";
+    public static final String OTHER_RECEIVER = "otherReceiver";
     public static final String FUNGIBLE_TOKEN = "fungible";
     public static final String NON_FUNGIBLE_TOKEN = "nonFungible";
-    private static final String TOKEN_WITH_CUSTOM_FEE = "tokenWithCustomFee";
+    public static final String TOKEN_WITH_CUSTOM_FEE = "tokenWithCustomFee";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String SENDER_TXN = "senderTxn";
     public static final String SCHEDULED_TXN = "scheduledTxn";
@@ -141,8 +139,7 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                 approveForAllSpenderCanDelegateOnNFT(),
                 duplicateEntriesGetsReplacedWithDifferentTxn(),
                 duplicateKeysAndSerialsInSameTxnDoesntThrow(),
-                scheduledCryptoApproveAllowanceWorks(),
-                scheduledCryptoApproveAllowanceWaitForExpiryTrue());
+                scheduledCryptoApproveAllowanceWorks());
     }
 
     private HapiSpec duplicateKeysAndSerialsInSameTxnDoesntThrow() {
@@ -1818,105 +1815,6 @@ public class CryptoApproveAllowanceSuite extends HapiSuite {
                         cryptoTransfer(allowanceTinyBarsFromTo(OWNER, RECEIVER, 5 * ONE_HBAR))
                                 .payingWith(SPENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(15 * ONE_HBAR));
-    }
-
-    private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
-        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS).via(SENDER_TXN),
-                        cryptoCreate(RECEIVER),
-                        cryptoCreate(OTHER_RECEIVER)
-                                .balance(ONE_HBAR)
-                                .maxAutomaticTokenAssociations(1),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(10000)
-                                .initialSupply(5000),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0L),
-                        tokenCreate(TOKEN_WITH_CUSTOM_FEE)
-                                .treasury(TOKEN_TREASURY)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(1000)
-                                .maxSupply(5000)
-                                .withCustom(fixedHtsFee(10, "0.0.0", TOKEN_TREASURY)),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        ByteString.copyFromUtf8("a"),
-                                        ByteString.copyFromUtf8("b"))))
-                .when(
-                        tokenAssociate(
-                                OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN, TOKEN_WITH_CUSTOM_FEE),
-                        tokenAssociate(
-                                RECEIVER,
-                                FUNGIBLE_TOKEN,
-                                NON_FUNGIBLE_TOKEN,
-                                TOKEN_WITH_CUSTOM_FEE),
-                        cryptoTransfer(
-                                moving(1000, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
-                                moving(15, TOKEN_WITH_CUSTOM_FEE).between(TOKEN_TREASURY, OWNER),
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, OWNER)),
-                        scheduleCreate(
-                                        SCHEDULED_TXN,
-                                        cryptoApproveAllowance()
-                                                .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
-                                                .addTokenAllowance(
-                                                        OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
-                                                .addTokenAllowance(
-                                                        OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
-                                                .addNftAllowance(
-                                                        OWNER,
-                                                        NON_FUNGIBLE_TOKEN,
-                                                        SPENDER,
-                                                        false,
-                                                        List.of(2L))
-                                                .fee(ONE_HUNDRED_HBARS))
-                                .waitForExpiry()
-                                .withRelativeExpiry(SENDER_TXN, 8)
-                                .recordingScheduledTxn())
-                .then(
-                        scheduleSign(SCHEDULED_TXN).alsoSigningWith(OWNER),
-                        getScheduleInfo(SCHEDULED_TXN)
-                                .hasScheduleId(SCHEDULED_TXN)
-                                .hasWaitForExpiry()
-                                .isNotExecuted()
-                                .isNotDeleted()
-                                .hasRelativeExpiry(SENDER_TXN, 8)
-                                .hasRecordedScheduledTxn(),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(0)
-                                                .tokenAllowancesCount(0)),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
-                        sleepFor(12_000L),
-                        cryptoCreate("foo").via("TRIGGERING_TXN"),
-                        getScheduleInfo(SCHEDULED_TXN).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        getAccountDetails(OWNER)
-                                .payingWith(GENESIS)
-                                .has(
-                                        accountDetailsWith()
-                                                .cryptoAllowancesCount(1)
-                                                .cryptoAllowancesContaining(SPENDER, 10 * ONE_HBAR)
-                                                .tokenAllowancesCount(2)
-                                                .tokenAllowancesContaining(
-                                                        FUNGIBLE_TOKEN, SPENDER, 1500L)
-                                                .tokenAllowancesContaining(
-                                                        TOKEN_WITH_CUSTOM_FEE, SPENDER, 100L)),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(SPENDER));
     }
 
     @Override

@@ -94,7 +94,7 @@ public class ScheduleLongTermExecutionSpecs extends HapiSuite {
     private static final String PAYING_ACCOUNT = "payingAccount";
     private static final String RECEIVER = "receiver";
     private static final String SENDER = "sender";
-    private static final String SENDER_TXN = "senderTxn";
+    public static final String SENDER_TXN = "senderTxn";
     private static final String BASIC_XFER = "basicXfer";
     private static final String CREATE_TX = "createTx";
     private static final String SIGN_TX = "signTx";

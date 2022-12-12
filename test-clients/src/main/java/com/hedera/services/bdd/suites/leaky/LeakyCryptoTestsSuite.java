@@ -22,14 +22,19 @@ import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.account
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -48,21 +53,28 @@ import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NFT_TOKEN_MINT_TXN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OTHER_RECEIVER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.OWNER;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SCHEDULED_TXN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SECOND_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.THIRD_SPENDER;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.TOKEN_WITH_CUSTOM_FEE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.schedule.ScheduleLongTermExecutionSpecs.SENDER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.DEFAULT_MIN_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
+import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -72,7 +84,6 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -100,7 +111,107 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 cannotExceedAccountAllowanceLimit(),
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
+                scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled());
+    }
+
+    private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
+        return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS).via(SENDER_TXN),
+                        cryptoCreate(RECEIVER),
+                        cryptoCreate(OTHER_RECEIVER)
+                                .balance(ONE_HBAR)
+                                .maxAutomaticTokenAssociations(1),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(10000)
+                                .initialSupply(5000),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        tokenCreate(TOKEN_WITH_CUSTOM_FEE)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .initialSupply(1000)
+                                .maxSupply(5000)
+                                .withCustom(fixedHtsFee(10, "0.0.0", TOKEN_TREASURY)),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(
+                                        ByteString.copyFromUtf8("a"),
+                                        ByteString.copyFromUtf8("b"))))
+                .when(
+                        tokenAssociate(
+                                OWNER, FUNGIBLE_TOKEN, NON_FUNGIBLE_TOKEN, TOKEN_WITH_CUSTOM_FEE),
+                        tokenAssociate(
+                                RECEIVER,
+                                FUNGIBLE_TOKEN,
+                                NON_FUNGIBLE_TOKEN,
+                                TOKEN_WITH_CUSTOM_FEE),
+                        cryptoTransfer(
+                                moving(1000, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER),
+                                moving(15, TOKEN_WITH_CUSTOM_FEE).between(TOKEN_TREASURY, OWNER),
+                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
+                                        .between(TOKEN_TREASURY, OWNER)),
+                        scheduleCreate(
+                                        SCHEDULED_TXN,
+                                        cryptoApproveAllowance()
+                                                .addCryptoAllowance(OWNER, SPENDER, 10 * ONE_HBAR)
+                                                .addTokenAllowance(
+                                                        OWNER, FUNGIBLE_TOKEN, SPENDER, 1500)
+                                                .addTokenAllowance(
+                                                        OWNER, TOKEN_WITH_CUSTOM_FEE, SPENDER, 100)
+                                                .addNftAllowance(
+                                                        OWNER,
+                                                        NON_FUNGIBLE_TOKEN,
+                                                        SPENDER,
+                                                        false,
+                                                        List.of(2L))
+                                                .fee(ONE_HUNDRED_HBARS))
+                                .waitForExpiry()
+                                .withRelativeExpiry(SENDER_TXN, 8)
+                                .recordingScheduledTxn())
+                .then(
+                        scheduleSign(SCHEDULED_TXN).alsoSigningWith(OWNER),
+                        getScheduleInfo(SCHEDULED_TXN)
+                                .hasScheduleId(SCHEDULED_TXN)
+                                .hasWaitForExpiry()
+                                .isNotExecuted()
+                                .isNotDeleted()
+                                .hasRelativeExpiry(SENDER_TXN, 8)
+                                .hasRecordedScheduledTxn(),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(
+                                        accountDetailsWith()
+                                                .cryptoAllowancesCount(0)
+                                                .tokenAllowancesCount(0)),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender(),
+                        sleepFor(12_000L),
+                        cryptoCreate("foo").via("TRIGGERING_TXN"),
+                        getScheduleInfo(SCHEDULED_TXN).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
+                        getAccountDetails(OWNER)
+                                .payingWith(GENESIS)
+                                .has(
+                                        accountDetailsWith()
+                                                .cryptoAllowancesCount(1)
+                                                .cryptoAllowancesContaining(SPENDER, 10 * ONE_HBAR)
+                                                .tokenAllowancesCount(2)
+                                                .tokenAllowancesContaining(
+                                                        FUNGIBLE_TOKEN, SPENDER, 1500L)
+                                                .tokenAllowancesContaining(
+                                                        TOKEN_WITH_CUSTOM_FEE, SPENDER, 100L)),
+                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasSpenderID(SPENDER));
     }
 
     private HapiSpec txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled() {
@@ -283,7 +394,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .balance(100 * ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(10),
                         tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .maxSupply(1000L)
@@ -421,7 +532,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 .balance(100 * ONE_HUNDRED_HBARS)
                                 .maxAutomaticTokenAssociations(10),
                         tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .tokenType(FUNGIBLE_COMMON)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .supplyKey(SUPPLY_KEY)
                                 .maxSupply(1000L)
