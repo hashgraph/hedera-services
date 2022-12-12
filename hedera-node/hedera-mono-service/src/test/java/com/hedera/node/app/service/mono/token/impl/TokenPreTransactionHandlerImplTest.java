@@ -112,15 +112,11 @@ class TokenPreTransactionHandlerImplTest {
                         .setAccountID(payer)
                         .setTransactionValidStart(consensusTimestamp);
         final var createTxnBody =
-                CryptoCreateTransactionBody.newBuilder()
-                        .setKey(key)
-                        .setReceiverSigRequired(receiverSigReq)
-                        .setMemo("Create Account")
-                        .build();
+                TokenCreateTransactionBody.newBuilder().setMemo("Create Account").build();
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
-                .setCryptoCreateAccount(createTxnBody)
+                .setTokenCreation(createTxnBody)
                 .build();
     }
 

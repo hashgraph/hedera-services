@@ -37,6 +37,9 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     private final AccountStore accountStore;
     private final PreHandleContext preHandleContext;
 
+    // Not implemented
+    //    private TokenSignatureWaiversImpl waivers;
+
     public TokenPreTransactionHandlerImpl(
             @NonNull final AccountStore accountStore, @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
@@ -47,12 +50,31 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     public TransactionMetadata preHandleCreateToken(final TransactionBody txn) {
         final var op = txn.getTokenCreation();
         final var payer = txn.getTransactionID().getAccountID();
+        //        final var adminKey = // TODO get admin key
         final var treasuryId = op.getTreasury();
         final var autoRenewalAccountId = op.getAutoRenewAccount();
+        final var customFeesList = op.getCustomFeesList();
         final var meta = new SigTransactionMetadata(accountStore, txn, payer);
-        meta.addNonPayerKey(treasuryId, INVALID_ALLOWANCE_OWNER_ID);
-        meta.addNonPayerKeyIfReceiverSigRequired(autoRenewalAccountId, INVALID_ALLOWANCE_OWNER_ID);
+
+        //        meta.addNonPayerKey(adminKey); ?
+        meta.addNonPayerKey(treasuryId);
+        meta.addNonPayerKey(autoRenewalAccountId, INVALID_ALLOWANCE_OWNER_ID);
+
+        for (final var customFee : customFeesList) {
+            final var collector = customFee.getFeeCollectorAccountId();
+            /* A fractional fee collector and a collector for a fixed fee denominated
+            in the units of the newly created token both must always sign a TokenCreate,
+            since these are automatically associated to the newly created token. */
+            final var rFee = customFee.getRoyaltyFee();
+            if (customFee.hasFixedFee() || customFee.hasFractionalFee() || rFee.hasFallbackFee()) {
+                meta.addNonPayerKey(collector);
+            }
+        }
         return meta;
+
+        //        Treasury key is required to sign
+        //        Admin key, if specified
+        //        Transaction fee payer key
     }
 
     @Override
@@ -126,8 +148,8 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     }
 
     /**
-     * Returns metadata for {@code CryptoCreate} transaction needed to validate signatures needed
-     * for signing the transaction
+     * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed for
+     * signing the transaction
      *
      * @param tx given transaction body
      * @param key key provided in the transaction body
@@ -135,7 +157,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
      * @param payer payer for the transaction
      * @return transaction's metadata needed to validate signatures
      */
-    private TransactionMetadata createAccountSigningMetadata(
+    private TransactionMetadata createTokenSigningMetadata(
             final TransactionBody tx,
             final Optional<HederaKey> key,
             final boolean receiverSigReq,
@@ -146,4 +168,17 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         }
         return meta;
     }
+
+    //    /**
+    //     * @param waivers signature waivers for crypto service
+    //     * @deprecated This method is needed for testing until {@link CryptoSignatureWaiversImpl}
+    // is
+    //     *     implemented. FUTURE: This method should be removed once {@link
+    //     *     CryptoSignatureWaiversImpl} is implemented.
+    //     */
+    //    @Deprecated(forRemoval = true)
+    //    @VisibleForTesting
+    //    void setWaivers(final CryptoSignatureWaiversImpl waivers) {
+    //        this.waivers = waivers;
+    //    }
 }
