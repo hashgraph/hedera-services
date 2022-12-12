@@ -261,12 +261,12 @@ class SigTransactionMetadataBuilderTest {
         subject = new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer);
         var message = assertThrows(NullPointerException.class, () -> subject.build());
         assertEquals(
-                message.getMessage(),
-                "Transaction body is required to build SigTransactionMetadata");
+                "Transaction body is required to build SigTransactionMetadata",
+                message.getMessage());
 
         subject = new SigTransactionMetadataBuilder(keyLookup).txnBody(createAccountTransaction());
         message = assertThrows(NullPointerException.class, () -> subject.build());
-        assertEquals(message.getMessage(), "Payer is required to build SigTransactionMetadata");
+        assertEquals("Payer is required to build SigTransactionMetadata", message.getMessage());
     }
 
     @Test
@@ -293,6 +293,56 @@ class SigTransactionMetadataBuilderTest {
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(payerKey, otherKey, otherKey), subject.build().requiredKeys());
         assertEquals(OK, subject.build().status());
+    }
+
+    @Test
+    void doesntFailForInvalidAccount() {
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addNonPayerKey(AccountID.newBuilder().setAccountNum(0L).build());
+
+        meta = subject.build();
+        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void doesntFailForAliasedAccount() {
+        final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(keyLookup.getKey(alias)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addNonPayerKey(alias);
+
+        meta = subject.build();
+        assertIterableEquals(List.of(payerKey, payerKey), meta.requiredKeys());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void failsForInvalidAlias() {
+        final var alias = AccountID.newBuilder().setAlias(ByteString.copyFromUtf8("test")).build();
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        given(keyLookup.getKey(alias))
+                .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer)
+                        .addNonPayerKey(alias);
+
+        meta = subject.build();
+        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(INVALID_ACCOUNT_ID, meta.status());
     }
 
     @Test
