@@ -85,10 +85,10 @@ public class SigTransactionMetadataBuilder {
     }
 
     /**
-     * Adds given key to required non-payer keys in {@link TransactionMetadata}. If the status is already
-     * failed, or if the payer's key is not added, given keys will not be added to requiredNonPayerKeys
-     * list. This method is used when the payer's key is already fetched, and we want to add other
-     * keys from {@link TransactionBody} to required keys to sign.
+     * Adds given key to required non-payer keys in {@link TransactionMetadata}. If the status is
+     * already failed, or if the payer's key is not added, given keys will not be added to
+     * requiredNonPayerKeys list. This method is used when the payer's key is already fetched, and
+     * we want to add other keys from {@link TransactionBody} to required keys to sign.
      *
      * @param key key to be added
      * @return builder object
@@ -188,7 +188,8 @@ public class SigTransactionMetadataBuilder {
 
     /**
      * Checks if the account given is same as payer or if the metadata is already failed. In either
-     * case, no need to look up that account's key. If the payer key has not been set we don't add other keys.
+     * case, no need to look up that account's key. If the payer key has not been set we don't add
+     * other keys.
      *
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
