@@ -42,6 +42,9 @@ public abstract class HapiApiSuite {
 
     private static final String STARTING_SUITE = "-------------- STARTING {} SUITE --------------";
 
+    public static final BigInteger MAX_UINT256_VALUE =
+            new BigInteger("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
+
     public enum FinalOutcome {
         SUITE_PASSED,
         SUITE_FAILED

@@ -45,6 +45,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -60,6 +62,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     private List<String> absentRelationships = new ArrayList<>();
     private List<ExpectedTokenRel> relationships = new ArrayList<>();
     private Optional<ContractInfoAsserts> expectations = Optional.empty();
+    private Optional<Consumer<String>> exposingEvmAddress = Optional.empty();
 
     public HapiGetContractInfo(String contract) {
         this.contract = contract;
@@ -102,6 +105,11 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     public HapiGetContractInfo hasNoTokenRelationship(String token) {
         absentRelationships.add(token);
+        return this;
+    }
+
+    public HapiGetContractInfo exposingEvmAddress(Consumer<String> obs) {
+        exposingEvmAddress = Optional.of(obs);
         return this;
     }
 
@@ -148,6 +156,8 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         if (registryEntry.isPresent()) {
             spec.registry().saveContractInfo(registryEntry.get(), contractInfo);
         }
+        exposingEvmAddress.ifPresent(
+                stringConsumer -> stringConsumer.accept(contractInfo.getContractAccountID()));
     }
 
     @Override
