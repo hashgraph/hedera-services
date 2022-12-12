@@ -75,4 +75,14 @@ public class SigTransactionMetadata implements TransactionMetadata {
                 .payer(payer)
                 .addAllReqKeys(requiredKeys);
     }
+
+    @Override
+    public String toString() {
+        return "SigTransactionMetadata{" +
+                "requiredKeys=" + requiredKeys +
+                ", txn=" + txn +
+                ", payer=" + payer +
+                ", status=" + status +
+                '}';
+    }
 }

@@ -46,6 +46,15 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     public ScheduleTransactionMetadata preHandleCreateSchedule(
             final TransactionBody txn, final AccountID payer, final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleCreate();
+        final var meta = new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                .txnBody(txn)
+                .payerKeyFor(payer);
+
+        if (op.hasAdminKey()) {
+            final var key = asHederaKey(op.getAdminKey());
+            key.ifPresent(meta::addToReqKeys);
+        }
+
         final var scheduledTxn =
                 asOrdinary(op.getScheduledTransactionBody(), txn.getTransactionID());
 
@@ -58,15 +67,6 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
                 op.hasPayerAccountID()
                         ? op.getPayerAccountID()
                         : txn.getTransactionID().getAccountID();
-
-        final var meta = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payerForNested);
-
-        if (op.hasAdminKey()) {
-            final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqKeys);
-        }
 
         // FUTURE: Once we allow schedule transactions to be scheduled inside, we need a check here
         // to see
@@ -96,7 +96,6 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
                     .status(UNRESOLVABLE_REQUIRED_SIGNERS)
                     .build();
         }
-
         return meta;
     }
 

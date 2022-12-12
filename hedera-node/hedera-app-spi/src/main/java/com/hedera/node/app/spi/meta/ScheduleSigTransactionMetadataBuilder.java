@@ -44,6 +44,6 @@ public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadat
      */
     @Override
     public ScheduleSigTransactionMetadata build(){
-        return new ScheduleSigTransactionMetadata(txn, payer, status, scheduledTxnMeta);
+        return new ScheduleSigTransactionMetadata(txn, payer, status,requiredKeys, scheduledTxnMeta);
     }
 }

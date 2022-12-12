@@ -15,11 +15,13 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Metadata collected when scheduled transactions are handled as part of "pre-handle" needed for signature
@@ -35,8 +37,9 @@ public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
             final TransactionBody topLevelTxn,
             final AccountID payer,
             final ResponseCodeEnum status,
+            final List<HederaKey> requiredKeys,
             final TransactionMetadata scheduledTxnMeta) {
-        super(topLevelTxn, payer, status, Collections.emptyList());
+        super(topLevelTxn, payer, status, requiredKeys);
         this.scheduledTxnMeta = scheduledTxnMeta;
     }
 
