@@ -176,9 +176,9 @@ public class EthereumSuite extends HapiSuite {
                                 (spec, opLog) -> {
                                     var call =
                                             ethereumCall(
-                                                    TOKEN_CREATE_CONTRACT,
-                                                    "createNonFungibleTokenPublic",
-                                                    tokenCreateContractAddress.get())
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            tokenCreateContractAddress.get())
                                                     .type(EthTxData.EthTransactionType.EIP1559)
                                                     .signingWith(SECP_256K1_SOURCE_KEY)
                                                     .payingWith(RELAYER)

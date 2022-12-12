@@ -277,24 +277,24 @@ public class ContractCallSuite extends HapiSuite {
                                     allRunFor(
                                             spec,
                                             contractCreate(
-                                                    NESTED_TRANSFERRING_CONTRACT,
-                                                    asHeadlongAddress(
-                                                            getNestedContractAddress(
-                                                                    NESTED_TRANSFER_CONTRACT
-                                                                            + "1",
-                                                                    spec)),
-                                                    asHeadlongAddress(
-                                                            getNestedContractAddress(
-                                                                    NESTED_TRANSFER_CONTRACT
-                                                                            + "2",
-                                                                    spec)))
+                                                            NESTED_TRANSFERRING_CONTRACT,
+                                                            asHeadlongAddress(
+                                                                    getNestedContractAddress(
+                                                                            NESTED_TRANSFER_CONTRACT
+                                                                                    + "1",
+                                                                            spec)),
+                                                            asHeadlongAddress(
+                                                                    getNestedContractAddress(
+                                                                            NESTED_TRANSFER_CONTRACT
+                                                                                    + "2",
+                                                                            spec)))
                                                     .balance(10_000L)
                                                     .payingWith(ACCOUNT),
                                             contractCall(
-                                                    NESTED_TRANSFERRING_CONTRACT,
-                                                    "transferFromDifferentAddressesToAddress",
-                                                    asHeadlongAddress(receiverAddr),
-                                                    BigInteger.valueOf(40_000L))
+                                                            NESTED_TRANSFERRING_CONTRACT,
+                                                            "transferFromDifferentAddressesToAddress",
+                                                            asHeadlongAddress(receiverAddr),
+                                                            BigInteger.valueOf(40_000L))
                                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                     .payingWith(ACCOUNT)
                                                     .logged());
@@ -323,21 +323,21 @@ public class ContractCallSuite extends HapiSuite {
                 .when(
                         cryptoCreate(overAmbitiousPayer).balance(payerBalance),
                         contractCall(
-                                PAY_RECEIVABLE_CONTRACT,
-                                DEPOSIT,
-                                BigInteger.valueOf(overdraftAmount))
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(overdraftAmount))
                                 .payingWith(overAmbitiousPayer)
                                 .sending(overdraftAmount)
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
                         usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
                         uncheckedSubmit(
-                                contractCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(overdraftAmount))
-                                        .txnId(uncheckedCC)
-                                        .payingWith(overAmbitiousPayer)
-                                        .sending(overdraftAmount))
+                                        contractCall(
+                                                        PAY_RECEIVABLE_CONTRACT,
+                                                        DEPOSIT,
+                                                        BigInteger.valueOf(overdraftAmount))
+                                                .txnId(uncheckedCC)
+                                                .payingWith(overAmbitiousPayer)
+                                                .sending(overdraftAmount))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(1_000),
