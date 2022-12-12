@@ -147,7 +147,8 @@ class GetTokenDefaultKycStatusTest {
         given(evmEncoder.encodeGetTokenDefaultKycStatus(true)).willReturn(successResult);
         given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
         given(wrappedLedgers.defaultKycStatus((any()))).willReturn(Boolean.TRUE);
-        given(evmEncoder.encodeGetTokenDefaultKycStatus(true)).willReturn(Bytes.fromHexString(output));
+        given(evmEncoder.encodeGetTokenDefaultKycStatus(true))
+                .willReturn(Bytes.fromHexString(output));
         given(frame.getValue()).willReturn(Wei.ZERO);
 
         // when

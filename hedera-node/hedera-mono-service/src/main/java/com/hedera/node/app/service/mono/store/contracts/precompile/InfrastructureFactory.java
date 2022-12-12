@@ -261,7 +261,8 @@ public class InfrastructureFactory {
             final ViewGasCalculator gasCalculator,
             final StateView stateView,
             final WorldLedgers ledgers) {
-        return new ViewExecutor(input, frame, encoder, evmEncoder, gasCalculator, stateView, ledgers);
+        return new ViewExecutor(
+                input, frame, encoder, evmEncoder, gasCalculator, stateView, ledgers);
     }
 
     public ApproveAllowanceLogic newApproveAllowanceLogic(

@@ -52,10 +52,10 @@ public class EvmEncodingFacade {
 
     public Bytes encodeGetTokenType(final int tokenType) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
-            .withStatus(SUCCESS.getNumber())
-            .withGetTokenType(tokenType)
-            .build();
+                .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenType(tokenType)
+                .build();
     }
 
     public Bytes encodeAllowance(final long allowance) {
@@ -88,42 +88,42 @@ public class EvmEncodingFacade {
 
     public Bytes encodeIsFrozen(final boolean isFrozen) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_IS_FROZEN)
-            .withStatus(SUCCESS.getNumber())
-            .withIsFrozen(isFrozen)
-            .build();
+                .forFunction(FunctionType.HAPI_IS_FROZEN)
+                .withStatus(SUCCESS.getNumber())
+                .withIsFrozen(isFrozen)
+                .build();
     }
 
     public Bytes encodeGetTokenDefaultFreezeStatus(final boolean defaultFreezeStatus) {
         return functionResultBuilder()
-            .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-            .withStatus(SUCCESS.getNumber())
-            .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
-            .build();
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
+                .build();
     }
 
     public Bytes encodeGetTokenDefaultKycStatus(final boolean defaultKycStatus) {
         return functionResultBuilder()
-            .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
-            .withStatus(SUCCESS.getNumber())
-            .withGetTokenDefaultKycStatus(defaultKycStatus)
-            .build();
+                .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
+                .withStatus(SUCCESS.getNumber())
+                .withGetTokenDefaultKycStatus(defaultKycStatus)
+                .build();
     }
 
     public Bytes encodeIsKyc(final boolean isKyc) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_IS_KYC)
-            .withStatus(SUCCESS.getNumber())
-            .withIsKyc(isKyc)
-            .build();
+                .forFunction(FunctionType.HAPI_IS_KYC)
+                .withStatus(SUCCESS.getNumber())
+                .withIsKyc(isKyc)
+                .build();
     }
 
     public Bytes encodeIsToken(final boolean isToken) {
         return functionResultBuilder()
-            .forFunction(FunctionType.HAPI_IS_TOKEN)
-            .withStatus(SUCCESS.getNumber())
-            .withIsToken(isToken)
-            .build();
+                .forFunction(FunctionType.HAPI_IS_TOKEN)
+                .withStatus(SUCCESS.getNumber())
+                .withIsToken(isToken)
+                .build();
     }
 
     public Bytes encodeName(final String name) {
@@ -197,10 +197,10 @@ public class EvmEncodingFacade {
                         case ERC_ALLOWANCE, ERC_TOTAL_SUPPLY, ERC_BALANCE -> bigIntegerTuple;
                         case ERC_IS_APPROVED_FOR_ALL -> booleanTuple;
                         case HAPI_IS_FROZEN,
-                            GET_TOKEN_DEFAULT_FREEZE_STATUS,
-                            GET_TOKEN_DEFAULT_KYC_STATUS,
-                            HAPI_IS_KYC,
-                            HAPI_IS_TOKEN -> intBoolTuple;
+                                GET_TOKEN_DEFAULT_FREEZE_STATUS,
+                                GET_TOKEN_DEFAULT_KYC_STATUS,
+                                HAPI_IS_KYC,
+                                HAPI_IS_TOKEN -> intBoolTuple;
                         case ERC_NAME, ERC_SYMBOL, ERC_TOKEN_URI -> stringTuple;
                         case ERC_OWNER, ERC_GET_APPROVED -> addressTuple;
                         default -> notSpecifiedType;
@@ -251,13 +251,13 @@ public class EvmEncodingFacade {
         }
 
         private FunctionResultBuilder withGetTokenDefaultFreezeStatus(
-            final boolean tokenDefaultFreezeStatus) {
+                final boolean tokenDefaultFreezeStatus) {
             this.tokenDefaultFreezeStatus = tokenDefaultFreezeStatus;
             return this;
         }
 
         private FunctionResultBuilder withGetTokenDefaultKycStatus(
-            final boolean tokenDefaultKycStatus) {
+                final boolean tokenDefaultKycStatus) {
             this.tokenDefaultKycStatus = tokenDefaultKycStatus;
             return this;
         }
@@ -307,9 +307,9 @@ public class EvmEncodingFacade {
                         case ERC_IS_APPROVED_FOR_ALL -> Tuple.of(isApprovedForAllStatus);
                         case HAPI_IS_FROZEN -> Tuple.of(status, isFrozen);
                         case GET_TOKEN_DEFAULT_FREEZE_STATUS -> Tuple.of(
-                            status, tokenDefaultFreezeStatus);
+                                status, tokenDefaultFreezeStatus);
                         case GET_TOKEN_DEFAULT_KYC_STATUS -> Tuple.of(
-                            status, tokenDefaultKycStatus);
+                                status, tokenDefaultKycStatus);
                         case HAPI_IS_KYC -> Tuple.of(status, isKyc);
                         case HAPI_IS_TOKEN -> Tuple.of(status, isToken);
                         case HAPI_GET_TOKEN_TYPE -> Tuple.of(status, tokenType);
