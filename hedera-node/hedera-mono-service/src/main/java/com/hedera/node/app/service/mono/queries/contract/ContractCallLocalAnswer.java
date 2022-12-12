@@ -52,7 +52,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -70,7 +69,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
     private final OptionValidator validator;
     private final GlobalDynamicProperties dynamicProperties;
     private final NodeLocalProperties nodeProperties;
-    private final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider;
+    private final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider;
     private final StaticBlockMetaProvider blockMetaProvider;
 
     @Inject

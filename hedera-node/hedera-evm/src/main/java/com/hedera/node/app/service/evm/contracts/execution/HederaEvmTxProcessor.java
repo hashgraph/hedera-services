@@ -65,15 +65,6 @@ public abstract class HederaEvmTxProcessor {
     protected long gasUsed;
     protected long sbhRefund;
 
-    protected HederaEvmTxProcessor(
-            final PricesAndFeesProvider livePricesSource,
-            final EvmProperties dynamicProperties,
-            final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps) {
-        this(null, livePricesSource, dynamicProperties, gasCalculator, mcps, ccps, null);
-    }
-
     public void setBlockMetaSource(final BlockMetaSource blockMetaSource) {
         this.blockMetaSource = blockMetaSource;
     }
