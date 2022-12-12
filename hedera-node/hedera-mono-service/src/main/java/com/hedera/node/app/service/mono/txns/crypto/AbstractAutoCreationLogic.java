@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
@@ -89,7 +88,7 @@ public abstract class AbstractAutoCreationLogic {
     public static final String AUTO_MEMO = "auto-created account";
     public static final String LAZY_MEMO = "lazy-created account";
 
-    public AbstractAutoCreationLogic(
+    protected AbstractAutoCreationLogic(
             final UsageLimits usageLimits,
             final SyntheticTxnFactory syntheticTxnFactory,
             final EntityCreator creator,
@@ -275,15 +274,5 @@ public abstract class AbstractAutoCreationLogic {
                 }
             }
         }
-    }
-
-    @VisibleForTesting
-    public List<InProgressChildRecord> getPendingCreations() {
-        return pendingCreations;
-    }
-
-    @VisibleForTesting
-    public Map<ByteString, Set<Id>> getTokenAliasMap() {
-        return tokenAliasMap;
     }
 }
