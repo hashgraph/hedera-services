@@ -55,7 +55,8 @@ class SigTransactionMetadataTest {
         assertFalse(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(ResponseCodeEnum.OK, subject.status());
-        assertEquals(List.of(payerKey, otherKey), subject.requiredKeys());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(List.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     @Test
@@ -73,9 +74,11 @@ class SigTransactionMetadataTest {
         assertTrue(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
+        assertEquals(payerKey, subject.payerKey());
         assertEquals(
-                List.of(payerKey),
-                subject.requiredKeys()); // otherKey is not added as there is failure status set
+                List.of(),
+                subject.requiredNonPayerKeys()); // otherKey is not added as there is failure
+        // status set
     }
 
     private TransactionBody createAccountTransaction() {

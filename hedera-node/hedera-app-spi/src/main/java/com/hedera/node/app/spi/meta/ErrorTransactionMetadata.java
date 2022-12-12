@@ -52,7 +52,7 @@ public record ErrorTransactionMetadata(
 
     @NonNull
     @Override
-    public List<HederaKey> requiredKeys() {
+    public List<HederaKey> requiredNonPayerKeys() {
         return List.of();
     }
 
@@ -61,5 +61,10 @@ public record ErrorTransactionMetadata(
     public AccountID payer() {
         return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
         // method.
+    }
+
+    @Override
+    public HederaKey payerKey() {
+        return null;
     }
 }

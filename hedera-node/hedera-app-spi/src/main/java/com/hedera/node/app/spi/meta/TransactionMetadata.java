@@ -57,7 +57,7 @@ public interface TransactionMetadata {
      *
      * @return keys needed for validating signing requirements
      */
-    List<HederaKey> requiredKeys();
+    List<HederaKey> requiredNonPayerKeys();
 
     /**
      * Payer for the transaction
@@ -65,4 +65,11 @@ public interface TransactionMetadata {
      * @return payer for the transaction
      */
     AccountID payer();
+
+    /**
+     * Transaction payer's key
+     *
+     * @return payer key to sign the transaction
+     */
+    HederaKey payerKey();
 }

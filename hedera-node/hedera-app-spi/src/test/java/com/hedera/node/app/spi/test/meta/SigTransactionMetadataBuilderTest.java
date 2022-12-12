@@ -86,7 +86,8 @@ class SigTransactionMetadataBuilderTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.txnBody());
-        assertEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -117,7 +118,8 @@ class SigTransactionMetadataBuilderTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.txnBody());
-        assertEquals(List.of(payerKey, payerKey, otherKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertEquals(List.of(payerKey, otherKey), meta.requiredNonPayerKeys());
         assertEquals(payer, meta.payer());
     }
 
@@ -135,7 +137,8 @@ class SigTransactionMetadataBuilderTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.txnBody());
-        assertEquals(List.of(payerKey, payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertEquals(List.of(payerKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -151,12 +154,13 @@ class SigTransactionMetadataBuilderTest {
         meta = subject.build();
 
         assertTrue(meta.failed());
+        assertEquals(null, meta.payerKey());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, meta.status());
 
         assertEquals(txn, meta.txnBody());
         assertEquals(
                 List.of(),
-                meta.requiredKeys()); // No other keys are added when payerKey is not added
+                meta.requiredNonPayerKeys()); // No other keys are added when payerKey is not added
     }
 
     @Test
@@ -169,8 +173,9 @@ class SigTransactionMetadataBuilderTest {
                         .payerKeyFor(payer);
         subject.addToReqKeys(payerKey);
 
-        assertEquals(0, subject.build().requiredKeys().size());
-        assertFalse(subject.build().requiredKeys().contains(payerKey));
+        assertEquals(0, subject.build().requiredNonPayerKeys().size());
+        assertEquals(null, subject.build().payerKey());
+        assertFalse(subject.build().requiredNonPayerKeys().contains(payerKey));
     }
 
     @Test
@@ -182,12 +187,13 @@ class SigTransactionMetadataBuilderTest {
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
 
-        assertEquals(1, subject.build().requiredKeys().size());
-        assertTrue(subject.build().requiredKeys().contains(payerKey));
+        assertEquals(0, subject.build().requiredNonPayerKeys().size());
+        assertEquals(payerKey, subject.build().payerKey());
 
         subject.addToReqKeys(otherKey);
-        assertEquals(2, subject.build().requiredKeys().size());
-        assertTrue(subject.build().requiredKeys().contains(otherKey));
+        assertEquals(1, subject.build().requiredNonPayerKeys().size());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertTrue(subject.build().requiredNonPayerKeys().contains(otherKey));
     }
 
     @Test
@@ -210,13 +216,15 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
 
         subject.addNonPayerKey(payer);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
 
         subject.addNonPayerKeyIfReceiverSigRequired(payer, INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         assertEquals(OK, subject.build().status());
     }
 
@@ -228,22 +236,28 @@ class SigTransactionMetadataBuilderTest {
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
 
         subject.addNonPayerKey(AccountID.getDefaultInstance());
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
 
         subject.addNonPayerKeyIfReceiverSigRequired(
                 AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         assertEquals(OK, subject.build().status());
 
         subject.addNonPayerKey(AccountID.getDefaultInstance());
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
 
         subject.addNonPayerKeyIfReceiverSigRequired(
                 AccountID.getDefaultInstance(), INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         assertEquals(OK, subject.build().status());
     }
 
@@ -256,15 +270,16 @@ class SigTransactionMetadataBuilderTest {
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
 
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertEquals(payerKey, subject.build().payerKey());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         subject.status(INVALID_ACCOUNT_ID);
 
         subject.addNonPayerKey(otherAccountId);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         subject.status(INVALID_ACCOUNT_ID);
 
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
+        assertIterableEquals(List.of(), subject.build().requiredNonPayerKeys());
         subject.status(INVALID_ACCOUNT_ID);
     }
 
@@ -291,20 +306,22 @@ class SigTransactionMetadataBuilderTest {
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(OK, meta.status());
 
         given(keyLookup.getKey(otherAccountId))
                 .willReturn(new KeyOrLookupFailureReason(otherKey, null));
 
         subject.addNonPayerKey(otherAccountId);
-        assertIterableEquals(List.of(payerKey, otherKey), subject.build().requiredKeys());
+        assertIterableEquals(List.of(otherKey), subject.build().requiredNonPayerKeys());
         assertEquals(OK, subject.build().status());
 
         given(keyLookup.getKeyIfReceiverSigRequired(otherAccountId))
                 .willReturn(new KeyOrLookupFailureReason(otherKey, null));
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(payerKey, otherKey, otherKey), subject.build().requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(otherKey, otherKey), subject.build().requiredNonPayerKeys());
         assertEquals(OK, subject.build().status());
     }
 
@@ -319,7 +336,8 @@ class SigTransactionMetadataBuilderTest {
                         .addNonPayerKey(AccountID.newBuilder().setAccountNum(0L).build());
 
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(OK, meta.status());
     }
 
@@ -336,7 +354,8 @@ class SigTransactionMetadataBuilderTest {
                         .addNonPayerKey(alias);
 
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey, payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(payerKey), meta.requiredNonPayerKeys());
         assertEquals(OK, meta.status());
     }
 
@@ -354,7 +373,8 @@ class SigTransactionMetadataBuilderTest {
                         .addNonPayerKey(alias);
 
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(INVALID_ACCOUNT_ID, meta.status());
     }
 
@@ -367,14 +387,15 @@ class SigTransactionMetadataBuilderTest {
                         .txnBody(createAccountTransaction())
                         .payerKeyFor(payer);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(OK, meta.status());
 
         given(keyLookup.getKey(otherAccountId))
                 .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(INVALID_ACCOUNT_ID, meta.status());
 
         // only for testing , resetting the status to OK
@@ -383,21 +404,21 @@ class SigTransactionMetadataBuilderTest {
                 .willReturn(new KeyOrLookupFailureReason(null, INVALID_ACCOUNT_ID));
         subject.addNonPayerKey(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, meta.status());
 
         // only for testing , resetting the status to OK
         subject.status(OK);
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, null);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(INVALID_ACCOUNT_ID, meta.status());
 
         // only for testing , resetting the status to OK
         subject.status(OK);
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         meta = subject.build();
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(INVALID_ALLOWANCE_OWNER_ID, meta.status());
     }
 

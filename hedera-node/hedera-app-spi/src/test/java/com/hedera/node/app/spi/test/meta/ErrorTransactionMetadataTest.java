@@ -46,13 +46,18 @@ class ErrorTransactionMetadataTest {
     }
 
     @Test
-    void testRequiredKeys() {
-        assertEquals(0, subject.requiredKeys().size());
+    void testRequiredNonPayerKeys() {
+        assertEquals(0, subject.requiredNonPayerKeys().size());
     }
 
     @Test
     void testPayer() {
         assertNull(subject.payer());
+    }
+
+    @Test
+    void testPayerKey() {
+        assertNull(subject.payerKey());
     }
 
     private TransactionBody createAccountTransaction() {
