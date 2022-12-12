@@ -389,6 +389,7 @@ class HTSPrecompiledContractTest {
                         input,
                         messageFrame,
                         encoder,
+                        evmEncoder,
                         precompilePricingUtils::computeViewFunctionGas,
                         stateView,
                         wrappedLedgers);

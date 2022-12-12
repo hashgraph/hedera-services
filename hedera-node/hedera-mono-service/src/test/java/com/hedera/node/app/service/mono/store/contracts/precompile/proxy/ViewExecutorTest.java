@@ -41,6 +41,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
@@ -101,6 +102,7 @@ class ViewExecutorTest {
 
     @Mock private MessageFrame frame;
     @Mock private EncodingFacade encodingFacade;
+    @Mock private EvmEncodingFacade evmEncodingFacade;
     @Mock private ViewGasCalculator viewGasCalculator;
     @Mock private BlockValues blockValues;
     @Mock private StateView stateView;
@@ -221,7 +223,7 @@ class ViewExecutorTest {
                 .when(() -> GetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input))
                 .thenReturn(wrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
-        given(encodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
+        given(evmEncodingFacade.encodeGetTokenDefaultFreezeStatus(anyBoolean()))
                 .willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
@@ -236,7 +238,7 @@ class ViewExecutorTest {
                 .when(() -> GetTokenDefaultKycStatus.decodeTokenDefaultKycStatus(input))
                 .thenReturn(wrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
-        given(encodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
+        given(evmEncodingFacade.encodeGetTokenDefaultKycStatus(anyBoolean()))
                 .willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
@@ -249,7 +251,7 @@ class ViewExecutorTest {
         final var wrapper = new GrantRevokeKycWrapper<>(fungible, account);
         isKycPrecompile.when(() -> IsKycPrecompile.decodeIsKyc(any(), any())).thenReturn(wrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
-        given(encodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
+        given(evmEncodingFacade.encodeIsKyc(anyBoolean())).willReturn(RETURN_SUCCESS_TRUE);
 
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
@@ -329,7 +331,7 @@ class ViewExecutorTest {
                 .thenReturn(isFrozenWrapper);
         given(ledgers.isFrozen(account, fungible)).willReturn(true);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
-        given(encodingFacade.encodeIsFrozen(true)).willReturn(isFrozenEncoded);
+        given(evmEncodingFacade.encodeIsFrozen(true)).willReturn(isFrozenEncoded);
 
         assertEquals(Pair.of(gas, isFrozenEncoded), subject.computeCosted());
     }
@@ -393,7 +395,7 @@ class ViewExecutorTest {
                 .when(() -> IsTokenPrecompile.decodeIsToken(input))
                 .thenReturn(isTokenWrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
-        given(encodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
+        given(evmEncodingFacade.encodeIsToken(true)).willReturn(RETURN_SUCCESS_TRUE);
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
 
@@ -406,7 +408,7 @@ class ViewExecutorTest {
                 .thenReturn(wrapper);
         given(ledgers.isTokenAddress(fungibleTokenAddress)).willReturn(true);
         given(ledgers.typeOf(fungible)).willReturn(TokenType.FUNGIBLE_COMMON);
-        given(encodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
+        given(evmEncodingFacade.encodeGetTokenType(TokenType.FUNGIBLE_COMMON.ordinal()))
                 .willReturn(RETURN_SUCCESS_TRUE);
         assertEquals(Pair.of(gas, RETURN_SUCCESS_TRUE), subject.computeCosted());
     }
@@ -529,7 +531,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, viewGasCalculator, stateView, ledgers);
+                        input, frame, encodingFacade, evmEncodingFacade,viewGasCalculator, stateView, ledgers);
         return input;
     }
 
@@ -545,7 +547,7 @@ class ViewExecutorTest {
         given(viewGasCalculator.compute(resultingTimestamp, MINIMUM_TINYBARS_COST)).willReturn(gas);
         this.subject =
                 new ViewExecutor(
-                        input, frame, encodingFacade, viewGasCalculator, stateView, ledgers);
+                        input, frame, encodingFacade, evmEncodingFacade, viewGasCalculator, stateView, ledgers);
         return input;
     }
 

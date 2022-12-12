@@ -60,7 +60,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile
         final var token = ledgers.tokens().getImmutableRef(tokenId);
         validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenType = token.tokenType().ordinal();
-        return encoder.encodeGetTokenType(tokenType);
+        return evmEncoder.encodeGetTokenType(tokenType);
     }
 
     public static TokenInfoWrapper<TokenID> decodeGetTokenType(final Bytes input) {

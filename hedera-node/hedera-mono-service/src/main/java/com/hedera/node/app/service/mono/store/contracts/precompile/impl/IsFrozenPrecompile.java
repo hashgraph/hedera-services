@@ -59,7 +59,7 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final boolean isFrozen = ledgers.isFrozen(accountId, tokenId);
-        return encoder.encodeIsFrozen(isFrozen);
+        return evmEncoder.encodeIsFrozen(isFrozen);
     }
 
     public static TokenFreezeUnfreezeWrapper<TokenID, AccountID> decodeIsFrozen(
