@@ -747,6 +747,13 @@ workflows:
                 at: /
 
   GCP-Daily-Services-Comp-NetError-4N-1C:
+    triggers:
+      - schedule:
+          cron: "30 5 * * *"
+          filters:
+            branches:
+              only:
+                - develop
     jobs:
       - build-platform-and-services
       - jrs-regression:
@@ -1617,10 +1624,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-test"
+        default: "hedera-regression-summary"
       workflow-name:
         type: string
         default: ""
