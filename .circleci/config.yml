@@ -579,7 +579,7 @@ commands:
               -Djrs.circleci.ssh.login="${JRS_SSH_USER_NAME}" \
               -Djrs.circleci.ssh.keyfile="/tmp/jrs-ssh-keyfile" \
               ${JRS_OPTIONS} \
-              -Dlog4j.configurationFile=log4j2-jrs.xml \
+              -Dlog4j.configurationFile=log4j2-fsts-enhanced.xml  \
               -Dspring.output.ansi.enabled=ALWAYS \
               -jar regression.jar "${CONFIG_PATH}" -pr "<< parameters.platform_repo_path >>" \
               -r "<< parameters.hedera_services_path >>" -w DOCKER_REMOTE -ci "${CI_PARAMETERS}" \
