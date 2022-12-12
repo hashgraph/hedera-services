@@ -97,7 +97,6 @@ class SigTransactionMetadataBuilderTest {
 
         assertThrows(NullPointerException.class, () -> new SigTransactionMetadataBuilder(null));
         assertThrows(NullPointerException.class, () -> subject.txnBody(null));
-        assertThrows(NullPointerException.class, () -> subject.payer(null));
         assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
         assertThrows(NullPointerException.class, () -> subject.status(null));
         assertThrows(NullPointerException.class, () -> subject.addNonPayerKey(null));
@@ -111,11 +110,11 @@ class SigTransactionMetadataBuilderTest {
     @Test
     void gettersWorkAsExpectedWhenPayerIsSet() {
         final var txn = createAccountTransaction();
-
+        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
         subject =
                 new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(createAccountTransaction())
-                        .payer(payer)
+                        .payerKeyFor(payer)
                         .addAllReqKeys(List.of(payerKey, otherKey));
         meta = subject.build();
 
@@ -254,6 +253,20 @@ class SigTransactionMetadataBuilderTest {
         subject.addNonPayerKeyIfReceiverSigRequired(otherAccountId, INVALID_ALLOWANCE_OWNER_ID);
         assertIterableEquals(List.of(payerKey), subject.build().requiredKeys());
         subject.status(INVALID_ACCOUNT_ID);
+    }
+
+    @Test
+    void checksFieldsSetWhenBuildingObject() {
+        given(keyLookup.getKey(payer)).willReturn(new KeyOrLookupFailureReason(payerKey, null));
+        subject = new SigTransactionMetadataBuilder(keyLookup).payerKeyFor(payer);
+        var message = assertThrows(NullPointerException.class, () -> subject.build());
+        assertEquals(
+                message.getMessage(),
+                "Transaction body is required to build SigTransactionMetadata");
+
+        subject = new SigTransactionMetadataBuilder(keyLookup).txnBody(createAccountTransaction());
+        message = assertThrows(NullPointerException.class, () -> subject.build());
+        assertEquals(message.getMessage(), "Payer is required to build SigTransactionMetadata");
     }
 
     @Test

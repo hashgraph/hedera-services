@@ -64,12 +64,13 @@ public class SigTransactionMetadataBuilder {
     }
 
     /**
-     * Set payer for the transaction
+     * Set payer for the transaction. This is only used during {@link
+     * SigTransactionMetadata#copy(AccountKeyLookup)}
      *
      * @param payer payer for the transaction
      * @return builder object
      */
-    public SigTransactionMetadataBuilder payer(@NonNull final AccountID payer) {
+    SigTransactionMetadataBuilder payer(@NonNull final AccountID payer) {
         Objects.requireNonNull(payer);
         this.payer = payer;
         return this;
@@ -186,6 +187,8 @@ public class SigTransactionMetadataBuilder {
      */
     @NonNull
     public SigTransactionMetadata build() {
+        Objects.requireNonNull(txn, "Transaction body is required to build SigTransactionMetadata");
+        Objects.requireNonNull(payer, "Payer is required to build SigTransactionMetadata");
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
     }
 

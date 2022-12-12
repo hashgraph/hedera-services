@@ -20,7 +20,6 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,7 +30,7 @@ import java.util.List;
  * <p>NOTE: This class may have subclasses in the future.
  */
 public class SigTransactionMetadata implements TransactionMetadata {
-    protected final List<HederaKey> requiredKeys = new ArrayList<>();
+    protected List<HederaKey> requiredKeys;
     protected final TransactionBody txn;
     protected final AccountID payer;
     protected final ResponseCodeEnum status;
@@ -44,7 +43,8 @@ public class SigTransactionMetadata implements TransactionMetadata {
         this.txn = txn;
         this.payer = payer;
         this.status = status;
-        requiredKeys.addAll(otherKeys);
+        requiredKeys = Collections.unmodifiableList(otherKeys);
+        ;
     }
 
     @Override
