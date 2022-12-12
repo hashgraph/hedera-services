@@ -38,14 +38,8 @@ public record SigTransactionMetadata(
         ResponseCodeEnum status,
         List<HederaKey> requiredKeys)
         implements TransactionMetadata {
-    public SigTransactionMetadata(
-            @NonNull TransactionBody txnBody,
-            @NonNull AccountID payer,
-            ResponseCodeEnum status,
-            List<HederaKey> requiredKeys) {
-        this.txnBody = Objects.requireNonNull(txnBody);
-        this.payer = Objects.requireNonNull(payer);
-        this.status = status;
-        this.requiredKeys = requiredKeys;
+    public SigTransactionMetadata {
+        Objects.requireNonNull(txnBody);
+        Objects.requireNonNull(payer);
     }
 }

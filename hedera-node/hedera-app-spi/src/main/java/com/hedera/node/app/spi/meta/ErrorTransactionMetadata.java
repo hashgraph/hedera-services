@@ -45,13 +45,9 @@ public record ErrorTransactionMetadata(
      * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public ErrorTransactionMetadata(
-            @Nullable TransactionBody txnBody,
-            @NonNull ResponseCodeEnum status,
-            @NonNull Throwable cause) {
-        this.cause = requireNonNull(cause);
-        this.status = requireNonNull(status);
-        this.txnBody = txnBody;
+    public ErrorTransactionMetadata {
+        requireNonNull(cause);
+        requireNonNull(status);
     }
 
     @NonNull
