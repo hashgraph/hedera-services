@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
@@ -62,37 +63,19 @@ class SigTransactionMetadataTest {
     void gettersWorkOnFailure() {
         given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject =
-                new SigTransactionMetadataBuilder<>(lookup)
+        subject = new SigTransactionMetadataBuilder<>(lookup)
                         .payerKeyFor(payer)
                         .status(INVALID_ACCOUNT_ID)
                         .txnBody(txn)
                         .addToReqKeys(otherKey)
-                        .build();
+                .build();
 
         assertTrue(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
-        assertEquals(List.of(payerKey, otherKey), subject.requiredKeys());
-    }
-
-    @Test
-    void copyWorksAsExpected() {
-        given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-        final var txn = createAccountTransaction();
-        subject =
-                new SigTransactionMetadataBuilder<>(lookup)
-                        .payerKeyFor(payer)
-                        .status(INVALID_ACCOUNT_ID)
-                        .txnBody(txn)
-                        .addToReqKeys(otherKey)
-                        .build();
-
-        final var copy = subject.copy(lookup);
-        assertEquals(copy.build().txnBody(), subject.txnBody());
-        assertEquals(copy.build().requiredKeys(), subject.requiredKeys());
-        assertEquals(copy.build().status(), subject.status());
-        assertEquals(copy.build().payer(), subject.payer());
+        assertEquals(
+                List.of(payerKey),
+                subject.requiredKeys()); // otherKey is not added as there is failure status set
     }
 
     private TransactionBody createAccountTransaction() {

@@ -132,13 +132,13 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         } catch (PreCheckException preCheckException) {
             return new ErrorTransactionMetadata(
-                    preCheckException.responseCode(), preCheckException, txBody, payer);
+                    txBody, payer, preCheckException.responseCode(), preCheckException);
         } catch (Exception ex) {
             // Some unknown and unexpected failure happened. If this was non-deterministic, I could
             // end up with an ISS. It is critical that I log whatever happened, because we should
             // have caught all legitimate failures in another catch block.
             LOG.error("An unexpected exception was thrown during pre-handle", ex);
-            return new ErrorTransactionMetadata(ResponseCodeEnum.UNKNOWN, ex, txBody, payer);
+            return new ErrorTransactionMetadata(txBody, payer, ResponseCodeEnum.UNKNOWN, ex);
         }
     }
 }

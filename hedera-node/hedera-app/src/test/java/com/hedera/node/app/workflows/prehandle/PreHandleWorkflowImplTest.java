@@ -270,6 +270,6 @@ class PreHandleWorkflowImplTest {
         assertThat(captor.getValue())
                 .succeedsWithin(Duration.ofMillis(100))
                 .isInstanceOf(ErrorTransactionMetadata.class)
-                .hasFieldOrPropertyWithValue("responseCode", INVALID_TRANSACTION);
+                .hasFieldOrPropertyWithValue("status", INVALID_TRANSACTION);
     }
 }

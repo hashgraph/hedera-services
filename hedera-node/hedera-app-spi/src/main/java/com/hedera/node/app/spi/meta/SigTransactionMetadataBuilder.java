@@ -32,7 +32,8 @@ import java.util.Objects;
 
 /**
  * Builds {@link SigTransactionMetadata} by collecting information that is needed when transactions
- * are handled as part of "pre-handle" needed for signature verification.
+ * are handled as part of "pre-handle" needed for signature verification. The first key in the
+ * required keys list is the payer's key.
  *
  * <p>NOTE : This class is designed to be subclassed For e.g., we need a {@link TransactionMetadata}
  * with an inner {@link TransactionMetadata} for schedule transactions.
@@ -46,8 +47,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
     protected AccountID payer;
 
     public SigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
-        Objects.requireNonNull(keyLookup);
-        this.keyLookup = keyLookup;
+        this.keyLookup = Objects.requireNonNull(keyLookup);
     }
 
     /**
@@ -58,20 +58,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return builder object
      */
     public T status(@NonNull final ResponseCodeEnum status) {
-        Objects.requireNonNull(status);
-        this.status = status;
-        return self();
-    }
-
-    /**
-     * Set payer for the transaction
-     *
-     * @param payer payer for the transaction
-     * @return builder object
-     */
-    public T payer(@NonNull final AccountID payer) {
-        Objects.requireNonNull(payer);
-        this.payer = payer;
+        this.status = Objects.requireNonNull(status);
         return self();
     }
 
@@ -82,8 +69,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return builder object
      */
     public T addAllReqKeys(@NonNull final List<HederaKey> keys) {
-        Objects.requireNonNull(keys);
-        requiredKeys.addAll(keys);
+        requiredKeys.addAll(Objects.requireNonNull(keys));
         return self();
     }
 
@@ -94,21 +80,25 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return builder object
      */
     public T payerKeyFor(@NonNull AccountID payer) {
-        Objects.requireNonNull(payer);
-        this.payer = payer;
+        this.payer = Objects.requireNonNull(payer);
         addPayerKey();
         return self();
     }
 
     /**
-     * Adds given key to required keys in {@link TransactionMetadata}.
+     * Adds given key to required keys in {@link TransactionMetadata}. If the status is already
+     * failed, or if the payer's key is not added the given keys will not be added to requiredKeys
+     * list. This method is used when the payer's key is already fetched, and we want to add other
+     * keys from {@link TransactionBody} to required keys to sign.
      *
      * @param key key to be added
      * @return builder object
      */
     public T addToReqKeys(@NonNull HederaKey key) {
-        Objects.requireNonNull(key);
-        requiredKeys.add(key);
+        if (status != OK || payerKeyNotAdded()) {
+            return self();
+        }
+        requiredKeys.add(Objects.requireNonNull(key));
         return self();
     }
 
@@ -119,8 +109,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return builder object
      */
     public T txnBody(@NonNull TransactionBody txn) {
-        Objects.requireNonNull(txn);
-        this.txn = txn;
+        this.txn = Objects.requireNonNull(txn);
         return self();
     }
 
@@ -146,9 +135,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      */
     public T addNonPayerKey(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        Objects.requireNonNull(id);
-
-        if (isNotNeeded(id)) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return self();
         }
         final var result = keyLookup.getKey(id);
@@ -168,9 +155,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      */
     public T addNonPayerKeyIfReceiverSigRequired(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        Objects.requireNonNull(id);
-
-        if (isNotNeeded(id)) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return self();
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
@@ -185,7 +170,9 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return a new {@link SigTransactionMetadata}
      */
     @NonNull
-    public SigTransactionMetadata build() {
+    public TransactionMetadata build() {
+        Objects.requireNonNull(txn, "Transaction body is required to build SigTransactionMetadata");
+        Objects.requireNonNull(payer, "Payer is required to build SigTransactionMetadata");
         return new SigTransactionMetadata(txn, payer, status, requiredKeys);
     }
 
@@ -207,7 +194,9 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
 
     /**
      * Checks if the account given is same as payer or if the metadata is already failed. In either
-     * case, no need to lookup tha account's key.
+     * case, no need to look up that account's key. If the metadata did not fail already and no
+     * payer key has been added, we don't add other keys, since the first key in the requiredKeys
+     * should be payer's key
      *
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
@@ -216,7 +205,8 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
         return id.equals(payer)
                 || id.equals(AccountID.getDefaultInstance())
                 || designatesAccountRemoval(id)
-                || status != OK;
+                || status != OK
+                || payerKeyNotAdded();
     }
 
     /**
@@ -247,5 +237,16 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
         } else if (result.key() != null) {
             requiredKeys.add(result.key());
         }
+    }
+
+    /**
+     * Checks if the payer key has not been added, and we didn't fail looking it up. No other keys
+     * can be added at this time. This is to maintain the invariant that the payer key is the first
+     * key in requiredKeys list.
+     *
+     * @return true if payer key is not added, false otherwise
+     */
+    private boolean payerKeyNotAdded() {
+        return status == OK && requiredKeys.isEmpty();
     }
 }

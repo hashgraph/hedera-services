@@ -15,39 +15,33 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * An implementation of {@link TransactionMetadata} for cases when an error has occurred.
+ * An implementation of {@link TransactionMetadata} for cases when an error with a specific
+ * {@link ResponseCodeEnum} has occurred.
  *
  * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
+ * @param payer the payer for the transaction
  * @param status the {@link ResponseCodeEnum} of the error
- * @param cause Returns the cause of the error
  */
-public record ErrorTransactionMetadata(
-        @Nullable TransactionBody txnBody,
-        @Nullable AccountID payer,
-        @NonNull ResponseCodeEnum status,
-        @NonNull Throwable cause)
+public record InvalidTransactionMetadata(
+        @NonNull TransactionBody txnBody,
+        @NonNull AccountID payer,
+        @NonNull ResponseCodeEnum status)
         implements TransactionMetadata {
-    /**
-     * Constructor of {@code ErrorTransactionMetadata}
-     *
-     * @param status the {@link ResponseCodeEnum} of the error
-     * @param cause the {@link Throwable} that caused the error
-     * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
-     * @throws NullPointerException if {@code responseCode} is {@code null}
-     */
-    public ErrorTransactionMetadata {
-        requireNonNull(cause);
+    public InvalidTransactionMetadata {
+        requireNonNull(txnBody);
+        requireNonNull(payer);
         requireNonNull(status);
     }
 
@@ -55,11 +49,5 @@ public record ErrorTransactionMetadata(
     @Override
     public List<HederaKey> requiredKeys() {
         return List.of();
-    }
-
-    @Nullable
-    @Override
-    public AccountID payer() {
-        return payer;
     }
 }

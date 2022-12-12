@@ -15,12 +15,10 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
 /**
@@ -40,11 +38,9 @@ public interface TransactionMetadata {
     }
 
     /**
-     * Returns the status {@link ResponseCodeEnum}, which gives the failureReason if there is a
-     * failure. If there is no failure in "pre-handle" the status returned will be {@code
-     * ResponseCodeEnum.OK}.
+     * Returns the status of the transaction.
      *
-     * @return response code of the failure
+     * @return the status of the transaction.
      */
     ResponseCodeEnum status();
 
@@ -69,14 +65,4 @@ public interface TransactionMetadata {
      * @return payer for the transaction
      */
     AccountID payer();
-
-    /**
-     * Copies existing metadata and returns builder object.
-     *
-     * @param lookup key lookup needed for the builder
-     * @return builder object
-     */
-    default <T extends SigTransactionMetadataBuilder> T copy(@NonNull AccountKeyLookup lookup) {
-        throw new UnsupportedOperationException("Copy operation is not supported");
-    }
 }

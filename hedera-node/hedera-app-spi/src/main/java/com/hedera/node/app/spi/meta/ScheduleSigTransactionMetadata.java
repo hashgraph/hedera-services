@@ -19,9 +19,11 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Metadata collected when scheduled transactions are handled as part of "pre-handle" needed for signature
@@ -29,22 +31,15 @@ import java.util.List;
  * transaction that is being scheduled.
  * This extends {@link SigTransactionMetadata} to add the required keys for the transaction.
  */
-public class ScheduleSigTransactionMetadata extends SigTransactionMetadata
+public record ScheduleSigTransactionMetadata(@NonNull TransactionBody txnBody,
+                                              @NonNull AccountID payer,
+                                              ResponseCodeEnum status,
+                                              List<HederaKey> requiredKeys,
+                                              @NonNull TransactionMetadata scheduledMeta)
         implements ScheduleTransactionMetadata {
-    private TransactionMetadata scheduledTxnMeta;
-
-    public ScheduleSigTransactionMetadata(
-            final TransactionBody topLevelTxn,
-            final AccountID payer,
-            final ResponseCodeEnum status,
-            final List<HederaKey> requiredKeys,
-            final TransactionMetadata scheduledTxnMeta) {
-        super(topLevelTxn, payer, status, requiredKeys);
-        this.scheduledTxnMeta = scheduledTxnMeta;
-    }
-
-    @Override
-    public TransactionMetadata scheduledMeta() {
-        return scheduledTxnMeta;
+    public ScheduleSigTransactionMetadata {
+        Objects.requireNonNull(txnBody);
+        Objects.requireNonNull(payer);
+        Objects.requireNonNull(scheduledMeta);
     }
 }

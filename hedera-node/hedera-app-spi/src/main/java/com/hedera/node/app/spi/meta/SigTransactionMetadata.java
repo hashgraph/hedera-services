@@ -15,74 +15,31 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
-import java.util.Collections;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Metadata collected when transactions are handled as part of "pre-handle" needed for signature
  * verification.
  *
- * <p>NOTE: This class may have subclasses in the future.
+ * @param txnBody Transaction that is being pre-handled
+ * @param payer payer for the transaction
+ * @param status {@link ResponseCodeEnum} status of the transaction
+ * @param requiredKeys list of keys that are required to sign the transaction
  */
-public class SigTransactionMetadata implements TransactionMetadata {
-    protected final List<HederaKey> requiredKeys = new ArrayList<>();
-    protected final TransactionBody txn;
-    protected final AccountID payer;
-    protected final ResponseCodeEnum status;
-
-    public SigTransactionMetadata(
-            final TransactionBody txn,
-            final AccountID payer,
-            final ResponseCodeEnum status,
-            final List<HederaKey> otherKeys) {
-        this.txn = txn;
-        this.payer = payer;
-        this.status = status;
-        requiredKeys.addAll(otherKeys);
-    }
-
-    @Override
-    public TransactionBody txnBody() {
-        return txn;
-    }
-
-    @Override
-    public List<HederaKey> requiredKeys() {
-        return Collections.unmodifiableList(requiredKeys);
-    }
-
-    @Override
-    public AccountID payer() {
-        return payer;
-    }
-
-    @Override
-    public ResponseCodeEnum status() {
-        return status;
-    }
-
-    @Override
-    public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup) {
-        return new SigTransactionMetadataBuilder<>(lookup)
-                .txnBody(txn)
-                .status(status)
-                .payer(payer)
-                .addAllReqKeys(requiredKeys);
-    }
-
-    @Override
-    public String toString() {
-        return "SigTransactionMetadata{" +
-                "requiredKeys=" + requiredKeys +
-                ", txn=" + txn +
-                ", payer=" + payer +
-                ", status=" + status +
-                '}';
+public record SigTransactionMetadata(
+        @NonNull TransactionBody txnBody,
+        @NonNull AccountID payer,
+        ResponseCodeEnum status,
+        List<HederaKey> requiredKeys)
+        implements TransactionMetadata {
+    public SigTransactionMetadata {
+        Objects.requireNonNull(txnBody);
+        Objects.requireNonNull(payer);
     }
 }

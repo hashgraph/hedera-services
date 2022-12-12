@@ -92,9 +92,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
         final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
         if (meta.failed()) {
-            return meta.copy(keyLookup)
-                    .status(UNRESOLVABLE_REQUIRED_SIGNERS)
-                    .build();
+            return new InvalidTransactionMetadata(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return meta;
     }

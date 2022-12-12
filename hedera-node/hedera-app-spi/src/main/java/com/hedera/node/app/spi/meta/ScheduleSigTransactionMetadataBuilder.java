@@ -17,17 +17,20 @@
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 
 /**
  * Metadata collected when schedule transactions are handled as part of "pre-handle" needed for signature
  * verification. It builds {@link SigTransactionMetadata} for the transaction that is being scheduled,
  * in addition to all fields in {@link SigTransactionMetadata}.
  */
-public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder>{
+public class ScheduleSigTransactionMetadataBuilder extends
+        SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder>{
     private TransactionMetadata scheduledTxnMeta;
 
-    public ScheduleSigTransactionMetadataBuilder(
-            final AccountKeyLookup keyLookup) {
+    public ScheduleSigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
         super(keyLookup);
     }
 
@@ -40,10 +43,15 @@ public class ScheduleSigTransactionMetadataBuilder extends SigTransactionMetadat
      * Creates and returns a new {@link ScheduleSigTransactionMetadata} based on the values configured in
      * this builder.
      *
-     * @return a new {@link ScheduleSigTransactionMetadata}
+     * @return a new {@link ScheduleSigTransactionMetadata} object
      */
     @Override
-    public ScheduleSigTransactionMetadata build(){
-        return new ScheduleSigTransactionMetadata(txn, payer, status,requiredKeys, scheduledTxnMeta);
+    @NonNull
+    public ScheduleTransactionMetadata build(){
+        Objects.requireNonNull(txn, "Transaction body is required to build ScheduleSigTransactionMetadata");
+        Objects.requireNonNull(payer, "Payer is required to build ScheduleSigTransactionMetadata");
+        Objects.requireNonNull(scheduledTxnMeta, "Scheduled transaction metadata is required to " +
+                "build ScheduleSigTransactionMetadata");
+        return new ScheduleSigTransactionMetadata(txn, payer, status, requiredKeys, scheduledTxnMeta);
     }
 }
