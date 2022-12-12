@@ -50,6 +50,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -81,7 +82,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
             final EntityAccess entityAccess,
             final GlobalDynamicProperties dynamicProperties,
             final NodeLocalProperties nodeProperties,
-            final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider,
+            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
             final StaticBlockMetaProvider blockMetaProvider) {
         super(
                 ContractCallLocal,

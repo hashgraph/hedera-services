@@ -43,8 +43,8 @@ import com.hederahashgraph.api.proto.java.ResponseHeader;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +60,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
     private final GlobalDynamicProperties properties;
     private final NodeLocalProperties nodeProperties;
     private final SmartContractFeeBuilder usageEstimator;
-    private final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider;
+    private final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider;
     private final StaticBlockMetaProvider blockMetaProvider;
 
     @Inject
@@ -69,7 +69,7 @@ public final class ContractCallLocalResourceUsage implements QueryResourceUsageE
             final GlobalDynamicProperties properties,
             final NodeLocalProperties nodeProperties,
             final AccountStore accountStore,
-            final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider,
+            final Supplier<CallLocalEvmTxProcessor> evmTxProcessorProvider,
             final EntityIdSource ids,
             final OptionValidator validator,
             final AliasManager aliasManager,

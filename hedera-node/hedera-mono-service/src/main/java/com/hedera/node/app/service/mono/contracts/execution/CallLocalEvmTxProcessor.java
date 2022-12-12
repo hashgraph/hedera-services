@@ -24,7 +24,6 @@ import com.hedera.node.app.service.mono.store.contracts.CodeCache;
 import com.hedera.node.app.service.mono.store.models.Account;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
-import javax.inject.Inject;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,7 +40,6 @@ public class CallLocalEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
     private final AliasManager aliasManager;
 
-    @Inject
     public CallLocalEvmTxProcessor(
             final CodeCache codeCache,
             final LivePricesSource livePricesSource,
