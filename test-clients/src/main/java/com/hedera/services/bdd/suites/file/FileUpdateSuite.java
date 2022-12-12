@@ -573,7 +573,7 @@ public class FileUpdateSuite extends HapiSuite {
                                 }));
     }
 
-    private HapiSpec chainIdChangesDynamically() {
+    public HapiSpec chainIdChangesDynamically() {
         final var chainIdUser = "ChainIdUser";
         final var otherChainId = 0xABCDL;
         final var firstCallTxn = "firstCallTxn";

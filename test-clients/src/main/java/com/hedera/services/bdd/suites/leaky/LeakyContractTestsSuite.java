@@ -1061,7 +1061,7 @@ public class LeakyContractTestsSuite extends HapiSuite {
                         resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1));
     }
 
-    private HapiSpec propagatesNestedCreations() {
+    HapiSpec propagatesNestedCreations() {
         final var call = "callTxn";
         final var creation = "createTxn";
         final var contract = "NestedCreations";
