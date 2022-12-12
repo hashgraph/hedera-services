@@ -120,7 +120,7 @@ class SigTransactionMetadataBuilderTest {
 
         assertFalse(meta.failed());
         assertEquals(txn, meta.txnBody());
-        assertEquals(List.of(payerKey, otherKey), meta.requiredKeys());
+        assertEquals(List.of(payerKey, payerKey, otherKey), meta.requiredKeys());
         assertEquals(payer, meta.payer());
     }
 
