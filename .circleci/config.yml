@@ -1540,7 +1540,6 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            git checkout -b test-jrs-error origin/test-jrs-error
             ./gradlew assemble --scan --parallel
 
       - run:
