@@ -16,6 +16,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiApiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractRecords;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -52,6 +54,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
@@ -69,6 +72,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -81,6 +85,7 @@ import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.b
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
@@ -233,6 +238,7 @@ public class ContractCallSuite extends HapiApiSuite {
                 sendHbarsToAddressesMultipleTimes(),
                 sendHbarsToDifferentAddresses(),
                 sendHbarsFromDifferentAddressessToAddress(),
+                nestedContractCannotOverSendValue(),
                 sendHbarsFromAndToDifferentAddressess(),
                 transferNegativeAmountOfHbars(),
                 transferToCaller(),
@@ -248,7 +254,9 @@ public class ContractCallSuite extends HapiApiSuite {
                 canMintAndTransferInSameContractOperation(),
                 workingHoursDemo(),
                 lpFarmSimulation(),
-                actionsShowPropagatedRevert());
+                actionsShowPropagatedRevert(),
+                depositMoreThanBalanceFailsGracefully(),
+                payerCannotOverSendValue());
     }
 
     private HapiApiSpec actionsShowPropagatedRevert() {
@@ -2475,6 +2483,64 @@ public class ContractCallSuite extends HapiApiSuite {
                                                 .has(contractWith().balance(10_000L - 20L))));
     }
 
+    private HapiApiSpec nestedContractCannotOverSendValue() {
+        return defaultHapiSpec("nestedContractCannotOverSendValue")
+                .given(
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(RECEIVER).balance(10_000L),
+                        uploadInitCode(NESTED_TRANSFERRING_CONTRACT, NESTED_TRANSFER_CONTRACT),
+                        contractCustomCreate(NESTED_TRANSFER_CONTRACT, "1")
+                                .balance(10_000L)
+                                .payingWith(ACCOUNT),
+                        contractCustomCreate(NESTED_TRANSFER_CONTRACT, "2")
+                                .balance(10_000L)
+                                .payingWith(ACCOUNT),
+                        getAccountInfo(RECEIVER).savingSnapshot(RECEIVER_INFO))
+                .when(
+                        withOpContext(
+                                (spec, log) -> {
+                                    var receiverAddr =
+                                            spec.registry()
+                                                    .getAccountInfo(RECEIVER_INFO)
+                                                    .getContractAccountID();
+
+                                    allRunFor(
+                                            spec,
+                                            contractCreate(
+                                                            NESTED_TRANSFERRING_CONTRACT,
+                                                            asHeadlongAddress(
+                                                                    getNestedContractAddress(
+                                                                            NESTED_TRANSFER_CONTRACT
+                                                                                    + "1",
+                                                                            spec)),
+                                                            asHeadlongAddress(
+                                                                    getNestedContractAddress(
+                                                                            NESTED_TRANSFER_CONTRACT
+                                                                                    + "2",
+                                                                            spec)))
+                                                    .balance(10_000L)
+                                                    .payingWith(ACCOUNT),
+                                            contractCall(
+                                                            NESTED_TRANSFERRING_CONTRACT,
+                                                            "transferFromDifferentAddressesToAddress",
+                                                            asHeadlongAddress(receiverAddr),
+                                                            BigInteger.valueOf(40_000L))
+                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                                    .payingWith(ACCOUNT)
+                                                    .logged());
+                                }))
+                .then(
+                        getAccountBalance(RECEIVER).hasTinyBars(10_000L),
+                        sourcing(
+                                () ->
+                                        getContractInfo(NESTED_TRANSFER_CONTRACT + "1")
+                                                .has(contractWith().balance(10_000L))),
+                        sourcing(
+                                () ->
+                                        getContractInfo(NESTED_TRANSFER_CONTRACT + "2")
+                                                .has(contractWith().balance(10_000L))));
+    }
+
     private HapiApiSpec sendHbarsToOuterContractFromDifferentAddresses() {
         return defaultHapiSpec("sendHbarsToOuterContractFromDifferentAddresses")
                 .given(
@@ -3100,6 +3166,55 @@ public class ContractCallSuite extends HapiApiSuite {
                                                         BigInteger.valueOf(200_000))
                                                 .payingWith(dev)
                                                 .gas(gasToOffer)));
+    }
+
+    private HapiApiSpec depositMoreThanBalanceFailsGracefully() {
+        return defaultHapiSpec("Deposit More Than Balance Fails Gracefully")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        cryptoCreate(ACCOUNT).balance(ONE_HBAR - 1))
+                .when(contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .then(
+                        contractCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(ONE_HBAR))
+                                .via(PAY_TXN)
+                                .payingWith(ACCOUNT)
+                                .sending(ONE_HBAR)
+                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE));
+    }
+
+    private HapiApiSpec payerCannotOverSendValue() {
+        final var payerBalance = 666 * ONE_HBAR;
+        final var overdraftAmount = payerBalance + ONE_HBAR;
+        final var overAmbitiousPayer = "overAmbitiousPayer";
+        final var uncheckedCC = "uncheckedCC";
+        return onlyDefaultHapiSpec("PayerCannotSendMoreThanBalance")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(
+                        cryptoCreate(overAmbitiousPayer).balance(payerBalance),
+                        contractCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(overdraftAmount))
+                                .payingWith(overAmbitiousPayer)
+                                .sending(overdraftAmount)
+                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
+                        usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
+                        uncheckedSubmit(
+                                        contractCall(
+                                                        PAY_RECEIVABLE_CONTRACT,
+                                                        DEPOSIT,
+                                                        BigInteger.valueOf(overdraftAmount))
+                                                .txnId(uncheckedCC)
+                                                .payingWith(overAmbitiousPayer)
+                                                .sending(overdraftAmount))
+                                .payingWith(GENESIS))
+                .then(
+                        sleepFor(1_000),
+                        getReceipt(uncheckedCC)
+                                .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
+                                .logged());
     }
 
     private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {

@@ -59,6 +59,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -135,6 +136,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         originAndSenderAreEthereumSigner(),
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
                                         ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
+                                        sendingLargerBalanceThanAvailableFailsGracefully(),
                                         setApproveForAllUsingLocalNodeSetupPasses())))
                 .toList();
     }
@@ -1228,6 +1230,59 @@ public class EthereumSuite extends HapiApiSuite {
                                             Arrays.copyOfRange(
                                                     originalBytecode, 29, originalBytecode.length);
                                     Assertions.assertArrayEquals(expectedBytecode, actualBytecode);
+                                }));
+    }
+
+    HapiApiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
+
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                tinyBarsFromAccountToAlias(
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS - 1)),
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)))
+                .when(
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS)
+                                .via("deployTokenCreateContract"),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(
+                                        cb ->
+                                                tokenCreateContractAddress.set(
+                                                        asHeadlongAddress(cb))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var call =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            tokenCreateContractAddress.get())
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .gasPrice(10L)
+                                                    .sending(ONE_HUNDRED_HBARS)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                                    allRunFor(spec, call);
                                 }));
     }
 
