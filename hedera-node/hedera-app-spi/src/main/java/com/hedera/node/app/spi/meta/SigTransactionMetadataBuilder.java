@@ -57,8 +57,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     public SigTransactionMetadataBuilder status(@NonNull final ResponseCodeEnum status) {
-        Objects.requireNonNull(status);
-        this.status = status;
+        this.status = Objects.requireNonNull(status);
         return this;
     }
 
@@ -70,8 +69,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     SigTransactionMetadataBuilder payer(@NonNull final AccountID payer) {
-        Objects.requireNonNull(payer);
-        this.payer = payer;
+        this.payer = Objects.requireNonNull(payer);
         return this;
     }
 
@@ -82,8 +80,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     public SigTransactionMetadataBuilder addAllReqKeys(@NonNull final List<HederaKey> keys) {
-        Objects.requireNonNull(keys);
-        requiredKeys.addAll(keys);
+        requiredKeys.addAll(Objects.requireNonNull(keys));
         return this;
     }
 
@@ -94,8 +91,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     public SigTransactionMetadataBuilder payerKeyFor(@NonNull AccountID payer) {
-        Objects.requireNonNull(payer);
-        this.payer = payer;
+        this.payer = Objects.requireNonNull(payer);
         addPayerKey();
         return this;
     }
@@ -107,8 +103,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     public SigTransactionMetadataBuilder addToReqKeys(@NonNull HederaKey key) {
-        Objects.requireNonNull(key);
-        requiredKeys.add(key);
+        requiredKeys.add(Objects.requireNonNull(key));
         return this;
     }
 
@@ -119,8 +114,7 @@ public class SigTransactionMetadataBuilder {
      * @return builder object
      */
     public SigTransactionMetadataBuilder txnBody(@NonNull TransactionBody txn) {
-        Objects.requireNonNull(txn);
-        this.txn = txn;
+        this.txn = Objects.requireNonNull(txn);
         return this;
     }
 
@@ -146,9 +140,7 @@ public class SigTransactionMetadataBuilder {
      */
     public SigTransactionMetadataBuilder addNonPayerKey(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        Objects.requireNonNull(id);
-
-        if (isNotNeeded(id)) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return this;
         }
         final var result = keyLookup.getKey(id);
@@ -168,9 +160,7 @@ public class SigTransactionMetadataBuilder {
      */
     public SigTransactionMetadataBuilder addNonPayerKeyIfReceiverSigRequired(
             @NonNull final AccountID id, @Nullable final ResponseCodeEnum failureStatusToUse) {
-        Objects.requireNonNull(id);
-
-        if (isNotNeeded(id)) {
+        if (isNotNeeded(Objects.requireNonNull(id))) {
             return this;
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
