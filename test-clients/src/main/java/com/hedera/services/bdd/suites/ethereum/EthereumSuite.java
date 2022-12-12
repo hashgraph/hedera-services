@@ -77,8 +77,6 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiApiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -139,7 +137,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
                                         ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
                                         sendingLargerBalanceThanAvailableFailsGracefully(),
-      setApproveForAllUsingLocalNodeSetupPasses())))
+                                        setApproveForAllUsingLocalNodeSetupPasses())))
                 .toList();
     }
 
