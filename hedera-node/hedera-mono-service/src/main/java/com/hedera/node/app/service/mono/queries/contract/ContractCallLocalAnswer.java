@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.inject.Inject;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,7 +69,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
     private final OptionValidator validator;
     private final GlobalDynamicProperties dynamicProperties;
     private final NodeLocalProperties nodeProperties;
-    private final CallLocalEvmTxProcessor evmTxProcessor;
+    private final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider;
     private final StaticBlockMetaProvider blockMetaProvider;
 
     @Inject
@@ -80,7 +81,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
             final EntityAccess entityAccess,
             final GlobalDynamicProperties dynamicProperties,
             final NodeLocalProperties nodeProperties,
-            final CallLocalEvmTxProcessor evmTxProcessor,
+            final Provider<CallLocalEvmTxProcessor> evmTxProcessorProvider,
             final StaticBlockMetaProvider blockMetaProvider) {
         super(
                 ContractCallLocal,
@@ -113,7 +114,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         this.accountStore = accountStore;
         this.dynamicProperties = dynamicProperties;
         this.nodeProperties = nodeProperties;
-        this.evmTxProcessor = evmTxProcessor;
+        this.evmTxProcessorProvider = evmTxProcessorProvider;
         this.blockMetaProvider = blockMetaProvider;
     }
 
@@ -192,6 +193,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
                     final var worldState =
                             new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
+                    final var evmTxProcessor = evmTxProcessorProvider.get();
                     evmTxProcessor.setWorldState(worldState);
                     evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
                     final var opResponse =

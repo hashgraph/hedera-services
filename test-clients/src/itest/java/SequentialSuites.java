@@ -16,7 +16,6 @@
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SelfDestructSuite;
-import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.records.LogsSuite;
 import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import com.hedera.services.bdd.suites.crypto.AutoAccountUpdateSuite;
@@ -43,7 +42,6 @@ public class SequentialSuites {
                     TraceabilitySuite::new,
                     LogsSuite::new,
                     SelfDestructSuite::new,
-                    CreatePrecompileSuite::new,
                     LeakyContractTestsSuite::new,
                     LeakyCryptoTestsSuite::new,
                     Create2OperationSuite::new,

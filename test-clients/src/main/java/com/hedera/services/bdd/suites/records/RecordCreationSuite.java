@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -55,8 +54,6 @@ public class RecordCreationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordCreationSuite.class);
 
     private static final long SLEEP_MS = 1_000L;
-    private static final String DEFAULT_RECORDS_TTL =
-            HapiSpecSetup.getDefaultNodeProps().get("cache.records.ttl");
     public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE =
             "staking.fees.nodeRewardPercentage";
     public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE =

@@ -17,13 +17,20 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
+import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
+import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
@@ -32,9 +39,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomC
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -46,6 +61,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
@@ -62,16 +78,38 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIM
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFERRING_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.TRANSFER_TO_CALLER;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ACCOUNT_2;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.AUTO_RENEW_PERIOD;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.CONTRACT_ADMIN_KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.DEFAULT_AMOUNT_TO_SEND;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ED25519KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.EXISTING_TOKEN;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.EXPLICIT_CREATE_RESULT;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.FIRST_CREATE_TXN;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.MEMO;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_CREATE_CONTRACT_AS_KEY;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_NAME;
+import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.TOKEN_SYMBOL;
+import static com.hedera.services.bdd.suites.contract.precompile.WipeTokenAccountPrecompileSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ADMIN_KEY;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.ethereum.EthereumSuite.GAS_LIMIT;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
@@ -79,22 +117,32 @@ import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
+import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
+import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenPauseStatus;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -120,14 +168,466 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 canCallPendingContractSafely(),
                 transferZeroHbarsToCaller(),
                 deletedContractsCannotBeUpdated(),
+                createTokenWithInvalidRoyaltyFee(),
                 autoAssociationSlotsAppearsInInfo(),
+                createTokenWithInvalidFeeCollector(),
+                fungibleTokenCreateWithFeesHappyPath(),
                 gasLimitOverMaxGasLimitFailsPrecheck(),
+                nonFungibleTokenCreateWithFeesHappyPath(),
                 createMinChargeIsTXGasUsedByContractCreate(),
                 createGasLimitOverMaxGasLimitFailsPrecheck(),
                 contractCreationStoragePriceMatchesFinalExpiry(),
+                createTokenWithInvalidFixedFeeWithERC721Denomination(),
                 maxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller(),
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller());
+    }
+
+    private HapiSpec createTokenWithInvalidFeeCollector() {
+        return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        tokenCreate(EXISTING_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_CREATE_CONTRACT,
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                                                spec.registry()
+                                                                        .getKey(ECDSA_KEY)
+                                                                        .getECDSASecp256K1()
+                                                                        .toByteArray(),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        (byte[])
+                                                                                ArrayUtils
+                                                                                        .toPrimitive(
+                                                                                                Utils
+                                                                                                        .asSolidityAddress(
+                                                                                                                0,
+                                                                                                                0,
+                                                                                                                15252L))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                AUTO_RENEW_PERIOD)
+                                                        .via(FIRST_CREATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .refusingEthConversion()
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                TransactionRecordAsserts.recordWith()
+                                        .status(INVALID_CUSTOM_FEE_COLLECTOR)
+                                        .contractCallResult(
+                                                ContractFnResultAsserts.resultWith()
+                                                        .error(
+                                                                INVALID_CUSTOM_FEE_COLLECTOR
+                                                                        .name()))));
+    }
+
+    private HapiSpec createTokenWithInvalidFixedFeeWithERC721Denomination() {
+        final String feeCollector = ACCOUNT_2;
+        return propertyPreservingHapiSpec("createTokenWithInvalidFixedFeeWithERC721Denomination")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        tokenCreate(EXISTING_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(ECDSA_KEY)
+                                .initialSupply(0L))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_CREATE_CONTRACT,
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                                                spec.registry()
+                                                                        .getKey(ECDSA_KEY)
+                                                                        .getECDSASecp256K1()
+                                                                        .toByteArray(),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                AUTO_RENEW_PERIOD)
+                                                        .via(FIRST_CREATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .refusingEthConversion()
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                TransactionRecordAsserts.recordWith()
+                                        .status(CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON)
+                                        .contractCallResult(
+                                                ContractFnResultAsserts.resultWith()
+                                                        .error(
+                                                                CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON
+                                                                        .name()))));
+    }
+
+    private HapiSpec createTokenWithInvalidRoyaltyFee() {
+        final String feeCollector = ACCOUNT_2;
+        AtomicReference<String> existingToken = new AtomicReference<>();
+        final String treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
+        return propertyPreservingHapiSpec("createTokenWithInvalidRoyaltyFee")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
+                        newKeyNamed(treasuryAndFeeCollectorKey),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(feeCollector)
+                                .key(treasuryAndFeeCollectorKey)
+                                .balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT)
+                                .gas(GAS_TO_OFFER)
+                                .adminKey(CONTRACT_ADMIN_KEY),
+                        tokenCreate(EXISTING_TOKEN).exposingCreatedIdTo(existingToken::set))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_CREATE_CONTRACT,
+                                                                "createNonFungibleTokenWithInvalidRoyaltyFee",
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                AUTO_RENEW_PERIOD,
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray())
+                                                        .via(FIRST_CREATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(
+                                                                ECDSA_KEY,
+                                                                treasuryAndFeeCollectorKey)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ED25519KEY,
+                                                                treasuryAndFeeCollectorKey)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                CONTRACT_REVERT_EXECUTED,
+                                TransactionRecordAsserts.recordWith()
+                                        .status(CUSTOM_FEE_MUST_BE_POSITIVE)
+                                        .contractCallResult(
+                                                ContractFnResultAsserts.resultWith()
+                                                        .error(
+                                                                CUSTOM_FEE_MUST_BE_POSITIVE
+                                                                        .name()))));
+    }
+
+    private HapiSpec nonFungibleTokenCreateWithFeesHappyPath() {
+        final var createTokenNum = new AtomicLong();
+        final var feeCollector = ACCOUNT_2;
+        final var treasuryAndFeeCollectorKey = "treasuryAndFeeCollectorKey";
+        return propertyPreservingHapiSpec("nonFungibleTokenCreateWithFeesHappyPath")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(ED25519KEY).shape(ED25519),
+                        newKeyNamed(treasuryAndFeeCollectorKey),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(feeCollector)
+                                .key(treasuryAndFeeCollectorKey)
+                                .balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        tokenCreate(EXISTING_TOKEN),
+                        tokenAssociate(feeCollector, EXISTING_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_CREATE_CONTRACT,
+                                                                "createNonFungibleTokenWithCustomFees",
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_CREATE_CONTRACT))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                AUTO_RENEW_PERIOD,
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray())
+                                                        .via(FIRST_CREATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .signedBy(
+                                                                ECDSA_KEY,
+                                                                treasuryAndFeeCollectorKey)
+                                                        .alsoSigningWithFullPrefix(
+                                                                ED25519KEY,
+                                                                treasuryAndFeeCollectorKey)
+                                                        .exposingResultTo(
+                                                                result -> {
+                                                                    log.info(
+                                                                            EXPLICIT_CREATE_RESULT,
+                                                                            result[0]);
+                                                                    final var res =
+                                                                            (Address) result[0];
+                                                                    createTokenNum.set(
+                                                                            res.value()
+                                                                                    .longValueExact());
+                                                                }),
+                                                newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
+                                                        .shape(
+                                                                CONTRACT.signedWith(
+                                                                        TOKEN_CREATE_CONTRACT)))))
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                ResponseCodeEnum.SUCCESS,
+                                TransactionRecordAsserts.recordWith()
+                                        .status(ResponseCodeEnum.SUCCESS)),
+                        sourcing(
+                                () -> {
+                                    final var newToken =
+                                            asTokenString(
+                                                    TokenID.newBuilder()
+                                                            .setTokenNum(createTokenNum.get())
+                                                            .build());
+                                    return getTokenInfo(newToken)
+                                            .logged()
+                                            .hasTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                            .hasSymbol(TOKEN_SYMBOL)
+                                            .hasName(TOKEN_NAME)
+                                            .hasDecimals(0)
+                                            .hasTotalSupply(0)
+                                            .hasEntityMemo(MEMO)
+                                            .hasTreasury(feeCollector)
+                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                            .hasSupplyType(TokenSupplyType.FINITE)
+                                            .hasMaxSupply(400)
+                                            .searchKeysGlobally()
+                                            .hasAdminKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+                                            .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                            .hasCustom(
+                                                    royaltyFeeWithFallbackInHbarsInSchedule(
+                                                            4, 5, 10, feeCollector))
+                                            .hasCustom(
+                                                    royaltyFeeWithFallbackInTokenInSchedule(
+                                                            4, 5, 10, EXISTING_TOKEN, feeCollector))
+                                            .hasCustom(
+                                                    royaltyFeeWithoutFallbackInSchedule(
+                                                            4, 5, feeCollector));
+                                }));
+    }
+
+    private HapiSpec fungibleTokenCreateWithFeesHappyPath() {
+        final var createdTokenNum = new AtomicLong();
+        final var feeCollector = "feeCollector";
+        return propertyPreservingHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+                .preserving(CRYPTO_CREATE_WITH_ALIAS_ENABLED)
+                .given(
+                        overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, FALSE_VALUE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
+                        cryptoCreate(feeCollector).balance(ONE_HUNDRED_HBARS),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT).gas(GAS_TO_OFFER),
+                        tokenCreate(EXISTING_TOKEN),
+                        tokenAssociate(feeCollector, EXISTING_TOKEN))
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                contractCall(
+                                                                TOKEN_CREATE_CONTRACT,
+                                                                CREATE_TOKEN_WITH_ALL_CUSTOM_FEES_AVAILABLE,
+                                                                spec.registry()
+                                                                        .getKey(ECDSA_KEY)
+                                                                        .getECDSASecp256K1()
+                                                                        .toByteArray(),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                feeCollector))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getTokenID(
+                                                                                                EXISTING_TOKEN))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                ACCOUNT))),
+                                                                AUTO_RENEW_PERIOD)
+                                                        .via(FIRST_CREATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .payingWith(ACCOUNT)
+                                                        .refusingEthConversion()
+                                                        .exposingResultTo(
+                                                                result -> {
+                                                                    log.info(
+                                                                            EXPLICIT_CREATE_RESULT,
+                                                                            result[0]);
+                                                                    final var res =
+                                                                            (Address) result[0];
+                                                                    createdTokenNum.set(
+                                                                            res.value()
+                                                                                    .longValueExact());
+                                                                }),
+                                                newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY)
+                                                        .shape(
+                                                                CONTRACT.signedWith(
+                                                                        TOKEN_CREATE_CONTRACT)))))
+                .then(
+                        getTxnRecord(FIRST_CREATE_TXN).andAllChildRecords().logged(),
+                        getAccountBalance(ACCOUNT).logged(),
+                        getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                        getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                        childRecordsCheck(
+                                FIRST_CREATE_TXN,
+                                ResponseCodeEnum.SUCCESS,
+                                TransactionRecordAsserts.recordWith()
+                                        .status(ResponseCodeEnum.SUCCESS)),
+                        sourcing(
+                                () -> {
+                                    final var newToken =
+                                            asTokenString(
+                                                    TokenID.newBuilder()
+                                                            .setTokenNum(createdTokenNum.get())
+                                                            .build());
+                                    return getTokenInfo(newToken)
+                                            .logged()
+                                            .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                            .hasSymbol(TOKEN_SYMBOL)
+                                            .hasName(TOKEN_NAME)
+                                            .hasDecimals(8)
+                                            .hasTotalSupply(200)
+                                            .hasEntityMemo(MEMO)
+                                            .hasTreasury(TOKEN_CREATE_CONTRACT)
+                                            .hasAutoRenewAccount(ACCOUNT)
+                                            .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                            .hasSupplyType(TokenSupplyType.INFINITE)
+                                            .searchKeysGlobally()
+                                            .hasAdminKey(ECDSA_KEY)
+                                            .hasPauseStatus(TokenPauseStatus.PauseNotApplicable)
+                                            .hasCustom(
+                                                    fixedHtsFeeInSchedule(
+                                                            1, EXISTING_TOKEN, feeCollector))
+                                            .hasCustom(fixedHbarFeeInSchedule(2, feeCollector))
+                                            .hasCustom(
+                                                    fixedHtsFeeInSchedule(
+                                                            4, newToken, feeCollector))
+                                            .hasCustom(
+                                                    fractionalFeeInSchedule(
+                                                            4,
+                                                            5,
+                                                            10,
+                                                            OptionalLong.of(30),
+                                                            true,
+                                                            feeCollector));
+                                }));
     }
 
     HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {

@@ -51,6 +51,6 @@ class AllIntegrationTests extends IntegrationTestBase {
     @Order(2)
     @TestFactory
     List<DynamicTest> concurrentSpecs() {
-        return List.of(specsFrom(ConcurrentSuites.all()));
+        return List.of(concurrentSpecsFrom(ConcurrentSuites.all()));
     }
 }

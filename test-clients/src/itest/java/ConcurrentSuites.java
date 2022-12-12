@@ -36,6 +36,7 @@ import com.hedera.services.bdd.suites.contract.opcodes.DelegateCallOperationSuit
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeCopyOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeHashOperationSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.ExtCodeSizeOperationSuite;
+import com.hedera.services.bdd.suites.contract.opcodes.GlobalPropertiesSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.SStoreSuite;
 import com.hedera.services.bdd.suites.contract.opcodes.StaticCallOperationSuite;
 import com.hedera.services.bdd.suites.contract.openzeppelin.ERC1155ContractInteractions;
@@ -47,6 +48,7 @@ import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DefaultTokenStatusSuite;
 import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
@@ -137,8 +139,7 @@ public class ConcurrentSuites {
                     ExtCodeCopyOperationSuite::new,
                     ExtCodeHashOperationSuite::new,
                     ExtCodeSizeOperationSuite::new,
-                    //                    // FIXME!
-                    //                    //                        GlobalPropertiesSuite::new,
+                    GlobalPropertiesSuite::new,
                     SStoreSuite::new,
                     StaticCallOperationSuite::new,
                     // contract.openzeppelin
@@ -157,6 +158,7 @@ public class ConcurrentSuites {
                     DelegatePrecompileSuite::new,
                     DeleteTokenPrecompileSuite::new,
                     DissociatePrecompileSuite::new,
+                    CreatePrecompileSuite::new,
                     ERCPrecompileSuite::new,
                     FreezeUnfreezeTokenPrecompileSuite::new,
                     GrantRevokeKycSuite::new,

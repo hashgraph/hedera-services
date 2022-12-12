@@ -28,8 +28,6 @@ import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
 import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
-import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
@@ -45,6 +43,7 @@ import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -138,18 +137,20 @@ class EndToEndTests extends E2ETestBase {
 
     @Tag("contract")
     @Tag("contract.precompile")
-    @Tag("contract.precompile.part1.eth")
+    @Order(1)
     @TestFactory
-    Collection<DynamicContainer> contractPrecompileEth() {
+    List<DynamicTest> contractPrecompileEth() {
         return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-                });
+                concurrentEthSpecsFrom(
+                        AssociatePrecompileSuite::new,
+                        ContractBurnHTSSuite::new,
+                        ContractHTSSuite::new,
+                        ContractKeysHTSSuite::new,
+                        ContractMintHTSSuite::new,
+                        CreatePrecompileSuite::new,
+                        DissociatePrecompileSuite::new,
+                        CryptoTransferHTSSuite::new,
+                        DelegatePrecompileSuite::new));
     }
 
     @Tag("contract")
@@ -164,19 +165,6 @@ class EndToEndTests extends E2ETestBase {
                     //				extractSpecsFromSuite(DissociatePrecompileSuite::new),
                     //				extractSpecsFromSuite(DynamicGasCostSuite::new),
                     //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
-                });
-    }
-
-    @Tag("contract")
-    @Tag("contract.precompile")
-    @Tag("contract.precompile.part2.eth")
-    @TestFactory
-    Collection<DynamicContainer> contractPrecompile2Eth() {
-        return List.of(
-                new DynamicContainer[] {
-                    extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new),
-                    extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-                    extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
                 });
     }
 
@@ -390,13 +378,17 @@ class EndToEndTests extends E2ETestBase {
     @Tag("meta")
     @TestFactory
     Collection<DynamicContainer> meta() {
-        return List.of(extractSpecsFromSuite(VersionInfoSpec::new));
+        return List.of(
+                //              extractSpecsFromSuite(VersionInfoSpec::new)
+                );
     }
 
     @Tag("meta")
     @TestFactory
     Collection<DynamicContainer> misc() {
-        return List.of(extractSpecsFromSuite(CannotDeleteSystemEntitiesSuite::new));
+        return List.of(
+                //              extractSpecsFromSuite(CannotDeleteSystemEntitiesSuite::new)
+                );
     }
 
     @Tag("perf")

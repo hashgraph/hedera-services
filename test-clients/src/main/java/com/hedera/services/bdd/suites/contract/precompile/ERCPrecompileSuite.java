@@ -218,6 +218,8 @@ public class ERCPrecompileSuite extends HapiSuite {
                 getErc721OwnerOf(),
                 getErc721BalanceOf(),
                 getErc721TotalSupply(),
+                erc721TokenApprove(),
+                erc721GetApproved(),
                 getErc721TokenURIFromErc20TokenFails(),
                 getErc721OwnerOfFromErc20TokenFails(),
                 directCallsWorkForERC721(),
@@ -4082,7 +4084,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     }
 
     private HapiSpec erc721TokenApprove() {
-        return defaultHapiSpec("ERC_721_APPROVE")
+        return defaultHapiSpec("Erc721TokenApprove")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
@@ -4132,7 +4134,7 @@ public class ERCPrecompileSuite extends HapiSuite {
     private HapiSpec erc721GetApproved() {
         final var theSpender2 = "spender2";
 
-        return defaultHapiSpec("ERC_721_GET_APPROVED")
+        return defaultHapiSpec("Erc721GetApproved")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
@@ -4203,203 +4205,6 @@ public class ERCPrecompileSuite extends HapiSuite {
                                                                                                                         .getAccountID(
                                                                                                                                 SPENDER)))))))),
                         getTxnRecord(ALLOWANCE_TXN).andAllChildRecords().logged());
-    }
-
-    private HapiSpec erc721SetApprovalForAll() {
-        final var theSpender2 = "spender2";
-
-        return defaultHapiSpec("ERC_721_SET_APPROVAL_FOR_ALL")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        cryptoCreate(SPENDER),
-                        cryptoCreate(theSpender2),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .initialSupply(0)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(MULTI_KEY)
-                                .adminKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
-                        tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
-                        tokenAssociate(ERC_721_CONTRACT, NON_FUNGIBLE_TOKEN),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
-                                .via(NFT_TOKEN_MINT),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("b"))),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("c"))),
-                        cryptoTransfer(
-                                movingUnique(NON_FUNGIBLE_TOKEN, 1L, 2L)
-                                        .between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                SET_APPROVAL_FOR_ALL,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                SPENDER))),
-                                                                true)
-                                                        .payingWith(OWNER)
-                                                        .via(ALLOWANCE_TXN)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then();
-    }
-
-    private HapiSpec getErc721ClearsApprovalAfterTransfer() {
-        final var transferFromOwnerTxn = "transferFromToAccountTxn";
-
-        return defaultHapiSpec("ERC_721_CLEARS_APPROVAL_AFTER_TRANSFER")
-                .given(
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(10 * ONE_MILLION_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(FIRST_META, SECOND_META)))
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                tokenAssociate(OWNER, List.of(NON_FUNGIBLE_TOKEN)),
-                                                tokenAssociate(
-                                                        RECIPIENT, List.of(NON_FUNGIBLE_TOKEN)),
-                                                cryptoTransfer(
-                                                                movingUnique(
-                                                                                NON_FUNGIBLE_TOKEN,
-                                                                                1,
-                                                                                2)
-                                                                        .between(
-                                                                                TOKEN_TREASURY,
-                                                                                OWNER))
-                                                        .payingWith(OWNER),
-                                                cryptoApproveAllowance()
-                                                        .payingWith(OWNER)
-                                                        .addNftAllowance(
-                                                                OWNER,
-                                                                NON_FUNGIBLE_TOKEN,
-                                                                RECIPIENT,
-                                                                false,
-                                                                List.of(1L))
-                                                        .via("otherAdjustTxn"),
-                                                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
-                                                        .hasSpenderID(RECIPIENT),
-                                                getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L)
-                                                        .hasNoSpender(),
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                TRANSFER_FROM,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                NON_FUNGIBLE_TOKEN))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                OWNER))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getAccountID(
-                                                                                                RECIPIENT))),
-                                                                BigInteger.ONE)
-                                                        .payingWith(OWNER)
-                                                        .via(transferFromOwnerTxn)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then(
-                        getAccountInfo(OWNER).logged(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasNoSpender(),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 2L).hasNoSpender());
-    }
-
-    private HapiSpec erc721ApproveWithZeroAddressClearsPreviousApprovals() {
-        final String spender1 = "spender1";
-        final String nft = "nft";
-        return defaultHapiSpec("ERC_721_APPROVE_WITH_ZERO_ADDRESS_CLEARS_PREVIOUS_APPROVALS")
-                .given(
-                        cryptoCreate(OWNER)
-                                .balance(ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        uploadInitCode(ERC_721_CONTRACT),
-                        contractCreate(ERC_721_CONTRACT),
-                        newKeyNamed("supplyKey"),
-                        cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(spender1).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY)
-                                .balance(100 * ONE_HUNDRED_HBARS)
-                                .maxAutomaticTokenAssociations(10),
-                        tokenCreate(nft)
-                                .maxSupply(10L)
-                                .initialSupply(0)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyKey("supplyKey")
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(OWNER, nft),
-                        mintToken(
-                                        nft,
-                                        List.of(
-                                                ByteString.copyFromUtf8("a"),
-                                                ByteString.copyFromUtf8("b"),
-                                                ByteString.copyFromUtf8("c")))
-                                .via(NFT_TOKEN_MINT),
-                        cryptoTransfer(
-                                movingUnique(nft, 1L, 2L, 3L).between(TOKEN_TREASURY, OWNER)))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(OWNER)
-                                .addNftAllowance(OWNER, nft, SPENDER, false, List.of(1L, 2L))
-                                .addNftAllowance(OWNER, nft, spender1, false, List.of(3L)),
-                        getTokenNftInfo(nft, 1L).hasSpenderID(SPENDER),
-                        getTokenNftInfo(nft, 2L).hasSpenderID(SPENDER),
-                        getTokenNftInfo(nft, 3L).hasSpenderID(spender1))
-                .then(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                contractCall(
-                                                                ERC_721_CONTRACT,
-                                                                APPROVE,
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        asAddress(
-                                                                                spec.registry()
-                                                                                        .getTokenID(
-                                                                                                nft))),
-                                                                HapiParserUtil.asHeadlongAddress(
-                                                                        new byte[20]),
-                                                                BigInteger.ONE)
-                                                        .payingWith(OWNER)
-                                                        .via("cryptoDeleteAllowanceTxn")
-                                                        .hasKnownStatus(SUCCESS)
-                                                        .gas(GAS_TO_OFFER))),
-                        getTxnRecord("cryptoDeleteAllowanceTxn").logged(),
-                        getTokenNftInfo(nft, 1L).hasNoSpender(),
-                        getTokenNftInfo(nft, 2L).hasSpenderID(SPENDER),
-                        getTokenNftInfo(nft, 3L).hasSpenderID(spender1));
     }
 
     private HapiSpec erc20TransferFrom() {

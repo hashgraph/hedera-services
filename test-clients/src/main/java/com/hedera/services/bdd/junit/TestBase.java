@@ -26,6 +26,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,18 +46,32 @@ public abstract class TestBase {
      * @return a dynamic test that runs all specs from the suites concurrently
      */
     @SafeVarargs
+    protected final DynamicTest concurrentSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
+        return internalSpecsFrom(
+                Arrays.asList(suiteSuppliers), this::contextualizedSpecsFromConcurrent);
+    }
+
+    @SafeVarargs
+    protected final DynamicTest concurrentEthSpecsFrom(
+            final Supplier<HapiSuite>... suiteSuppliers) {
+        return internalSpecsFrom(
+                Arrays.asList(suiteSuppliers), this::contextualizedEthSpecsFromConcurrent);
+    }
+
     @SuppressWarnings("java:S3864")
-    protected final DynamicTest specsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
+    protected final DynamicTest internalSpecsFrom(
+            final List<Supplier<HapiSuite>> suiteSuppliers,
+            final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor) {
         final var commaSeparatedSuites = new StringBuilder();
         final var contextualizedSpecs =
-                Arrays.stream(suiteSuppliers)
+                suiteSuppliers.stream()
                         .map(Supplier::get)
                         .peek(
                                 suite ->
                                         commaSeparatedSuites
                                                 .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
                                                 .append(suite.name()))
-                        .flatMap(this::contextualizedSpecsFromConcurrent)
+                        .flatMap(internalSpecsExtractor)
                         .toList();
         return dynamicTest(
                 commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
@@ -100,6 +115,15 @@ public abstract class TestBase {
     }
 
     private Stream<HapiSpec> contextualizedSpecsFromConcurrent(final HapiSuite suite) {
+        return suffixContextualizedSpecsFromConcurrent(suite, "");
+    }
+
+    private Stream<HapiSpec> contextualizedEthSpecsFromConcurrent(final HapiSuite suite) {
+        return suffixContextualizedSpecsFromConcurrent(suite, ETH_SUFFIX);
+    }
+
+    private Stream<HapiSpec> suffixContextualizedSpecsFromConcurrent(
+            final HapiSuite suite, final String suffix) {
         if (!suite.canRunConcurrent()) {
             throw new IllegalArgumentException(suite.name() + " specs cannot run concurrently");
         }
@@ -107,7 +131,8 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        return suite.getSpecsInSuite().stream().map(spec -> spec.setSuitePrefix(suite.name()));
+        return suite.getSpecsInSuite().stream()
+                .map(spec -> spec.setSuitePrefix(suite.name() + suffix));
     }
 
     /**

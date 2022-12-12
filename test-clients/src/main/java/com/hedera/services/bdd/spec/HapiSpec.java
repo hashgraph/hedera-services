@@ -596,6 +596,10 @@ public class HapiSpec implements Runnable {
         return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props));
     }
 
+    public static Def.PropertyPreserving onlyPropertyPreservingHapiSpec(final String name) {
+        return (String... props) -> internalDefaultHapiSpec(name, true, Arrays.asList(props));
+    }
+
     public static Def.Given onlyDefaultHapiSpec(final String name) {
         return internalDefaultHapiSpec(name, true, Collections.emptyList());
     }
