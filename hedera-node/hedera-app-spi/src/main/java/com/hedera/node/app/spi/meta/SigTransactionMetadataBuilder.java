@@ -46,8 +46,7 @@ public class SigTransactionMetadataBuilder {
     private AccountID payer;
 
     public SigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
-        Objects.requireNonNull(keyLookup);
-        this.keyLookup = keyLookup;
+        this.keyLookup = Objects.requireNonNull(keyLookup);
     }
 
     /**

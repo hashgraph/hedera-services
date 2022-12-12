@@ -44,7 +44,6 @@ public class SigTransactionMetadata implements TransactionMetadata {
         this.payer = payer;
         this.status = status;
         requiredKeys = Collections.unmodifiableList(otherKeys);
-        ;
     }
 
     @Override
