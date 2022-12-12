@@ -191,15 +191,20 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                             new StaticEntityAccess(
                                     Objects.requireNonNull(view), aliasManager, validator);
                     final var codeCache = new CodeCache(nodeProperties, entityAccess);
-                    final var worldState =
-                            new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties);
-                    final var evmTxProcessor = evmTxProcessorProvider.get();
-                    evmTxProcessor.setWorldState(worldState);
-                    evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
-                    final var opResponse =
-                            CallLocalExecutor.execute(
-                                    accountStore, evmTxProcessor, op, aliasManager, entityAccess);
-                    response.mergeFrom(withCid(opResponse, op.getContractID()));
+                    try (final var worldState =
+                            new HederaWorldState(ids, entityAccess, codeCache, dynamicProperties)) {
+                        final var evmTxProcessor = evmTxProcessorProvider.get();
+                        evmTxProcessor.setWorldState(worldState);
+                        evmTxProcessor.setBlockMetaSource(blockMetaSource.get());
+                        final var opResponse =
+                                CallLocalExecutor.execute(
+                                        accountStore,
+                                        evmTxProcessor,
+                                        op,
+                                        aliasManager,
+                                        entityAccess);
+                        response.mergeFrom(withCid(opResponse, op.getContractID()));
+                    }
                 }
             } catch (final Exception e) {
                 log.warn("Unable to answer ContractCallLocal", e);
