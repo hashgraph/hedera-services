@@ -33,7 +33,9 @@ import java.util.List;
  * @param cause Returns the cause of the error
  */
 public record ErrorTransactionMetadata(
-        @NonNull TransactionBody txnBody, @NonNull ResponseCodeEnum status, Throwable cause)
+        @Nullable TransactionBody txnBody,
+        @NonNull ResponseCodeEnum status,
+        @NonNull Throwable cause)
         implements TransactionMetadata {
     /**
      * Constructor of {@code ErrorTransactionMetadata}
