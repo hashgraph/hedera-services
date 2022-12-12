@@ -92,9 +92,6 @@ class SigTransactionMetadataBuilderTest {
     @Test
     void nullInputToBuilderArgumentsThrows() {
         final var subject = new SigTransactionMetadataBuilder(keyLookup);
-        given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
-        given(keyLookup.getKeyIfReceiverSigRequired(payer)).willReturn(withKey(payerKey));
-
         assertThrows(NullPointerException.class, () -> new SigTransactionMetadataBuilder(null));
         assertThrows(NullPointerException.class, () -> subject.txnBody(null));
         assertThrows(NullPointerException.class, () -> subject.payerKeyFor(null));
@@ -157,7 +154,23 @@ class SigTransactionMetadataBuilderTest {
         assertEquals(INVALID_PAYER_ACCOUNT_ID, meta.status());
 
         assertEquals(txn, meta.txnBody());
-        assertEquals(List.of(payerKey), meta.requiredKeys());
+        assertEquals(
+                List.of(),
+                meta.requiredKeys()); // No other keys are added when payerKey is not added
+    }
+
+    @Test
+    void doesntAddToReqKeysIfStatus() {
+        given(keyLookup.getKey(payer)).willReturn(withFailureReason(INVALID_PAYER_ACCOUNT_ID));
+
+        subject =
+                new SigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(createAccountTransaction())
+                        .payerKeyFor(payer);
+        subject.addToReqKeys(payerKey);
+
+        assertEquals(0, subject.build().requiredKeys().size());
+        assertFalse(subject.build().requiredKeys().contains(payerKey));
     }
 
     @Test

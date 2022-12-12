@@ -25,49 +25,31 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-/** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
-public final class ErrorTransactionMetadata implements TransactionMetadata {
-    private final ResponseCodeEnum responseCode;
-    private final Throwable throwable;
-    private final TransactionBody txBody;
-
+/**
+ * An implementation of {@link TransactionMetadata} for cases when an error has occurred.
+ *
+ * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
+ * @param status the {@link ResponseCodeEnum} of the error
+ * @param cause Returns the cause of the error
+ */
+public record ErrorTransactionMetadata(
+        @NonNull TransactionBody txnBody, @NonNull ResponseCodeEnum status, Throwable cause)
+        implements TransactionMetadata {
     /**
      * Constructor of {@code ErrorTransactionMetadata}
      *
-     * @param responseCode the {@link ResponseCodeEnum} of the error
-     * @param throwable the {@link Throwable} that caused the error
-     * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
+     * @param status the {@link ResponseCodeEnum} of the error
+     * @param cause the {@link Throwable} that caused the error
+     * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
     public ErrorTransactionMetadata(
-            @NonNull final ResponseCodeEnum responseCode,
-            @NonNull final Throwable throwable,
-            @Nullable final TransactionBody txBody) {
-        this.txBody = txBody;
-        this.throwable = requireNonNull(throwable);
-        this.responseCode = requireNonNull(responseCode);
-    }
-
-    /**
-     * Returns the cause of the error
-     *
-     * @return the {@link Throwable} that caused the error
-     */
-    @Nullable
-    public Throwable cause() {
-        return throwable;
-    }
-
-    @NonNull
-    @Override
-    public ResponseCodeEnum status() {
-        return responseCode;
-    }
-
-    @Nullable
-    @Override
-    public TransactionBody txnBody() {
-        return txBody;
+            @Nullable TransactionBody txnBody,
+            @NonNull ResponseCodeEnum status,
+            @NonNull Throwable cause) {
+        this.cause = requireNonNull(cause);
+        this.status = requireNonNull(status);
+        this.txnBody = txnBody;
     }
 
     @NonNull

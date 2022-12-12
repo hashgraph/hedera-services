@@ -28,7 +28,7 @@ class ErrorTransactionMetadataTest {
     final TransactionBody txBody = createAccountTransaction();
 
     private ErrorTransactionMetadata subject =
-            new ErrorTransactionMetadata(responseCode, throwable, txBody);
+            new ErrorTransactionMetadata(txBody, responseCode, throwable);
 
     @Test
     void testCause() {

@@ -424,7 +424,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
         var meta = subject.preHandleUpdateAccount(txn);
-        basicMetaAssertions(meta, 1, true, INVALID_PAYER_ACCOUNT_ID);
+        basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
     }
 
     @Test

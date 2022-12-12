@@ -23,8 +23,8 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class SigTransactionMetadataTest {
     @Mock private HederaKey payerKey;
     @Mock private HederaKey otherKey;
     @Mock AccountKeyLookup lookup;
-    private TransactionMetadata subject;
+    private SigTransactionMetadata subject;
 
     @Test
     void gettersWork() {
@@ -73,7 +73,9 @@ class SigTransactionMetadataTest {
         assertTrue(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
-        assertEquals(List.of(payerKey, otherKey), subject.requiredKeys());
+        assertEquals(
+                List.of(payerKey),
+                subject.requiredKeys()); // otherKey is not added as there is failure status set
     }
 
     private TransactionBody createAccountTransaction() {
