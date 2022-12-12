@@ -115,11 +115,6 @@ class EncodingFacadeTest {
                     "0x0000000000000000000000000000000000000000000000000000000000000016"
                             + "0000000000000000000000000000000000000000000000000000000000000001");
 
-    private static final Bytes RETURN_IS_TOKEN_FROZEN =
-            Bytes.fromHexString(
-                    "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
-                        + "000000000000000000000000001");
-
     private static final Bytes TRANSFER_EVENT =
             Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
 
@@ -152,14 +147,6 @@ class EncodingFacadeTest {
     private static final Bytes RETURN_GET_NON_FUNGIBLE_TOKEN_CUSTOM_FEES =
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000005ab000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005a8");
-
-    private static final Bytes RETURN_GET_TOKEN_TYPE =
-            Bytes.fromHexString(
-                    "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000001");
-
-    private static final Bytes RETURN_IS_TOKEN =
-            Bytes.fromHexString(
-                    "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000001");
 
     private static final Bytes RETURN_GET_EXPIRY_INFO_FOR_TOKEN =
             Bytes.fromHexString(
@@ -675,42 +662,6 @@ class EncodingFacadeTest {
     void decodeReturnResultForGetApprovedHAPI() {
         final var decodedResult = subject.encodeGetApproved(SUCCESS.getNumber(), senderAddress);
         assertEquals(RETURN_CREATE_SUCCESS, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForIsKyc() {
-        final var decodedResult = subject.encodeIsKyc(true);
-        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForGetTokenDefaultFreezeStatus() {
-        final var decodedResult = subject.encodeGetTokenDefaultFreezeStatus(true);
-        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForGetTokenDefaultKycStatus() {
-        final var decodedResult = subject.encodeGetTokenDefaultKycStatus(true);
-        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForIsFrozen() {
-        final var decodedResult = subject.encodeIsFrozen(true);
-        assertEquals(RETURN_IS_TOKEN_FROZEN, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForIsToken() {
-        final var decodedResult = subject.encodeIsToken(true);
-        assertEquals(RETURN_IS_TOKEN, decodedResult);
-    }
-
-    @Test
-    void decodeReturnResultForGetTokenType() {
-        final var decodedResult = subject.encodeGetTokenType(1);
-        assertEquals(RETURN_GET_TOKEN_TYPE, decodedResult);
     }
 
     @Test

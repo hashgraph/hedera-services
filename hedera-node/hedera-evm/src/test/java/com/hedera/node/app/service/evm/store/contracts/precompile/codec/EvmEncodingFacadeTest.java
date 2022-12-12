@@ -43,6 +43,25 @@ class EvmEncodingFacadeTest {
             Bytes.fromHexString(
                     "0x0000000000000000000000000000000000000000000000000000000000000001");
 
+    private static final Bytes RETURN_GET_TOKEN_TYPE =
+        Bytes.fromHexString(
+            "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000001");
+
+    private static final Bytes RETURN_IS_TOKEN_FROZEN =
+        Bytes.fromHexString(
+            "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000"
+                + "000000000000000000000000001");
+
+    private static final Bytes RETURN_SUCCESS_TRUE =
+        Bytes.fromHexString(
+            "0x0000000000000000000000000000000000000000000000000000000000000016"
+                + "0000000000000000000000000000000000000000000000000000000000000001");
+
+    private static final Bytes RETURN_IS_TOKEN =
+        Bytes.fromHexString(
+            "0x00000000000000000000000000000000000000000000000000000000000000160000000000000000000000000000000000000000000000000000000000000001");
+
+
     private static final Bytes RETURN_NAME_TOKENA =
             Bytes.fromHexString(
                     "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000"
@@ -90,6 +109,42 @@ class EvmEncodingFacadeTest {
     void decodeReturnResultForIsApprovedForAllERC() {
         final var decodedResult = subject.encodeIsApprovedForAll(true);
         assertEquals(RETURN_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetTokenType() {
+        final var decodedResult = subject.encodeGetTokenType(1);
+        assertEquals(RETURN_GET_TOKEN_TYPE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForIsFrozen() {
+        final var decodedResult = subject.encodeIsFrozen(true);
+        assertEquals(RETURN_IS_TOKEN_FROZEN, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetTokenDefaultFreezeStatus() {
+        final var decodedResult = subject.encodeGetTokenDefaultFreezeStatus(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForGetTokenDefaultKycStatus() {
+        final var decodedResult = subject.encodeGetTokenDefaultKycStatus(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForIsKyc() {
+        final var decodedResult = subject.encodeIsKyc(true);
+        assertEquals(RETURN_SUCCESS_TRUE, decodedResult);
+    }
+
+    @Test
+    void decodeReturnResultForIsToken() {
+        final var decodedResult = subject.encodeIsToken(true);
+        assertEquals(RETURN_IS_TOKEN, decodedResult);
     }
 
     @Test
