@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -39,6 +40,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -105,7 +108,8 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                 transferTokenToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
                 transferNftToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
                 transferTokensToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
-                transferNftsToEVMAddressAliasRevertAndTransferAgainSuccessfully());
+                transferNftsToEVMAddressAliasRevertAndTransferAgainSuccessfully(),
+                precompileTooManyLazyCreatesFail());
     }
 
     private HapiApiSpec transferTokenToEVMAddressAliasRevertAndTransferAgainSuccessfully() {
@@ -538,5 +542,83 @@ public class LazyCreateThroughPrecompileSuite extends HapiApiSuite {
                                                     recordWith().status(SUCCESS)));
                                 }))
                 .then(resetToDefault(LAZY_CREATION_ENABLED));
+    }
+
+    private HapiApiSpec precompileTooManyLazyCreatesFail() {
+        final AtomicReference<String> tokenAddr = new AtomicReference<>();
+        final var SECP_256K1_SOURCE_KEY2 = "secondECDSAKey";
+        return defaultHapiSpec("precompileTooManyLazyCreatesFail")
+                .given(
+                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
+                        UtilVerbs.overriding("consensus.handle.maxPrecedingRecords", "1"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY2).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(5)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(
+                                        id ->
+                                                tokenAddr.set(
+                                                        HapiPropertySource.asHexedSolidityAddress(
+                                                                HapiPropertySource.asToken(id)))),
+                        uploadInitCode(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        contractCreate(TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT),
+                        tokenAssociate(OWNER, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(5, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .when(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaKey =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                                    final var ecdsaKey2 =
+                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY2);
+                                    final var tmp2 = ecdsaKey2.getECDSASecp256K1().toByteArray();
+                                    final var addressBytes2 = recoverAddressFromPubKey(tmp2);
+                                    allRunFor(
+                                            spec,
+                                            contractCall(
+                                                            TRANSFER_TO_ALIAS_PRECOMPILE_CONTRACT,
+                                                            "transferTokensCallNestedThenAgain",
+                                                            HapiParserUtil.asHeadlongAddress(
+                                                                    asAddress(
+                                                                            spec.registry()
+                                                                                    .getTokenID(
+                                                                                            FUNGIBLE_TOKEN))),
+                                                            new Address[] {
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getAccountID(
+                                                                                                OWNER))),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        addressBytes2)
+                                                            },
+                                                            new long[] {-4L, 2L, 2L},
+                                                            new long[] {-4L, 2L, 2L})
+                                                    .via(TRANSFER_TOKENS_TXN)
+                                                    .gas(GAS_TO_OFFER)
+                                                    .alsoSigningWithFullPrefix(OWNER)
+                                                    .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY2)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID),
+                                            emptyChildRecordsCheck(
+                                                    TRANSFER_TOKENS_TXN,
+                                                    MAX_CHILD_RECORDS_EXCEEDED));
+                                }))
+                .then(
+                        resetToDefault(
+                                LAZY_CREATION_ENABLED, "consensus.handle.maxPrecedingRecords"));
     }
 }

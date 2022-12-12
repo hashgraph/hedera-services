@@ -1,5 +1,160 @@
 [
     {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "getTokenExpiryInfo",
+        "outputs": [
+            {
+                "internalType": "int256",
+                "name": "responseCode",
+                "type": "int256"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint32",
+                        "name": "second",
+                        "type": "uint32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "autoRenewAccount",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "autoRenewPeriod",
+                        "type": "uint32"
+                    }
+                ],
+                "internalType": "struct IHederaTokenService.Expiry",
+                "name": "expiryInfo",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "keyType",
+                "type": "uint256"
+            }
+        ],
+        "name": "getTokenKey",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "responseCode",
+                "type": "int64"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "bool",
+                        "name": "inheritAccountKey",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "contractId",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "ed25519",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "bytes",
+                        "name": "ECDSA_secp256k1",
+                        "type": "bytes"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "delegatableContractId",
+                        "type": "address"
+                    }
+                ],
+                "internalType": "struct IHederaTokenService.KeyValue",
+                "name": "key",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "grantTokenKyc",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "responseCode",
+                "type": "int64"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "isKyc",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "responseCode",
+                "type": "int64"
+            },
+            {
+                "internalType": "bool",
+                "name": "kycGranted",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "address",
@@ -13,6 +168,30 @@
                 "internalType": "int256",
                 "name": "responseCode",
                 "type": "int256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "revokeTokenKyc",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "responseCode",
+                "type": "int64"
             }
         ],
         "stateMutability": "nonpayable",
@@ -42,6 +221,39 @@
             }
         ],
         "name": "transferNFTCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "serialNum",
+                "type": "int64"
+            },
+            {
+                "internalType": "int64",
+                "name": "serialNum2",
+                "type": "int64"
+            }
+        ],
+        "name": "transferNFTCallNestedThenAgain",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -123,6 +335,39 @@
                 "internalType": "int64[]",
                 "name": "serialNumber",
                 "type": "int64[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "serialNumber2",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferNFTsCallNestedThenAgain",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "sender",
+                "type": "address[]"
+            },
+            {
+                "internalType": "address[]",
+                "name": "receiver",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "serialNumber",
+                "type": "int64[]"
             }
         ],
         "name": "transferNFTsThanRevertCall",
@@ -154,6 +399,39 @@
             }
         ],
         "name": "transferTokenCall",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+            },
+            {
+                "internalType": "int64",
+                "name": "amount",
+                "type": "int64"
+            },
+            {
+                "internalType": "int64",
+                "name": "amount2",
+                "type": "int64"
+            }
+        ],
+        "name": "transferTokenCallNestedThenAgain",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -225,6 +503,34 @@
                 "internalType": "int64[]",
                 "name": "amounts",
                 "type": "int64[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "amounts2",
+                "type": "int64[]"
+            }
+        ],
+        "name": "transferTokensCallNestedThenAgain",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "internalType": "address[]",
+                "name": "accountIds",
+                "type": "address[]"
+            },
+            {
+                "internalType": "int64[]",
+                "name": "amounts",
+                "type": "int64[]"
             }
         ],
         "name": "transferTokensThanRevertCall",
@@ -246,6 +552,110 @@
                 "internalType": "int256",
                 "name": "responseCode",
                 "type": "int256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint32",
+                        "name": "second",
+                        "type": "uint32"
+                    },
+                    {
+                        "internalType": "address",
+                        "name": "autoRenewAccount",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint32",
+                        "name": "autoRenewPeriod",
+                        "type": "uint32"
+                    }
+                ],
+                "internalType": "struct IHederaTokenService.Expiry",
+                "name": "expiryInfo",
+                "type": "tuple"
+            }
+        ],
+        "name": "updateTokenExpiryInfo",
+        "outputs": [
+            {
+                "internalType": "int256",
+                "name": "responseCode",
+                "type": "int256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "components": [
+                    {
+                        "internalType": "uint256",
+                        "name": "keyType",
+                        "type": "uint256"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "bool",
+                                "name": "inheritAccountKey",
+                                "type": "bool"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "contractId",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "ed25519",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "bytes",
+                                "name": "ECDSA_secp256k1",
+                                "type": "bytes"
+                            },
+                            {
+                                "internalType": "address",
+                                "name": "delegatableContractId",
+                                "type": "address"
+                            }
+                        ],
+                        "internalType": "struct IHederaTokenService.KeyValue",
+                        "name": "key",
+                        "type": "tuple"
+                    }
+                ],
+                "internalType": "struct IHederaTokenService.TokenKey[]",
+                "name": "keys",
+                "type": "tuple[]"
+            }
+        ],
+        "name": "updateTokenKeys",
+        "outputs": [
+            {
+                "internalType": "int64",
+                "name": "responseCode",
+                "type": "int64"
             }
         ],
         "stateMutability": "nonpayable",
