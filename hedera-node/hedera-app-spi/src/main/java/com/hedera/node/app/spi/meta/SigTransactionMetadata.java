@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.spi.meta;
 
-import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -64,14 +63,5 @@ public class SigTransactionMetadata implements TransactionMetadata {
     @Override
     public ResponseCodeEnum status() {
         return status;
-    }
-
-    @Override
-    public SigTransactionMetadataBuilder copy(final AccountKeyLookup lookup) {
-        return new SigTransactionMetadataBuilder(lookup)
-                .txnBody(txn)
-                .status(status)
-                .payer(payer)
-                .addAllReqKeys(requiredKeys);
     }
 }
