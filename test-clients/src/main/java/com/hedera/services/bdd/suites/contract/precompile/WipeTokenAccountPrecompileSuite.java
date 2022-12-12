@@ -229,7 +229,8 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                 resultWith()
                                                         .contractCallResult(
                                                                 htsPrecompileResult()
-                                                                        .withStatus(SUCCESS)))),
+                                                                        .withStatus(SUCCESS))
+                                                        .gasUsed(14085L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(990),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 490));
     }
@@ -381,6 +382,17 @@ public class WipeTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 htsPrecompileResult()
                                                                         .withStatus(
                                                                                 INVALID_NFT_ID)))),
+                        childRecordsCheck(
+                                "wipeNonFungibleTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(
+                                                resultWith()
+                                                        .contractCallResult(
+                                                                htsPrecompileResult()
+                                                                        .withStatus(SUCCESS))
+                                                        .gasUsed(14085L))),
                         getTokenInfo(VANILLA_TOKEN).hasTotalSupply(1),
                         getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 0));
     }

@@ -38,6 +38,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.SequentialID;
@@ -129,6 +130,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Optional<Consumer<TransactionRecord>> observer = Optional.empty();
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
+    @Nullable private Consumer<List<String>> createdIdsObserver = null;
 
     private boolean pseudorandomBytesExpected = false;
 
@@ -175,6 +177,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingTo(final Consumer<TransactionRecord> observer) {
         this.observer = Optional.of(observer);
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
+        this.createdIdsObserver = creationObserver;
         return this;
     }
 
@@ -873,7 +880,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         assertEquals(count, observedCount, "Wrong # of non-staking records");
                     }
                 });
+        final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
+            if (rec.getReceipt().hasAccountID() && creations != null) {
+                creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));
+            }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
                         .saveAccountId(
@@ -892,6 +903,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         rec.getAlias()::toStringUtf8,
                         rec.getReceipt()::getAccountID);
             }
+        }
+        if (createdIdsObserver != null) {
+            createdIdsObserver.accept(creations);
         }
 
         if (verboseLoggingOn) {
