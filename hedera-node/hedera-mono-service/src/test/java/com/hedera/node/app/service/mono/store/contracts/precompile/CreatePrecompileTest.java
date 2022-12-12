@@ -44,6 +44,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFees;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV3;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.validateTokenKeysInput;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.function.UnaryOperator.identity;
@@ -934,6 +935,7 @@ class CreatePrecompileTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
+        tokenCreatePrecompile.when(() -> validateTokenKeysInput(any())).thenCallRealMethod();
         given(
                         creator.createUnsuccessfulSyntheticRecord(
                                 INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))

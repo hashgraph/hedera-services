@@ -507,8 +507,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            functionId,
-                            senderAddress);
+                            functionId);
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
                             ledgers,
                             updater.aliases(),

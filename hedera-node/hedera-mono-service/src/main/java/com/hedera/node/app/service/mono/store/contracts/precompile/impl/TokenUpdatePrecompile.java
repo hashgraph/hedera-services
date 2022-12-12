@@ -57,7 +57,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
@@ -79,7 +78,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     private TokenUpdateWrapper updateOp;
     private final int functionId;
-    private final Address senderAddress;
 
     public TokenUpdatePrecompile(
             final WorldLedgers ledgers,
@@ -89,8 +87,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
             final PrecompilePricingUtils precompilePricingUtils,
-            final int functionId,
-            final Address senderAddress) {
+            final int functionId) {
         super(
                 ledgers,
                 aliases,
@@ -101,7 +98,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                 precompilePricingUtils);
 
         this.functionId = functionId;
-        this.senderAddress = senderAddress;
     }
 
     @Override
@@ -163,8 +159,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             final MessageFrame frame, final TokenKeyWrapper tokenKeyWrapper) {
         final var key = tokenKeyWrapper.key();
         return switch (key.getKeyValueType()) {
-            case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
-                    frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, aliases);
             case CONTRACT_ID -> KeyActivationUtils.validateKey(
                     frame,
                     asTypedEvmAddress(key.getContractID()),

@@ -525,7 +525,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         }
     }
 
-    static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
+    public static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
         if (!tokenKeys.isEmpty()) {
             for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
                 final var tokenKey = tokenKeys.get(i);
