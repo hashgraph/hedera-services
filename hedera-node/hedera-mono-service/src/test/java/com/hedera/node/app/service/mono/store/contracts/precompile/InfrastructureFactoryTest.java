@@ -56,8 +56,8 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.proxy.ViewGas
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
 import com.hedera.node.app.service.mono.txns.crypto.ApproveAllowanceLogic;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.DeleteAllowanceLogic;
+import com.hedera.node.app.service.mono.txns.crypto.EvmAutoCreationLogic;
 import com.hedera.node.app.service.mono.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.node.app.service.mono.txns.customfees.CustomFeeSchedules;
@@ -182,7 +182,7 @@ class InfrastructureFactoryTest {
     @Test
     void canCreateNewAutoCreationLogc() {
         assertInstanceOf(
-                AutoCreationLogic.class,
+                EvmAutoCreationLogic.class,
                 subject.newAutoCreationLogicScopedTo(mock(HederaStackedWorldStateUpdater.class)));
     }
 

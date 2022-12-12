@@ -62,7 +62,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils.GasCostType;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.TxnAccessor;
@@ -137,7 +137,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private ImpliedTransfers impliedTransfers;
     private HederaTokenStore hederaTokenStore;
     protected CryptoTransferWrapper transferOp;
-    private AutoCreationLogic autoCreationLogic;
+    private AbstractAutoCreationLogic autoCreationLogic;
     private int numLazyCreates;
 
     public TransferPrecompile(
@@ -292,7 +292,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         // track auto-creation child records if needed
         if (autoCreationLogic != null) {
             autoCreationLogic.submitRecords(
-                    infrastructureFactory.newRecordSubmissionsScopedTo(updater), false);
+                    infrastructureFactory.newRecordSubmissionsScopedTo(updater));
         }
 
         transferLogic.doZeroSum(changes);

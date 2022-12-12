@@ -141,7 +141,7 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.utils.Precomp
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
-import com.hedera.node.app.service.mono.txns.crypto.AutoCreationLogic;
+import com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
@@ -196,7 +196,7 @@ class TransferPrecompilesTest {
     @Mock private WorldLedgers wrappedLedgers;
     @Mock private TransactionalLedger<NftId, NftProperty, UniqueTokenAdapter> nfts;
     @Mock private AccessorFactory accessorFactory;
-    @Mock private AutoCreationLogic autoCreationLogic;
+    @Mock private AbstractAutoCreationLogic autoCreationLogic;
 
     @Mock
     private TransactionalLedger<Pair<AccountID, TokenID>, TokenRelProperty, HederaTokenRel>
@@ -1204,7 +1204,7 @@ class TransferPrecompilesTest {
                         balanceChangesForLazyCreateHappyPath.get(1),
                         accounts,
                         balanceChangesForLazyCreateHappyPath);
-        verify(autoCreationLogic).submitRecords(recordSubmissions, false);
+        verify(autoCreationLogic).submitRecords(recordSubmissions);
         verify(transferLogic).doZeroSum(balanceChangesForLazyCreateHappyPath);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1312,7 +1312,7 @@ class TransferPrecompilesTest {
                 .create(hbarOnlyChangesAliased.get(0), accounts, hbarOnlyChangesAliased);
         verify(autoCreationLogic, never())
                 .create(hbarOnlyChangesAliased.get(1), accounts, hbarOnlyChangesAliased);
-        verify(autoCreationLogic).submitRecords(recordSubmissions, false);
+        verify(autoCreationLogic).submitRecords(recordSubmissions);
         verify(transferLogic).doZeroSum(hbarOnlyChangesAliased);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
@@ -1429,7 +1429,7 @@ class TransferPrecompilesTest {
         final var expected = 6 * defaultCost;
         assertEquals(expected + (expected / 5), gasRequirement);
         verify(autoCreationLogic, times(2)).create(any(), any(), any());
-        verify(autoCreationLogic).submitRecords(any(), eq(false));
+        verify(autoCreationLogic).submitRecords(any());
         verify(transferLogic).doZeroSum(tokensTransferChangesAliased2x);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)

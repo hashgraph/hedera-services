@@ -16,8 +16,6 @@
 package com.hedera.node.app.service.mono.ledger;
 
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
-import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
-import com.hedera.node.app.service.mono.ledger.accounts.HederaAliasManager;
 import com.hedera.node.app.service.mono.ledger.backing.BackingAccounts;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.ledger.ids.EntityIdSource;
@@ -43,10 +41,6 @@ public interface LedgerModule {
     @Binds
     @Singleton
     BackingStore<AccountID, HederaAccount> bindBackingAccounts(BackingAccounts backingAccounts);
-
-    @Binds
-    @Singleton
-    HederaAliasManager bindAliasManager(AliasManager aliasManager);
 
     @Provides
     @Singleton
