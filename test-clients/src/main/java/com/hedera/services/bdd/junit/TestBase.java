@@ -48,18 +48,21 @@ public abstract class TestBase {
     @SafeVarargs
     protected final DynamicTest concurrentSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
         return internalSpecsFrom(
-                Arrays.asList(suiteSuppliers), this::contextualizedSpecsFromConcurrent);
+                "", Arrays.asList(suiteSuppliers), this::contextualizedSpecsFromConcurrent);
     }
 
     @SafeVarargs
     protected final DynamicTest concurrentEthSpecsFrom(
             final Supplier<HapiSuite>... suiteSuppliers) {
         return internalSpecsFrom(
-                Arrays.asList(suiteSuppliers), this::contextualizedEthSpecsFromConcurrent);
+                ETH_SUFFIX,
+                Arrays.asList(suiteSuppliers),
+                this::contextualizedEthSpecsFromConcurrent);
     }
 
     @SuppressWarnings("java:S3864")
     protected final DynamicTest internalSpecsFrom(
+            final String suffix,
             final List<Supplier<HapiSuite>> suiteSuppliers,
             final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor) {
         final var commaSeparatedSuites = new StringBuilder();
@@ -70,7 +73,7 @@ public abstract class TestBase {
                                 suite ->
                                         commaSeparatedSuites
                                                 .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
-                                                .append(suite.name()))
+                                                .append(suite.name() + suffix))
                         .flatMap(internalSpecsExtractor)
                         .toList();
         return dynamicTest(
