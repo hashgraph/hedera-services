@@ -1754,7 +1754,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
@@ -1776,14 +1776,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then();
     }
 
     private HapiSpec cryptoTransferNFTsWithCustomFeesMixedScenario() {
         final var SPENDER_SIGNATURE = "spenderSignature";
-        return defaultHapiSpec("TransferFromForNFTWithCustomFeesWithApproveForAll")
+        return defaultHapiSpec("CryptoTransferNFTsWithCustomFeesMixedScenario")
                 .given(
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(RECEIVER_SIGNATURE),
@@ -1954,7 +1954,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                         .build())
                                                                         .build())
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE)
                                                         .gas(1_000_000L))))
                 .then();
     }
@@ -2150,7 +2150,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 HTS_TRANSFER_FROM_NFT,
@@ -2171,7 +2171,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE))))
                 .then();
     }
 
@@ -2367,7 +2367,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE),
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE),
                                                 contractCall(
                                                                 HTS_TRANSFER_FROM_CONTRACT,
                                                                 HTS_TRANSFER_FROM_NFT,
@@ -2388,7 +2388,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE))))
                 .then();
     }
 
@@ -2517,7 +2517,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE)
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then();
     }
@@ -2666,7 +2666,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                                                                                 RECEIVER))),
                                                                 BigInteger.valueOf(1L))
                                                         .payingWith(GENESIS)
-                                                        .signingWith(RECEIVER_SIGNATURE))))
+                                                        .alsoSigningWithFullPrefix(RECEIVER_SIGNATURE))))
                 .then();
     }
 

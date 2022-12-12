@@ -87,8 +87,7 @@ public class FeatureFlagSuite extends HapiSuite {
                                 confirmAutoCreationNotSupported(),
                                 confirmUtilPrngNotSupported(),
                                 confirmKeyAliasAutoCreationNotSupported(),
-                                confirmHollowAccountCreationNotSupported(),
-                                confirmNftsNotSupported()));
+                                confirmHollowAccountCreationNotSupported()));
     }
 
     private HapiSpec enableAllFeatureFlagsAndDisableThrottlesForFurtherCiTesting() {
@@ -104,31 +103,6 @@ public class FeatureFlagSuite extends HapiSuite {
                 newKeyNamed(aliasKey),
                 cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, aliasKey, ONE_HBAR))
                         .hasKnownStatus(NOT_SUPPORTED));
-    }
-
-    private HapiSpecOperation confirmNftsNotSupported() {
-        final var blockedTokenAttempt = "neverToBe";
-        return UtilVerbs.blockingOrder(
-                tokenCreate(blockedTokenAttempt)
-                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                        .initialSupply(0L)
-                        .hasPrecheck(NOT_SUPPORTED),
-                mintToken("1.2.3", List.of(ByteString.copyFromUtf8("NOPE")))
-                        .signedBy(DEFAULT_PAYER)
-                        .fee(ONE_HBAR)
-                        .hasPrecheck(NOT_SUPPORTED),
-                burnToken("1.2.3", List.of(1L, 2L, 3L))
-                        .signedBy(DEFAULT_PAYER)
-                        .fee(ONE_HBAR)
-                        .hasPrecheck(NOT_SUPPORTED),
-                wipeTokenAccount("1.2.3", "2.3.4", List.of(1L, 2L, 3L))
-                        .signedBy(DEFAULT_PAYER)
-                        .fee(ONE_HBAR)
-                        .hasPrecheck(NOT_SUPPORTED),
-                cryptoTransfer(movingUnique("1.2.3", 1L).between("2.3.4", "3.4.5"))
-                        .signedBy(DEFAULT_PAYER)
-                        .fee(ONE_HBAR)
-                        .hasPrecheck(NOT_SUPPORTED));
     }
 
     private HapiSpecOperation confirmUtilPrngNotSupported() {
