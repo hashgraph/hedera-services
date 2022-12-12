@@ -44,7 +44,6 @@ dependencies {
     implementation(project(":hedera-node:hedera-util-service-impl"))
 
     implementation(libs.bundles.swirlds)
-//    implementation(libs.commons.codec)
     compileOnly(libs.spotbugs.annotations)
     implementation(libs.hapi)
     implementation(libs.bundles.helidon)

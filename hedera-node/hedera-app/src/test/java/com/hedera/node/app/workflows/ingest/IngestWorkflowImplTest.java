@@ -25,6 +25,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,8 +75,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class IngestWorkflowImplTest {
 
-    private static final TransactionBody TRANSACTION_BODY = TransactionBody.getDefaultInstance();
-    private static final SignatureMap SIGNATURE_MAP = SignatureMap.getDefaultInstance();
+    private static final TransactionBody TRANSACTION_BODY = TransactionBody.newBuilder().build();
+    private static final SignatureMap SIGNATURE_MAP = SignatureMap.newBuilder().build();
     private static final OnsetResult ONSET_RESULT =
             new OnsetResult(TRANSACTION_BODY, SIGNATURE_MAP, ConsensusCreateTopic);
 
@@ -363,6 +364,24 @@ class IngestWorkflowImplTest {
     }
 
     @Test
+    void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
+        // given
+        when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
+        final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
+
+        // when
+        workflow.submitTransaction(ctx, requestBuffer, responseBuffer);
+
+        // then
+        final TransactionResponse response = parseResponse(responseBuffer);
+        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(BUSY);
+        assertThat(response.getCost()).isZero();
+        verify(opCounters).countReceived(ConsensusCreateTopic);
+        verify(submissionManager, never()).submit(any(), any(), any());
+        verify(opCounters, never()).countSubmitted(any());
+    }
+
+    @Test
     void testSemanticFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
         doThrow(new PreCheckException(NOT_SUPPORTED))
@@ -457,9 +476,11 @@ class IngestWorkflowImplTest {
     }
 
     @Test
-    void testThrottleFails() throws PreCheckException, InvalidProtocolBufferException {
+    void testSubmitFails() throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(throttleAccumulator.shouldThrottle(ConsensusCreateTopic)).thenReturn(true);
+        doThrow(new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED))
+                .when(submissionManager)
+                .submit(eq(TRANSACTION_BODY), eq(requestBuffer), any());
         final ByteBuffer responseBuffer = ByteBuffer.allocate(1024 * 6);
 
         // when
@@ -467,10 +488,10 @@ class IngestWorkflowImplTest {
 
         // then
         final TransactionResponse response = parseResponse(responseBuffer);
-        assertThat(response.getNodeTransactionPrecheckCode()).isEqualTo(BUSY);
+        assertThat(response.getNodeTransactionPrecheckCode())
+                .isEqualTo(PLATFORM_TRANSACTION_NOT_CREATED);
         assertThat(response.getCost()).isZero();
         verify(opCounters).countReceived(ConsensusCreateTopic);
-        verify(submissionManager, never()).submit(any(), any(), any());
         verify(opCounters, never()).countSubmitted(any());
     }
 

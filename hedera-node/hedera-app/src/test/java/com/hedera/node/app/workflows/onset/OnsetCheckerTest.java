@@ -364,7 +364,7 @@ class OnsetCheckerTest {
     }
 
     @Test
-    void testCheckTransactionBodyWithInvalidAccountFails() {
+    void testCheckTransactionBodyWithInvalidShardNumFails() {
         // given
         final var payerId = AccountID.newBuilder().setAccountNum(1L).setShardNum(-1L).build();
         final var now = Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build();

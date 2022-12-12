@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Parser;
+import com.hedera.node.app.service.mono.context.properties.NodeLocalProperties;
+import com.hedera.node.app.service.mono.context.properties.Profile;
 import com.hedera.node.app.service.mono.records.RecordCache;
 import com.hedera.node.app.service.mono.stats.MiscSpeedometers;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -36,6 +38,7 @@ public class SubmissionManager {
 
     private final Platform platform;
     private final RecordCache recordCache;
+    private final NodeLocalProperties nodeLocalProperties;
     private final MiscSpeedometers speedometers;
 
     /**
@@ -43,14 +46,17 @@ public class SubmissionManager {
      *
      * @param platform the {@link Platform} to which transactions will be submitted
      * @param recordCache the {@link RecordCache} that tracks submitted transactions
+     * @param nodeLocalProperties the {@link NodeLocalProperties} that keep local properties
      * @param speedometers metrics related to submissions
      */
     public SubmissionManager(
             @NonNull final Platform platform,
             @NonNull final RecordCache recordCache,
+            @NonNull final NodeLocalProperties nodeLocalProperties,
             @NonNull final MiscSpeedometers speedometers) {
         this.platform = requireNonNull(platform);
         this.recordCache = requireNonNull(recordCache);
+        this.nodeLocalProperties = requireNonNull(nodeLocalProperties);
         this.speedometers = requireNonNull(speedometers);
     }
 
@@ -74,7 +80,14 @@ public class SubmissionManager {
         requireNonNull(parser);
 
         final byte[] payload;
+        // Unchecked submits are a mechanism to inject transaction to the system, that bypass all
+        // pre-checks.
+        // This is used in tests to check the reaction to illegal input.
         if (txBody.hasUncheckedSubmit()) {
+            if (nodeLocalProperties.activeProfile() == Profile.PROD) {
+                // we do not allow unchecked submits in PROD
+                throw new PreCheckException(PLATFORM_TRANSACTION_NOT_CREATED);
+            }
             try {
                 payload =
                         parser.parseFrom(txBody.getUncheckedSubmit().getTransactionBytes())

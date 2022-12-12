@@ -117,10 +117,15 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
 
                 opCounters.countReceived(functionality);
 
-                // 2. Check semantics
+                // 2. Check throttles
+                if (throttleAccumulator.shouldThrottle(functionality)) {
+                    throw new PreCheckException(BUSY);
+                }
+
+                // 3. Check semantics
                 checker.checkTransactionSemantics(txBody, functionality);
 
-                // 3. Get payer account
+                // 4. Get payer account
                 final AccountID payerID = txBody.getTransactionID().getAccountID();
                 final var cryptoStates = state.createReadableStates(cryptoService.getServiceName());
                 final var cryptoQueryHandler = cryptoService.createQueryHandler(cryptoStates);
@@ -129,16 +134,11 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
                                 .getAccountById(payerID)
                                 .orElseThrow(() -> new PreCheckException(PAYER_ACCOUNT_NOT_FOUND));
 
-                // 4. Check payer's signature
+                // 5. Check payer's signature
                 checker.checkPayerSignature(txBody, signatureMap, payer);
 
-                // 5. Check account balance
+                // 6. Check account balance
                 checker.checkSolvency(txBody, functionality, payer);
-
-                // 6. Check throttles
-                if (throttleAccumulator.shouldThrottle(functionality)) {
-                    throw new PreCheckException(BUSY);
-                }
 
                 // 7. Submit to platform
                 submissionManager.submit(txBody, requestBuffer, ctx.txBodyParser());
@@ -152,6 +152,7 @@ public final class IngestWorkflowImpl implements IngestWorkflow {
             }
         }
 
+        // 8. Return PreCheck code and evtl. estimated fee
         final var transactionResponse =
                 TransactionResponse.newBuilder()
                         .setNodeTransactionPrecheckCode(result)

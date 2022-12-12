@@ -18,11 +18,11 @@ The ingest-workflow is single-threaded, but multiple calls can run in parallel.
 The ingest workflow consists of the following steps:
 
 1. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
-2. **Check semantics.** The semantics of the transaction are validated. This check is specific to each type of transaction.
-3. **Get payer's account.** The account data of the payer is read from the latest immutable state.
-4. **Check payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
-5. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
-6. **Check throttles.** Throttling must be observed.
+2. **Check throttles.** Throttling must be observed.
+3. **Check semantics.** The semantics of the transaction are validated. This check is specific to each type of transaction.
+4. **Get payer's account.** The account data of the payer is read from the latest immutable state.
+5. **Check payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
+6. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
 7. **Submit to platform.** The transaction is submitted to the platform for further processing.
 8. **TransactionResponse.** Return `TransactionResponse`  with result-code.
 
