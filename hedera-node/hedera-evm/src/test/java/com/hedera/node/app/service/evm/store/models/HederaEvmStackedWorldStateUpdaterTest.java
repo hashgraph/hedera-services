@@ -33,13 +33,14 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private final Address address =
             Address.fromHexString("0x000000000000000000000000000000000000077e");
     MockAccountAccessor accountAccessor = new MockAccountAccessor();
+    MockEntityAccess entityAccess = new MockEntityAccess();
     HederaEvmStackedWorldStateUpdater hederaEvmStackedWorldStateUpdater =
-            new HederaEvmStackedWorldStateUpdater(accountAccessor);
+            new HederaEvmStackedWorldStateUpdater(accountAccessor, entityAccess);
 
     @Test
     void accountTests() {
         assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
-        assertNull(hederaEvmStackedWorldStateUpdater.getAccount(address));
+        assertEquals(Wei.of(100L), hederaEvmStackedWorldStateUpdater.getAccount(address).getBalance());
         assertEquals(
                 Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
         hederaEvmStackedWorldStateUpdater.commit();
