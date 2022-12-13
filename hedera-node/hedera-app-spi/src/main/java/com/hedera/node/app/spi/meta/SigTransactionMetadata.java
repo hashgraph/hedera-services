@@ -20,6 +20,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,13 +31,16 @@ import java.util.Objects;
  * @param txnBody Transaction that is being pre-handled
  * @param payer payer for the transaction
  * @param status {@link ResponseCodeEnum} status of the transaction
- * @param requiredKeys list of keys that are required to sign the transaction
+ * @param payerKey payer key required to sign the transaction. It is null if payer is missing
+ * @param requiredNonPayerKeys list of keys that are required to sign the transaction, in addition
+ *     to payer key
  */
 public record SigTransactionMetadata(
         @NonNull TransactionBody txnBody,
         @NonNull AccountID payer,
         ResponseCodeEnum status,
-        List<HederaKey> requiredKeys)
+        @Nullable HederaKey payerKey,
+        List<HederaKey> requiredNonPayerKeys)
         implements TransactionMetadata {
     public SigTransactionMetadata {
         Objects.requireNonNull(txnBody);

@@ -132,22 +132,23 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoCreate(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 2, false, OK);
-        assertTrue(meta.requiredKeys().contains(payerKey));
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
     }
 
     @Test
     void noReceiverSigRequiredPreHandleCryptoCreate() {
         final var txn = createAccountTransaction(false);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder<>(store).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(store).payerKeyFor(payer).txnBody(txn).build();
 
         final var meta = subject.preHandleCryptoCreate(txn, payer);
 
         assertEquals(expectedMeta.txnBody(), meta.txnBody());
-        assertTrue(meta.requiredKeys().contains(payerKey));
-        basicMetaAssertions(meta, 1, expectedMeta.failed(), OK);
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
+        basicMetaAssertions(meta, 0, expectedMeta.failed(), OK);
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
+        assertEquals(payerKey, meta.payerKey());
     }
 
     @Test
@@ -164,8 +165,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, keyUsed), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -183,8 +185,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 3, false, OK);
-        assertIterableEquals(List.of(payerKey, keyUsed, keyUsed), meta.requiredKeys());
+        basicMetaAssertions(meta, 2, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(keyUsed, keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -194,8 +197,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 1, false, OK);
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 0, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -210,8 +214,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, keyUsed), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -226,8 +231,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, keyUsed), meta.requiredKeys());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -243,8 +249,9 @@ class CryptoPreTransactionHandlerImplTest {
         final var meta = subject.preHandleCryptoDelete(txn, payer);
 
         assertEquals(txn, meta.txnBody());
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, keyUsed), meta.requiredKeys());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -260,7 +267,8 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleCryptoDelete(txn, payer);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertIterableEquals(List.of(), meta.requiredKeys());
+        assertEquals(null, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
         given(accounts.get(payerNum)).willReturn(Optional.of(payerAccount));
@@ -270,8 +278,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         meta = subject.preHandleCryptoDelete(txn, payer);
 
-        basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         /* ------ transferAccount missing ------ */
         given(accounts.get(deleteAccountNum)).willReturn(Optional.of(deleteAccount));
@@ -280,8 +289,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         meta = subject.preHandleCryptoDelete(txn, payer);
 
-        basicMetaAssertions(meta, 2, true, INVALID_TRANSFER_ACCOUNT_ID);
-        assertIterableEquals(List.of(payerKey, keyUsed), meta.requiredKeys());
+        basicMetaAssertions(meta, 1, true, INVALID_TRANSFER_ACCOUNT_ID);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -291,8 +301,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var meta = subject.preHandleApproveAllowances(txn, payer);
-        basicMetaAssertions(meta, 4, false, OK);
-        assertIterableEquals(List.of(payerKey, ownerKey, ownerKey, ownerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 3, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(ownerKey, ownerKey, ownerKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -301,8 +312,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, false);
         final var meta = subject.preHandleApproveAllowances(txn, payer);
-        basicMetaAssertions(meta, 1, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -311,9 +323,10 @@ class CryptoPreTransactionHandlerImplTest {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoApproveAllowanceTransaction(owner, false);
-        final var meta = subject.preHandleApproveAllowances(txn, owner);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertIterableEquals(List.of(ownerKey), meta.requiredKeys());
+        final var meta = subject.preHandleApproveAllowances(txn, payer);
+        basicMetaAssertions(meta, 0, false, OK);
+        assertEquals(ownerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -325,8 +338,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var meta = subject.preHandleApproveAllowances(txn, payer);
-        basicMetaAssertions(meta, 4, false, OK);
-        assertIterableEquals(List.of(payerKey, ownerKey, ownerKey, payerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 3, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(ownerKey, ownerKey, payerKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -337,8 +351,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         final var txn = cryptoApproveAllowanceTransaction(payer, true);
         final var meta = subject.preHandleApproveAllowances(txn, payer);
-        basicMetaAssertions(meta, 3, true, INVALID_DELEGATING_SPENDER);
-        assertIterableEquals(List.of(payerKey, ownerKey, ownerKey), meta.requiredKeys());
+        assertEquals(payerKey, meta.payerKey());
+        basicMetaAssertions(meta, 2, true, INVALID_DELEGATING_SPENDER);
+        assertIterableEquals(List.of(ownerKey, ownerKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -348,8 +363,9 @@ class CryptoPreTransactionHandlerImplTest {
 
         final var txn = cryptoDeleteAllowanceTransaction(payer);
         final var meta = subject.preHandleDeleteAllowances(txn, payer);
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, ownerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(ownerKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -358,9 +374,10 @@ class CryptoPreTransactionHandlerImplTest {
         given(ownerAccount.getAccountKey()).willReturn((JKey) ownerKey);
 
         final var txn = cryptoDeleteAllowanceTransaction(owner);
-        final var meta = subject.preHandleDeleteAllowances(txn, owner);
-        basicMetaAssertions(meta, 1, false, OK);
-        assertIterableEquals(List.of(ownerKey), meta.requiredKeys());
+        final var meta = subject.preHandleDeleteAllowances(txn, payer);
+        basicMetaAssertions(meta, 0, false, OK);
+        assertEquals(ownerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -370,12 +387,14 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleDeleteAllowances(txn, owner);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertIterableEquals(List.of(), meta.requiredKeys());
+        assertEquals(null, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         txn = cryptoDeleteAllowanceTransaction(payer);
         meta = subject.preHandleDeleteAllowances(txn, payer);
-        basicMetaAssertions(meta, 1, true, INVALID_ALLOWANCE_OWNER_ID);
-        assertIterableEquals(List.of(payerKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 0, true, INVALID_ALLOWANCE_OWNER_ID);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -387,9 +406,9 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
         var meta = subject.preHandleUpdateAccount(txn, payer);
-        basicMetaAssertions(meta, 3, false, OK);
-        assertTrue(meta.requiredKeys().contains(payerKey));
-        assertTrue(meta.requiredKeys().contains(updateAccountKey));
+        basicMetaAssertions(meta, 2, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertTrue(meta.requiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
@@ -401,8 +420,9 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
         var meta = subject.preHandleUpdateAccount(txn, payer);
-        basicMetaAssertions(meta, 2, false, OK);
-        assertIterableEquals(List.of(payerKey, updateAccountKey), meta.requiredKeys());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertIterableEquals(List.of(updateAccountKey), meta.requiredNonPayerKeys());
     }
 
     @Test
@@ -412,9 +432,9 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(true);
 
         var meta = subject.preHandleUpdateAccount(txn, payer);
-        basicMetaAssertions(meta, 2, false, OK);
-        assertTrue(meta.requiredKeys().contains(payerKey));
-        assertFalse(meta.requiredKeys().contains(updateAccountKey));
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(payerKey, meta.payerKey());
+        assertFalse(meta.requiredNonPayerKeys().contains(updateAccountKey));
     }
 
     @Test
@@ -425,8 +445,9 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isNewKeySignatureWaived(txn, updateAccountId)).willReturn(false);
         given(waivers.isTargetAccountSignatureWaived(txn, updateAccountId)).willReturn(true);
 
-        var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
+        var meta = subject.preHandleUpdateAccount(txn, payer);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertEquals(null, meta.payerKey());
     }
 
     @Test
@@ -439,6 +460,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
+        assertEquals(null, meta.payerKey());
     }
 
     @Test
@@ -450,10 +472,8 @@ class CryptoPreTransactionHandlerImplTest {
         given(waivers.isTargetAccountSignatureWaived(txn, payer)).willReturn(false);
 
         var meta = subject.preHandleUpdateAccount(txn, payer);
-        basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
-
-        meta = subject.preHandleUpdateAccount(txn, payer);
-        basicMetaAssertions(meta, 1, true, INVALID_ACCOUNT_ID);
+        basicMetaAssertions(meta, 0, true, INVALID_ACCOUNT_ID);
+        assertEquals(payerKey, meta.payerKey());
     }
 
     private void basicMetaAssertions(
@@ -461,7 +481,7 @@ class CryptoPreTransactionHandlerImplTest {
             final int keysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.requiredKeys().size());
+        assertEquals(keysSize, meta.requiredNonPayerKeys().size());
         assertTrue(failed ? meta.failed() : !meta.failed());
         assertEquals(failureStatus, meta.status());
     }

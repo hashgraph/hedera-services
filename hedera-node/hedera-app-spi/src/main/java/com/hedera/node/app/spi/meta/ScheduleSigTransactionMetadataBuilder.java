@@ -52,6 +52,6 @@ public class ScheduleSigTransactionMetadataBuilder extends
         Objects.requireNonNull(payer, "Payer is required to build ScheduleSigTransactionMetadata");
         Objects.requireNonNull(scheduledTxnMeta, "Scheduled transaction metadata is required to " +
                 "build ScheduleSigTransactionMetadata");
-        return new ScheduleSigTransactionMetadata(txn, payer, status, requiredKeys, scheduledTxnMeta);
+        return new ScheduleSigTransactionMetadata(txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
     }
 }

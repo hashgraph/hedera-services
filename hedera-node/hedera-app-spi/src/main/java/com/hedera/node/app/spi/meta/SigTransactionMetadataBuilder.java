@@ -32,16 +32,15 @@ import java.util.Objects;
 
 /**
  * Builds {@link SigTransactionMetadata} by collecting information that is needed when transactions
- * are handled as part of "pre-handle" needed for signature verification. The first key in the
- * required keys list is the payer's key.
+ * are handled as part of "pre-handle" needed for signature verification.
  *
  * <p>NOTE : This class is designed to be subclassed For e.g., we need a {@link TransactionMetadata}
  * with an inner {@link TransactionMetadata} for schedule transactions.
  */
 public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuilder<T>> {
-    protected final List<HederaKey> requiredKeys = new ArrayList<>();
+    protected final List<HederaKey> requiredNonPayerKeys = new ArrayList<>();
+    protected HederaKey payerKey;
     protected ResponseCodeEnum status = OK;
-
     protected TransactionBody txn;
     protected final AccountKeyLookup keyLookup;
     protected AccountID payer;
@@ -69,7 +68,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @return builder object
      */
     public T addAllReqKeys(@NonNull final List<HederaKey> keys) {
-        requiredKeys.addAll(Objects.requireNonNull(keys));
+        requiredNonPayerKeys.addAll(Objects.requireNonNull(keys));
         return self();
     }
 
@@ -86,19 +85,19 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
     }
 
     /**
-     * Adds given key to required keys in {@link TransactionMetadata}. If the status is already
-     * failed, or if the payer's key is not added the given keys will not be added to requiredKeys
-     * list. This method is used when the payer's key is already fetched, and we want to add other
-     * keys from {@link TransactionBody} to required keys to sign.
+     * Adds given key to required non-payer keys in {@link TransactionMetadata}. If the status is
+     * already failed, or if the payer's key is not added, given keys will not be added to
+     * requiredNonPayerKeys list. This method is used when the payer's key is already fetched, and
+     * we want to add other keys from {@link TransactionBody} to required keys to sign.
      *
      * @param key key to be added
      * @return builder object
      */
     public T addToReqKeys(@NonNull HederaKey key) {
-        if (status != OK || payerKeyNotAdded()) {
+        if (status != OK || payerKey == null) {
             return self();
         }
-        requiredKeys.add(Objects.requireNonNull(key));
+        requiredNonPayerKeys.add(Objects.requireNonNull(key));
         return self();
     }
 
@@ -139,7 +138,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
             return self();
         }
         final var result = keyLookup.getKey(id);
-        addToKeysOrFail(result, failureStatusToUse);
+        addToKeysOrFail(result, failureStatusToUse, false);
         return self();
     }
 
@@ -159,7 +158,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
             return self();
         }
         final var result = keyLookup.getKeyIfReceiverSigRequired(id);
-        addToKeysOrFail(result, failureStatusToUse);
+        addToKeysOrFail(result, failureStatusToUse, false);
         return self();
     }
 
@@ -173,7 +172,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
     public TransactionMetadata build() {
         Objects.requireNonNull(txn, "Transaction body is required to build SigTransactionMetadata");
         Objects.requireNonNull(payer, "Payer is required to build SigTransactionMetadata");
-        return new SigTransactionMetadata(txn, payer, status, requiredKeys);
+        return new SigTransactionMetadata(txn, payer, status, payerKey, requiredNonPayerKeys);
     }
 
     @SuppressWarnings("unchecked")
@@ -189,14 +188,13 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      */
     private void addPayerKey() {
         final var result = keyLookup.getKey(payer);
-        addToKeysOrFail(result, INVALID_PAYER_ACCOUNT_ID);
+        addToKeysOrFail(result, INVALID_PAYER_ACCOUNT_ID, true);
     }
 
     /**
      * Checks if the account given is same as payer or if the metadata is already failed. In either
-     * case, no need to look up that account's key. If the metadata did not fail already and no
-     * payer key has been added, we don't add other keys, since the first key in the requiredKeys
-     * should be payer's key
+     * case, no need to look up that account's key. If the payer key has not been set we don't add
+     * other keys.
      *
      * @param id given account
      * @return true if the lookup is not needed, false otherwise
@@ -206,7 +204,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
                 || id.equals(AccountID.getDefaultInstance())
                 || designatesAccountRemoval(id)
                 || status != OK
-                || payerKeyNotAdded();
+                || payerKey == null;
     }
 
     /**
@@ -231,22 +229,17 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param failureStatus failure reason for the lookup
      */
     private void addToKeysOrFail(
-            final KeyOrLookupFailureReason result, @Nullable final ResponseCodeEnum failureStatus) {
+            final KeyOrLookupFailureReason result,
+            @Nullable final ResponseCodeEnum failureStatus,
+            final boolean isPayer) {
         if (result.failed()) {
             this.status = failureStatus != null ? failureStatus : result.failureReason();
         } else if (result.key() != null) {
-            requiredKeys.add(result.key());
+            if (isPayer) {
+                this.payerKey = result.key();
+            } else {
+                this.requiredNonPayerKeys.add(result.key());
+            }
         }
-    }
-
-    /**
-     * Checks if the payer key has not been added, and we didn't fail looking it up. No other keys
-     * can be added at this time. This is to maintain the invariant that the payer key is the first
-     * key in requiredKeys list.
-     *
-     * @return true if payer key is not added, false otherwise
-     */
-    private boolean payerKeyNotAdded() {
-        return status == OK && requiredKeys.isEmpty();
     }
 }

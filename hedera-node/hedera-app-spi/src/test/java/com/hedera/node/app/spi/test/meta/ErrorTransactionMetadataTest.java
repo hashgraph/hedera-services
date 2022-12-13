@@ -15,11 +15,12 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorTransactionMetadataTest {
     final ResponseCodeEnum responseCode = ResponseCodeEnum.INVALID_SIGNATURE;
@@ -27,8 +28,7 @@ class ErrorTransactionMetadataTest {
     final TransactionBody txBody = createAccountTransaction();
 
     private ErrorTransactionMetadata subject =
-            new ErrorTransactionMetadata(txBody, txBody.getTransactionID().getAccountID(), responseCode, throwable);
-
+            new ErrorTransactionMetadata(txBody, responseCode, throwable);
 
     @Test
     void testCause() {
@@ -46,14 +46,18 @@ class ErrorTransactionMetadataTest {
     }
 
     @Test
-    void testRequiredKeys() {
-        assertEquals(0, subject.requiredKeys().size());
+    void testRequiredNonPayerKeys() {
+        assertEquals(0, subject.requiredNonPayerKeys().size());
     }
 
     @Test
     void testPayer() {
-        assertNotNull(subject.payer());
-        assertEquals(txBody.getTransactionID().getAccountID(), subject.payer());
+        assertNull(subject.payer());
+    }
+
+    @Test
+    void testPayerKey() {
+        assertNull(subject.payerKey());
     }
 
     private TransactionBody createAccountTransaction() {

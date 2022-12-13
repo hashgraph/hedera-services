@@ -45,9 +45,13 @@ public record InvalidTransactionMetadata(
         requireNonNull(status);
     }
 
-    @NonNull
     @Override
-    public List<HederaKey> requiredKeys() {
+    public List<HederaKey> requiredNonPayerKeys() {
         return List.of();
+    }
+
+    @Override
+    public HederaKey payerKey() {
+        return null;
     }
 }

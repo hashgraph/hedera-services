@@ -34,7 +34,6 @@ import java.util.List;
  */
 public record ErrorTransactionMetadata(
         @Nullable TransactionBody txnBody,
-        @Nullable AccountID payer,
         @NonNull ResponseCodeEnum status,
         @NonNull Throwable cause)
         implements TransactionMetadata {
@@ -53,13 +52,19 @@ public record ErrorTransactionMetadata(
 
     @NonNull
     @Override
-    public List<HederaKey> requiredKeys() {
+    public List<HederaKey> requiredNonPayerKeys() {
         return List.of();
     }
 
     @Nullable
     @Override
     public AccountID payer() {
-        return payer;
+        return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
+        // method.
+    }
+
+    @Override
+    public HederaKey payerKey() {
+        return null;
     }
 }

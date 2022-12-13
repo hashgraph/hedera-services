@@ -20,6 +20,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,9 +33,10 @@ import java.util.Objects;
  * This extends {@link SigTransactionMetadata} to add the required keys for the transaction.
  */
 public record ScheduleSigTransactionMetadata(@NonNull TransactionBody txnBody,
-                                              @NonNull AccountID payer,
-                                              ResponseCodeEnum status,
-                                              List<HederaKey> requiredKeys,
+                                             @NonNull AccountID payer,
+                                             ResponseCodeEnum status,
+                                             @Nullable HederaKey payerKey,
+                                             List<HederaKey> requiredNonPayerKeys,
                                               @NonNull TransactionMetadata scheduledMeta)
         implements ScheduleTransactionMetadata {
     public ScheduleSigTransactionMetadata {

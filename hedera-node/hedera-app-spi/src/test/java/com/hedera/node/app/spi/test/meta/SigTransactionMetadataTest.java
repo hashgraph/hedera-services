@@ -15,23 +15,23 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
-import static com.hedera.node.app.spi.test.meta.SigTransactionMetadataBuilderTest.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static com.hedera.node.app.spi.test.meta.SigTransactionMetadataBuilderTest.A_COMPLEX_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataTest {
@@ -56,26 +56,30 @@ class SigTransactionMetadataTest {
         assertFalse(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(ResponseCodeEnum.OK, subject.status());
-        assertEquals(List.of(payerKey, otherKey), subject.requiredKeys());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(List.of(otherKey), subject.requiredNonPayerKeys());
     }
 
     @Test
     void gettersWorkOnFailure() {
         given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
-        subject = new SigTransactionMetadataBuilder<>(lookup)
+        subject =
+                new SigTransactionMetadataBuilder(lookup)
                         .payerKeyFor(payer)
                         .status(INVALID_ACCOUNT_ID)
                         .txnBody(txn)
                         .addToReqKeys(otherKey)
-                .build();
+                        .build();
 
         assertTrue(subject.failed());
         assertEquals(txn, subject.txnBody());
         assertEquals(INVALID_ACCOUNT_ID, subject.status());
+        assertEquals(payerKey, subject.payerKey());
         assertEquals(
-                List.of(payerKey),
-                subject.requiredKeys()); // otherKey is not added as there is failure status set
+                List.of(),
+                subject.requiredNonPayerKeys()); // otherKey is not added as there is failure
+        // status set
     }
 
     private TransactionBody createAccountTransaction() {

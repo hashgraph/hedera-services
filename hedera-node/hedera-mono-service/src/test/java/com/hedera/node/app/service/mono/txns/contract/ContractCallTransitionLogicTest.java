@@ -22,8 +22,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -33,6 +35,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
@@ -167,6 +170,7 @@ class ContractCallTransitionLogicTest {
         // and:
         given(accessor.getTxn()).willReturn(contractCallTxn);
         // and:
+        senderAccount.initBalance(1234L);
         given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
         given(
                         accountStore.loadContract(
@@ -393,6 +397,40 @@ class ContractCallTransitionLogicTest {
 
         // expect:
         assertEquals(CONTRACT_NEGATIVE_GAS, subject.semanticCheck().apply(contractCallTxn));
+    }
+
+    @Test
+    void verifyCallEthFailsWhenValueLargerThanBalance() {
+        // setup:
+        givenValidTxnCtx();
+        // and:
+        given(accessor.getTxn()).willReturn(contractCallTxn);
+        // and:
+        senderAccount.initBalance(1233L);
+        given(accountStore.loadAccount(senderAccount.getId())).willReturn(senderAccount);
+        given(
+                        accountStore.loadContract(
+                                new Id(
+                                        target.getShardNum(),
+                                        target.getRealmNum(),
+                                        target.getContractNum())))
+                .willReturn(contractAccount);
+
+        given(
+                        evmTxProcessor.executeEth(
+                                any(), any(), anyLong(), anyLong(), any(), any(), any(), any(),
+                                anyLong()))
+                .willThrow(InvalidTransactionException.class);
+        // then:
+        assertThrows(
+                InvalidTransactionException.class,
+                () ->
+                        subject.doStateTransitionOperation(
+                                accessor.getTxn(),
+                                senderAccount.getId(),
+                                relayerAccount.getId(),
+                                maxGas,
+                                biOfferedGasPrice));
     }
 
     private void givenValidTxnCtx() {
