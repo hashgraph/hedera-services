@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -37,18 +37,23 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 
-public class ERC20ContractInteractions extends HapiApiSuite {
+public class ERC20ContractInteractions extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ERC20ContractInteractions.class);
     private static final String TRANSFER = "transfer";
     private static final String TRANSFER_FROM = "transferFrom";
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
 
     public static void main(String[] args) {
         new ERC20ContractInteractions().runSuiteSync();
@@ -60,11 +65,11 @@ public class ERC20ContractInteractions extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(callsERC20ContractInteractions());
     }
 
-    private HapiApiSpec callsERC20ContractInteractions() {
+    private HapiSpec callsERC20ContractInteractions() {
         final var CONTRACT = "GLDToken";
         final var CREATE_TX = "create";
         final var APPROVE_TX = "approve";

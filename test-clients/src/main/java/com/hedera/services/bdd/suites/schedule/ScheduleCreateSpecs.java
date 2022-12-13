@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -56,19 +56,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ScheduleCreateSpecs extends HapiApiSuite {
+public class ScheduleCreateSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleCreateSpecs.class);
 
     private static final String defaultWhitelist =
@@ -81,7 +81,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->
                         List.of(
@@ -114,21 +114,21 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 validateSignersInInfo()));
     }
 
-    private HapiApiSpec suiteCleanup() {
+    private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
                 .then(overriding("ledger.schedule.txExpiryTimeSecs", defaultTxExpiry));
     }
 
-    private HapiApiSpec worksAsExpectedWithDefaultScheduleId() {
+    private HapiSpec worksAsExpectedWithDefaultScheduleId() {
         return defaultHapiSpec("WorksAsExpectedWithDefaultScheduleId")
                 .given()
                 .when()
                 .then(getScheduleInfo("0.0.0").hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
-    private HapiApiSpec bodyOnlyCreation() {
+    private HapiSpec bodyOnlyCreation() {
         return customHapiSpec("bodyOnlyCreation")
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
                 .given(cryptoCreate("sender"))
@@ -145,7 +145,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec validateSignersInInfo() {
+    private HapiSpec validateSignersInInfo() {
         return customHapiSpec("validSchedule")
                 .withProperties(Map.of("default.keyAlgorithm", "SECP256K1"))
                 .given(cryptoCreate("sender"))
@@ -162,7 +162,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasSignatories("sender"));
     }
 
-    private HapiApiSpec onlyBodyAndAdminCreation() {
+    private HapiSpec onlyBodyAndAdminCreation() {
         return defaultHapiSpec("OnlyBodyAndAdminCreation")
                 .given(newKeyNamed("admin"), cryptoCreate("sender"))
                 .when(
@@ -178,7 +178,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasRecordedScheduledTxn());
     }
 
-    private HapiApiSpec onlyBodyAndMemoCreation() {
+    private HapiSpec onlyBodyAndMemoCreation() {
         return defaultHapiSpec("OnlyBodyAndMemoCreation")
                 .given(cryptoCreate("sender"))
                 .when(
@@ -194,7 +194,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasRecordedScheduledTxn());
     }
 
-    private HapiApiSpec bodyAndPayerCreation() {
+    private HapiSpec bodyAndPayerCreation() {
         return defaultHapiSpec("BodyAndPayerCreation")
                 .given(cryptoCreate("payer"))
                 .when(
@@ -213,7 +213,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasRecordedScheduledTxn());
     }
 
-    private HapiApiSpec bodyAndSignatoriesCreation() {
+    private HapiSpec bodyAndSignatoriesCreation() {
         var scheduleName = "onlyBodyAndSignatories";
         var scheduledTxn = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
@@ -236,7 +236,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasRecordedScheduledTxn());
     }
 
-    private HapiApiSpec failsWithNonExistingPayerAccountId() {
+    private HapiSpec failsWithNonExistingPayerAccountId() {
         return defaultHapiSpec("FailsWithNonExistingPayerAccountId")
                 .given()
                 .when(
@@ -246,7 +246,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec failsWithTooLongMemo() {
+    private HapiSpec failsWithTooLongMemo() {
         return defaultHapiSpec("FailsWithTooLongMemo")
                 .given()
                 .when(
@@ -256,7 +256,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec notIdenticalScheduleIfScheduledTxnChanges() {
+    private HapiSpec notIdenticalScheduleIfScheduledTxnChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfScheduledTxnChanges")
                 .given(
                         cryptoCreate("sender").balance(1L),
@@ -277,7 +277,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .payingWith("firstPayer"));
     }
 
-    private HapiApiSpec notIdenticalScheduleIfMemoChanges() {
+    private HapiSpec notIdenticalScheduleIfMemoChanges() {
         return defaultHapiSpec("NotIdenticalScheduleIfMemoChanges")
                 .given(
                         cryptoCreate("sender").balance(1L),
@@ -295,7 +295,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .withEntityMemo("The whole time he was at the Bodies, til"));
     }
 
-    private HapiApiSpec notIdenticalScheduleIfAdminKeyChanges() {
+    private HapiSpec notIdenticalScheduleIfAdminKeyChanges() {
         return defaultHapiSpec("notIdenticalScheduleIfAdminKeyChanges")
                 .given(
                         newKeyNamed("adminA"),
@@ -322,7 +322,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .payingWith("firstPayer"));
     }
 
-    private HapiApiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
+    private HapiSpec recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer() {
         return defaultHapiSpec("recognizesIdenticalScheduleEvenWithDifferentDesignatedPayer")
                 .given(
                         cryptoCreate("sender").balance(1L),
@@ -350,7 +350,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasScheduledTxnId("original"));
     }
 
-    private HapiApiSpec rejectsSentinelKeyListAsAdminKey() {
+    private HapiSpec rejectsSentinelKeyListAsAdminKey() {
         return defaultHapiSpec("RejectsSentinelKeyListAsAdminKey")
                 .given()
                 .when()
@@ -362,7 +362,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    private HapiApiSpec rejectsMalformedScheduledTxnMemo() {
+    private HapiSpec rejectsMalformedScheduledTxnMemo() {
         return defaultHapiSpec("RejectsMalformedScheduledTxnMemo")
                 .given(
                         cryptoCreate("ntb")
@@ -383,7 +383,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasPrecheck(INVALID_ZERO_BYTE_IN_STRING));
     }
 
-    private HapiApiSpec infoIncludesTxnIdFromCreationReceipt() {
+    private HapiSpec infoIncludesTxnIdFromCreationReceipt() {
         return defaultHapiSpec("InfoIncludesTxnIdFromCreationReceipt")
                 .given(
                         cryptoCreate("sender"),
@@ -399,7 +399,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec preservesRevocationServiceSemanticsForFileDelete() {
+    private HapiSpec preservesRevocationServiceSemanticsForFileDelete() {
         KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
         SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
         SigControl inadequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, OFF, OFF)));
@@ -434,7 +434,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                         overriding("scheduling.whitelist", defaultWhitelist));
     }
 
-    public HapiApiSpec detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
+    public HapiSpec detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         String aKey = "a", bKey = "b";
 
@@ -461,7 +461,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasKnownStatusFrom(SOME_SIGNATURES_WERE_INVALID, SUCCESS));
     }
 
-    public HapiApiSpec onlySchedulesWithMissingReqSimpleSigs() {
+    public HapiSpec onlySchedulesWithMissingReqSimpleSigs() {
         return defaultHapiSpec("OnlySchedulesWithMissingReqSimpleSigs")
                 .given(
                         cryptoCreate("sender").balance(1L),
@@ -474,7 +474,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                 .then(getAccountBalance("sender").hasTinyBars(1L));
     }
 
-    public HapiApiSpec requiresExtantPayer() {
+    public HapiSpec requiresExtantPayer() {
         return defaultHapiSpec("RequiresExtantPayer")
                 .given()
                 .when()
@@ -486,7 +486,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_ID_DOES_NOT_EXIST));
     }
 
-    public HapiApiSpec doesntTriggerUntilPayerSigns() {
+    public HapiSpec doesntTriggerUntilPayerSigns() {
         return defaultHapiSpec("DoesntTriggerUntilPayerSigns")
                 .given(
                         cryptoCreate("payer").balance(ONE_HBAR * 2),
@@ -507,7 +507,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                         getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    public HapiApiSpec triggersImmediatelyWithBothReqSimpleSigs() {
+    public HapiSpec triggersImmediatelyWithBothReqSimpleSigs() {
         long initialBalance = HapiSpecSetup.getDefaultInstance().defaultBalance();
         long transferAmount = 1;
 
@@ -532,7 +532,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                         getTxnRecord("basicXfer").scheduled());
     }
 
-    public HapiApiSpec rejectsUnresolvableReqSigners() {
+    public HapiSpec rejectsUnresolvableReqSigners() {
         return defaultHapiSpec("RejectsUnresolvableReqSigners")
                 .given()
                 .when()
@@ -545,7 +545,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .hasKnownStatus(UNRESOLVABLE_REQUIRED_SIGNERS));
     }
 
-    public HapiApiSpec rejectsFunctionlessTxn() {
+    public HapiSpec rejectsFunctionlessTxn() {
         return defaultHapiSpec("RejectsFunctionlessTxn")
                 .given()
                 .when()
@@ -555,7 +555,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .payingWith(GENESIS));
     }
 
-    public HapiApiSpec functionlessTxnBusyWithNonExemptPayer() {
+    public HapiSpec functionlessTxnBusyWithNonExemptPayer() {
         return defaultHapiSpec("FunctionlessTxnBusyWithNonExemptPayer")
                 .given()
                 .when()
@@ -566,7 +566,7 @@ public class ScheduleCreateSpecs extends HapiApiSuite {
                                 .payingWith("sender"));
     }
 
-    public HapiApiSpec whitelistWorks() {
+    public HapiSpec whitelistWorks() {
         return defaultHapiSpec("whitelistWorks")
                 .given(
                         scheduleCreate("nope", createTopic("neverToBe"))

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -48,8 +48,8 @@ import static com.hederahashgraph.api.proto.java.TokenPauseStatus.Unpaused;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -57,7 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
+public class PauseUnpauseTokenAccountPrecompileSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(PauseUnpauseTokenAccountPrecompileSuite.class);
     private static final String PAUSE_UNPAUSE_CONTRACT = "PauseUnpauseTokenAccount";
@@ -77,12 +77,16 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     private static final String PAUSE_NONFUNGIBLE_TXN = "pauseNonFungibleTxn";
     private static final String UNPAUSE_NONFUNGIBLE_TXN = "unpauseNonFungibleTxn";
     private static final String INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
-
-    private final AtomicReference<AccountID> accountID = new AtomicReference<>();
-    private final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+    public static final String UNPAUSE_TX = "UnpauseTx";
+    public static final String PAUSE_TX = "PauseTx";
 
     public static void main(String... args) {
-        new PauseUnpauseTokenAccountPrecompileSuite().runSuiteSync();
+        new PauseUnpauseTokenAccountPrecompileSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
@@ -91,7 +95,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 pauseFungibleTokenHappyPath(),
                 unpauseFungibleTokenHappyPath(),
@@ -101,7 +105,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                 noAccountKeyReverts());
     }
 
-    private HapiApiSpec noTokenIdReverts() {
+    private HapiSpec noTokenIdReverts() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noTokenIdReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -127,7 +132,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                 asHeadlongAddress(INVALID_ADDRESS))
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
-                                                        .via("PauseTx")
+                                                        .via(PAUSE_TX)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
@@ -136,19 +141,21 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
-                                                        .via("UnpauseTx"))))
+                                                        .via(UNPAUSE_TX))))
                 .then(
                         childRecordsCheck(
-                                "PauseTx",
+                                PAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)),
                         childRecordsCheck(
-                                "UnpauseTx",
+                                UNPAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
-    private HapiApiSpec noAccountKeyReverts() {
+    private HapiSpec noAccountKeyReverts() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("noKeyReverts")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -180,7 +187,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via("PauseTx"),
+                                                        .via(PAUSE_TX),
                                                 contractCall(
                                                                 PAUSE_UNPAUSE_CONTRACT,
                                                                 UNPAUSE_TOKEN_ACCOUNT_FUNCTION_NAME,
@@ -191,10 +198,10 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                         .payingWith(ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                        .via("UnpauseTx"))))
+                                                        .via(UNPAUSE_TX))))
                 .then(
                         childRecordsCheck(
-                                "PauseTx",
+                                PAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_PAUSE_KEY)
@@ -205,7 +212,7 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                         .withStatus(
                                                                                 TOKEN_HAS_NO_PAUSE_KEY)))),
                         childRecordsCheck(
-                                "UnpauseTx",
+                                UNPAUSE_TX,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(TOKEN_HAS_NO_PAUSE_KEY)
@@ -217,7 +224,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_HAS_NO_PAUSE_KEY)))));
     }
 
-    HapiApiSpec pauseFungibleTokenHappyPath() {
+    HapiSpec pauseFungibleTokenHappyPath() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("PauseFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -300,7 +308,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    HapiApiSpec unpauseFungibleTokenHappyPath() {
+    HapiSpec unpauseFungibleTokenHappyPath() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("UnpauseFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(UNPAUSE_KEY),
@@ -357,7 +366,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                         getTokenInfo(VANILLA_TOKEN).hasPauseStatus(Unpaused));
     }
 
-    HapiApiSpec pauseNonFungibleTokenHappyPath() {
+    HapiSpec pauseNonFungibleTokenHappyPath() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("PauseNonFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -442,7 +452,8 @@ public class PauseUnpauseTokenAccountPrecompileSuite extends HapiApiSuite {
                                                                                 TOKEN_WAS_DELETED)))));
     }
 
-    HapiApiSpec unpauseNonFungibleTokenHappyPath() {
+    HapiSpec unpauseNonFungibleTokenHappyPath() {
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         return defaultHapiSpec("UnpauseNonFungibleTokenHappyPath")
                 .given(
                         newKeyNamed(MULTI_KEY),

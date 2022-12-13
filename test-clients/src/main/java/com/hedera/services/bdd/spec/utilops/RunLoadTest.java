@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -198,11 +198,11 @@ public class RunLoadTest extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         return threadMode(spec);
     }
 
-    protected boolean threadMode(HapiApiSpec spec) {
+    protected boolean threadMode(HapiSpec spec) {
         int numberOfThreads = threads.getAsInt();
         Thread[] threadClients = new Thread[numberOfThreads];
 
@@ -229,7 +229,7 @@ public class RunLoadTest extends UtilOp {
         return false;
     }
 
-    void testRun(HapiApiSpec spec) {
+    void testRun(HapiSpec spec) {
         double _targetTps = targetTps.getAsDouble();
         long _testDuration = testDuration.getAsLong();
         TimeUnit _ofUnit = ofUnit.get();

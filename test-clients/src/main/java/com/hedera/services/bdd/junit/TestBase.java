@@ -15,17 +15,137 @@
  */
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.suites.HapiApiSuite.ETH_SUFFIX;
+import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
+import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
+import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 
 /** Base class with some utility methods that can be used by JUnit-based test classes. */
 public abstract class TestBase {
+    /**
+     * This factory takes a list of suite suppliers and returns a dynamic test that runs all specs
+     * from the suites concurrently. If any spec fails, the test fails. The assertion message will
+     * list all the failed specs, organized by suite, with details about the cause of each failure,
+     * including the exception detail message and the {@code toString()} of the failed operation.
+     *
+     * @param suiteSuppliers the suites to run concurrently
+     * @return a dynamic test that runs all specs from the suites concurrently
+     */
+    @SafeVarargs
+    protected final DynamicTest concurrentSpecsFrom(final Supplier<HapiSuite>... suiteSuppliers) {
+        return internalSpecsFrom(
+                "", Arrays.asList(suiteSuppliers), this::contextualizedSpecsFromConcurrent);
+    }
+
+    @SafeVarargs
+    protected final DynamicTest concurrentEthSpecsFrom(
+            final Supplier<HapiSuite>... suiteSuppliers) {
+        return internalSpecsFrom(
+                ETH_SUFFIX,
+                Arrays.asList(suiteSuppliers),
+                this::contextualizedEthSpecsFromConcurrent);
+    }
+
+    @SuppressWarnings("java:S3864")
+    protected final DynamicTest internalSpecsFrom(
+            final String suffix,
+            final List<Supplier<HapiSuite>> suiteSuppliers,
+            final Function<HapiSuite, Stream<HapiSpec>> internalSpecsExtractor) {
+        final var commaSeparatedSuites = new StringBuilder();
+        final var contextualizedSpecs =
+                suiteSuppliers.stream()
+                        .map(Supplier::get)
+                        .peek(
+                                suite ->
+                                        commaSeparatedSuites
+                                                .append(commaSeparatedSuites.isEmpty() ? "" : ", ")
+                                                .append(suite.name() + suffix))
+                        .flatMap(internalSpecsExtractor)
+                        .toList();
+        return dynamicTest(
+                commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
+    }
+
+    protected final DynamicTest hgcaaLogValidation(final String loc) {
+        return dynamicTest("hgcaaLogValidation", () -> new HgcaaLogValidator(loc).validate());
+    }
+
+    protected final DynamicTest queriesLogValidation(final String loc) {
+        return dynamicTest("queriesLogValidation", () -> new QueryLogValidator(loc).validate());
+    }
+
+    private void concurrentExecutionOf(final List<HapiSpec> specs) {
+        HapiSuite.runConcurrentSpecs(specs);
+        final var failures = specs.stream().filter(HapiSpec::notOk).toList();
+        if (!failures.isEmpty()) {
+            final var failureReport =
+                    """
+                    %d specs FAILED. By suite,
+                    %s
+                    """;
+            final var details = new StringBuilder();
+            // The stream below is a bit tricky. It is grouping the specs by suite name, and then
+            // for each suite, it is collecting the specs that failed, and then for each failed
+            // spec,
+            // it is collecting the details of the failure. The details are the exception message
+            // and
+            // the toString() of the failed operation.
+            failures.stream()
+                    .collect(Collectors.groupingBy(HapiSpec::getSuitePrefix, Collectors.toList()))
+                    .forEach(
+                            (suiteName, failedSpecs) -> {
+                                details.append("  ")
+                                        .append(rightPadded(suiteName, SUITE_NAME_WIDTH))
+                                        .append(" -> ")
+                                        .append(failedSpecs.size())
+                                        .append(" failures:\n");
+                                failedSpecs.forEach(
+                                        failure ->
+                                                details.append("    ")
+                                                        .append(failure.getName())
+                                                        .append(": ")
+                                                        .append(failure.getCause())
+                                                        .append("\n"));
+                            });
+            Assertions.fail(String.format(failureReport, failures.size(), details));
+        }
+    }
+
+    private Stream<HapiSpec> contextualizedSpecsFromConcurrent(final HapiSuite suite) {
+        return suffixContextualizedSpecsFromConcurrent(suite, "");
+    }
+
+    private Stream<HapiSpec> contextualizedEthSpecsFromConcurrent(final HapiSuite suite) {
+        return suffixContextualizedSpecsFromConcurrent(suite, ETH_SUFFIX);
+    }
+
+    private Stream<HapiSpec> suffixContextualizedSpecsFromConcurrent(
+            final HapiSuite suite, final String suffix) {
+        if (!suite.canRunConcurrent()) {
+            throw new IllegalArgumentException(suite.name() + " specs cannot run concurrently");
+        }
+        // Re-use gRPC channels for all specs
+        suite.skipClientTearDown();
+        // Don't log unnecessary detail
+        suite.setOnlyLogHeader();
+        return suite.getSpecsInSuite().stream()
+                .map(spec -> spec.setSuitePrefix(suite.name() + suffix));
+    }
+
     /**
      * Utility that creates a DynamicTest for each HapiApiSpec in the given suite.
      *
@@ -33,7 +153,7 @@ public abstract class TestBase {
      * @return
      */
     protected final DynamicContainer extractSpecsFromSuite(
-            final Supplier<HapiApiSuite> suiteSupplier) {
+            final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests =
                 suite.getSpecsInSuite().stream()
@@ -53,13 +173,14 @@ public abstract class TestBase {
                                                                     + "executing "
                                                                     + "SPEC {"
                                                                     + s.getName()
-                                                                    + "}");
+                                                                    + "}: "
+                                                                    + s.getCause());
                                                 }));
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }
 
     protected final DynamicContainer extractSpecsFromSuiteForEth(
-            final Supplier<HapiApiSuite> suiteSupplier) {
+            final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests =
                 suite.getSpecsInSuite().stream()
@@ -85,7 +206,8 @@ public abstract class TestBase {
                                                                     + "SPEC {"
                                                                     + s.getName()
                                                                     + ETH_SUFFIX
-                                                                    + "}");
+                                                                    + "}: "
+                                                                    + s.getCause());
                                                 }));
         return dynamicContainer(suite.getClass().getSimpleName(), tests);
     }

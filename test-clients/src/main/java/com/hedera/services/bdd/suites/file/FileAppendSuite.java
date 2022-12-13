@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
@@ -24,14 +24,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FileAppendSuite extends HapiApiSuite {
+public class FileAppendSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileAppendSuite.class);
 
     public static void main(String... args) {
@@ -39,14 +39,16 @@ public class FileAppendSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    vanillaAppendSucceeds(), baseOpsHaveExpectedPrices(),
-                });
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(vanillaAppendSucceeds(), baseOpsHaveExpectedPrices());
     }
 
-    public HapiApiSpec baseOpsHaveExpectedPrices() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    public HapiSpec baseOpsHaveExpectedPrices() {
         final var civilian = "NonExemptPayer";
 
         final var expectedAppendFeesPriceUsd = 0.05;
@@ -79,7 +81,7 @@ public class FileAppendSuite extends HapiApiSuite {
                 .then(validateChargedUsdWithin(baseAppend, expectedAppendFeesPriceUsd, 0.01));
     }
 
-    private HapiApiSpec vanillaAppendSucceeds() {
+    private HapiSpec vanillaAppendSucceeds() {
         final byte[] first4K = randomUtf8Bytes(BYTES_4K);
         final byte[] next4k = randomUtf8Bytes(BYTES_4K);
         final byte[] all8k = new byte[2 * BYTES_4K];

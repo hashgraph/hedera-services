@@ -15,18 +15,18 @@
  */
 package com.hedera.services.bdd.suites.meta;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class VersionInfoSpec extends HapiApiSuite {
+public class VersionInfoSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(VersionInfoSpec.class);
     private final Map<String, String> specConfig;
 
@@ -43,11 +43,16 @@ public class VersionInfoSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {discoversExpectedVersions()});
+    public boolean canRunConcurrent() {
+        return true;
     }
 
-    private HapiApiSpec discoversExpectedVersions() {
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(discoversExpectedVersions());
+    }
+
+    private HapiSpec discoversExpectedVersions() {
         if (specConfig != null) {
             return customHapiSpec("getVersionInfo")
                     .withProperties(specConfig)

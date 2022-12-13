@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.initializeEth
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.isEthereumAccountCreatedForSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.convertHapiCallsToEthereumCalls;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ import org.apache.logging.log4j.Logger;
 public class CustomSpecAssert extends UtilOp {
     static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
 
-    public static void allRunFor(final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+    public static void allRunFor(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         if (spec.isUsingEthCalls()) {
             if (!isEthereumAccountCreatedForSpec(spec)) {
                 initializeEthereumAccountForSpec(spec);
@@ -40,22 +40,20 @@ public class CustomSpecAssert extends UtilOp {
         }
     }
 
-    private static void executeHederaOps(
-            final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+    private static void executeHederaOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         for (final HapiSpecOperation op : ops) {
             handleExec(spec, op);
         }
     }
 
-    private static void executeEthereumOps(
-            final HapiApiSpec spec, final List<HapiSpecOperation> ops) {
+    private static void executeEthereumOps(final HapiSpec spec, final List<HapiSpecOperation> ops) {
         final var convertedOps = convertHapiCallsToEthereumCalls(ops);
         for (final var op : convertedOps) {
             handleExec(spec, op);
         }
     }
 
-    private static void handleExec(final HapiApiSpec spec, final HapiSpecOperation op) {
+    private static void handleExec(final HapiSpec spec, final HapiSpecOperation op) {
         Optional<Throwable> error = op.execFor(spec);
         if (error.isPresent()) {
             log.error("Operation '" + op + "' :: " + error.get().getMessage());
@@ -63,13 +61,13 @@ public class CustomSpecAssert extends UtilOp {
         }
     }
 
-    public static void allRunFor(HapiApiSpec spec, HapiSpecOperation... ops) {
+    public static void allRunFor(HapiSpec spec, HapiSpecOperation... ops) {
         allRunFor(spec, List.of(ops));
     }
 
     @FunctionalInterface
     public interface ThrowingConsumer {
-        void assertFor(HapiApiSpec spec, Logger assertLog) throws Throwable;
+        void assertFor(HapiSpec spec, Logger assertLog) throws Throwable;
     }
 
     private final ThrowingConsumer custom;
@@ -79,7 +77,7 @@ public class CustomSpecAssert extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         custom.assertFor(spec, log);
         return false;
     }
