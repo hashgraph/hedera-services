@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.test.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadata;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hederahashgraph.api.proto.java.*;
@@ -48,6 +47,7 @@ class ScheduleSigTransactionMetadataTest {
 
         final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
         .payerKeyFor(schedulePayer)
+                .txnBody(TransactionBody.getDefaultInstance())
                 .build();
         final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
                 .txnBody(txn)
@@ -64,6 +64,7 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
         final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
+                .txnBody(TransactionBody.getDefaultInstance())
                 .payerKeyFor(schedulePayer)
                 .build();
         final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
@@ -85,6 +86,7 @@ class ScheduleSigTransactionMetadataTest {
 
         final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
                 .status(INVALID_PAYER_ACCOUNT_ID)
+                .txnBody(TransactionBody.getDefaultInstance())
                 .payerKeyFor(schedulePayer)
                 .build();
         final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
