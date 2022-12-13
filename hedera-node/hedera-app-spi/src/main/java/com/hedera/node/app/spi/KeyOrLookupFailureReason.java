@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.token.impl;
+package com.hedera.node.app.spi;
 
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;

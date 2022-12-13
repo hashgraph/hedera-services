@@ -18,72 +18,53 @@ package com.hedera.node.app.spi.meta;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
-/** An implementation of {@link TransactionMetadata} for cases when an error has occurred. */
-public final class ErrorTransactionMetadata implements TransactionMetadata {
-    private final ResponseCodeEnum responseCode;
-    private final Throwable throwable;
-    private final TransactionBody txBody;
-
+/**
+ * An implementation of {@link TransactionMetadata} for cases when an error has occurred.
+ *
+ * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
+ * @param status the {@link ResponseCodeEnum} of the error
+ * @param cause Returns the cause of the error
+ */
+public record ErrorTransactionMetadata(
+        @Nullable TransactionBody txnBody,
+        @NonNull ResponseCodeEnum status,
+        @NonNull Throwable cause)
+        implements TransactionMetadata {
     /**
      * Constructor of {@code ErrorTransactionMetadata}
      *
-     * @param responseCode the {@link ResponseCodeEnum} of the error
-     * @param throwable the {@link Throwable} that caused the error
-     * @param txBody the {@link TransactionBody} if known, {@code null} otherwise
+     * @param status the {@link ResponseCodeEnum} of the error
+     * @param cause the {@link Throwable} that caused the error
+     * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public ErrorTransactionMetadata(
-            @NonNull final ResponseCodeEnum responseCode,
-            @NonNull final Throwable throwable,
-            @Nullable final TransactionBody txBody) {
-        this.txBody = txBody;
-        this.throwable = requireNonNull(throwable);
-        this.responseCode = requireNonNull(responseCode);
-    }
-
-    /**
-     * Returns the cause of the error
-     *
-     * @return the {@link Throwable} that caused the error
-     */
-    @Nullable
-    public Throwable cause() {
-        return throwable;
+    public ErrorTransactionMetadata {
+        requireNonNull(cause);
+        requireNonNull(status);
     }
 
     @NonNull
     @Override
-    public ResponseCodeEnum status() {
-        return responseCode;
-    }
-
-    @Nullable
-    @Override
-    public TransactionBody getTxn() {
-        return txBody;
-    }
-
-    @NonNull
-    @Override
-    public List<HederaKey> getReqKeys() {
+    public List<HederaKey> requiredNonPayerKeys() {
         return List.of();
     }
 
+    @Nullable
     @Override
-    public void setStatus(final ResponseCodeEnum status) {
-        throw new UnsupportedOperationException(
-                "This operation is not supported after an error occurred");
+    public AccountID payer() {
+        return null; // FUTURE: change this to the payer injected in PreHandleWorkflow#dispatch
+        // method.
     }
 
     @Override
-    public void addToReqKeys(final HederaKey key) {
-        throw new UnsupportedOperationException(
-                "This operation is not supported after an error occurred");
+    public HederaKey payerKey() {
+        return null;
     }
 }
