@@ -27,6 +27,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -62,6 +63,8 @@ class GlobalDynamicPropertiesTest {
             CongestionMultipliers.from("90,10x,95,25x,99,100x");
     private ThrottleReqOpsScaleFactor oddFactor = ThrottleReqOpsScaleFactor.from("5:2");
     private ThrottleReqOpsScaleFactor evenFactor = ThrottleReqOpsScaleFactor.from("7:2");
+    private LegacyContractIdActivations contractIdActivations =
+            LegacyContractIdActivations.from("1058134by[1062784]");
     private GlobalDynamicProperties subject;
 
     @BeforeEach
@@ -221,6 +224,7 @@ class GlobalDynamicPropertiesTest {
                 ContractStoragePriceTiers.from("0til100M,2000til450M", 88, 53L, 87L),
                 subject.storagePriceTiers());
         assertEquals(evmVersions[1], subject.evmVersion());
+        assertEquals(contractIdActivations, subject.legacyContractIdActivations());
     }
 
     @Test
@@ -524,6 +528,8 @@ class GlobalDynamicPropertiesTest {
                 .willReturn(i + 87L);
         given(properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC))
                 .willReturn(i + 88L);
+        given(properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS))
+                .willReturn(contractIdActivations);
     }
 
     private Set<EntityType> typesFor(final int i) {

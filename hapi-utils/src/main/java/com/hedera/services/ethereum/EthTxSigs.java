@@ -179,9 +179,9 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
             int recId, byte[] r, byte[] s, byte[] message) {
         byte[] dataHash = new Keccak.Digest256().digest(message);
 
-        byte[] signature = new byte[64];
-        System.arraycopy(r, 0, signature, 0, r.length);
-        System.arraycopy(s, 0, signature, 32, s.length);
+        // The RLP library output won't include leading zeros, which means
+        // a simple (r, s) concatenation breaks signature verification below
+        byte[] signature = concatLeftPadded(r, s);
 
         final LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
                 new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
@@ -197,6 +197,15 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         } else {
             return newPubKey;
         }
+    }
+
+    static byte[] concatLeftPadded(final byte[] r, final byte[] s) {
+        byte[] signature = new byte[64];
+        final var rLeadingZeros = 32 - r.length;
+        System.arraycopy(r, 0, signature, rLeadingZeros, r.length);
+        final var sLeadingZeros = 32 - s.length;
+        System.arraycopy(s, 0, signature, 32 + sLeadingZeros, s.length);
+        return signature;
     }
 
     @Override

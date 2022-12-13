@@ -60,7 +60,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.ActivationTest;
+import com.hedera.services.keys.HederaKeyActivation;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
 import com.hedera.services.ledger.properties.AccountProperty;
@@ -74,6 +77,7 @@ import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleToken;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.utils.LegacyActivationTest;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.PlatformTxnAccessor;
@@ -82,6 +86,8 @@ import com.hedera.test.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.TransactionSignature;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -99,6 +105,7 @@ class TxnAwareEvmSigsVerifierTest {
     private static final Id accountId = new Id(0, 0, 1234);
     private static final Address PRETEND_TOKEN_ADDR = tokenId.asEvmAddress();
     private static final Address PRETEND_ACCOUNT_ADDR = accountId.asEvmAddress();
+    private static final Address PRETEND_CONTRACT_ADDR = Address.BLAKE2B_F_COMPRESSION;
     private final TokenID token = IdUtils.asToken("0.0.666");
     private final AccountID payer = IdUtils.asAccount("0.0.2");
     private final AccountID account = IdUtils.asAccount("0.0.1234");
@@ -117,6 +124,8 @@ class TxnAwareEvmSigsVerifierTest {
     @Mock private TransactionalLedger<AccountID, AccountProperty, MerkleAccount> accountsLedger;
     @Mock private TransactionalLedger<TokenID, TokenProperty, MerkleToken> tokensLedger;
     @Mock private WorldLedgers ledgers;
+    @Mock private GlobalDynamicProperties dynamicProperties;
+    @Mock private LegacyActivationTest legacyActivationTest;
 
     private TxnAwareEvmSigsVerifier subject;
 
@@ -124,7 +133,9 @@ class TxnAwareEvmSigsVerifierTest {
     void setup() throws Exception {
         expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-        subject = new TxnAwareEvmSigsVerifier(activationTest, txnCtx, cryptoValidity);
+        subject =
+                new TxnAwareEvmSigsVerifier(
+                        activationTest, txnCtx, cryptoValidity, dynamicProperties);
     }
 
     @Test
@@ -448,9 +459,6 @@ class TxnAwareEvmSigsVerifierTest {
 
     @Test
     void testsAccountAddressAndActiveContractIfEquals() {
-        given(ledgers.accounts()).willReturn(accountsLedger);
-        given(accountsLedger.exists(smartContract)).willReturn(true);
-
         final var verdict =
                 subject.hasActiveKey(
                         true,
@@ -492,6 +500,94 @@ class TxnAwareEvmSigsVerifierTest {
     }
 
     @Test
+    void usesLegacyActivationsWhenAvailable() {
+        subject =
+                new TxnAwareEvmSigsVerifier(
+                        HederaKeyActivation::isActive, txnCtx, cryptoValidity, dynamicProperties);
+
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        final var legacyActivations =
+                new LegacyContractIdActivations(
+                        Map.of(PRETEND_ACCOUNT_ADDR, Set.of(PRETEND_CONTRACT_ADDR)));
+        given(dynamicProperties.legacyContractIdActivations()).willReturn(legacyActivations);
+
+        given(ledgers.accounts()).willReturn(accountsLedger);
+        given(accountsLedger.exists(account)).willReturn(true);
+        given(accountsLedger.get(account, KEY)).willReturn(controlledKey);
+        given(txnCtx.swirldsTxnAccessor()).willReturn(accessor);
+        given(accessor.getRationalizedPkToCryptoSigFn()).willReturn(pkToCryptoSigsFn);
+        given(ledgers.aliases()).willReturn(aliases);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+        given(legacyActivationTest.stackIncludesReceiver(PRETEND_CONTRACT_ADDR)).willReturn(true);
+
+        assertTrue(
+                subject.hasLegacyActiveKey(
+                        false,
+                        PRETEND_ACCOUNT_ADDR,
+                        PRETEND_TOKEN_ADDR,
+                        ledgers,
+                        legacyActivationTest));
+    }
+
+    @Test
+    void createsValidityTestThatUsesLegacyActivationsIfAvailable() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+        given(legacyActivationTest.stackIncludesReceiver(PRETEND_CONTRACT_ADDR)).willReturn(true);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_CONTRACT_ADDR));
+
+        assertTrue(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
+    }
+
+    @Test
+    void createsValidityTestThatUsesLegacyActivationsIfOnStack() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_CONTRACT_ADDR));
+
+        assertFalse(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
+    }
+
+    @Test
+    void createsValidityTestThatOnlyUsesLegacyActivationsIfContractGrandfathered() {
+        final var controlledId = EntityIdUtils.contractIdFromEvmAddress(PRETEND_CONTRACT_ADDR);
+        final var controlledKey = new JContractIDKey(controlledId);
+
+        given(aliases.currentAddress(controlledId)).willReturn(PRETEND_CONTRACT_ADDR);
+
+        final var impliedSubject =
+                subject.validityTestFor(
+                        false,
+                        PRETEND_SENDER_ADDR,
+                        aliases,
+                        legacyActivationTest,
+                        Set.of(PRETEND_TOKEN_ADDR));
+
+        assertFalse(impliedSubject.test(controlledKey, INVALID_MISSING_SIG));
+    }
+
+    @Test
     void validityTestsRelyOnCryptoValidityOtherwise() {
         final var mockSig = mock(TransactionSignature.class);
         final var mockKey = new JEd25519Key("01234567890123456789012345678901".getBytes());
@@ -517,6 +613,12 @@ class TxnAwareEvmSigsVerifierTest {
                         subject.hasActiveKycKey(
                                 true, PRETEND_TOKEN_ADDR, PRETEND_SENDER_ADDR, ledgers),
                 TOKEN_HAS_NO_KYC_KEY);
+    }
+
+    @Test
+    void legacyActivationObvNeedsNonNull() {
+        assertFalse(subject.hasLegacyActivation(PRETEND_CONTRACT_ADDR, null, Set.of()));
+        assertFalse(subject.hasLegacyActivation(PRETEND_CONTRACT_ADDR, legacyActivationTest, null));
     }
 
     @Test

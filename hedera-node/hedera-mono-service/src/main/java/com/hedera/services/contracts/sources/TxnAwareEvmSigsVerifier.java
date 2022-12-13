@@ -28,6 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 
 import com.hedera.services.context.TransactionContext;
+import com.hedera.services.context.properties.GlobalDynamicProperties;
 import com.hedera.services.keys.ActivationTest;
 import com.hedera.services.ledger.TransactionalLedger;
 import com.hedera.services.ledger.accounts.ContractAliases;
@@ -36,11 +37,14 @@ import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.legacy.core.jproto.JKey;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.precompile.utils.LegacyActivationTest;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiPredicate;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,16 +54,19 @@ import org.jetbrains.annotations.NotNull;
 public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
     private final ActivationTest activationTest;
     private final TransactionContext txnCtx;
+    private final GlobalDynamicProperties dynamicProperties;
     private final BiPredicate<JKey, TransactionSignature> cryptoValidity;
 
     @Inject
     public TxnAwareEvmSigsVerifier(
             final ActivationTest activationTest,
             final TransactionContext txnCtx,
-            final BiPredicate<JKey, TransactionSignature> cryptoValidity) {
+            final BiPredicate<JKey, TransactionSignature> cryptoValidity,
+            final GlobalDynamicProperties dynamicProperties) {
         this.txnCtx = txnCtx;
         this.activationTest = activationTest;
         this.cryptoValidity = cryptoValidity;
+        this.dynamicProperties = dynamicProperties;
     }
 
     @Override
@@ -68,17 +75,27 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             @NotNull final Address accountAddress,
             @NotNull final Address activeContract,
             @NotNull final WorldLedgers worldLedgers) {
-        final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
-        validateTrue(worldLedgers.accounts().exists(accountId), INVALID_ACCOUNT_ID);
+        return internalHasActiveKey(
+                isDelegateCall, accountAddress, activeContract, worldLedgers, null, null);
+    }
 
-        if (accountAddress.equals(activeContract)) {
-            return true;
-        }
-
-        final var accountKey = (JKey) worldLedgers.accounts().get(accountId, KEY);
-        return accountKey != null
-                && isActiveInFrame(
-                        accountKey, isDelegateCall, activeContract, worldLedgers.aliases());
+    @Override
+    public boolean hasLegacyActiveKey(
+            final boolean isDelegateCall,
+            final Address account,
+            final Address activeContract,
+            final WorldLedgers worldLedgers,
+            final LegacyActivationTest legacyActivationTest) {
+        final var legacyActivations = dynamicProperties.legacyContractIdActivations();
+        // The contracts (if any) that retain legacy activation for this account's key
+        final var legacyActiveContracts = legacyActivations.getLegacyActiveContractsFor(account);
+        return internalHasActiveKey(
+                isDelegateCall,
+                account,
+                activeContract,
+                worldLedgers,
+                legacyActivationTest,
+                legacyActiveContracts);
     }
 
     @Override
@@ -203,22 +220,71 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         return activationTest.test(key, pkToCryptoSigsFn, cryptoValidity);
     }
 
+    private boolean internalHasActiveKey(
+            final boolean isDelegateCall,
+            @NotNull final Address accountAddress,
+            @NotNull final Address activeContract,
+            @NotNull final WorldLedgers worldLedgers,
+            @Nullable LegacyActivationTest legacyActivationTest,
+            @Nullable final Set<Address> legacyActiveContracts) {
+        if (accountAddress.equals(activeContract)) {
+            return true;
+        }
+        final var accountId = EntityIdUtils.accountIdFromEvmAddress(accountAddress);
+        validateTrue(worldLedgers.accounts().exists(accountId), INVALID_ACCOUNT_ID);
+        final var accountKey = (JKey) worldLedgers.accounts().get(accountId, KEY);
+        return accountKey != null
+                && isActiveInFrame(
+                        accountKey,
+                        isDelegateCall,
+                        activeContract,
+                        worldLedgers.aliases(),
+                        legacyActivationTest,
+                        legacyActiveContracts);
+    }
+
     private boolean isActiveInFrame(
             final JKey key,
             final boolean isDelegateCall,
             final Address activeContract,
             final ContractAliases aliases) {
+        return isActiveInFrame(key, isDelegateCall, activeContract, aliases, null, null);
+    }
+
+    private boolean isActiveInFrame(
+            final JKey key,
+            final boolean isDelegateCall,
+            final Address activeContract,
+            final ContractAliases aliases,
+            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final Set<Address> legacyActiveContracts) {
         final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
         return activationTest.test(
-                key, pkToCryptoSigsFn, validityTestFor(isDelegateCall, activeContract, aliases));
+                key,
+                pkToCryptoSigsFn,
+                validityTestFor(
+                        isDelegateCall,
+                        activeContract,
+                        aliases,
+                        legacyActivationTest,
+                        legacyActiveContracts));
     }
 
     BiPredicate<JKey, TransactionSignature> validityTestFor(
             final boolean isDelegateCall,
             final Address activeContract,
             final ContractAliases aliases) {
+        return validityTestFor(isDelegateCall, activeContract, aliases, null, null);
+    }
+
+    BiPredicate<JKey, TransactionSignature> validityTestFor(
+            final boolean isDelegateCall,
+            final Address activeContract,
+            final ContractAliases aliases,
+            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final Set<Address> legacyActiveContracts) {
         // Note that when this observer is used directly above in isActiveInFrame(), it will be
-        // called  with each primitive key in the top-level Hedera key of interest, along with
+        // called with each primitive key in the top-level Hedera key of interest, along with
         // that key's verified cryptographic signature (if any was available in the sigMap)
         return (key, sig) -> {
             if (key.hasDelegatableContractId() || key.hasDelegatableContractAlias()) {
@@ -234,12 +300,25 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
                                 ? key.getContractIDKey().getContractID()
                                 : key.getContractAliasKey().getContractID();
                 final var controllingContract = aliases.currentAddress(controllingId);
-                return !isDelegateCall && controllingContract.equals(activeContract);
+                return (!isDelegateCall && controllingContract.equals(activeContract))
+                        || hasLegacyActivation(
+                                controllingContract, legacyActivationTest, legacyActiveContracts);
             } else {
                 // Otherwise, apply the standard cryptographic validity test
                 return cryptoValidity.test(key, sig);
             }
         };
+    }
+
+    boolean hasLegacyActivation(
+            final Address contract,
+            @Nullable final LegacyActivationTest legacyActivationTest,
+            @Nullable final Set<Address> legacyActiveContracts) {
+        if (legacyActivationTest == null || legacyActiveContracts == null) {
+            return false;
+        }
+        return legacyActiveContracts.contains(contract)
+                && legacyActivationTest.stackIncludesReceiver(contract);
     }
 
     private Optional<JKey> receiverSigKeyIfAnyOf(

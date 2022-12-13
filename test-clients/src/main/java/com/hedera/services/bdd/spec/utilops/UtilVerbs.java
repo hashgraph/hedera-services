@@ -36,6 +36,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.suites.HapiApiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiApiSuite.EXCHANGE_RATE_CONTROL;
@@ -205,6 +207,15 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntil(String timeOfDay) throws ParseException {
         return new HapiSpecWaitUntil(timeOfDay);
+    }
+
+    public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
+        return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    public static HapiSpecWaitUntil waitUntilJustBeforeNextStakingPeriod(
+            final long stakePeriodMins, final long secondsBefore) {
+        return untilJustBeforeStakingPeriod(stakePeriodMins, secondsBefore);
     }
 
     public static UsableTxnId usableTxnIdNamed(String txnId) {

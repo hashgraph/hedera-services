@@ -347,6 +347,7 @@ public class TokenUpdatePrecompileSuite extends HapiApiSuite {
                                                                                         newTokenTreasury)))
                                                         .via("tokenUpdateTxn")
                                                         .gas(GAS_TO_OFFER)
+                                                        .alsoSigningWithFullPrefix(newTokenTreasury)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT))))
                 .then(

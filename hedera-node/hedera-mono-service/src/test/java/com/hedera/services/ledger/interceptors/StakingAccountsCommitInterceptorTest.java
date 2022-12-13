@@ -579,6 +579,49 @@ class StakingAccountsCommitInterceptorTest {
 
         given(rewardCalculator.computePendingReward(any())).willReturn(0L);
         given(networkCtx.areRewardsActivated()).willReturn(true);
+        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(stakePeriodStart - 1);
+        given(stakePeriodManager.startUpdateFor(-1L, -1L, true, false))
+                .willReturn(stakePeriodStart);
+        pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
+        stakingFund.setStakePeriodStart(-1);
+        counterparty.setStakePeriodStart(stakePeriodStart - 2);
+
+        subject.preview(pendingChanges);
+
+        inorderST.verify(sideEffectsTracker, never()).trackRewardPayment(anyLong(), anyLong());
+
+        inorderM.verify(stakeChangeManager).withdrawStake(0L, counterpartyBalance, false);
+        inorderM.verify(stakeChangeManager).awardStake(0L, 0, false);
+        // StakingMeta changes
+        assertEquals(
+                counterpartyBalance + counterparty.getStakedToMe(),
+                subject.getStakeAtStartOfLastRewardedPeriodUpdates()[0]);
+        assertEquals(stakePeriodStart, subject.getStakePeriodStartUpdates()[0]);
+    }
+
+    @Test
+    void earningZeroRewardsWithStartBeforeLastNonRewardableStillUpdatesSASOLARP() {
+        final var account = mock(MerkleAccount.class);
+        given(stakePeriodManager.firstNonRewardableStakePeriod()).willReturn(3L);
+        given(account.getStakePeriodStart()).willReturn(2L);
+
+        assertTrue(subject.shouldRememberStakeStartFor(account, -1, 0));
+    }
+
+    @Test
+    void sasolarpMgmtWorksAsExpectedWhenStakingToNodeWithNoStakingMetaChangesAndNoReward() {
+        given(dynamicProperties.isStakingEnabled()).willReturn(true);
+        final var inorderST = inOrder(sideEffectsTracker);
+        final var inorderM = inOrder(stakeChangeManager);
+
+        final var pendingChanges = changesWithNoStakingMetaUpdates();
+        final Map<AccountProperty, Object> stakingFundChanges =
+                Map.of(AccountProperty.BALANCE, 100L);
+        final var stakePeriodStart = 12345678L;
+        counterparty.setStakePeriodStart(stakePeriodStart);
+
+        given(rewardCalculator.computePendingReward(any())).willReturn(0L);
+        given(networkCtx.areRewardsActivated()).willReturn(true);
         given(stakePeriodManager.currentStakePeriod()).willReturn(stakePeriodStart + 1);
         pendingChanges.include(stakingFundId, stakingFund, stakingFundChanges);
         stakingFund.setStakePeriodStart(-1);
