@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -23,11 +23,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +39,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FileQueriesStressTests extends HapiApiSuite {
+public class FileQueriesStressTests extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileQueriesStressTests.class);
 
     private AtomicLong duration = new AtomicLong(30);
@@ -51,14 +51,14 @@ public class FileQueriesStressTests extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     getFileInfoStress(), getFileContentsStress(),
                 });
     }
 
-    private HapiApiSpec getFileContentsStress() {
+    private HapiSpec getFileContentsStress() {
         return defaultHapiSpec("getFileContentsStress")
                 .given()
                 .when()
@@ -69,7 +69,7 @@ public class FileQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private HapiApiSpec getFileInfoStress() {
+    private HapiSpec getFileInfoStress() {
         return defaultHapiSpec("getFileInfoStress")
                 .given()
                 .when()
@@ -80,7 +80,7 @@ public class FileQueriesStressTests extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> getFileContentsFactory() {
+    private Function<HapiSpec, OpProvider> getFileContentsFactory() {
         byte[] contents = "You won't believe this!".getBytes();
 
         return spec ->
@@ -100,7 +100,7 @@ public class FileQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> getFileInfoFactory() {
+    private Function<HapiSpec, OpProvider> getFileInfoFactory() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -115,7 +115,7 @@ public class FileQueriesStressTests extends HapiApiSuite {
                 };
     }
 
-    private void configureFromCi(HapiApiSpec spec) {
+    private void configureFromCi(HapiSpec spec) {
         HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
         configure("duration", duration::set, ciProps, ciProps::getLong);
         configure("unit", unit::set, ciProps, ciProps::getTimeUnit);

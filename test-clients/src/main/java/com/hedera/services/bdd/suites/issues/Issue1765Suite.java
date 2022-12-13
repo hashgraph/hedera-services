@@ -15,10 +15,10 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -33,15 +33,15 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshot
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue1765Suite extends HapiApiSuite {
+public class Issue1765Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1765Suite.class);
 
     public static void main(String... args) {
@@ -49,7 +49,7 @@ public class Issue1765Suite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 //				recordOfInvalidFileAppendSanityChecks(),
                 //				recordOfInvalidAccountUpdateSanityChecks(),
@@ -59,14 +59,14 @@ public class Issue1765Suite extends HapiApiSuite {
                 get950Balance());
     }
 
-    public static HapiApiSpec get950Balance() {
+    public static HapiSpec get950Balance() {
         return defaultHapiSpec("Get950Balance")
                 .given()
                 .when()
                 .then(getAccountBalance("0.0.950").logged());
     }
 
-    public static HapiApiSpec recordOfInvalidAccountTransferSanityChecks() {
+    public static HapiSpec recordOfInvalidAccountTransferSanityChecks() {
         final String INVALID_ACCOUNT = "imaginary";
 
         return defaultHapiSpec("RecordOfInvalidAccountTransferSanityChecks")
@@ -83,7 +83,7 @@ public class Issue1765Suite extends HapiApiSuite {
                 .then();
     }
 
-    public static HapiApiSpec recordOfInvalidAccountUpdateSanityChecks() {
+    public static HapiSpec recordOfInvalidAccountUpdateSanityChecks() {
         final String INVALID_ACCOUNT = "imaginary";
 
         return defaultHapiSpec("RecordOfInvalidAccountSanityChecks")
@@ -102,7 +102,7 @@ public class Issue1765Suite extends HapiApiSuite {
                 .then();
     }
 
-    public static HapiApiSpec recordOfInvalidContractUpdateSanityChecks() {
+    public static HapiSpec recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = "imaginary";
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";
@@ -131,7 +131,7 @@ public class Issue1765Suite extends HapiApiSuite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    public static HapiApiSpec recordOfInvalidFileUpdateSanityChecks() {
+    public static HapiSpec recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = "imaginary";
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";
@@ -159,7 +159,7 @@ public class Issue1765Suite extends HapiApiSuite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    public static HapiApiSpec recordOfInvalidFileAppendSanityChecks() {
+    public static HapiSpec recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = "imaginary";
         final String THE_MEMO_IS = "Turning and turning in the widening gyre";

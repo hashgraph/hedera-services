@@ -23,7 +23,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.CharSink;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FileGetContentsQuery;
@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +55,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     private static final Map<String, String> IMMUTABLE_MAP = Collections.emptyMap();
 
     private Map<String, String> props = IMMUTABLE_MAP;
+    private Predicate<String> includeProp = ignore -> true;
 
     private boolean saveIn4kChunks = false;
     private int sizeLookup = -1;
@@ -63,7 +65,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     Optional<String> snapshotPath = Optional.empty();
     Optional<String> registryEntry = Optional.empty();
     Optional<Consumer<byte[]>> contentsCb = Optional.empty();
-    Optional<Function<HapiApiSpec, ByteString>> expContentFn = Optional.empty();
+    Optional<Function<HapiSpec, ByteString>> expContentFn = Optional.empty();
     Optional<UnaryOperator<byte[]>> afterBytesTransform = Optional.empty();
 
     Optional<Consumer<FileID>> preQueryCb = Optional.empty();
@@ -110,6 +112,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
         return this;
     }
 
+    public HapiGetFileContents addingFilteredConfigListTo(
+            final Map<String, String> props, final Predicate<String> includeProp) {
+        this.props = props;
+        this.includeProp = includeProp;
+        return this;
+    }
+
     public HapiGetFileContents saveReadableTo(Function<byte[], String> parser, String path) {
         this.parser = parser;
         readablePath = Optional.of(path);
@@ -126,13 +135,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
         return this;
     }
 
-    public HapiGetFileContents hasByteStringContents(Function<HapiApiSpec, ByteString> fn) {
+    public HapiGetFileContents hasByteStringContents(Function<HapiSpec, ByteString> fn) {
         expContentFn = Optional.of(fn);
         return self();
     }
 
-    public HapiGetFileContents hasContents(Function<HapiApiSpec, byte[]> fn) {
-        Function<HapiApiSpec, ByteString> specToBtFn = spec -> ByteString.copyFrom(fn.apply(spec));
+    public HapiGetFileContents hasContents(Function<HapiSpec, byte[]> fn) {
+        Function<HapiSpec, ByteString> specToBtFn = spec -> ByteString.copyFrom(fn.apply(spec));
         return hasByteStringContents(specToBtFn);
     }
 
@@ -145,13 +154,13 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
         return hasContents(spec -> spec.registry().getBytes(registryEntry));
     }
 
-    private boolean isConfigListFile(HapiApiSpec spec) {
+    private boolean isConfigListFile(HapiSpec spec) {
         return fileName.equals(spec.setup().apiPermissionsFile())
                 || fileName.equals(spec.setup().appPropertiesFile());
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getFileContentQuery(spec, payment, false);
         preQueryCb.ifPresent(cb -> cb.accept(fileId));
         response = spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
@@ -182,7 +191,12 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
                 var configList = ServicesConfigurationList.parseFrom(bytes);
                 configList
                         .getNameValueList()
-                        .forEach(setting -> props.put(setting.getName(), setting.getValue()));
+                        .forEach(
+                                setting -> {
+                                    if (includeProp.test(setting.getName())) {
+                                        props.put(setting.getName(), setting.getValue());
+                                    }
+                                });
             } catch (Exception impossible) {
                 throw new IllegalStateException(impossible);
             }
@@ -255,7 +269,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getFileContentQuery(spec, payment, true);
         Response response =
                 spec.clients().getFileSvcStub(targetNodeFor(spec), useTls).getFileContent(query);
@@ -263,7 +277,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         if (expContentFn.isPresent()) {
             ByteString expected = expContentFn.get().apply(spec);
             ByteString actual = response.getFileGetContents().getFileContents().getContents();
@@ -277,7 +291,7 @@ public class HapiGetFileContents extends HapiQueryOp<HapiGetFileContents> {
         }
     }
 
-    private Query getFileContentQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getFileContentQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         fileId = TxnUtils.asFileId(fileName, spec);
 
         FileGetContentsQuery query =

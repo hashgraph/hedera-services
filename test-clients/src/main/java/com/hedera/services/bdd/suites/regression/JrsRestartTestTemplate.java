@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -43,9 +43,9 @@ import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablem
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -71,7 +71,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>CONTRACTS - multipurpose
  */
-public class JrsRestartTestTemplate extends HapiApiSuite {
+public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
 
     private static final String ENTITIES_DIR =
@@ -93,14 +93,14 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     enableHSS(), jrsRestartTemplate(),
                 });
     }
 
-    private HapiApiSpec enableHSS() {
+    private HapiSpec enableHSS() {
         return defaultHapiSpec("enableHSS")
                 .given(
                         // Directly puting this request in the customHapiSpec before
@@ -110,7 +110,7 @@ public class JrsRestartTestTemplate extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec jrsRestartTemplate() {
+    private HapiSpec jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

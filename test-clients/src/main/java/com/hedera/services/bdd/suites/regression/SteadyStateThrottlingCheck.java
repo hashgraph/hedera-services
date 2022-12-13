@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -40,12 +40,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +60,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class SteadyStateThrottlingCheck extends HapiApiSuite {
+public class SteadyStateThrottlingCheck extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
 
@@ -111,7 +111,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 setArtificialLimits(),
                 checkTps("Xfers", EXPECTED_XFER_TPS, xferOps()),
@@ -122,7 +122,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                 restoreDevLimits());
     }
 
-    private HapiApiSpec setArtificialLimits() {
+    private HapiSpec setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
         return defaultHapiSpec("SetArtificialLimits")
@@ -134,7 +134,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 .contents(artificialLimits.toByteArray()));
     }
 
-    private HapiApiSpec restoreDevLimits() {
+    private HapiSpec restoreDevLimits() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
@@ -151,8 +151,8 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL));
     }
 
-    private HapiApiSpec checkTps(
-            String txn, double expectedTps, Function<HapiApiSpec, OpProvider> provider) {
+    private HapiSpec checkTps(
+            String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
@@ -170,10 +170,10 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
      * }</pre>
      */
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec checkCustomNetworkTps(
+    private HapiSpec checkCustomNetworkTps(
             String txn,
             double expectedTps,
-            Function<HapiApiSpec, OpProvider> provider,
+            Function<HapiSpec, OpProvider> provider,
             Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
         final var baseSpec =
@@ -205,7 +205,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec checkBalanceQps(int burstSize, double expectedQps) {
+    private HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
                 .when()
@@ -268,7 +268,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                                 }));
     }
 
-    private Function<HapiApiSpec, OpProvider> xferOps() {
+    private Function<HapiSpec, OpProvider> xferOps() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -297,7 +297,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> cryptoCreateOps() {
+    private Function<HapiSpec, OpProvider> cryptoCreateOps() {
         var i = new AtomicInteger(0);
 
         return spec ->
@@ -324,7 +324,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> scCallOps() {
+    private Function<HapiSpec, OpProvider> scCallOps() {
         final var contract = "Multipurpose";
         return spec ->
                 new OpProvider() {
@@ -353,7 +353,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
                 };
     }
 
-    private Function<HapiApiSpec, OpProvider> fungibleMintOps() {
+    private Function<HapiSpec, OpProvider> fungibleMintOps() {
         return spec ->
                 new OpProvider() {
                     @Override
@@ -384,7 +384,7 @@ public class SteadyStateThrottlingCheck extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S1144")
-    private Function<HapiApiSpec, OpProvider> nonFungibleMintOps() {
+    private Function<HapiSpec, OpProvider> nonFungibleMintOps() {
         final var metadata =
                 "01234567890123456789012345678901234567890123456789"
                         + "01234567890123456789012345678901234567890123456789";

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.queries;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.OFF;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.OFF;
 import static com.hedera.services.bdd.spec.fees.Payment.Reason.ANSWER_ONLY_QUERY_COST;
 import static com.hedera.services.bdd.spec.fees.Payment.Reason.COST_ANSWER_QUERY_COST;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
@@ -30,8 +30,8 @@ import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
@@ -74,7 +74,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected List<TransactionReceipt> childReceipts = null;
     protected ResponseCodeEnum actualPrecheck = UNKNOWN;
     private Optional<ResponseCodeEnum> answerOnlyPrecheck = Optional.empty();
-    private Optional<Function<HapiApiSpec, Long>> nodePaymentFn = Optional.empty();
+    private Optional<Function<HapiSpec, Long>> nodePaymentFn = Optional.empty();
     private Optional<EnumSet<ResponseCodeEnum>> permissibleAnswerOnlyPrechecks = Optional.empty();
     private Optional<EnumSet<ResponseCodeEnum>> permissibleCostAnswerPrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
@@ -93,15 +93,15 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected Optional<HapiCryptoTransfer> explicitPayment = Optional.empty();
 
     /* WARNING: Must set `response` as a side effect! */
-    protected abstract void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable;
+    protected abstract void submitWith(HapiSpec spec, Transaction payment) throws Throwable;
 
     protected abstract boolean needsPayment();
 
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         return 0L;
     }
 
-    protected long costOnlyNodePayment(HapiApiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return 0L;
     }
 
@@ -142,7 +142,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     protected abstract T self();
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         fixNodeFor(spec);
         configureTlsFor(spec);
 
@@ -210,7 +210,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return true;
     }
 
-    private void timedSubmitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    private void timedSubmitWith(HapiSpec spec, Transaction payment) throws Throwable {
         if (suppressStats) {
             submitWith(spec, payment);
         } else {
@@ -226,7 +226,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
                         HederaFunctionality.CryptoTransfer,
@@ -241,7 +241,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return HapiCryptoTransfer.usageEstimate(txn, svo, multiplier);
     }
 
-    private Transaction fittedPayment(HapiApiSpec spec) throws Throwable {
+    private Transaction fittedPayment(HapiSpec spec) throws Throwable {
         if (explicitPayment.isPresent()) {
             return explicitPayment.get().signedTxnFor(spec);
         } else if (nodePaymentFn.isPresent()) {
@@ -313,7 +313,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         }
     }
 
-    private long timedCostLookupWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    private long timedCostLookupWith(HapiSpec spec, Transaction payment) throws Throwable {
         if (suppressStats) {
             return lookupCostWith(spec, payment);
         } else {
@@ -330,8 +330,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         }
     }
 
-    private Consumer<TransactionBody.Builder> opDef(HapiApiSpec spec, long amount)
-            throws Throwable {
+    private Consumer<TransactionBody.Builder> opDef(HapiSpec spec, long amount) throws Throwable {
         TransferList transfers =
                 asTransferList(
                         tinyBarsFromTo(
@@ -376,7 +375,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return self();
     }
 
-    public T nodePayment(Function<HapiApiSpec, Long> fn) {
+    public T nodePayment(Function<HapiSpec, Long> fn) {
         nodePaymentFn = Optional.of(fn);
         return self();
     }
@@ -423,7 +422,7 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         signers =
                 Optional.of(
                         Stream.of(keys)
-                                .<Function<HapiApiSpec, Key>>map(
+                                .<Function<HapiSpec, Key>>map(
                                         k -> spec -> spec.registry().getKey(k))
                                 .collect(toList()));
         return self();
