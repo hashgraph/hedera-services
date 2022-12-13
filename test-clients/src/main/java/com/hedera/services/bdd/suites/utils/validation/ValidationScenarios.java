@@ -148,7 +148,6 @@ import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import com.hederahashgraph.api.proto.java.Setting;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -177,7 +176,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -457,8 +455,8 @@ public class ValidationScenarios extends HapiSuite {
                                     .fee(tinyBarsToOffer)
                                     .payingWith(SCENARIO_PAYER_NAME),
                             cryptoTransfer(
-                                    moving(10, "tokenTbd")
-                                            .between(DEFAULT_PAYER, SCENARIO_PAYER_NAME))
+                                            moving(10, "tokenTbd")
+                                                    .between(DEFAULT_PAYER, SCENARIO_PAYER_NAME))
                                     .fee(tinyBarsToOffer)
                                     .payingWith(SCENARIO_PAYER_NAME),
                             wipeTokenAccount("tokenTbd", SCENARIO_PAYER_NAME, 10)
@@ -700,10 +698,10 @@ public class ValidationScenarios extends HapiSuite {
                                     .mapToObj(
                                             i ->
                                                     cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    DEFAULT_PAYER,
-                                                                    FUNDING,
-                                                                    1L))
+                                                                    tinyBarsFromTo(
+                                                                            DEFAULT_PAYER,
+                                                                            FUNDING,
+                                                                            1L))
                                                             .hasAnyStatusAtAll()
                                                             .payingWith(SCENARIO_PAYER_NAME)
                                                             .setNode(
@@ -910,8 +908,8 @@ public class ValidationScenarios extends HapiSuite {
                                             .mapToObj(
                                                     num ->
                                                             getAccountInfo(
-                                                                    String.format(
-                                                                            "0.0.%d", num))
+                                                                            String.format(
+                                                                                    "0.0.%d", num))
                                                                     .setNodeFrom(
                                                                             ValidationScenarios
                                                                                     ::nextNode)
@@ -921,8 +919,8 @@ public class ValidationScenarios extends HapiSuite {
                                             .mapToObj(
                                                     num ->
                                                             getFileInfo(
-                                                                    String.format(
-                                                                            "0.0.%d", num))
+                                                                            String.format(
+                                                                                    "0.0.%d", num))
                                                                     .setNodeFrom(
                                                                             ValidationScenarios
                                                                                     ::nextNode)
@@ -1122,31 +1120,31 @@ public class ValidationScenarios extends HapiSuite {
         }
 
         KeyShape complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
-        return new HapiSpecOperation[]{
-                newKeyNamed("novelAccountFirstKey").shape(complex),
-                newKeyNamed("novelAccountSecondKey"),
-                cryptoCreate(NOVEL_ACCOUNT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .balance(ignore -> 2 * transferFee.get())
-                        .key("novelAccountFirstKey"),
-                cryptoUpdate(NOVEL_ACCOUNT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .key("novelAccountSecondKey"),
-                cryptoTransfer(tinyBarsFromTo(SENDER_NAME, RECEIVER_NAME, 1L))
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .payingWith(NOVEL_ACCOUNT_NAME),
-                cryptoDelete(NOVEL_ACCOUNT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .transfer(DEFAULT_PAYER),
-                withOpContext(
-                        (spec, opLog) ->
-                                novelAccountUsed.set(
-                                        HapiPropertySource.asAccountString(
-                                                spec.registry().getAccountID(NOVEL_ACCOUNT_NAME))))
+        return new HapiSpecOperation[] {
+            newKeyNamed("novelAccountFirstKey").shape(complex),
+            newKeyNamed("novelAccountSecondKey"),
+            cryptoCreate(NOVEL_ACCOUNT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .balance(ignore -> 2 * transferFee.get())
+                    .key("novelAccountFirstKey"),
+            cryptoUpdate(NOVEL_ACCOUNT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .key("novelAccountSecondKey"),
+            cryptoTransfer(tinyBarsFromTo(SENDER_NAME, RECEIVER_NAME, 1L))
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .payingWith(NOVEL_ACCOUNT_NAME),
+            cryptoDelete(NOVEL_ACCOUNT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .transfer(DEFAULT_PAYER),
+            withOpContext(
+                    (spec, opLog) ->
+                            novelAccountUsed.set(
+                                    HapiPropertySource.asAccountString(
+                                            spec.registry().getAccountID(NOVEL_ACCOUNT_NAME))))
         };
     }
 
@@ -1192,10 +1190,10 @@ public class ValidationScenarios extends HapiSuite {
                         if (info.getBalance() < minBalance) {
                             var transfer =
                                     cryptoTransfer(
-                                            tinyBarsFromTo(
-                                                    DEFAULT_PAYER,
-                                                    name,
-                                                    (minBalance - info.getBalance())))
+                                                    tinyBarsFromTo(
+                                                            DEFAULT_PAYER,
+                                                            name,
+                                                            (minBalance - info.getBalance())))
                                             .setNodeFrom(ValidationScenarios::nextNode);
                             allRunFor(spec, transfer);
                         }
@@ -1266,38 +1264,38 @@ public class ValidationScenarios extends HapiSuite {
         KeyShape secondComplex = KeyShape.listOf(3);
         SigControl normalDelete = secondComplex.signedWith(KeyShape.sigs(ON, ON, ON));
         SigControl revocation = secondComplex.signedWith(KeyShape.sigs(ON, OFF, OFF));
-        return new HapiSpecOperation[]{
-                newKeyNamed("novelFileFirstKey").shape(firstComplex),
-                newKeyNamed("novelFileSecondKey").shape(secondComplex),
-                fileCreate(NOVEL_FILE_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .key("novelFileFirstKey")
-                        .contents("abcdefghijklm"),
-                fileAppend(NOVEL_FILE_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .content("nopqrstuvwxyz"),
-                getFileContents(NOVEL_FILE_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .hasContents(ignore -> "abcdefghijklmnopqrstuvwxyz".getBytes()),
-                fileUpdate(NOVEL_FILE_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .wacl("novelFileSecondKey"),
-                fileDelete(NOVEL_FILE_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .sigControl(
-                        ControlForKey.forKey(
-                                NOVEL_FILE_NAME,
-                                params.isRevocationService() ? revocation : normalDelete)),
-                withOpContext(
-                        (spec, opLog) ->
-                                novelFileUsed.set(
-                                        HapiPropertySource.asFileString(
-                                                spec.registry().getFileId(NOVEL_FILE_NAME))))
+        return new HapiSpecOperation[] {
+            newKeyNamed("novelFileFirstKey").shape(firstComplex),
+            newKeyNamed("novelFileSecondKey").shape(secondComplex),
+            fileCreate(NOVEL_FILE_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .key("novelFileFirstKey")
+                    .contents("abcdefghijklm"),
+            fileAppend(NOVEL_FILE_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .content("nopqrstuvwxyz"),
+            getFileContents(NOVEL_FILE_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .hasContents(ignore -> "abcdefghijklmnopqrstuvwxyz".getBytes()),
+            fileUpdate(NOVEL_FILE_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .wacl("novelFileSecondKey"),
+            fileDelete(NOVEL_FILE_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .sigControl(
+                            ControlForKey.forKey(
+                                    NOVEL_FILE_NAME,
+                                    params.isRevocationService() ? revocation : normalDelete)),
+            withOpContext(
+                    (spec, opLog) ->
+                            novelFileUsed.set(
+                                    HapiPropertySource.asFileString(
+                                            spec.registry().getFileId(NOVEL_FILE_NAME))))
         };
     }
 
@@ -1356,9 +1354,9 @@ public class ValidationScenarios extends HapiSuite {
                                 (contentsLoc != null)
                                         ? Files.readAllBytes(Paths.get(pathTo(contentsLoc)))
                                         : ValidationScenarios.class
-                                        .getClassLoader()
-                                        .getResourceAsStream(DEFAULT_CONTENTS_RESOURCE)
-                                        .readAllBytes();
+                                                .getClassLoader()
+                                                .getResourceAsStream(DEFAULT_CONTENTS_RESOURCE)
+                                                .readAllBytes();
                         var filesDir = new File("files/");
                         if (!filesDir.exists()) {
                             filesDir.mkdir();
@@ -1399,8 +1397,8 @@ public class ValidationScenarios extends HapiSuite {
             var contract = scenarios.getContract();
 
             Object[] donationArgs =
-                    new Object[]{
-                            Integer.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!"
+                    new Object[] {
+                        Integer.valueOf((int) targetNetwork().getBootstrap()), "Hey, Ma!"
                     };
 
             return customHapiSpec("ContractScenario")
@@ -1468,28 +1466,28 @@ public class ValidationScenarios extends HapiSuite {
         }
 
         KeyShape complex = KeyShape.listOf(KeyShape.threshOf(2, 3), KeyShape.threshOf(1, 3));
-        return new HapiSpecOperation[]{
-                newKeyNamed("firstNovelKey").shape(complex),
-                newKeyNamed("secondNovelKey"),
-                contractCreate(NOVEL_CONTRACT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .adminKey("firstNovelKey")
-                        .balance(1)
-                        .bytecode(() -> idLiteral(contract.getPersistent().getBytecode())),
-                contractUpdate(NOVEL_CONTRACT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .newKey("secondNovelKey"),
-                contractDelete(NOVEL_CONTRACT_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .transferAccount(PERSISTENT_CONTRACT_NAME),
-                withOpContext(
-                        (spec, opLog) ->
-                                novelContractUsed.set(
-                                        HapiPropertySource.asAccountString(
-                                                spec.registry().getAccountID(NOVEL_CONTRACT_NAME))))
+        return new HapiSpecOperation[] {
+            newKeyNamed("firstNovelKey").shape(complex),
+            newKeyNamed("secondNovelKey"),
+            contractCreate(NOVEL_CONTRACT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .adminKey("firstNovelKey")
+                    .balance(1)
+                    .bytecode(() -> idLiteral(contract.getPersistent().getBytecode())),
+            contractUpdate(NOVEL_CONTRACT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .newKey("secondNovelKey"),
+            contractDelete(NOVEL_CONTRACT_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .transferAccount(PERSISTENT_CONTRACT_NAME),
+            withOpContext(
+                    (spec, opLog) ->
+                            novelContractUsed.set(
+                                    HapiPropertySource.asAccountString(
+                                            spec.registry().getAccountID(NOVEL_CONTRACT_NAME))))
         };
     }
 
@@ -1531,7 +1529,7 @@ public class ValidationScenarios extends HapiSuite {
                                         .isNonEmpty();
                         allRunFor(spec, bytecodeCheck);
 
-                        Object[] expected = new Object[]{BigInteger.valueOf(luckyNo)};
+                        Object[] expected = new Object[] {BigInteger.valueOf(luckyNo)};
                         var luckyNoCheck =
                                 contractCallLocal(literal, "pick")
                                         .setNodeFrom(ValidationScenarios::nextNode)
@@ -1554,9 +1552,9 @@ public class ValidationScenarios extends HapiSuite {
                                 (bytecodeLoc != null)
                                         ? Files.readAllBytes(Paths.get(pathToContract(bytecodeLoc)))
                                         : ValidationScenarios.class
-                                        .getClassLoader()
-                                        .getResourceAsStream(DEFAULT_BYTECODE_RESOURCE)
-                                        .readAllBytes();
+                                                .getClassLoader()
+                                                .getResourceAsStream(DEFAULT_BYTECODE_RESOURCE)
+                                                .readAllBytes();
                         var contractsDir = new File("contracts/");
                         if (!contractsDir.exists()) {
                             contractsDir.mkdir();
@@ -1595,7 +1593,7 @@ public class ValidationScenarios extends HapiSuite {
                         allRunFor(spec, create);
 
                         Integer numberToUse = (luckyNo == null) ? DEFAULT_LUCKY_NUMBER : luckyNo;
-                        Object[] args = new Object[]{Integer.valueOf(numberToUse)};
+                        Object[] args = new Object[] {Integer.valueOf(numberToUse)};
                         var setLucky = contractCall(PERSISTENT_CONTRACT_NAME, "believeIn", args);
                         allRunFor(spec, setLucky);
 
@@ -1698,32 +1696,46 @@ public class ValidationScenarios extends HapiSuite {
                                                     String.format(
                                                             "0.0.%d",
                                                             targetNetwork().getScenarioPayer())))
-                    .when().then(
-                            withOpContext((spec, opLog) -> {
-                                final AtomicReference<NodeAddressBook> addressBook = new AtomicReference<>();
-                                final var getNodeDetails = getFileContents(NODE_DETAILS)
-                                        .payingWith(SCENARIO_PAYER_NAME)
-                                        .alertingPost(response -> {
-                                            try {
-                                                addressBook.set(NodeAddressBook.parseFrom(response
-                                                        .getFileGetContents()
-                                                        .getFileContents()
-                                                        .getContents()));
-                                            } catch (InvalidProtocolBufferException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
-                                allRunFor(spec, getNodeDetails);
-                                final var allUpdates = addressBook.get()
-                                        .getNodeAddressList()
-                                        .stream()
-                                        .map(nodeAddress -> cryptoUpdate(SCENARIO_PAYER_NAME)
-                                                .payingWith(SCENARIO_PAYER_NAME)
-                                                .newStakedNodeId(nodeAddress.getNodeId()))
-                                        .toArray(HapiSpecOperation[]::new);
-                                allRunFor(spec, allUpdates);
-                            })
-                    );
+                    .when()
+                    .then(
+                            withOpContext(
+                                    (spec, opLog) -> {
+                                        final AtomicReference<NodeAddressBook> addressBook =
+                                                new AtomicReference<>();
+                                        final var getNodeDetails =
+                                                getFileContents(NODE_DETAILS)
+                                                        .payingWith(SCENARIO_PAYER_NAME)
+                                                        .alertingPost(
+                                                                response -> {
+                                                                    try {
+                                                                        addressBook.set(
+                                                                                NodeAddressBook
+                                                                                        .parseFrom(
+                                                                                                response.getFileGetContents()
+                                                                                                        .getFileContents()
+                                                                                                        .getContents()));
+                                                                    } catch (
+                                                                            InvalidProtocolBufferException
+                                                                                    e) {
+                                                                        throw new RuntimeException(
+                                                                                e);
+                                                                    }
+                                                                });
+                                        allRunFor(spec, getNodeDetails);
+                                        final var allUpdates =
+                                                addressBook.get().getNodeAddressList().stream()
+                                                        .map(
+                                                                nodeAddress ->
+                                                                        cryptoUpdate(
+                                                                                        SCENARIO_PAYER_NAME)
+                                                                                .payingWith(
+                                                                                        SCENARIO_PAYER_NAME)
+                                                                                .newStakedNodeId(
+                                                                                        nodeAddress
+                                                                                                .getNodeId()))
+                                                        .toArray(HapiSpecOperation[]::new);
+                                        allRunFor(spec, allUpdates);
+                                    }));
         } catch (Exception e) {
             log.warn("Unable to initialize consensus scenario, skipping it!", e);
             errorsOccurred.set(true);
@@ -1737,35 +1749,35 @@ public class ValidationScenarios extends HapiSuite {
         }
 
         KeyShape complex = KeyShape.threshOf(1, KeyShape.listOf(2), KeyShape.threshOf(1, 3));
-        return new HapiSpecOperation[]{
-                newKeyNamed("novelTopicAdmin").shape(complex),
-                createTopic(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .adminKeyName("novelTopicAdmin")
-                        .submitKeyShape(KeyShape.SIMPLE),
-                submitMessageTo(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME)
-                        .hasKnownStatus(INVALID_SIGNATURE),
-                updateTopic(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME, "novelTopicAdmin")
-                        .submitKey(EMPTY_KEY),
-                submitMessageTo(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode)
-                        .signedBy(SCENARIO_PAYER_NAME),
-                deleteTopic(NOVEL_TOPIC_NAME)
-                        .payingWith(SCENARIO_PAYER_NAME)
-                        .setNodeFrom(ValidationScenarios::nextNode),
-                withOpContext(
-                        (spec, opLog) ->
-                                novelTopicUsed.set(
-                                        HapiPropertySource.asTopicString(
-                                                spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
+        return new HapiSpecOperation[] {
+            newKeyNamed("novelTopicAdmin").shape(complex),
+            createTopic(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .adminKeyName("novelTopicAdmin")
+                    .submitKeyShape(KeyShape.SIMPLE),
+            submitMessageTo(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME)
+                    .hasKnownStatus(INVALID_SIGNATURE),
+            updateTopic(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME, "novelTopicAdmin")
+                    .submitKey(EMPTY_KEY),
+            submitMessageTo(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode)
+                    .signedBy(SCENARIO_PAYER_NAME),
+            deleteTopic(NOVEL_TOPIC_NAME)
+                    .payingWith(SCENARIO_PAYER_NAME)
+                    .setNodeFrom(ValidationScenarios::nextNode),
+            withOpContext(
+                    (spec, opLog) ->
+                            novelTopicUsed.set(
+                                    HapiPropertySource.asTopicString(
+                                            spec.registry().getTopicID(NOVEL_TOPIC_NAME))))
         };
     }
 
@@ -1850,8 +1862,11 @@ public class ValidationScenarios extends HapiSuite {
                                     .collect(Collectors.toSet());
                     List<String> listed =
                             Arrays.stream(valueOf(matcher).split(","))
-                                    .map(name -> name
-                                            .equalsIgnoreCase("staking") ? STAKE_TO_EVERYBODY.name() : name)
+                                    .map(
+                                            name ->
+                                                    name.equalsIgnoreCase("staking")
+                                                            ? STAKE_TO_EVERYBODY.name()
+                                                            : name)
                                     .map(name -> name.equals("fees") ? "FEE_SNAPSHOTS" : name)
                                     .map(name -> name.equals("syskeys") ? "SYSTEM_KEYS" : name)
                                     .map(name -> name.equals("xfers") ? "TRANSFERS_ONLY" : name)
