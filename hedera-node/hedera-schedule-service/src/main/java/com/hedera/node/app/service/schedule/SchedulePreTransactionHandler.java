@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled;
+package com.hedera.node.app.service.schedule;
 
+import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.PreTransactionHandler;
-import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.meta.ScheduleTransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,7 +36,7 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody}
      * @return the metadata for the schedule creation
      */
-    TransactionMetadata preHandleCreateSchedule(TransactionBody txn);
+    ScheduleTransactionMetadata preHandleCreateSchedule(TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleSign}
@@ -45,7 +47,7 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody}
      * @return the metadata for the schedule signing
      */
-    TransactionMetadata preHandleSignSchedule(TransactionBody txn);
+    ScheduleTransactionMetadata preHandleSignSchedule(TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher);
 
     /**
      * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#ScheduleDelete}
@@ -56,5 +58,5 @@ public interface SchedulePreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody}
      * @return the metadata for the schedule deletion
      */
-    TransactionMetadata preHandleDeleteSchedule(TransactionBody txn);
+    ScheduleTransactionMetadata preHandleDeleteSchedule(TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher);
 }

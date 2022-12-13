@@ -56,6 +56,23 @@ public class StatesImpl implements States {
             final var state =
                     new RebuiltStateImpl<>(stateKey, children.aliases(), children.signedAt());
             return (StateBase) state;
+        } else if (stateKey.equals("SCHEDULES-BY-EQUALITY")) {
+            final var state =
+                    new InMemoryStateImpl<>(
+                            stateKey, children.schedules().byEquality(), children.signedAt());
+            return (StateBase) state;
+        } else if (stateKey.equals("SCHEDULES-BY-ID")) {
+            final var state =
+                    new InMemoryStateImpl<>(
+                            stateKey, children.schedules().byId(), children.signedAt());
+            return (StateBase) state;
+        } else if (stateKey.equals("SCHEDULES-BY-EXPIRY")) {
+            final var state =
+                    new InMemoryStateImpl<>(
+                            stateKey,
+                            children.schedules().byExpirationSecond(),
+                            children.signedAt());
+            return (StateBase) state;
         } else {
             throw new NotImplementedException(
                     String.format("State key %s not supported", stateKey));

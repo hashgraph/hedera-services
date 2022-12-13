@@ -17,6 +17,7 @@ package com.hedera.node.app.service.util;
 
 import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 /**
@@ -34,5 +35,5 @@ public interface UtilPreTransactionHandler extends PreTransactionHandler {
      *     com.hederahashgraph.api.proto.java.UtilPrngTransactionBody}
      * @return the metadata for the pseudo-random number generation
      */
-    TransactionMetadata preHandlePrng(TransactionBody txn);
+    TransactionMetadata preHandlePrng(TransactionBody txn, AccountID payer);
 }

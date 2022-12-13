@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.scheduled.impl;
+package com.hedera.node.app.service.schedule.impl;
 
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
-import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
- */
-public final class StandardScheduledService implements ScheduleService {
+import java.util.Objects;
+
+public class ScheduleServiceImpl implements ScheduleService {
     @NonNull
     @Override
     public SchedulePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
+            @NonNull States states,
+            @NonNull PreHandleContext ctx) {
+        Objects.requireNonNull(states);
+        Objects.requireNonNull(ctx);
+        return new SchedulePreTransactionHandlerImpl(ctx.keyLookup());
     }
 }

@@ -3,11 +3,14 @@ module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono.state.submerkle to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.exceptions to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app.service.schedule.impl;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.utils to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures,
+            com.hedera.node.app.service.schedule.impl,
+            com.hedera.node.app.service.schedule.impl.test;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.models to
@@ -57,6 +60,8 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
     opens com.hedera.node.app.service.mono.stream to
             com.swirlds.common;
+
+    exports com.hedera.node.app.service.mono.state.impl;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
