@@ -189,7 +189,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller());
     }
 
-
     HapiSpec payerCannotOverSendValue() {
         final var payerBalance = 666 * ONE_HBAR;
         final var overdraftAmount = payerBalance + ONE_HBAR;
@@ -202,21 +201,21 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 .when(
                         cryptoCreate(overAmbitiousPayer).balance(payerBalance),
                         contractCall(
-                                PAY_RECEIVABLE_CONTRACT,
-                                DEPOSIT,
-                                BigInteger.valueOf(overdraftAmount))
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(overdraftAmount))
                                 .payingWith(overAmbitiousPayer)
                                 .sending(overdraftAmount)
                                 .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
                         usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
                         uncheckedSubmit(
-                                contractCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(overdraftAmount))
-                                        .txnId(uncheckedCC)
-                                        .payingWith(overAmbitiousPayer)
-                                        .sending(overdraftAmount))
+                                        contractCall(
+                                                        PAY_RECEIVABLE_CONTRACT,
+                                                        DEPOSIT,
+                                                        BigInteger.valueOf(overdraftAmount))
+                                                .txnId(uncheckedCC)
+                                                .payingWith(overAmbitiousPayer)
+                                                .sending(overdraftAmount))
                                 .payingWith(GENESIS))
                 .then(
                         sleepFor(1_000),
@@ -224,7 +223,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
                                 .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
                                 .logged());
     }
-
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")

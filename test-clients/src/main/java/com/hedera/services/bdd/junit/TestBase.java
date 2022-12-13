@@ -81,15 +81,11 @@ public abstract class TestBase {
     }
 
     protected final DynamicTest hgcaaLogValidation(final String loc) {
-        return dynamicTest(
-                "hgcaaLogValidation",
-                () -> new HgcaaLogValidator(loc).validate());
+        return dynamicTest("hgcaaLogValidation", () -> new HgcaaLogValidator(loc).validate());
     }
 
     protected final DynamicTest queriesLogValidation(final String loc) {
-        return dynamicTest(
-                "queriesLogValidation",
-                () -> new QueryLogValidator(loc).validate());
+        return dynamicTest("queriesLogValidation", () -> new QueryLogValidator(loc).validate());
     }
 
     private void concurrentExecutionOf(final List<HapiSpec> specs) {

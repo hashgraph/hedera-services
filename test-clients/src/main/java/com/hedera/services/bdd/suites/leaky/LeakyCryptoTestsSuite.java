@@ -139,7 +139,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final AtomicLong maxSendable = new AtomicLong();
 
         return defaultHapiSpec(
-                "GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee")
+                        "GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee")
                 .given(
                         cryptoCreate(civilian).balance(civilianStartBalance),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
@@ -198,7 +198,6 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                 .balance(maxSendable.get())
                                                 .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)));
     }
-
 
     private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
@@ -699,7 +698,6 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 / rates.getCentEquiv()
                 * gasAmount;
     }
-
 
     @Override
     protected Logger getResultsLogger() {

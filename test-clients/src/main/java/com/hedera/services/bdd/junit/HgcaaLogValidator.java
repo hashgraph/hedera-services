@@ -1,12 +1,26 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.bdd.junit;
-
-import org.junit.jupiter.api.Assertions;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 
 public class HgcaaLogValidator {
     private static final String WARN = "WARN";
@@ -20,15 +34,18 @@ public class HgcaaLogValidator {
 
     public void validate() throws IOException {
         final List<String> problemLines = new ArrayList<>();
-        final var problemTracker  = new ProblemTracker();
+        final var problemTracker = new ProblemTracker();
         try (final var stream = Files.lines(Paths.get(logFileLocation))) {
             stream.filter(problemTracker::isProblem)
                     .map(problemTracker::indented)
                     .forEach(problemLines::add);
         }
         if (!problemLines.isEmpty()) {
-            Assertions.fail("Found problems in log file '" + logFileLocation + "':\n"
-                    + String.join("\n", problemLines));
+            Assertions.fail(
+                    "Found problems in log file '"
+                            + logFileLocation
+                            + "':\n"
+                            + String.join("\n", problemLines));
         }
     }
 
@@ -38,14 +55,14 @@ public class HgcaaLogValidator {
         private static final String PROBLEM_DELIMITER =
                 "\n========================================\n";
 
-        private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
-                List.of("active throttles, but", "Not performing a reset!"),
-                List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
-                List.of("Could not start Netty with TLS support on port 50212"),
-                List.of("CryptoTransfer throughput congestion has no throttle buckets"),
-                // (UNDESIRABLE) Remove when precompiles all return null on invalid input
-                List.of("Internal precompile failure")
-        );
+        private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE =
+                List.of(
+                        List.of("active throttles, but", "Not performing a reset!"),
+                        List.of("Specified TLS cert 'hedera.crt' doesn't exist!"),
+                        List.of("Could not start Netty with TLS support on port 50212"),
+                        List.of("CryptoTransfer throughput congestion has no throttle buckets"),
+                        // (UNDESIRABLE) Remove when precompiles all return null on invalid input
+                        List.of("Internal precompile failure"));
 
         private int linesSinceInitialProblem = -1;
         private int linesToReportAfterInitialProblem = -1;
@@ -67,9 +84,10 @@ public class HgcaaLogValidator {
                     }
                 }
                 linesSinceInitialProblem = 0;
-                linesToReportAfterInitialProblem = isPossiblyCatastrophicProblem(line)
-                        ? LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT
-                        : LINES_AFTER_NON_CATASTROPHIC_PROBLEM_TO_REPORT;
+                linesToReportAfterInitialProblem =
+                        isPossiblyCatastrophicProblem(line)
+                                ? LINES_AFTER_CATASTROPHIC_PROBLEM_TO_REPORT
+                                : LINES_AFTER_NON_CATASTROPHIC_PROBLEM_TO_REPORT;
                 return true;
             } else {
                 return false;
