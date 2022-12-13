@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file.positive;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -27,16 +27,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SysDelSysUndelSpec extends HapiApiSuite {
+public class SysDelSysUndelSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SysDelSysUndelSpec.class);
 
     byte[] ORIG_FILE = "SOMETHING".getBytes();
@@ -51,16 +51,14 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    systemDeleteThenUndeleteRestoresContentsAndExpiry(),
-                    systemDeleteWithPastExpiryDestroysFile(),
-                    distinguishesAdminPrivileges(),
-                });
+                systemDeleteThenUndeleteRestoresContentsAndExpiry(),
+                systemDeleteWithPastExpiryDestroysFile(),
+                distinguishesAdminPrivileges());
     }
 
-    private HapiApiSpec distinguishesAdminPrivileges() {
+    private HapiSpec distinguishesAdminPrivileges() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("DistinguishesAdminPrivileges")
@@ -78,7 +76,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
                                 .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE));
     }
 
-    private HapiApiSpec systemDeleteWithPastExpiryDestroysFile() {
+    private HapiSpec systemDeleteWithPastExpiryDestroysFile() {
         final var lifetime = THREE_MONTHS_IN_SECONDS;
 
         return defaultHapiSpec("systemDeleteWithPastExpiryDestroysFile")
@@ -94,7 +92,7 @@ public class SysDelSysUndelSpec extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_FILE_ID));
     }
 
-    private HapiApiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
+    private HapiSpec systemDeleteThenUndeleteRestoresContentsAndExpiry() {
         var now = Instant.now().getEpochSecond();
         var lifetime = THREE_MONTHS_IN_SECONDS;
         AtomicLong initExpiry = new AtomicLong();

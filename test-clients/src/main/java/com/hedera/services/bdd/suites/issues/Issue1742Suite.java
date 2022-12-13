@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -23,13 +23,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.takeBalanceSnapshot
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateTransferListForBalances;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class Issue1742Suite extends HapiApiSuite {
+public class Issue1742Suite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(Issue1742Suite.class);
 
     public static void main(String... args) {
@@ -37,7 +37,7 @@ public class Issue1742Suite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(cryptoTransferListShowsOnlyFeesAfterIAB());
     }
 
@@ -46,7 +46,7 @@ public class Issue1742Suite extends HapiApiSuite {
         return false;
     }
 
-    public static HapiApiSpec cryptoTransferListShowsOnlyFeesAfterIAB() {
+    public static HapiSpec cryptoTransferListShowsOnlyFeesAfterIAB() {
         final long PAYER_BALANCE = 1_000_000L;
 
         return defaultHapiSpec("CryptoTransferListShowsOnlyFeesAfterIAB")

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.mixedops;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -34,9 +34,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
+public class MixedTransferCallAndSubmitLoadTest extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(MixedTransferCallAndSubmitLoadTest.class);
     private static final String CONTRACT = "SimpleStorage";
@@ -56,11 +56,11 @@ public class MixedTransferCallAndSubmitLoadTest extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runMixedTransferCallAndSubmits());
     }
 
-    private HapiApiSpec runMixedTransferCallAndSubmits() {
+    private HapiSpec runMixedTransferCallAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         final AtomicInteger submittedSoFar = new AtomicInteger(0);
 

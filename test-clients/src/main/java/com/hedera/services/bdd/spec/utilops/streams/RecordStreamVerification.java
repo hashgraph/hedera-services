@@ -23,7 +23,7 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hedera.services.bdd.spec.verification.NodeSignatureVerifier;
@@ -56,7 +56,7 @@ public class RecordStreamVerification extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         var addressBook = downloadBook(spec);
         NodeSignatureVerifier verifier = new NodeSignatureVerifier(addressBook);
         Set<String> uniqRecordFiles = allRecordFilesFor(verifier.nodes());
@@ -197,7 +197,7 @@ public class RecordStreamVerification extends UtilOp {
         return String.format("%s/record%s", baseDir.get(), account);
     }
 
-    private NodeAddressBook downloadBook(HapiApiSpec spec) throws Exception {
+    private NodeAddressBook downloadBook(HapiSpec spec) throws Exception {
         String addressBook = spec.setup().nodeDetailsName();
         HapiGetFileContents op = getFileContents(addressBook);
         allRunFor(spec, op);
