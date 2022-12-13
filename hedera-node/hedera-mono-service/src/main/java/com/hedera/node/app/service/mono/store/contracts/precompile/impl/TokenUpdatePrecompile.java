@@ -28,8 +28,8 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.removeBrackets;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_INFO;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenCreatePrecompile.validateTokenKeysInput;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateAdminKey;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateTokenKeysInput;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 

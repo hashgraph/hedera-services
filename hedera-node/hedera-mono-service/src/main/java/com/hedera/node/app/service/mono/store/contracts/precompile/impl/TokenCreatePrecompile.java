@@ -37,9 +37,9 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateAdminKey;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateTokenKeysInput;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -73,7 +73,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCr
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -525,23 +524,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                             royaltyFee.fallbackFixedFee().getFixedFeePayment() != INVALID_PAYMENT,
                             INVALID_TRANSACTION_BODY);
                 }
-            }
-        }
-    }
-
-    public static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
-        if (tokenKeys.isEmpty()) {
-            return;
-        }
-        for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
-            final var tokenKey = tokenKeys.get(i);
-            validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
-            final var tokenKeyBitField = tokenKey.keyType();
-            validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
-            for (int j = i + 1; j < tokenKeysSize; j++) {
-                validateTrue(
-                        (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
-                        INVALID_TRANSACTION_BODY);
             }
         }
     }

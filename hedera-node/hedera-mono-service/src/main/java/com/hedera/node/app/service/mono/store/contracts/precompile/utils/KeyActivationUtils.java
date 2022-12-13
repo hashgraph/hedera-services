@@ -16,7 +16,10 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.TransferLogic;
@@ -27,6 +30,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
@@ -118,6 +122,23 @@ public final class KeyActivationUtils {
         final var contract = frame.getContractAddress();
         final var recipient = frame.getRecipientAddress();
         return !contract.equals(recipient);
+    }
+
+    public static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
+        if (tokenKeys.isEmpty()) {
+            return;
+        }
+        for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+            final var tokenKey = tokenKeys.get(i);
+            validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
+            final var tokenKeyBitField = tokenKey.keyType();
+            validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
+            for (int j = i + 1; j < tokenKeysSize; j++) {
+                validateTrue(
+                        (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
+                        INVALID_TRANSACTION_BODY);
+            }
+        }
     }
 
     public static boolean validateAdminKey(
