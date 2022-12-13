@@ -15,41 +15,36 @@
  */
 package com.hedera.node.app.workflows.common;
 
-import static java.util.Objects.requireNonNull;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
- * the ingestion pipeline pre-checks.
+ * An {@code InsufficientBalanceException} is a {@link PreCheckException} that is thrown, when the
+ * balance is not sufficient. It provides the {@link #estimatedFee}.
  */
-public class PreCheckException extends Exception {
-    private final ResponseCodeEnum responseCode;
+public class InsufficientBalanceException extends PreCheckException {
+
+    private final long estimatedFee;
 
     /**
-     * Constructor of {@code PreCheckException}
+     * Constructor of {@code InsufficientBalanceException}
      *
      * @param responseCode the {@link ResponseCodeEnum responseCode}
+     * @param estimatedFee the estimated fee
      * @throws NullPointerException if {@code responseCode} is {@code null}
      */
-    public PreCheckException(@NonNull final ResponseCodeEnum responseCode) {
-        super();
-        this.responseCode = requireNonNull(responseCode);
+    public InsufficientBalanceException(
+            @NonNull final ResponseCodeEnum responseCode, final long estimatedFee) {
+        super(responseCode);
+        this.estimatedFee = estimatedFee;
     }
 
     /**
-     * Returns the {@code responseCode} of this {@code PreCheckException}
+     * Returns the estimated fee
      *
-     * @return the {@link ResponseCodeEnum responseCode}
+     * @return the estimated fee
      */
-    @NonNull
-    public ResponseCodeEnum responseCode() {
-        return responseCode;
-    }
-
-    @Override
-    public String toString() {
-        return "PreCheckException{" + "responseCode=" + responseCode + '}';
+    public long getEstimatedFee() {
+        return estimatedFee;
     }
 }

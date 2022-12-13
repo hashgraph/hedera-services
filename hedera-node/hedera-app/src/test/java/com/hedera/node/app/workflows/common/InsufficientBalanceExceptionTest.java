@@ -13,31 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.workflows.ingest;
+package com.hedera.node.app.workflows.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.workflows.common.PreCheckException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 
-class PreCheckExceptionTest {
+class InsufficientBalanceExceptionTest {
 
     @Test
     void testConstructor() {
         // when
-        final PreCheckException exception = new PreCheckException(ResponseCodeEnum.UNAUTHORIZED);
+        final InsufficientBalanceException exception =
+                new InsufficientBalanceException(ResponseCodeEnum.UNAUTHORIZED, 42L);
 
         // then
         assertThat(exception.responseCode()).isEqualTo(ResponseCodeEnum.UNAUTHORIZED);
+        assertThat(exception.getEstimatedFee()).isEqualTo(42L);
         assertThat(exception.getMessage()).isNull();
     }
 
     @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreCheckException(null))
+        assertThatThrownBy(() -> new InsufficientBalanceException(null, 42L))
                 .isInstanceOf(NullPointerException.class);
     }
 }
