@@ -32,5 +32,6 @@ public interface PreHandleDispatcher {
      * @param transactionBody the {@link TransactionBody} of the request
      * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    TransactionMetadata dispatch(@NonNull TransactionBody transactionBody, @NonNull AccountID payer);
+    TransactionMetadata dispatch(
+            @NonNull TransactionBody transactionBody, @NonNull AccountID payer);
 }

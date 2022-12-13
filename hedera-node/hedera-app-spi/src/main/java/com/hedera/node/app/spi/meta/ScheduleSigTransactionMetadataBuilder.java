@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 /**
- * Metadata collected when schedule transactions are handled as part of "pre-handle" needed for signature
- * verification. It builds {@link SigTransactionMetadata} for the transaction that is being scheduled,
- * in addition to all fields in {@link SigTransactionMetadata}.
+ * Metadata collected when schedule transactions are handled as part of "pre-handle" needed for
+ * signature verification. It builds {@link SigTransactionMetadata} for the transaction that is
+ * being scheduled, in addition to all fields in {@link SigTransactionMetadata}.
  */
-public class ScheduleSigTransactionMetadataBuilder extends
-        SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder>{
+public class ScheduleSigTransactionMetadataBuilder
+        extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
     private TransactionMetadata scheduledTxnMeta;
 
     public ScheduleSigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
@@ -40,18 +38,22 @@ public class ScheduleSigTransactionMetadataBuilder extends
     }
 
     /**
-     * Creates and returns a new {@link ScheduleSigTransactionMetadata} based on the values configured in
-     * this builder.
+     * Creates and returns a new {@link ScheduleSigTransactionMetadata} based on the values
+     * configured in this builder.
      *
      * @return a new {@link ScheduleSigTransactionMetadata} object
      */
     @Override
     @NonNull
-    public ScheduleTransactionMetadata build(){
-        Objects.requireNonNull(txn, "Transaction body is required to build ScheduleSigTransactionMetadata");
+    public ScheduleTransactionMetadata build() {
+        Objects.requireNonNull(
+                txn, "Transaction body is required to build ScheduleSigTransactionMetadata");
         Objects.requireNonNull(payer, "Payer is required to build ScheduleSigTransactionMetadata");
-        Objects.requireNonNull(scheduledTxnMeta, "Scheduled transaction metadata is required to " +
-                "build ScheduleSigTransactionMetadata");
-        return new ScheduleSigTransactionMetadata(txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
+        Objects.requireNonNull(
+                scheduledTxnMeta,
+                "Scheduled transaction metadata is required to "
+                        + "build ScheduleSigTransactionMetadata");
+        return new ScheduleSigTransactionMetadata(
+                txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
     }
 }

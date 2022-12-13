@@ -27,13 +27,9 @@ import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.NotImplementedException;
-
 import java.util.Objects;
 import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
@@ -78,7 +74,8 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleApproveAllowances(final TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleApproveAllowances(
+            final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoApproveAllowance();
         final var meta =
                 new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
@@ -112,12 +109,11 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     @Override
     /** {@inheritDoc} */
-    public TransactionMetadata preHandleDeleteAllowances(final TransactionBody txn, AccountID payer) {
+    public TransactionMetadata preHandleDeleteAllowances(
+            final TransactionBody txn, AccountID payer) {
         final var op = txn.getCryptoDeleteAllowance();
         final var meta =
-                new SigTransactionMetadataBuilder<>(accountStore)
-                        .payerKeyFor(payer)
-                        .txnBody(txn);
+                new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
         // Every owner whose allowances are being removed should sign, if the owner is not payer
         for (final var allowance : op.getNftAllowancesList()) {
             meta.addNonPayerKey(allowance.getOwner(), INVALID_ALLOWANCE_OWNER_ID);

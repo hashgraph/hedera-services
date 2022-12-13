@@ -25,6 +25,7 @@ package com.hedera.node.app.spi.meta;
 public interface ScheduleTransactionMetadata extends TransactionMetadata {
     /**
      * Gets the scheduled transaction metadata
+     *
      * @return scheduled transaction metadata
      */
     TransactionMetadata scheduledMeta();

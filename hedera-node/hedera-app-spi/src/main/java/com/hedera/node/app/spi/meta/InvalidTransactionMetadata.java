@@ -15,22 +15,20 @@
  */
 package com.hedera.node.app.spi.meta;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
-
 /**
- * An implementation of {@link TransactionMetadata} for cases when a failure
- * with a specific {@link ResponseCodeEnum} has occurred.
- * This is used instead of {@link SigTransactionMetadata} when other payer key lookup
- * information obtained in pre-handle is not needed in handle, since that need to be re-computed.
+ * An implementation of {@link TransactionMetadata} for cases when a failure with a specific {@link
+ * ResponseCodeEnum} has occurred. This is used instead of {@link SigTransactionMetadata} when other
+ * payer key lookup information obtained in pre-handle is not needed in handle, since that need to
+ * be re-computed.
  *
  * @param txnBody the {@link TransactionBody} if known, {@code null} otherwise
  * @param payer the payer for the transaction

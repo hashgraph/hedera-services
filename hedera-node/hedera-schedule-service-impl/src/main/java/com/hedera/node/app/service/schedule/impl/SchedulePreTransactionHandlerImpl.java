@@ -44,11 +44,14 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
     @Override
     public ScheduleTransactionMetadata preHandleCreateSchedule(
-            final TransactionBody txn, final AccountID payer, final PreHandleDispatcher dispatcher) {
+            final TransactionBody txn,
+            final AccountID payer,
+            final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleCreate();
-        final var meta = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var meta =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer);
 
         if (op.hasAdminKey()) {
             final var key = asHederaKey(op.getAdminKey());
@@ -78,7 +81,9 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     }
 
     private TransactionMetadata preHandleInnerTxn(
-            final TransactionBody scheduledTxn, final AccountID payerForNested, PreHandleDispatcher dispatcher) {
+            final TransactionBody scheduledTxn,
+            final AccountID payerForNested,
+            PreHandleDispatcher dispatcher) {
         final HederaFunctionality scheduledFunction;
         try {
             scheduledFunction = functionOf(scheduledTxn);
@@ -92,13 +97,15 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
         final var meta = dispatcher.dispatch(scheduledTxn, payerForNested);
         if (meta.failed()) {
-            return new InvalidTransactionMetadata(scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
+            return new InvalidTransactionMetadata(
+                    scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return meta;
     }
 
     @Override
-    public ScheduleTransactionMetadata preHandleSignSchedule(TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
+    public ScheduleTransactionMetadata preHandleSignSchedule(
+            TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
         throw new NotImplementedException();
     }
 
@@ -110,9 +117,8 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
     private TransactionMetadata failedMeta(
             final ResponseCodeEnum response, final TransactionBody txn, final AccountID payer) {
-        final var meta = new SigTransactionMetadataBuilder<>(keyLookup)
-                .payerKeyFor(payer)
-                .txnBody(txn);
+        final var meta =
+                new SigTransactionMetadataBuilder<>(keyLookup).payerKeyFor(payer).txnBody(txn);
         meta.status(response);
         return meta.build();
     }

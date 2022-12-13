@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -29,8 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceImplTest {
@@ -59,8 +59,7 @@ class ScheduleServiceImplTest {
     void createsNewInstance() {
         final ScheduleServiceImpl service = new ScheduleServiceImpl();
         final var serviceImpl = service.createPreTransactionHandler(states, preHandleCtx);
-        final var serviceImpl1 =
-                service.createPreTransactionHandler(states, preHandleCtx);
+        final var serviceImpl1 = service.createPreTransactionHandler(states, preHandleCtx);
         assertNotEquals(serviceImpl1, serviceImpl);
         assertTrue(serviceImpl1 instanceof SchedulePreTransactionHandlerImpl);
     }

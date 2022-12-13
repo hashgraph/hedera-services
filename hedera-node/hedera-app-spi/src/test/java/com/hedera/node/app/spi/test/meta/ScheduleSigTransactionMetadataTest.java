@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.ScheduleSigTransactionMetadataBuilder;
@@ -24,13 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleSigTransactionMetadataTest {
@@ -45,15 +45,17 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
-        final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
-        .payerKeyFor(schedulePayer)
-                .txnBody(TransactionBody.getDefaultInstance())
-                .build();
-        final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer)
-                .scheduledMeta(innerMeta)
-                .build();
+        final var innerMeta =
+                new SigTransactionMetadataBuilder<>(keyLookup)
+                        .payerKeyFor(schedulePayer)
+                        .txnBody(TransactionBody.getDefaultInstance())
+                        .build();
+        final var subject =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer)
+                        .scheduledMeta(innerMeta)
+                        .build();
         assertEquals(innerMeta, subject.scheduledMeta());
     }
 
@@ -63,16 +65,18 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
-        final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
-                .txnBody(TransactionBody.getDefaultInstance())
-                .payerKeyFor(schedulePayer)
-                .build();
-        final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer)
-                .scheduledMeta(innerMeta)
-                .status(INVALID_PAYER_ACCOUNT_ID)
-                .build();
+        final var innerMeta =
+                new SigTransactionMetadataBuilder<>(keyLookup)
+                        .txnBody(TransactionBody.getDefaultInstance())
+                        .payerKeyFor(schedulePayer)
+                        .build();
+        final var subject =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer)
+                        .scheduledMeta(innerMeta)
+                        .status(INVALID_PAYER_ACCOUNT_ID)
+                        .build();
         assertEquals(innerMeta, subject.scheduledMeta());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.status());
         assertTrue(subject.failed());
@@ -84,16 +88,18 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(payer)).willReturn(withKey(payerKey));
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
-        final var innerMeta = new SigTransactionMetadataBuilder<>(keyLookup)
-                .status(INVALID_PAYER_ACCOUNT_ID)
-                .txnBody(TransactionBody.getDefaultInstance())
-                .payerKeyFor(schedulePayer)
-                .build();
-        final var subject = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer)
-                .scheduledMeta(innerMeta)
-                .build();
+        final var innerMeta =
+                new SigTransactionMetadataBuilder<>(keyLookup)
+                        .status(INVALID_PAYER_ACCOUNT_ID)
+                        .txnBody(TransactionBody.getDefaultInstance())
+                        .payerKeyFor(schedulePayer)
+                        .build();
+        final var subject =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer)
+                        .scheduledMeta(innerMeta)
+                        .build();
         assertEquals(innerMeta, subject.scheduledMeta());
         assertEquals(OK, subject.status());
         assertEquals(INVALID_PAYER_ACCOUNT_ID, subject.scheduledMeta().status());
