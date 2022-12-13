@@ -507,7 +507,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             infrastructureFactory,
                             precompilePricingUtils,
-                            functionId);
+                            functionId,
+                            senderAddress);
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_KEYS -> new TokenUpdateKeysPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -798,7 +799,6 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
         try {
             this.transactionBody = this.precompile.body(input, aliasResolver);
         } catch (final Exception e) {
-            log.warn("Internal precompile failure", e);
             transactionBody = null;
         }
     }

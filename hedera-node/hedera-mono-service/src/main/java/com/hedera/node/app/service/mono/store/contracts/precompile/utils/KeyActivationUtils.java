@@ -16,12 +16,19 @@
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.TransferLogic;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
@@ -111,5 +118,41 @@ public final class KeyActivationUtils {
         final var contract = frame.getContractAddress();
         final var recipient = frame.getRecipientAddress();
         return !contract.equals(recipient);
+    }
+
+    public static boolean validateAdminKey(
+            final MessageFrame frame,
+            final TokenKeyWrapper tokenKeyWrapper,
+            final Address senderAddress,
+            final EvmSigsVerifier sigsVerifier,
+            final WorldLedgers ledgers,
+            final ContractAliases aliases) {
+        final var key = tokenKeyWrapper.key();
+        return switch (key.getKeyValueType()) {
+            case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
+                    frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, aliases);
+            case CONTRACT_ID -> KeyActivationUtils.validateKey(
+                    frame,
+                    asTypedEvmAddress(key.getContractID()),
+                    sigsVerifier::hasActiveKey,
+                    ledgers,
+                    aliases);
+            case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
+                    frame,
+                    asTypedEvmAddress(key.getDelegatableContractID()),
+                    sigsVerifier::hasActiveKey,
+                    ledgers,
+                    aliases);
+            case ED25519 -> validateCryptoKey(
+                    new JEd25519Key(key.getEd25519Key()), sigsVerifier::cryptoKeyIsActive);
+            case ECDSA_SECPK256K1 -> validateCryptoKey(
+                    new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
+                    sigsVerifier::cryptoKeyIsActive);
+            default -> false;
+        };
+    }
+
+    private static boolean validateCryptoKey(final JKey key, final Predicate<JKey> keyActiveTest) {
+        return keyActiveTest.test(key);
     }
 }

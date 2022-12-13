@@ -39,6 +39,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper.KeyValueType.INVALID_KEY;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.INVALID_PAYMENT;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateAdminKey;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
@@ -56,8 +57,6 @@ import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.fees.FeeCalculator;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JECDSASecp256k1Key;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -91,7 +90,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Provider;
 import org.apache.commons.codec.DecoderException;
@@ -403,7 +401,13 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                 .ifPresent(
                         key ->
                                 validateTrue(
-                                        validateAdminKey(frame, key),
+                                        validateAdminKey(
+                                                frame,
+                                                key,
+                                                senderAddress,
+                                                sigsVerifier,
+                                                ledgers,
+                                                updater.aliases()),
                                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
                                         TOKEN_CREATE));
 
@@ -526,19 +530,18 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     public static void validateTokenKeysInput(List<TokenKeyWrapper> tokenKeys) {
-        if (!tokenKeys.isEmpty()) {
-            for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
-                final var tokenKey = tokenKeys.get(i);
+        if (tokenKeys.isEmpty()) {
+            return;
+        }
+        for (int i = 0, tokenKeysSize = tokenKeys.size(); i < tokenKeysSize; i++) {
+            final var tokenKey = tokenKeys.get(i);
+            validateTrue(tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
+            final var tokenKeyBitField = tokenKey.keyType();
+            validateTrue(tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
+            for (int j = i + 1; j < tokenKeysSize; j++) {
                 validateTrue(
-                        tokenKey.key().getKeyValueType() != INVALID_KEY, INVALID_TRANSACTION_BODY);
-                final var tokenKeyBitField = tokenKey.keyType();
-                validateTrue(
-                        tokenKeyBitField != 0 && tokenKeyBitField < 128, INVALID_TRANSACTION_BODY);
-                for (int j = i + 1; j < tokenKeysSize; j++) {
-                    validateTrue(
-                            (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
-                            INVALID_TRANSACTION_BODY);
-                }
+                        (tokenKeyBitField & tokenKeys.get(j).keyType()) == 0,
+                        INVALID_TRANSACTION_BODY);
             }
         }
     }
@@ -559,37 +562,6 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             tokenCreateOp.inheritAutoRenewAccount(parentAutoRenewId);
         }
         replaceInheritedKeysWithSenderKey(parentId);
-    }
-
-    private boolean validateAdminKey(
-            final MessageFrame frame, final TokenKeyWrapper tokenKeyWrapper) {
-        final var key = tokenKeyWrapper.key();
-        return switch (key.getKeyValueType()) {
-            case INHERIT_ACCOUNT_KEY -> KeyActivationUtils.validateKey(
-                    frame, senderAddress, sigsVerifier::hasActiveKey, ledgers, updater.aliases());
-            case CONTRACT_ID -> KeyActivationUtils.validateKey(
-                    frame,
-                    asTypedEvmAddress(key.getContractID()),
-                    sigsVerifier::hasActiveKey,
-                    ledgers,
-                    updater.aliases());
-            case DELEGATABLE_CONTRACT_ID -> KeyActivationUtils.validateKey(
-                    frame,
-                    asTypedEvmAddress(key.getDelegatableContractID()),
-                    sigsVerifier::hasActiveKey,
-                    ledgers,
-                    updater.aliases());
-            case ED25519 -> validateCryptoKey(
-                    new JEd25519Key(key.getEd25519Key()), sigsVerifier::cryptoKeyIsActive);
-            case ECDSA_SECPK256K1 -> validateCryptoKey(
-                    new JECDSASecp256k1Key(key.getEcdsaSecp256k1()),
-                    sigsVerifier::cryptoKeyIsActive);
-            default -> false;
-        };
-    }
-
-    private boolean validateCryptoKey(final JKey key, final Predicate<JKey> keyActiveTest) {
-        return keyActiveTest.test(key);
     }
 
     @Override

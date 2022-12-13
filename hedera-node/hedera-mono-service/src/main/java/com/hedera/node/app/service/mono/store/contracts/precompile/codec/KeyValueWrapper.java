@@ -164,7 +164,7 @@ public final class KeyValueWrapper {
                     .setDelegatableContractId(delegatableContractID)
                     .build();
             default -> throw new InvalidTransactionException(
-                    "INVALID_KEY", ResponseCodeEnum.FAIL_INVALID);
+                    "INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
         };
     }
 }

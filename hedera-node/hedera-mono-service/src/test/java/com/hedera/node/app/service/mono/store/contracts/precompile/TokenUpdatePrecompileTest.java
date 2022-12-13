@@ -29,15 +29,23 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.T
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV2;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile.decodeUpdateTokenInfoV3;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
+import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -51,6 +59,7 @@ import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.NftProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenRelProperty;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JEd25519Key;
 import com.hedera.node.app.service.mono.records.RecordsHistorian;
 import com.hedera.node.app.service.mono.state.expiry.ExpiringCreations;
 import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
@@ -61,20 +70,30 @@ import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.KeyValueWrapper;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.TokenUpdatePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;
+import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hedera.node.app.service.mono.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -129,6 +148,9 @@ class TokenUpdatePrecompileTest {
 
     private static final int CENTS_RATE = 12;
     private static final int HBAR_RATE = 1;
+    private static final long TEST_SERVICE_FEE = 100L;
+    private static final long TEST_NODE_FEE = 100_000L;
+    private static final long TEST_NETWORK_FEE = 100L;
     private static final Bytes UPDATE_FUNGIBLE_TOKEN_INPUT =
             Bytes.fromHexString(
                     "0x2cccc36f0000000000000000000000000000000000000000000000000000000000000b650000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b6100000000000000000000000000000000000000000000000000000000007a1200000000000000000000000000000000000000000000000000000000000000000a637573746f6d4e616d65000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002cea900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000054f6d656761000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000001e0000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000004600000000000000000000000000000000000000000000000000000000000000580000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000205d2a3c5dd3e65bde502cacc8bc88a12599712d3d7f6d96aa0db12e140740a65e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000210324e3e6c5a305f98e36ee89783d1aedcf07140780b5bb16d5d2aa7911ccdf8bdf000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b6400000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b6400000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000b6400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
@@ -144,7 +166,11 @@ class TokenUpdatePrecompileTest {
     private MockedStatic<TokenUpdatePrecompile> tokenUpdatePrecompile;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
+        final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
+        canonicalPrices.put(
+                HederaFunctionality.TokenUpdate, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
+        given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
         final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(
                         assetLoader,
@@ -311,6 +337,247 @@ class TokenUpdatePrecompileTest {
         final var result = subject.computeInternal(frame);
         // then
         assertEquals(invalidFullPrefix, result);
+    }
+
+    @Test
+    void failsKeyWithBitBiggerThan6IsSet() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var tokenUpdateWrapper =
+                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        128,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[] {},
+                                                new byte[] {},
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        HTSTestsUtil.contractAddress)))));
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(tokenUpdateWrapper);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        // when
+        subject.prepareFields(frame);
+        final var result = subject.computePrecompile(input, frame);
+        // then
+        assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        verifyNoInteractions(updateLogic);
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater, never())
+                .manageInProgressRecord(
+                        recordsHistorian,
+                        mockRecordBuilder,
+                        syntheticTxnFactory.createTokenUpdate(tokenUpdateWrapper));
+    }
+
+    @Test
+    void failsWhenKeyWithMultipleKeyTypesIsPresent() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var tokenUpdateWrapper =
+                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        HTSTestsUtil.contractAddress),
+                                                new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+                                                new byte[] {},
+                                                null))));
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(tokenUpdateWrapper);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        // when
+        subject.prepareFields(frame);
+        final var result = subject.computePrecompile(input, frame);
+        // then
+        assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        verifyNoInteractions(updateLogic);
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater, never())
+                .manageInProgressRecord(
+                        recordsHistorian,
+                        mockRecordBuilder,
+                        syntheticTxnFactory.createTokenUpdate(tokenUpdateWrapper));
+    }
+
+    @Test
+    void failsWhenKeyWithNoKeyTypeToApplyToPresent() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var tokenUpdateWrapper =
+                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        0,
+                                        new KeyValueWrapper(
+                                                false,
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        HTSTestsUtil.contractAddress),
+                                                new byte[] {},
+                                                new byte[] {},
+                                                null)),
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[JEd25519Key.ED25519_BYTE_LENGTH],
+                                                new byte[] {},
+                                                null))));
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(tokenUpdateWrapper);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        // when
+        subject.prepareFields(frame);
+        final var result = subject.computePrecompile(input, frame);
+        // then
+        assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        verifyNoInteractions(updateLogic);
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater, never())
+                .manageInProgressRecord(
+                        recordsHistorian,
+                        mockRecordBuilder,
+                        syntheticTxnFactory.createTokenUpdate(tokenUpdateWrapper));
+    }
+
+    @Test
+    void failsWhenMultipleKeysForSameKeyTypePresent() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var tokenUpdateWrapper =
+                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        HTSTestsUtil.contractAddress),
+                                                new byte[] {},
+                                                new byte[] {},
+                                                null)),
+                                new TokenKeyWrapper(
+                                        1,
+                                        new KeyValueWrapper(
+                                                false,
+                                                null,
+                                                new byte[] {},
+                                                new byte[] {},
+                                                EntityIdUtils.contractIdFromEvmAddress(
+                                                        HTSTestsUtil.contractAddress)))));
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(tokenUpdateWrapper);
+        given(worldUpdater.aliases()).willReturn(aliases);
+        // when
+        subject.prepareFields(frame);
+        final var result = subject.computePrecompile(input, frame);
+        // then
+        assertNull(result.getOutput());
+        verify(frame)
+                .setExceptionalHaltReason(
+                        Optional.of(HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT));
+        verifyNoInteractions(updateLogic);
+        verify(wrappedLedgers, never()).commit();
+        verify(worldUpdater, never())
+                .manageInProgressRecord(
+                        recordsHistorian,
+                        mockRecordBuilder,
+                        syntheticTxnFactory.createTokenUpdate(tokenUpdateWrapper));
+    }
+
+    @Test
+    void failsWithInvalidFullPrefixForInvalidAdminKey() {
+        // given
+        final var input = Bytes.of(Integers.toBytes(ABI_ID_UPDATE_TOKEN_INFO));
+        final var keyValueMock = Mockito.mock(KeyValueWrapper.class);
+        when(keyValueMock.getKeyValueType())
+                .thenReturn(KeyValueWrapper.KeyValueType.CONTRACT_ID)
+                .thenReturn(KeyValueWrapper.KeyValueType.INVALID_KEY);
+        final var tokenUpdateWrapper =
+                HTSTestsUtil.createFungibleTokenUpdateWrapperWithKeys(
+                        List.of(new TokenKeyWrapper(1, keyValueMock)));
+        givenFrameContext();
+        given(frame.getBlockValues())
+                .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        givenPricingUtilsContext();
+        given(feeCalculator.computeFee(any(), any(), any(), any()))
+                .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
+        given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(1L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
+        given(frame.getRemainingGas()).willReturn(1_000_000L);
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
+        final Optional<WorldUpdater> parent = Optional.of(worldUpdater);
+        given(worldUpdater.parentUpdater()).willReturn(parent);
+
+        given(frame.getSenderAddress()).willReturn(contractAddress);
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(infrastructureFactory.newSideEffects()).willReturn(sideEffects);
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(worldUpdater.wrappedTrackingLedgers(any())).willReturn(wrappedLedgers);
+        tokenUpdatePrecompile
+                .when(() -> decodeUpdateTokenInfo(any(), any()))
+                .thenReturn(tokenUpdateWrapper);
+        given(syntheticTxnFactory.createTokenUpdate(tokenUpdateWrapper))
+                .willReturn(
+                        TransactionBody.newBuilder()
+                                .setTokenUpdate(TokenUpdateTransactionBody.newBuilder()));
+        given(worldUpdater.aliases()).willReturn(aliases);
+        given(
+                        creator.createUnsuccessfulSyntheticRecord(
+                                INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
+                .willReturn(mockRecordBuilder);
+        // when
+        final var result = subject.compute(input, frame);
+        // then
+        assertEquals(HTSTestsUtil.invalidFullPrefix, result);
+        verify(creator)
+                .createUnsuccessfulSyntheticRecord(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE);
+        verify(wrappedLedgers, never()).commit();
     }
 
     @Test
