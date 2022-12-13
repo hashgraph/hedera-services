@@ -40,7 +40,8 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void accountTests() {
         assertNull(hederaEvmStackedWorldStateUpdater.createAccount(address, 1, Wei.ONE));
-        assertEquals(Wei.of(100L), hederaEvmStackedWorldStateUpdater.getAccount(address).getBalance());
+        assertEquals(
+                Wei.of(100L), hederaEvmStackedWorldStateUpdater.getAccount(address).getBalance());
         assertEquals(
                 Collections.emptyList(), hederaEvmStackedWorldStateUpdater.getTouchedAccounts());
         hederaEvmStackedWorldStateUpdater.commit();
