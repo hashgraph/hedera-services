@@ -17,19 +17,21 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.ServicesAccessor;
 import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.state.HederaState;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.dispatcher.Handlers;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.*;
 import com.swirlds.common.system.events.Event;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiFunction;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,32 +55,39 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                                     TransactionBody.parser()));
 
     private final ExecutorService exe;
-    private final ServicesAccessor servicesAccessor;
     private final WorkflowOnset onset;
-    private final PreHandleContext context;
+    private final Handlers handlers;
+    private final BiFunction<Handlers, HederaState, Dispatcher> dispatcherProvider;
 
     private HederaState lastUsedState;
-    private PreHandleDispatcher dispatcher;
+    private Dispatcher dispatcher;
 
     /**
      * Constructor of {@code PreHandleWorkflowImpl}
      *
      * @param exe the {@link ExecutorService} to use when submitting new tasks
-     * @param servicesAccessor the {@link ServicesAccessor} with references to all {@link
-     *     com.hedera.node.app.spi.Service}-implementations
+     * @param handlers the {@link Handlers} for all transactions
      * @param onset the {@link WorkflowOnset} that pre-processes the {@link byte[]} of a transaction
      * @throws NullPointerException if any of the parameters is {@code null}
      */
     public PreHandleWorkflowImpl(
             @NonNull final ExecutorService exe,
-            @NonNull final ServicesAccessor servicesAccessor,
-            @NonNull final PreHandleContext context,
+            @NonNull final Handlers handlers,
             @NonNull final WorkflowOnset onset) {
-        this.exe = requireNonNull(exe);
-        this.servicesAccessor = requireNonNull(servicesAccessor);
-        this.context = requireNonNull(context);
-        this.onset = requireNonNull(onset);
+        this(exe, handlers, onset, Dispatcher::new);
     }
+
+    PreHandleWorkflowImpl(
+            @NonNull final ExecutorService exe,
+            @NonNull final Handlers handlers,
+            @NonNull final WorkflowOnset onset,
+            @NonNull final BiFunction<Handlers, HederaState, Dispatcher> dispatcherProvider) {
+        this.exe = requireNonNull(exe);
+        this.handlers = requireNonNull(handlers);
+        this.onset = requireNonNull(onset);
+        this.dispatcherProvider = requireNonNull(dispatcherProvider);
+    }
+
 
     @Override
     public synchronized void start(@NonNull final HederaState state, @NonNull final Event event) {
@@ -88,7 +97,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         // If the latest immutable state has changed, we need to adjust the dispatcher and the
         // query-handler.
         if (!Objects.equals(state, lastUsedState)) {
-            dispatcher = new PreHandleDispatcher(state, servicesAccessor, context);
+            dispatcher = dispatcherProvider.apply(handlers, state);
             lastUsedState = state;
         }
 
@@ -105,7 +114,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
     }
 
     private TransactionMetadata preHandle(
-            final PreHandleDispatcher dispatcher,
+            final Dispatcher dispatcher,
             final com.swirlds.common.system.transaction.Transaction platformTx) {
         TransactionBody txBody = null;
         try {
@@ -118,7 +127,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
             // 2. Call PreTransactionHandler to do transaction-specific checks, get list of required
             // keys, and prefetch required data
-            final var metadata = dispatcher.dispatch(txBody);
+            final var metadata = dispatcher.preHandle(txBody);
 
             // 3. Prepare signature-data
             // TODO: Prepare signature-data once this functionality was implemented

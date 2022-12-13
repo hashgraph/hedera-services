@@ -23,10 +23,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link TokenService} {@link com.hedera.node.app.spi.Service}. */
 public final class StandardTokenService implements TokenService {
-    @NonNull
-    @Override
-    public TokenPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }

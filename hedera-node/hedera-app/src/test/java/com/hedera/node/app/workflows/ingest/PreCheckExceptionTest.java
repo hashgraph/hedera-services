@@ -18,7 +18,7 @@ package com.hedera.node.app.workflows.ingest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.Test;
 

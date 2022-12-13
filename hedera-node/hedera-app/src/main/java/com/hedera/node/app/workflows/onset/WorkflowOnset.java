@@ -16,7 +16,7 @@
 package com.hedera.node.app.workflows.onset;
 
 import com.hedera.node.app.SessionContext;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 // TODO: Implemented as part of ingest workflow, needs to be merged

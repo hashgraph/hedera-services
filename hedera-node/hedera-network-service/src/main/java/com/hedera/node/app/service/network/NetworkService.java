@@ -29,17 +29,6 @@ import java.util.ServiceLoader;
  */
 public interface NetworkService extends Service {
     /**
-     * Creates the network service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding network service pre-handler
-     */
-    @NonNull
-    @Override
-    NetworkPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance

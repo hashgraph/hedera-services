@@ -1,5 +1,6 @@
 module com.hedera.node.app.service.scheduled.impl {
     requires com.hedera.node.app.service.scheduled;
+    requires com.hedera.hashgraph.protobuf.java.api;
     requires static com.github.spotbugs.annotations;
 
     provides com.hedera.node.app.service.scheduled.ScheduleService with
@@ -7,4 +8,5 @@ module com.hedera.node.app.service.scheduled.impl {
 
     exports com.hedera.node.app.service.scheduled.impl to
             com.hedera.node.app.service.scheduled.impl.test;
+    exports com.hedera.node.app.service.scheduled.impl.handlers;
 }

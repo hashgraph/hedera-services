@@ -29,17 +29,6 @@ import java.util.ServiceLoader;
  */
 public interface ScheduleService extends Service {
     /**
-     * Creates the schedule service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding schedule service pre-handler
-     */
-    @NonNull
-    @Override
-    SchedulePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance

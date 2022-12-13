@@ -23,10 +23,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link CryptoService} {@link com.hedera.node.app.spi.Service}. */
 public final class StandardCryptoService implements CryptoService {
-    @NonNull
-    @Override
-    public CryptoPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }

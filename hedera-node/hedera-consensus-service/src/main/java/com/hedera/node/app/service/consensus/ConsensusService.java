@@ -29,17 +29,6 @@ import java.util.ServiceLoader;
  */
 public interface ConsensusService extends Service {
     /**
-     * Creates the consensus service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding consensus service pre-handler
-     */
-    @Override
-    @NonNull
-    ConsensusPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance

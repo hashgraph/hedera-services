@@ -17,36 +17,81 @@ package com.hedera.node.app.workflows.prehandle;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.node.app.ServicesAccessor;
-import com.hedera.node.app.service.admin.FreezePreTransactionHandler;
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
+import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusUpdateTopicHandler;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.file.FilePreTransactionHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCallHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractSystemDeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractSystemUndeleteHandler;
+import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
+import com.hedera.node.app.service.contract.impl.handlers.EtherumTransactionHandler;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.handlers.FileAppendHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileCreateHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemDeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileSystemUndeleteHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileUpdateHandler;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.network.NetworkPreTransactionHandler;
 import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
+import com.hedera.node.app.service.network.impl.handlers.UncheckedSubmitHandler;
 import com.hedera.node.app.service.scheduled.ScheduleService;
+import com.hedera.node.app.service.scheduled.impl.handlers.ScheduleCreateHandler;
+import com.hedera.node.app.service.scheduled.impl.handlers.ScheduleDeleteHandler;
+import com.hedera.node.app.service.scheduled.impl.handlers.ScheduleSignHandler;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.handlers.CryptoAddLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoApproveAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoCreateHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteAllowanceHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoDeleteLiveHashHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
+import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenFeeScheduleUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.UtilPreTransactionHandler;
 import com.hedera.node.app.service.util.UtilService;
+import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
+import com.hedera.node.app.spi.state.States;
+import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.Handlers;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,79 +102,137 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PreHandleDispatcherTest {
+class DispatcherTest {
 
     @Mock private HederaState hederaState;
 
-    @Mock private ConsensusPreTransactionHandler consensusHandler;
-    @Mock private ContractPreTransactionHandler contractHandler;
-    @Mock private CryptoPreTransactionHandler cryptoHandler;
-    @Mock private FilePreTransactionHandler fileHandler;
-    @Mock private FreezePreTransactionHandler freezeHandler;
-    @Mock private NetworkPreTransactionHandler networkHandler;
-    @Mock private SchedulePreTransactionHandler scheduleHandler;
-    @Mock private TokenPreTransactionHandler tokenHandler;
-    @Mock private UtilPreTransactionHandler utilHandler;
+    @Mock ConsensusCreateTopicHandler consensusCreateTopicHandler;
+    @Mock ConsensusUpdateTopicHandler consensusUpdateTopicHandler;
+    @Mock ConsensusDeleteTopicHandler consensusDeleteTopicHandler;
+    @Mock ConsensusSubmitMessageHandler consensusSubmitMessageHandler;
 
-    private ServicesAccessor servicesAccessor;
+    @Mock ContractCreateHandler contractCreateHandler;
+    @Mock ContractUpdateHandler contractUpdateHandler;
+    @Mock ContractCallHandler contractCallHandler;
+    @Mock ContractDeleteHandler contractDeleteHandler;
+    @Mock ContractSystemDeleteHandler contractSystemDeleteHandler;
+    @Mock ContractSystemUndeleteHandler contractSystemUndeleteHandler;
+    @Mock EtherumTransactionHandler etherumTransactionHandler;
 
-    private PreHandleContext context;
+    @Mock CryptoCreateHandler cryptoCreateHandler;
+    @Mock CryptoUpdateHandler cryptoUpdateHandler;
+    @Mock CryptoTransferHandler cryptoTransferHandler;
+    @Mock CryptoDeleteHandler cryptoDeleteHandler;
+    @Mock CryptoApproveAllowanceHandler cryptoApproveAllowanceHandler;
+    @Mock CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler;
+    @Mock CryptoAddLiveHashHandler cryptoAddLiveHashHandler;
+    @Mock CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler;
 
-    private PreHandleDispatcher dispatcher;
+    @Mock FileCreateHandler fileCreateHandler;
+    @Mock FileUpdateHandler fileUpdateHandler;
+    @Mock FileDeleteHandler fileDeleteHandler;
+    @Mock FileAppendHandler fileAppendHandler;
+    @Mock FileSystemDeleteHandler fileSystemDeleteHandler;
+    @Mock FileSystemUndeleteHandler fileSystemUndeleteHandler;
+
+    @Mock FreezeHandler freezeHandler;
+
+    @Mock UncheckedSubmitHandler uncheckedSubmitHandler;
+
+    @Mock ScheduleCreateHandler scheduleCreateHandler;
+    @Mock ScheduleSignHandler scheduleSignHandler;
+    @Mock ScheduleDeleteHandler scheduleDeleteHandler;
+
+    @Mock TokenCreateHandler tokenCreateHandler;
+    @Mock TokenUpdateHandler tokenUpdateHandler;
+    @Mock TokenMintHandler tokenMintHandler;
+    @Mock TokenBurnHandler tokenBurnHandler;
+    @Mock TokenDeleteHandler tokenDeleteHandler;
+    @Mock TokenAccountWipeHandler tokenAccountWipeHandler;
+    @Mock TokenFreezeAccountHandler tokenFreezeAccountHandler;
+    @Mock TokenUnfreezeAccountHandler tokenUnfreezeAccountHandler;
+    @Mock TokenGrantKycToAccountHandler tokenGrantKycToAccountHandler;
+    @Mock TokenRevokeKycFromAccountHandler tokenRevokeKycFromAccountHandler;
+    @Mock TokenAssociateToAccountHandler tokenAssociateToAccountHandler;
+    @Mock TokenDissociateFromAccountHandler tokenDissociateFromAccountHandler;
+    @Mock TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler;
+    @Mock TokenPauseHandler tokenPauseHandler;
+    @Mock TokenUnpauseHandler tokenUnpauseHandler;
+
+    @Mock UtilPrngHandler utilPrngHandler;
+
+    private Handlers handlers;
+    private Dispatcher dispatcher;
 
     @BeforeEach
-    void setup(
-            @Mock ConsensusService consensusService,
-            @Mock ContractService contractService,
-            @Mock CryptoService cryptoService,
-            @Mock FileService fileService,
-            @Mock FreezeService freezeService,
-            @Mock NetworkService networkService,
-            @Mock ScheduleService scheduleService,
-            @Mock TokenService tokenService,
-            @Mock UtilService utilService,
-            @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers) {
-        servicesAccessor =
-                new ServicesAccessor(
-                        consensusService,
-                        contractService,
-                        cryptoService,
-                        fileService,
-                        freezeService,
-                        networkService,
-                        scheduleService,
-                        tokenService,
-                        utilService);
+    void setup(@Mock States states) {
+        when(hederaState.createReadableStates(any())).thenReturn(states);
 
-        context = new PreHandleContext(accountNumbers, hederaFileNumbers);
+        handlers = new Handlers(
+                consensusCreateTopicHandler,
+                consensusUpdateTopicHandler,
+                consensusDeleteTopicHandler,
+                consensusSubmitMessageHandler,
 
-        when(consensusService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(consensusHandler);
-        when(contractService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(contractHandler);
-        when(cryptoService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(cryptoHandler);
-        when(fileService.createPreTransactionHandler(any(), eq(context))).thenReturn(fileHandler);
-        when(freezeService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(freezeHandler);
-        when(networkService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(networkHandler);
-        when(scheduleService.createPreTransactionHandler(any(), eq(context)))
-                .thenReturn(scheduleHandler);
-        when(tokenService.createPreTransactionHandler(any(), eq(context))).thenReturn(tokenHandler);
-        when(utilService.createPreTransactionHandler(any(), eq(context))).thenReturn(utilHandler);
+                contractCreateHandler,
+                contractUpdateHandler,
+                contractCallHandler,
+                contractDeleteHandler,
+                contractSystemDeleteHandler,
+                contractSystemUndeleteHandler,
+                etherumTransactionHandler,
 
-        dispatcher = new PreHandleDispatcher(hederaState, servicesAccessor, context);
+                cryptoCreateHandler,
+                cryptoUpdateHandler,
+                cryptoTransferHandler,
+                cryptoDeleteHandler,
+                cryptoApproveAllowanceHandler,
+                cryptoDeleteAllowanceHandler,
+                cryptoAddLiveHashHandler,
+                cryptoDeleteLiveHashHandler,
+
+                fileCreateHandler,
+                fileUpdateHandler,
+                fileDeleteHandler,
+                fileAppendHandler,
+                fileSystemDeleteHandler,
+                fileSystemUndeleteHandler,
+
+                freezeHandler,
+
+                uncheckedSubmitHandler,
+
+                scheduleCreateHandler,
+                scheduleSignHandler,
+                scheduleDeleteHandler,
+
+                tokenCreateHandler,
+                tokenUpdateHandler,
+                tokenMintHandler,
+                tokenBurnHandler,
+                tokenDeleteHandler,
+                tokenAccountWipeHandler,
+                tokenFreezeAccountHandler,
+                tokenUnfreezeAccountHandler,
+                tokenGrantKycToAccountHandler,
+                tokenRevokeKycFromAccountHandler,
+                tokenAssociateToAccountHandler,
+                tokenDissociateFromAccountHandler,
+                tokenFeeScheduleUpdateHandler,
+                tokenPauseHandler,
+                tokenUnpauseHandler,
+
+                utilPrngHandler
+        );
+
+        dispatcher = new Dispatcher(handlers, hederaState);
     }
 
     @Test
     void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreHandleDispatcher(null, servicesAccessor, context))
+        assertThatThrownBy(() -> new Dispatcher(null, hederaState))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleDispatcher(hederaState, null, context))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleDispatcher(hederaState, servicesAccessor, null))
+        assertThatThrownBy(() -> new Dispatcher(handlers, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -145,23 +248,23 @@ class PreHandleDispatcherTest {
                         .mergeSystemUndelete(SystemUndeleteTransactionBody.getDefaultInstance())
                         .build();
 
-        assertThatThrownBy(() -> dispatcher.dispatch(null))
+        assertThatThrownBy(() -> dispatcher.preHandle(null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> dispatcher.dispatch(invalidSystemDelete))
+        assertThatThrownBy(() -> dispatcher.preHandle(invalidSystemDelete))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> dispatcher.dispatch(invalidSystemUndelete))
+        assertThatThrownBy(() -> dispatcher.preHandle(invalidSystemUndelete))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
     @MethodSource("getDispatchParameters")
     void testDispatch(
-            final TransactionBody txBody, final Consumer<PreHandleDispatcherTest> verification) {
+            final TransactionBody txBody, final Consumer<Handlers> verification) {
         // when
-        dispatcher.dispatch(txBody);
+        dispatcher.preHandle(txBody);
 
         // then
-        verification.accept(this);
+        verification.accept(this.handlers);
     }
 
     private static Stream<Arguments> getDispatchParameters() {
@@ -172,31 +275,29 @@ class PreHandleDispatcherTest {
                                 .mergeConsensusCreateTopic(
                                         ConsensusCreateTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.consensusHandler).preHandleCreateTopic(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.consensusCreateTopicHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusUpdateTopic(
                                         ConsensusUpdateTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.consensusHandler).preHandleUpdateTopic(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.consensusUpdateTopicHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusDeleteTopic(
                                         ConsensusDeleteTopicTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.consensusHandler).preHandleDeleteTopic(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.consensusDeleteTopicHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeConsensusSubmitMessage(
                                         ConsensusSubmitMessageTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.consensusHandler)
-                                                .preHandleSubmitMessage(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.consensusSubmitMessageHandler()).preHandle(any(), any())),
 
                 // contract
                 Arguments.of(
@@ -204,41 +305,35 @@ class PreHandleDispatcherTest {
                                 .mergeContractCreateInstance(
                                         ContractCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.contractHandler)
-                                                .preHandleCreateContract(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeContractUpdateInstance(
                                         ContractUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.contractHandler)
-                                                .preHandleUpdateContract(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeContractCall(ContractCallTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.contractHandler).preHandleContractCall(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractCallHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeContractDeleteInstance(
                                         ContractDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.contractHandler)
-                                                .preHandleDeleteContract(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeEthereumTransaction(
                                         EthereumTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.contractHandler).preHandleCallEthereum(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.etherumTransactionHandler()).preHandle(any(), any())),
 
                 // crypto
                 Arguments.of(
@@ -246,104 +341,98 @@ class PreHandleDispatcherTest {
                                 .mergeCryptoCreateAccount(
                                         CryptoCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoCreate(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoUpdateAccount(
                                         CryptoUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleUpdateAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoUpdateHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoTransfer(
                                         CryptoTransferTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoTransfer(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoTransferHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoDelete(CryptoDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleCryptoDelete(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoDeleteHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoApproveAllowance(
                                         CryptoApproveAllowanceTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.cryptoHandler)
-                                                .preHandleApproveAllowances(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoApproveAllowanceHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoDeleteAllowance(
                                         CryptoDeleteAllowanceTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.cryptoHandler)
-                                                .preHandleDeleteAllowances(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoDeleteAllowanceHandler()).preHandle(any(), any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoAddLiveHash(
                                         CryptoAddLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleAddLiveHash(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoAddLiveHashHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeCryptoDeleteLiveHash(
                                         CryptoDeleteLiveHashTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.cryptoHandler).preHandleDeleteLiveHash(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.cryptoDeleteLiveHashHandler()).preHandle(any(), any())),
 
                 // file
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeFileCreate(FileCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleCreateFile(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeFileUpdate(FileUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleUpdateFile(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeFileDelete(FileDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleDeleteFile(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeFileAppend(FileAppendTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleAppendContent(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileAppendHandler()).preHandle(any(), any())),
 
                 // freeze
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeFreeze(FreezeTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.freezeHandler).preHandleFreeze(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.freezeHandler()).preHandle(any(), any())),
 
                 // network
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeUncheckedSubmit(UncheckedSubmitBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.networkHandler)
-                                                .preHandleUncheckedSubmit(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.uncheckedSubmitHandler()).preHandle(any(), any())),
 
                 // schedule
                 Arguments.of(
@@ -351,143 +440,129 @@ class PreHandleDispatcherTest {
                                 .mergeScheduleCreate(
                                         ScheduleCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.scheduleHandler)
-                                                .preHandleCreateSchedule(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.scheduleCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeScheduleSign(ScheduleSignTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.scheduleHandler).preHandleSignSchedule(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.scheduleSignHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeScheduleDelete(
                                         ScheduleDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.scheduleHandler)
-                                                .preHandleDeleteSchedule(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.scheduleDeleteHandler()).preHandle(any(), any())),
 
                 // token
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenCreation(TokenCreateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleCreateToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenCreateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenUpdate(TokenUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleUpdateToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenMint(TokenMintTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleMintToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenMintHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenBurn(TokenBurnTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleBurnToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenBurnHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenDeletion(TokenDeleteTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleDeleteToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenWipe(
                                         TokenWipeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleWipeTokenAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenAccountWipeHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenFreeze(
                                         TokenFreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.tokenHandler)
-                                                .preHandleFreezeTokenAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenFreezeAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenUnfreeze(
                                         TokenUnfreezeAccountTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.tokenHandler)
-                                                .preHandleUnfreezeTokenAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenUnfreezeAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenGrantKyc(
                                         TokenGrantKycTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.tokenHandler)
-                                                .preHandleGrantKycToTokenAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenGrantKycToAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenRevokeKyc(
                                         TokenRevokeKycTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.tokenHandler)
-                                                .preHandleRevokeKycFromTokenAccount(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenRevokeKycFromAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenAssociate(
                                         TokenAssociateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleAssociateTokens(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenAssociateToAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenDissociate(
                                         TokenDissociateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleDissociateTokens(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenDissociateFromAccountHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenFeeScheduleUpdate(
                                         TokenFeeScheduleUpdateTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.tokenHandler)
-                                                .preHandleUpdateTokenFeeSchedule(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenFeeScheduleUpdateHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenPause(TokenPauseTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandlePauseToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenPauseHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeTokenUnpause(TokenUnpauseTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.tokenHandler).preHandleUnpauseToken(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.tokenUnpauseHandler()).preHandle(any(), any())),
 
                 // util
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeUtilPrng(UtilPrngTransactionBody.getDefaultInstance())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.utilHandler).preHandlePrng(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.utilPrngHandler()).preHandle(any(), any())),
 
                 // mixed
                 Arguments.of(
@@ -497,8 +572,8 @@ class PreHandleDispatcherTest {
                                                 .setContractID(ContractID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.contractHandler).preHandleSystemDelete(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractSystemDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeSystemDelete(
@@ -506,8 +581,8 @@ class PreHandleDispatcherTest {
                                                 .setFileID(FileID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleSystemDelete(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileSystemDeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeSystemUndelete(
@@ -515,10 +590,8 @@ class PreHandleDispatcherTest {
                                                 .setContractID(ContractID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test ->
-                                        verify(test.contractHandler)
-                                                .preHandleSystemUndelete(any())),
+                        (Consumer<Handlers>)
+                                h -> verify(h.contractSystemUndeleteHandler()).preHandle(any(), any())),
                 Arguments.of(
                         TransactionBody.newBuilder()
                                 .mergeSystemUndelete(
@@ -526,7 +599,8 @@ class PreHandleDispatcherTest {
                                                 .setFileID(FileID.getDefaultInstance())
                                                 .build())
                                 .build(),
-                        (Consumer<PreHandleDispatcherTest>)
-                                test -> verify(test.fileHandler).preHandleSystemUndelete(any())));
+                        (Consumer<Handlers>)
+                                h -> verify(h.fileSystemUndeleteHandler()).preHandle(any(), any()))
+        );
     }
 }

@@ -29,17 +29,6 @@ import java.util.ServiceLoader;
  */
 public interface ContractService extends Service {
     /**
-     * Creates the contract service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding contract service pre-handler
-     */
-    @NonNull
-    @Override
-    ContractPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance

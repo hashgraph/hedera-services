@@ -23,10 +23,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
 public final class StandardFileService implements FileService {
-    @NonNull
-    @Override
-    public FilePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }

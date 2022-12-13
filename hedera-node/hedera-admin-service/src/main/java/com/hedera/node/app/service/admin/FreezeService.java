@@ -29,17 +29,6 @@ import java.util.ServiceLoader;
  */
 public interface FreezeService extends Service {
     /**
-     * Creates the freeze service pre-handler given a particular Hedera world state.
-     *
-     * @param states the state of the world
-     * @return the corresponding freeze service pre-handler
-     */
-    @NonNull
-    @Override
-    FreezePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx);
-
-    /**
      * Returns the concrete implementation instance of the service
      *
      * @return the implementation instance

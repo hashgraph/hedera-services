@@ -25,10 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link NetworkService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class StandardNetworkService implements NetworkService {
-    @NonNull
-    @Override
-    public NetworkPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }

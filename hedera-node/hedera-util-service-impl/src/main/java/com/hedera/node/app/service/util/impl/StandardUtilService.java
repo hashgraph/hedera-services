@@ -23,10 +23,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link UtilService} {@link com.hedera.node.app.spi.Service}. */
 public final class StandardUtilService implements UtilService {
-    @NonNull
-    @Override
-    public UtilPreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }

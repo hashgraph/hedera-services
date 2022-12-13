@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi;
+package com.hedera.node.app.spi.workflows;
 
-/**
- * Marks a type able to handle queries. Each {@link Service} may implement a {@link QueryHandler},
- * exposing endpoints that may be invoked by clients.
- */
+/** A {@code QueryHandler} contains all methods for the different stages of a single query. */
 public interface QueryHandler {}

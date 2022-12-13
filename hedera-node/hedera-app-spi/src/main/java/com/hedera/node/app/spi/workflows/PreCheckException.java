@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.workflows.common;
+package com.hedera.node.app.spi.workflows;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.builder.ToStringStyle.SHORT_PREFIX_STYLE;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
  * Thrown if the request itself is bad. The protobuf decoded correctly, but it failed one or more of
@@ -52,8 +50,8 @@ public class PreCheckException extends Exception {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, SHORT_PREFIX_STYLE)
-                .append("responseCode", responseCode)
-                .toString();
+        return "PreCheckException{" +
+                "responseCode=" + responseCode +
+                '}';
     }
 }

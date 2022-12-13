@@ -25,10 +25,4 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
 public final class StandardScheduledService implements ScheduleService {
-    @NonNull
-    @Override
-    public SchedulePreTransactionHandler createPreTransactionHandler(
-            @NonNull States states, @NonNull PreHandleContext ctx) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
 }
