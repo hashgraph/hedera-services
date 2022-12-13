@@ -723,101 +723,109 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public EvmTokenInfo asEvmTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
-        final var info = new EvmTokenInfo<>(
-            ledgerId.toByteArray(),
-            tokenType().ordinal(),
-            supplyType().ordinal(),
-            isDeleted(),
-            symbol(),
-            name(),
-            memo(),
-            EntityIdUtils.asTypedEvmAddress(treasury()),
-            totalSupply(),
-            maxSupply(),
-            decimals(),
-            expiry()
-        );
+        final var info =
+                new EvmTokenInfo<>(
+                        ledgerId.toByteArray(),
+                        tokenType().ordinal(),
+                        supplyType().ordinal(),
+                        isDeleted(),
+                        symbol(),
+                        name(),
+                        memo(),
+                        EntityIdUtils.asTypedEvmAddress(treasury()),
+                        totalSupply(),
+                        maxSupply(),
+                        decimals(),
+                        expiry());
 
         final var adminCandidate = adminKey();
-        adminCandidate.ifPresent(k -> {
-            final var key = asKeyUnchecked(k);
-            info.setAdminKey(convertToEvmKey(key));
-            });
+        adminCandidate.ifPresent(
+                k -> {
+                    final var key = asKeyUnchecked(k);
+                    info.setAdminKey(convertToEvmKey(key));
+                });
 
         final var freezeCandidate = freezeKey();
         freezeCandidate.ifPresentOrElse(
-            k -> {
-                info.setDefaultFreezeStatus(tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber());
-                final var key = asKeyUnchecked(k);
-                info.setFreezeKey(convertToEvmKey(key));
-            },
-            () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable.getNumber()));
+                k -> {
+                    info.setDefaultFreezeStatus(
+                            tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber());
+                    final var key = asKeyUnchecked(k);
+                    info.setFreezeKey(convertToEvmKey(key));
+                },
+                () ->
+                        info.setDefaultFreezeStatus(
+                                TokenFreezeStatus.FreezeNotApplicable.getNumber()));
 
         final var kycCandidate = kycKey();
         kycCandidate.ifPresentOrElse(
-            k -> {
-                info.setDefaultKycStatus(tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber());
-                final var key = asKeyUnchecked(k);
-                info.setKycKey(convertToEvmKey(key));
-            },
-            () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber()));
+                k -> {
+                    info.setDefaultKycStatus(
+                            tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber());
+                    final var key = asKeyUnchecked(k);
+                    info.setKycKey(convertToEvmKey(key));
+                },
+                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber()));
 
         final var supplyCandidate = supplyKey();
-        supplyCandidate.ifPresent(k -> {
-            final var key = asKeyUnchecked(k);
-            info.setSupplyKey(convertToEvmKey(key));
-        });
+        supplyCandidate.ifPresent(
+                k -> {
+                    final var key = asKeyUnchecked(k);
+                    info.setSupplyKey(convertToEvmKey(key));
+                });
 
         final var wipeCandidate = wipeKey();
-        wipeCandidate.ifPresent(k -> {
-            final var key = asKeyUnchecked(k);
-            info.setWipeKey(convertToEvmKey(key));
-        });
+        wipeCandidate.ifPresent(
+                k -> {
+                    final var key = asKeyUnchecked(k);
+                    info.setWipeKey(convertToEvmKey(key));
+                });
 
         final var feeScheduleCandidate = feeScheduleKey();
-        feeScheduleCandidate.ifPresent(k -> {
-            final var key = asKeyUnchecked(k);
-            info.setFeeScheduleKey(convertToEvmKey(key));
-        });
+        feeScheduleCandidate.ifPresent(
+                k -> {
+                    final var key = asKeyUnchecked(k);
+                    info.setFeeScheduleKey(convertToEvmKey(key));
+                });
 
         final var pauseCandidate = pauseKey();
         pauseCandidate.ifPresentOrElse(
-            k -> {
-                final var key = asKeyUnchecked(k);
-                info.setPauseKey(convertToEvmKey(key));
-                info.setPauseStatus(tokenPauseStatusOf(isPaused()).getNumber());
-            },
-            () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable.getNumber()));
+                k -> {
+                    final var key = asKeyUnchecked(k);
+                    info.setPauseKey(convertToEvmKey(key));
+                    info.setPauseStatus(tokenPauseStatusOf(isPaused()).getNumber());
+                },
+                () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable.getNumber()));
 
         if (hasAutoRenewAccount()) {
             info.setAutoRenewAccount(EntityIdUtils.asTypedEvmAddress(autoRenewAccount()));
             info.setAutoRenewPeriod(autoRenewPeriod());
         }
 
-
-
         return info;
     }
 
     public EvmKey convertToEvmKey(Key key) {
-        final var contractId = key.getContractID().getContractNum() > 0
-            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-            : EntityIdUtils.asTypedEvmAddress(
-                ContractID.newBuilder()
-                    .setShardNum(0L)
-                    .setRealmNum(0L)
-                    .setContractNum(0L)
-                    .build());
+        final var contractId =
+                key.getContractID().getContractNum() > 0
+                        ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                        : EntityIdUtils.asTypedEvmAddress(
+                                ContractID.newBuilder()
+                                        .setShardNum(0L)
+                                        .setRealmNum(0L)
+                                        .setContractNum(0L)
+                                        .build());
         final var ed25519 = key.getEd25519().toByteArray();
         final var ECDSA_secp256k1 = key.getECDSASecp256K1().toByteArray();
-        final var delegatableContractId = key.getDelegatableContractId().getContractNum() > 0
-            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-            : EntityIdUtils.asTypedEvmAddress(
-                ContractID.newBuilder()
-                    .setShardNum(0L)
-                    .setRealmNum(0L)
-                    .setContractNum(0L)
-                    .build());
+        final var delegatableContractId =
+                key.getDelegatableContractId().getContractNum() > 0
+                        ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                        : EntityIdUtils.asTypedEvmAddress(
+                                ContractID.newBuilder()
+                                        .setShardNum(0L)
+                                        .setRealmNum(0L)
+                                        .setContractNum(0L)
+                                        .build());
 
         return new EvmKey(contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
     }
