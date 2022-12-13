@@ -91,7 +91,8 @@ public class HederaEvmWorldState implements HederaEvmMutableWorldState {
             implements HederaEvmWorldUpdater {
 
         protected Updater(
-                AccountAccessor accountAccessor, HederaEvmEntityAccess hederaEvmEntityAccess) {
+                final AccountAccessor accountAccessor,
+                final HederaEvmEntityAccess hederaEvmEntityAccess) {
             super(accountAccessor, hederaEvmEntityAccess);
         }
 

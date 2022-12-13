@@ -17,6 +17,7 @@ package com.hedera.node.app.service.evm.store.contracts;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,7 +88,7 @@ class HederaEvmWorldStateTest {
     }
 
     @Test
-    void returnsWorldStateAccountt() {
+    void returnsWorldStateAccount() {
         final var address = Address.RIPEMD160;
         given(hederaEvmEntityAccess.getBalance(address)).willReturn(balance);
         given(hederaEvmEntityAccess.isUsable(any())).willReturn(true);
@@ -123,5 +124,6 @@ class HederaEvmWorldStateTest {
     void updater() {
         var actualSubject = subject2.updater();
         assertEquals(0, actualSubject.getSbhRefund());
+        assertNotNull(actualSubject.updater().get(Address.RIPEMD160));
     }
 }

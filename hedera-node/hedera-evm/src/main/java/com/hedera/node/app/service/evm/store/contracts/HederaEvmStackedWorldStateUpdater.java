@@ -28,7 +28,8 @@ public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpd
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
 
     public HederaEvmStackedWorldStateUpdater(
-            AccountAccessor accountAccessor, HederaEvmEntityAccess hederaEvmEntityAccess) {
+            final AccountAccessor accountAccessor,
+            final HederaEvmEntityAccess hederaEvmEntityAccess) {
         super(accountAccessor);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
     }
