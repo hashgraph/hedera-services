@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.keys.KeyShape.SECP256K1;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
@@ -41,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadSingleInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
@@ -58,7 +60,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -101,6 +105,7 @@ import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_DENOMINATION_MUST_BE_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
@@ -163,10 +168,11 @@ public class LeakyContractTestsSuite extends HapiSuite {
         return List.of(
                 transferToCaller(),
                 resultSizeAffectsFees(),
+                payerCannotOverSendValue(),
                 propagatesNestedCreations(),
                 temporarySStoreRefundTest(),
-                canCallPendingContractSafely(),
                 transferZeroHbarsToCaller(),
+                canCallPendingContractSafely(),
                 deletedContractsCannotBeUpdated(),
                 createTokenWithInvalidRoyaltyFee(),
                 autoAssociationSlotsAppearsInInfo(),
@@ -182,6 +188,43 @@ public class LeakyContractTestsSuite extends HapiSuite {
                 accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
                 createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller());
     }
+
+
+    HapiSpec payerCannotOverSendValue() {
+        final var payerBalance = 666 * ONE_HBAR;
+        final var overdraftAmount = payerBalance + ONE_HBAR;
+        final var overAmbitiousPayer = "overAmbitiousPayer";
+        final var uncheckedCC = "uncheckedCC";
+        return defaultHapiSpec("PayerCannotOverSendValue")
+                .given(
+                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
+                .when(
+                        cryptoCreate(overAmbitiousPayer).balance(payerBalance),
+                        contractCall(
+                                PAY_RECEIVABLE_CONTRACT,
+                                DEPOSIT,
+                                BigInteger.valueOf(overdraftAmount))
+                                .payingWith(overAmbitiousPayer)
+                                .sending(overdraftAmount)
+                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
+                        usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
+                        uncheckedSubmit(
+                                contractCall(
+                                        PAY_RECEIVABLE_CONTRACT,
+                                        DEPOSIT,
+                                        BigInteger.valueOf(overdraftAmount))
+                                        .txnId(uncheckedCC)
+                                        .payingWith(overAmbitiousPayer)
+                                        .sending(overdraftAmount))
+                                .payingWith(GENESIS))
+                .then(
+                        sleepFor(1_000),
+                        getReceipt(uncheckedCC)
+                                .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
+                                .logged());
+    }
+
 
     private HapiSpec createTokenWithInvalidFeeCollector() {
         return propertyPreservingHapiSpec("createTokenWithInvalidFeeCollector")

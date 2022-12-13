@@ -170,7 +170,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
         if (queryCtx.isPresent()) {
             final var ctx = queryCtx.get();
             if (!ctx.containsKey(CONTRACT_CALL_LOCAL_CTX_KEY)) {
-                log.warn("Usage estimator did not set response used in cost calculation");
+                log.error("Usage estimator did not set response used in cost calculation");
                 response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
             } else {
                 response.mergeFrom(
@@ -207,7 +207,7 @@ public class ContractCallLocalAnswer extends AbstractAnswer {
                     }
                 }
             } catch (final Exception e) {
-                log.warn("Unable to answer ContractCallLocal", e);
+                log.error("Unable to answer ContractCallLocal", e);
                 response.setHeader(answerOnlyHeader(FAIL_INVALID, cost));
             }
         }

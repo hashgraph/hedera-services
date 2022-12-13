@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -235,8 +236,7 @@ public class ContractCallSuite extends HapiSuite {
                 workingHoursDemo(),
                 lpFarmSimulation(),
                 nestedContractCannotOverSendValue(),
-                depositMoreThanBalanceFailsGracefully(),
-                payerCannotOverSendValue());
+                depositMoreThanBalanceFailsGracefully());
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
@@ -309,41 +309,6 @@ public class ContractCallSuite extends HapiSuite {
                                 () ->
                                         getContractInfo(NESTED_TRANSFER_CONTRACT + "2")
                                                 .has(contractWith().balance(10_000L))));
-    }
-
-    private HapiSpec payerCannotOverSendValue() {
-        final var payerBalance = 666 * ONE_HBAR;
-        final var overdraftAmount = payerBalance + ONE_HBAR;
-        final var overAmbitiousPayer = "overAmbitiousPayer";
-        final var uncheckedCC = "uncheckedCC";
-        return defaultHapiSpec("PayerCannotSendMoreThanBalance")
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        cryptoCreate(overAmbitiousPayer).balance(payerBalance),
-                        contractCall(
-                                        PAY_RECEIVABLE_CONTRACT,
-                                        DEPOSIT,
-                                        BigInteger.valueOf(overdraftAmount))
-                                .payingWith(overAmbitiousPayer)
-                                .sending(overdraftAmount)
-                                .hasPrecheck(INSUFFICIENT_PAYER_BALANCE),
-                        usableTxnIdNamed(uncheckedCC).payerId(overAmbitiousPayer),
-                        uncheckedSubmit(
-                                        contractCall(
-                                                        PAY_RECEIVABLE_CONTRACT,
-                                                        DEPOSIT,
-                                                        BigInteger.valueOf(overdraftAmount))
-                                                .txnId(uncheckedCC)
-                                                .payingWith(overAmbitiousPayer)
-                                                .sending(overdraftAmount))
-                                .payingWith(GENESIS))
-                .then(
-                        sleepFor(1_000),
-                        getReceipt(uncheckedCC)
-                                .hasPriorityStatus(INSUFFICIENT_PAYER_BALANCE)
-                                .logged());
     }
 
     private HapiSpec whitelistingAliasedContract() {

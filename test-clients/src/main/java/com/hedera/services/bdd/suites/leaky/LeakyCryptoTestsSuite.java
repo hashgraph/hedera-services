@@ -20,11 +20,14 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -34,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
@@ -45,7 +49,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDefe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ANOTHER_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN_MINT_TXN;
@@ -69,11 +75,14 @@ import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_R
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderingAsserts.withOrderedTokenIds;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -82,12 +91,15 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -112,8 +124,81 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 cannotExceedAllowancesTransactionLimit(),
                 createAnAccountWithEVMAddressAliasAndECKey(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
-                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled());
+                txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
+                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee());
     }
+
+    private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
+        final var civilian = "civilian";
+        final var creation = "creation";
+        final var gasToOffer = 128_000L;
+        final var civilianStartBalance = ONE_HUNDRED_HBARS;
+        final AtomicLong gasFee = new AtomicLong();
+        final AtomicLong offeredGasFee = new AtomicLong();
+        final AtomicLong nodeAndNetworkFee = new AtomicLong();
+        final AtomicLong maxSendable = new AtomicLong();
+
+        return defaultHapiSpec(
+                "GetsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee")
+                .given(
+                        cryptoCreate(civilian).balance(civilianStartBalance),
+                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
+                .when(
+                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
+                                .gas(gasToOffer)
+                                .payingWith(civilian)
+                                .balance(0L)
+                                .via(creation),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var lookup = getTxnRecord(creation).logged();
+                                    allRunFor(spec, lookup);
+                                    final var creationRecord = lookup.getResponseRecord();
+                                    final var gasUsed =
+                                            creationRecord.getContractCreateResult().getGasUsed();
+                                    gasFee.set(tinybarCostOfGas(spec, ContractCreate, gasUsed));
+                                    offeredGasFee.set(
+                                            tinybarCostOfGas(spec, ContractCreate, gasToOffer));
+                                    nodeAndNetworkFee.set(
+                                            creationRecord.getTransactionFee() - gasFee.get());
+                                    log.info(
+                                            "Network + node fees were {}, gas fee was {} (sum to"
+                                                    + " {}, compare with {})",
+                                            nodeAndNetworkFee::get,
+                                            gasFee::get,
+                                            () -> nodeAndNetworkFee.get() + gasFee.get(),
+                                            creationRecord::getTransactionFee);
+                                    maxSendable.set(
+                                            civilianStartBalance
+                                                    - 2 * nodeAndNetworkFee.get()
+                                                    - gasFee.get()
+                                                    - offeredGasFee.get());
+                                    log.info(
+                                            "Maximum amount send-able in precheck should be {}",
+                                            maxSendable::get);
+                                }))
+                .then(
+                        sourcing(
+                                () ->
+                                        getAccountBalance(civilian)
+                                                .hasTinyBars(
+                                                        civilianStartBalance
+                                                                - nodeAndNetworkFee.get()
+                                                                - gasFee.get())),
+                        // Fire-and-forget a txn that will leave the civilian payer with 1 too few
+                        // tinybars at consensus
+                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(civilian, FUNDING, 1))
+                                .payingWith(GENESIS)
+                                .deferStatusResolution(),
+                        sourcing(
+                                () ->
+                                        contractCustomCreate(EMPTY_CONSTRUCTOR_CONTRACT, "Clone")
+                                                .gas(gasToOffer)
+                                                .payingWith(civilian)
+                                                .balance(maxSendable.get())
+                                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)));
+    }
+
 
     private HapiSpec scheduledCryptoApproveAllowanceWaitForExpiryTrue() {
         return defaultHapiSpec("ScheduledCryptoApproveAllowanceWaitForExpiryTrue")
@@ -599,6 +684,22 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT, "20",
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
     }
+
+    private long tinybarCostOfGas(
+            final HapiSpec spec, final HederaFunctionality function, final long gasAmount) {
+        final var gasThousandthsOfTinycentPrice =
+                spec.fees()
+                        .getCurrentOpFeeData()
+                        .get(function)
+                        .get(DEFAULT)
+                        .getServicedata()
+                        .getGas();
+        final var rates = spec.ratesProvider().rates();
+        return (gasThousandthsOfTinycentPrice / 1000 * rates.getHbarEquiv())
+                / rates.getCentEquiv()
+                * gasAmount;
+    }
+
 
     @Override
     protected Logger getResultsLogger() {

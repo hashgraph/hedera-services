@@ -53,7 +53,9 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  *
  * <ol>
  *   <li>First, the executor calls {@link Precompile#body(Bytes, UnaryOperator)} to get a synthetic
- *       transaction body that captures the input to the precompile.
+ *       transaction body that captures the input to the precompile. The precompile may return null
+ *       here, upon which the executor will perform an exceptional halt with reason
+ *       {@code ERROR_DECODING_PRECOMPILE_INPUT}.
  *   <li>Second, the executor computes the effective gas for the precompile by consulting {@link
  *       Precompile#getMinimumFeeInTinybars(Timestamp)} for the minimum fee that should be charged;
  *       and {@link Precompile#addImplicitCostsIn(TxnAccessor)} to incorporate any hidden costs

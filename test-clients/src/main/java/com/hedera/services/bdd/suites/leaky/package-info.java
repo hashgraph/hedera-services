@@ -17,6 +17,9 @@
  * com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite#propagatesNestedCreations()} that
  * depends on no other entities being created while it is running. If a concurrent test creates an
  * entity between its initial contraction creation and its subsequent {@code propagate()} call, its
- * assertions on the created child contract id's will fail.
+ * assertions on the created child contract id's will fail. Another example is {@link
+ * com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite#payerCannotOverSendValue()}, which
+ * requires a transaction to have reached consensus in a second. This might not happen if the
+ * network is under heavy load.
  */
 package com.hedera.services.bdd.suites.leaky;

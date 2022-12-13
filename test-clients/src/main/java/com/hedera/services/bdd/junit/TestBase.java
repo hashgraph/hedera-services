@@ -80,6 +80,18 @@ public abstract class TestBase {
                 commaSeparatedSuites.toString(), () -> concurrentExecutionOf(contextualizedSpecs));
     }
 
+    protected final DynamicTest hgcaaLogValidation(final String loc) {
+        return dynamicTest(
+                "hgcaaLogValidation",
+                () -> new HgcaaLogValidator(loc).validate());
+    }
+
+    protected final DynamicTest queriesLogValidation(final String loc) {
+        return dynamicTest(
+                "queriesLogValidation",
+                () -> new QueryLogValidator(loc).validate());
+    }
+
     private void concurrentExecutionOf(final List<HapiSpec> specs) {
         HapiSuite.runConcurrentSpecs(specs);
         final var failures = specs.stream().filter(HapiSpec::notOk).toList();

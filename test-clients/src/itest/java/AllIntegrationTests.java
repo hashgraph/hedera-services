@@ -53,4 +53,13 @@ class AllIntegrationTests extends IntegrationTestBase {
     List<DynamicTest> concurrentSpecs() {
         return List.of(concurrentSpecsFrom(ConcurrentSuites.all()));
     }
+
+    @Tag("integration")
+    @Order(3)
+    @TestFactory
+    List<DynamicTest> logValidation() {
+        return List.of(
+                hgcaaLogValidation("build/network/itest/output/node_0/hgcaa.log"),
+                queriesLogValidation("build/network/itest/output/node_0/queries.log"));
+    }
 }
