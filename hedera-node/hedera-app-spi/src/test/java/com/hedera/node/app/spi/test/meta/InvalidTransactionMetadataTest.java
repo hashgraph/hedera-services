@@ -23,7 +23,7 @@ import com.hederahashgraph.api.proto.java.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class InvalidTransactionMetadataTest {
+class InvalidTransactionMetadataTest {
     private InvalidTransactionMetadata subject;
     private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
 

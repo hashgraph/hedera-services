@@ -252,16 +252,14 @@ class SchedulePreTransactionHandlerImplTest {
 
     @Test
     void notImplementedForOthers() {
+        final var txn = scheduleCreateTransaction(scheduler);
+        ;
         assertThrows(
                 NotImplementedException.class,
-                () ->
-                        subject.preHandleSignSchedule(
-                                scheduleCreateTransaction(scheduler), scheduler, dispatcher));
+                () -> subject.preHandleSignSchedule(txn, scheduler, dispatcher));
         assertThrows(
                 NotImplementedException.class,
-                () ->
-                        subject.preHandleDeleteSchedule(
-                                scheduleCreateTransaction(scheduler), scheduler, dispatcher));
+                () -> subject.preHandleDeleteSchedule(txn, scheduler, dispatcher));
     }
 
     private void givenSetup(final AccountID payer) {

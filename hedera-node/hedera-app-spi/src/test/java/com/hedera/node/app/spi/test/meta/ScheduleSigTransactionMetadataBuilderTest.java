@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class ScheduleSigTransactionMetadataBuilderTest {
+class ScheduleSigTransactionMetadataBuilderTest {
     private ScheduleSigTransactionMetadataBuilder subject;
     @Mock TransactionMetadata scheduledMetadata;
     @Mock private AccountKeyLookup keyLookup;

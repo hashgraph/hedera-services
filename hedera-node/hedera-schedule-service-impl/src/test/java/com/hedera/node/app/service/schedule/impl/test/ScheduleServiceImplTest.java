@@ -53,6 +53,7 @@ class ScheduleServiceImplTest {
                 ScheduleServiceImpl.class,
                 service.getClass(),
                 "We must always receive an instance of type StandardScheduleService");
+        Assertions.assertEquals("ScheduleService", service.getServiceName());
     }
 
     @Test
