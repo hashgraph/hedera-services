@@ -15,13 +15,13 @@
  */
 package com.hedera.services.bdd.spec.utilops;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.Transaction;
 
 public abstract class UtilOp extends HapiSpecOperation {
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerSigs) throws Throwable {
         return 0;
     }
 }

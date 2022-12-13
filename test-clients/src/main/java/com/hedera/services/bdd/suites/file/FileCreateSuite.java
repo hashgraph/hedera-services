@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -30,19 +30,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class FileCreateSuite extends HapiApiSuite {
+public class FileCreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileCreateSuite.class);
 
     private static final long defaultMaxLifetime =
@@ -58,9 +58,9 @@ public class FileCreateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     createWithMemoWorks(),
                     createFailsWithMissingSigs(),
                     createFailsWithPayerAccountNotFound(),
@@ -68,7 +68,7 @@ public class FileCreateSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec createFailsWithExcessiveLifetime() {
+    private HapiSpec createFailsWithExcessiveLifetime() {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
@@ -78,7 +78,7 @@ public class FileCreateSuite extends HapiApiSuite {
                                 .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec createWithMemoWorks() {
+    private HapiSpec createWithMemoWorks() {
         String memo = "Really quite something!";
 
         return defaultHapiSpec("createWithMemoWorks")
@@ -91,7 +91,7 @@ public class FileCreateSuite extends HapiApiSuite {
                 .then(getFileInfo("memorable").hasExpectedLedgerId("0x03").hasMemo(memo));
     }
 
-    private HapiApiSpec createFailsWithMissingSigs() {
+    private HapiSpec createFailsWithMissingSigs() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
         SigControl invalidSig = shape.signedWith(sigs(OFF, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
@@ -113,7 +113,7 @@ public class FileCreateSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
-    private HapiApiSpec createFailsWithPayerAccountNotFound() {
+    private HapiSpec createFailsWithPayerAccountNotFound() {
         KeyShape shape = listOf(SIMPLE, threshOf(2, 3), threshOf(1, 3));
         SigControl validSig = shape.signedWith(sigs(ON, sigs(ON, ON, OFF), sigs(OFF, OFF, ON)));
 

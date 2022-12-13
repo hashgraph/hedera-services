@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.utilops.throughput;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.stats.ThroughputObs;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
@@ -62,7 +62,7 @@ public class FinishThroughputObs extends UtilOp {
 
     @Override
     @SuppressWarnings("java:S3516")
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         ThroughputObs baseObs = spec.registry().getThroughputObs(name);
 
         if (gateSupplier.isEmpty()) {

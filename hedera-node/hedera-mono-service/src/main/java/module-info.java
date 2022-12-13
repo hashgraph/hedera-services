@@ -1,24 +1,23 @@
 module com.hedera.node.app.service.mono {
     exports com.hedera.node.app.service.mono;
     exports com.hedera.node.app.service.mono.state.submerkle to
-            com.hedera.node.app.service.mono.testFixtures;
+            com.hedera.node.app.service.mono.testFixtures, com.hedera.node.app;
     exports com.hedera.node.app.service.mono.exceptions to
             com.hedera.node.app.service.mono.testFixtures,
-            com.hedera.node.app.service.schedule.impl;
+            com.hedera.node.app.service.schedule.impl, com.hedera.node.app;
     exports com.hedera.node.app.service.mono.legacy.core.jproto to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.utils to
             com.hedera.node.app.service.mono.testFixtures,
             com.hedera.node.app.service.schedule.impl,
-            com.hedera.node.app.service.schedule.impl.test;
+            com.hedera.node.app.service.schedule.impl.test, com.hedera.node.app;
     exports com.hedera.node.app.service.mono.ledger to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.models to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.state.merkle to
             com.hedera.node.app.service.mono.testFixtures;
-    exports com.hedera.node.app.service.mono.utils.accessors to
-            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.utils.accessors;
     exports com.hedera.node.app.service.mono.sigs.utils to
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.sigs.verification to
@@ -31,10 +30,13 @@ module com.hedera.node.app.service.mono {
             com.hedera.node.app.service.mono.testFixtures;
     exports com.hedera.node.app.service.mono.store.tokens to
             com.hedera.node.app.service.mono.testFixtures;
-    exports com.hedera.node.app.service.mono.context to
-            com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.context;
+    exports com.hedera.node.app.service.mono.context.properties;
     exports com.hedera.node.app.service.mono.state.enums to
             com.hedera.node.app.service.mono.testFixtures;
+    exports com.hedera.node.app.service.mono.records;
+    exports com.hedera.node.app.service.mono.stats;
+    exports com.hedera.node.app.service.mono.txns;
     exports com.hedera.node.app.service.mono.throttling to
             com.fasterxml.jackson.databind;
 

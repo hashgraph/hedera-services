@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
@@ -25,10 +25,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PAYER_ACCOUNT_NOT_FOUND;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import java.time.Clock;
@@ -38,7 +38,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoCornerCasesSuite extends HapiApiSuite {
+public class CryptoCornerCasesSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CryptoCornerCasesSuite.class);
 
     public static void main(String... args) {
@@ -46,16 +46,14 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    invalidNodeAccount(),
-                    invalidTransactionBody(),
-                    invalidTransactionPayerAccountNotFound(),
-                    invalidTransactionMemoTooLong(),
-                    invalidTransactionDuration(),
-                    invalidTransactionStartTime(),
-                });
+                invalidNodeAccount(),
+                invalidTransactionBody(),
+                invalidTransactionPayerAccountNotFound(),
+                invalidTransactionMemoTooLong(),
+                invalidTransactionDuration(),
+                invalidTransactionStartTime());
     }
 
     private static Transaction removeTransactionBody(Transaction txn) {
@@ -64,7 +62,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
                 .build();
     }
 
-    public static HapiApiSpec invalidTransactionBody() {
+    public static HapiSpec invalidTransactionBody() {
         return defaultHapiSpec("InvalidTransactionBody")
                 .given()
                 .when()
@@ -85,7 +83,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnNodeAccount(txn, badNodeAccount);
     }
 
-    public static HapiApiSpec invalidNodeAccount() {
+    public static HapiSpec invalidNodeAccount() {
         return defaultHapiSpec("InvalidNodeAccount")
                 .given()
                 .when()
@@ -100,7 +98,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnDuration(txn, -1L);
     }
 
-    public static HapiApiSpec invalidTransactionDuration() {
+    public static HapiSpec invalidTransactionDuration() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -117,7 +115,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnMemo(txn, newMemo);
     }
 
-    public static HapiApiSpec invalidTransactionMemoTooLong() {
+    public static HapiSpec invalidTransactionMemoTooLong() {
         return defaultHapiSpec("InvalidTransactionMemoTooLong")
                 .given()
                 .when()
@@ -134,7 +132,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnPayerAccount(txn, badPayerAccount);
     }
 
-    public static HapiApiSpec invalidTransactionPayerAccountNotFound() {
+    public static HapiSpec invalidTransactionPayerAccountNotFound() {
         return defaultHapiSpec("InvalidTransactionDuration")
                 .given()
                 .when()
@@ -150,7 +148,7 @@ public class CryptoCornerCasesSuite extends HapiApiSuite {
         return TxnUtils.replaceTxnStartTime(txn, newStartTimeSecs, 0);
     }
 
-    public static HapiApiSpec invalidTransactionStartTime() {
+    public static HapiSpec invalidTransactionStartTime() {
         return defaultHapiSpec("InvalidTransactionStartTime")
                 .given()
                 .when()

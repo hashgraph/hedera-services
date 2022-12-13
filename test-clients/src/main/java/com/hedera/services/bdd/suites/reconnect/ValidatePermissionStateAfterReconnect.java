@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -23,8 +23,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,39 +32,40 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ValidateApiPermissionStateAfterReconnect extends HapiApiSuite {
+public class ValidatePermissionStateAfterReconnect extends HapiSuite {
     private static final Logger log =
-            LogManager.getLogger(ValidateApiPermissionStateAfterReconnect.class);
+            LogManager.getLogger(ValidatePermissionStateAfterReconnect.class);
+    public static final String NODE_ACCOUNT = "0.0.6";
 
     public static void main(String... args) {
-        new ValidateApiPermissionStateAfterReconnect().runSuiteSync();
+        new ValidatePermissionStateAfterReconnect().runSuiteSync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(validateApiPermissionStateAfterReconnect());
     }
 
-    private HapiApiSpec validateApiPermissionStateAfterReconnect() {
+    private HapiSpec validateApiPermissionStateAfterReconnect() {
         return customHapiSpec("validateApiPermissionStateAfterReconnect")
                 .withProperties(Map.of("txn.start.offset.secs", "-5"))
                 .given(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .when(
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode(),
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode(),
                         fileCreate("effectivelyImmutable").contents("Can't touch me!"),
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of("updateFile", "2-50")),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .then(
-                        withLiveNode("0.0.6")
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(180, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
                         fileUpdate("effectivelyImmutable")
-                                .setNode("0.0.6")
+                                .setNode(NODE_ACCOUNT)
                                 .hasPrecheck(NOT_SUPPORTED));
     }
 

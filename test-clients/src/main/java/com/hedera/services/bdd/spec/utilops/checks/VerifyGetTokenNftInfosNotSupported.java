@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.utilops.checks;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Assertions;
 
 public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         TokenGetNftInfosQuery.Builder op =
                 TokenGetNftInfosQuery.newBuilder().setTokenID(asToken("0.0.1001"));
         Query query = Query.newBuilder().setTokenGetNftInfos(op).build();

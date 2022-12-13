@@ -28,6 +28,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface ScheduleService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return ScheduleService.class.getSimpleName();
+    }
+
     /**
      * Creates the schedule service pre-handler given a particular Hedera world state.
      *
