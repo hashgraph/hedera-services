@@ -49,7 +49,7 @@ class SigTransactionMetadataTest {
                 new SigTransactionMetadataBuilder<>(lookup)
                         .payerKeyFor(payer)
                         .txnBody(txn)
-                        .addToReqKeys(otherKey)
+                        .addToReqNonPayerKeys(otherKey)
                         .build();
 
         assertFalse(subject.failed());
@@ -68,7 +68,7 @@ class SigTransactionMetadataTest {
                         .payerKeyFor(payer)
                         .status(INVALID_ACCOUNT_ID)
                         .txnBody(txn)
-                        .addToReqKeys(otherKey)
+                        .addToReqNonPayerKeys(otherKey)
                         .build();
 
         assertTrue(subject.failed());

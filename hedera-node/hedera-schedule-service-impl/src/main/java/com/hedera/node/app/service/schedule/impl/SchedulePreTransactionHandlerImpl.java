@@ -55,7 +55,7 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
         if (op.hasAdminKey()) {
             final var key = asHederaKey(op.getAdminKey());
-            key.ifPresent(meta::addToReqKeys);
+            key.ifPresent(meta::addToReqNonPayerKeys);
         }
 
         final var scheduledTxn =

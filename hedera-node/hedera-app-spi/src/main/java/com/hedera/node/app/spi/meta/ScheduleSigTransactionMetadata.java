@@ -27,8 +27,14 @@ import java.util.Objects;
 /**
  * Metadata collected when scheduled transactions are handled as part of "pre-handle" needed for
  * signature verification. It contains {@link SigTransactionMetadata} to add the required keys for
- * the transaction that is being scheduled. This extends {@link SigTransactionMetadata} to add the
- * required keys for the transaction.
+ * the transaction that is being scheduled.
+ *
+ * @param txnBody given schedule transaction body
+ * @param payer payer for the top-level transaction
+ * @param status status of the top-level transaction
+ * @param payerKey payer key for the top-level transaction
+ * @param requiredNonPayerKeys required non-payer keys for the top-level transaction
+ * @param scheduledMeta metadata for the scheduled transaction
  */
 public record ScheduleSigTransactionMetadata(
         @NonNull TransactionBody txnBody,

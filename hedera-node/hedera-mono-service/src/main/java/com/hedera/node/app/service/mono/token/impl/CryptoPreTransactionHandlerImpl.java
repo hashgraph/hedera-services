@@ -136,7 +136,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         }
         if (newAccountKeyMustSign && op.hasKey()) {
             final var candidate = asHederaKey(op.getKey());
-            candidate.ifPresent(meta::addToReqKeys);
+            candidate.ifPresent(meta::addToReqNonPayerKeys);
         }
         return meta.build();
     }
@@ -179,7 +179,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
         final var meta =
                 new SigTransactionMetadataBuilder<>(accountStore).payerKeyFor(payer).txnBody(txn);
         if (receiverSigReq && key.isPresent()) {
-            meta.addToReqKeys(key.get());
+            meta.addToReqNonPayerKeys(key.get());
         }
         return meta.build();
     }

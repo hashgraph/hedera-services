@@ -15,15 +15,6 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
-
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
@@ -36,13 +27,23 @@ import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
-import java.time.Instant;
-import java.util.List;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.List;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
+import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SchedulePreTransactionHandlerImplTest {
@@ -208,8 +209,8 @@ class SchedulePreTransactionHandlerImplTest {
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
 
-        basicMetaAssertions(meta, 1, false, OK);
-        basicMetaAssertions(meta.scheduledMeta(), 1, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
+        basicMetaAssertions(meta, 0, false, OK);
+        basicMetaAssertions(meta.scheduledMeta(), 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         assertEquals(schedulerKey, meta.payerKey());
         assertEquals(List.of(), meta.requiredNonPayerKeys());
         assertEquals(schedulerKey, meta.scheduledMeta().payerKey());
@@ -234,8 +235,9 @@ class SchedulePreTransactionHandlerImplTest {
 
         final var meta = subject.preHandleCreateSchedule(txn, scheduler, dispatcher);
 
-        basicMetaAssertions(meta, 2, false, OK);
-        assertEquals(List.of(schedulerKey, adminKey), meta.requiredNonPayerKeys());
+        basicMetaAssertions(meta, 1, false, OK);
+        assertEquals(schedulerKey, meta.payerKey());
+        assertEquals(List.of(adminKey), meta.requiredNonPayerKeys());
 
         verify(dispatcher).dispatch(scheduledTxn, payer);
         assertTrue(meta.scheduledMeta() instanceof InvalidTransactionMetadata);
@@ -247,6 +249,14 @@ class SchedulePreTransactionHandlerImplTest {
                         txn.getScheduleCreate().getScheduledTransactionBody(),
                         txn.getTransactionID()),
                 meta.scheduledMeta().txnBody());
+    }
+
+    @Test
+    void notImplementedForOthers(){
+        assertThrows(NotImplementedException.class, () -> subject.preHandleSignSchedule(scheduleCreateTransaction(scheduler),
+                scheduler, dispatcher));
+        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteSchedule(scheduleCreateTransaction(scheduler),
+                scheduler, dispatcher));
     }
 
     private void givenSetup(final AccountID payer) {
@@ -263,10 +273,10 @@ class SchedulePreTransactionHandlerImplTest {
 
     private void basicMetaAssertions(
             final TransactionMetadata meta,
-            final int keysSize,
+            final int nonPayerKeysSize,
             final boolean failed,
             final ResponseCodeEnum failureStatus) {
-        assertEquals(keysSize, meta.requiredNonPayerKeys().size());
+        assertEquals(nonPayerKeysSize, meta.requiredNonPayerKeys().size());
         assertTrue(failed ? meta.failed() : !meta.failed());
         assertEquals(failureStatus, meta.status());
     }

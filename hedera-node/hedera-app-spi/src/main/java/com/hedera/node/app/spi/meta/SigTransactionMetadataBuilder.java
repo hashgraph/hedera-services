@@ -93,7 +93,7 @@ public class SigTransactionMetadataBuilder<T extends SigTransactionMetadataBuild
      * @param key key to be added
      * @return builder object
      */
-    public T addToReqKeys(@NonNull HederaKey key) {
+    public T addToReqNonPayerKeys(@NonNull HederaKey key) {
         if (status != OK || payerKey == null) {
             return self();
         }

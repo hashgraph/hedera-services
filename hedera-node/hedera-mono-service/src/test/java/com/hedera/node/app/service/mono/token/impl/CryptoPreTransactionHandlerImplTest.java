@@ -21,7 +21,6 @@ import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -267,7 +266,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleCryptoDelete(txn, payer);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
+        assertNull(meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         /* ------ deleteAccount missing, so transferAccount will not be added ------ */
@@ -387,7 +386,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleDeleteAllowances(txn, owner);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
+        assertNull(meta.payerKey());
         assertIterableEquals(List.of(), meta.requiredNonPayerKeys());
 
         txn = cryptoDeleteAllowanceTransaction(payer);
@@ -447,7 +446,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
+        assertNull(meta.payerKey());
     }
 
     @Test
@@ -460,7 +459,7 @@ class CryptoPreTransactionHandlerImplTest {
 
         var meta = subject.preHandleUpdateAccount(txn, updateAccountId);
         basicMetaAssertions(meta, 0, true, INVALID_PAYER_ACCOUNT_ID);
-        assertEquals(null, meta.payerKey());
+        assertNull(meta.payerKey());
     }
 
     @Test

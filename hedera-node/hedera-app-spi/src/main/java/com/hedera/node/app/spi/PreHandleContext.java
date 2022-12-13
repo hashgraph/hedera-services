@@ -27,8 +27,9 @@ import java.util.Objects;
  * construct its own {@link SigWaivers} to check for signature waivers using the information
  * provided in this class.
  *
- * @param accountNumbers provides information about signature waiver special cases for some
- *     transactions
+ * @param accountNumbers provides information about system account numbers
+ * @param fileNumbers provides information about system file numbers
+ * @param keyLookup provides access to look up account keys
  */
 public record PreHandleContext(
         @NonNull HederaAccountNumbers accountNumbers,

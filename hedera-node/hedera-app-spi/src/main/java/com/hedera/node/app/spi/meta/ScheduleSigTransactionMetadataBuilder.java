@@ -32,8 +32,9 @@ public class ScheduleSigTransactionMetadataBuilder
         super(keyLookup);
     }
 
-    public ScheduleSigTransactionMetadataBuilder scheduledMeta(final TransactionMetadata meta) {
-        this.scheduledTxnMeta = meta;
+    public ScheduleSigTransactionMetadataBuilder scheduledMeta(
+            @NonNull final TransactionMetadata meta) {
+        this.scheduledTxnMeta = Objects.requireNonNull(meta);
         return this;
     }
 
@@ -51,8 +52,8 @@ public class ScheduleSigTransactionMetadataBuilder
         Objects.requireNonNull(payer, "Payer is required to build ScheduleSigTransactionMetadata");
         Objects.requireNonNull(
                 scheduledTxnMeta,
-                "Scheduled transaction metadata is required to "
-                        + "build ScheduleSigTransactionMetadata");
+                "Scheduled transaction metadata is required"
+                        + " to build ScheduleSigTransactionMetadata");
         return new ScheduleSigTransactionMetadata(
                 txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
     }
