@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.opcodes;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
@@ -25,14 +25,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class DelegateCallOperationSuite extends HapiApiSuite {
+public class DelegateCallOperationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(DelegateCallOperationSuite.class);
 
     public static void main(String[] args) {
@@ -40,11 +40,16 @@ public class DelegateCallOperationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {verifiesExistence()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(verifiesExistence());
     }
 
-    HapiApiSpec verifiesExistence() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    HapiSpec verifiesExistence() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return defaultHapiSpec("VerifiesExistence")

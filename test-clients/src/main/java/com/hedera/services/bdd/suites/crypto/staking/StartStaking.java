@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto.staking;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -26,9 +26,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.crypto.staking.StakingSuite.STAKING_REWARD_RATE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -62,7 +62,7 @@ import org.apache.logging.log4j.Logger;
  *      {@literal stakerNum,balance,stakedToMe,totalStake,stakedToNode,declinedRewards}
  * </pre>
  */
-public class StartStaking extends HapiApiSuite {
+public class StartStaking extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StartStaking.class);
 
     // Change desired network
@@ -138,11 +138,11 @@ public class StartStaking extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    private HapiApiSpec startStakingAndExportCreatedStakers() {
+    private HapiSpec startStakingAndExportCreatedStakers() {
         final var baseStakerName = "baseStaker";
         return customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(

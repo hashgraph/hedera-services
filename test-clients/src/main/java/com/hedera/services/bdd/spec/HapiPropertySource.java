@@ -69,12 +69,12 @@ public interface HapiPropertySource {
         }
     }
 
-    default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
+    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
+        return HapiSpec.CostSnapshotMode.valueOf(get(property));
     }
 
-    default HapiApiSpec.UTF8Mode getUTF8Mode(String property) {
-        return HapiApiSpec.UTF8Mode.valueOf(get(property));
+    default HapiSpec.UTF8Mode getUTF8Mode(String property) {
+        return HapiSpec.UTF8Mode.valueOf(get(property));
     }
 
     default FileID getFile(String property) {
@@ -157,8 +157,8 @@ public interface HapiPropertySource {
         return SigControl.KeyAlgo.valueOf(get(property));
     }
 
-    default HapiApiSpec.SpecStatus getSpecStatus(String property) {
-        return HapiApiSpec.SpecStatus.valueOf(get(property));
+    default HapiSpec.SpecStatus getSpecStatus(String property) {
+        return HapiSpec.SpecStatus.valueOf(get(property));
     }
 
     static HapiPropertySource[] asSources(Object... sources) {

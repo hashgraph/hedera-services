@@ -17,14 +17,14 @@ package com.hedera.services.bdd.suites.perf.token;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenAssociationLoadTest extends HapiApiSuite {
+public class TokenAssociationLoadTest extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenAssociationLoadTest.class);
 
     private AtomicInteger maxTokens = new AtomicInteger(500);
@@ -35,15 +35,15 @@ public class TokenAssociationLoadTest extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     runTokenAssociationLoadTest(),
                 });
     }
 
-    private HapiApiSpec runTokenAssociationLoadTest() {
-        return HapiApiSpec.defaultHapiSpec("RunTokenAssociationLoadTest")
+    private HapiSpec runTokenAssociationLoadTest() {
+        return HapiSpec.defaultHapiSpec("RunTokenAssociationLoadTest")
                 .given(
                         overridingTwo(
                                 "tokens.maxPerAccount", "10",

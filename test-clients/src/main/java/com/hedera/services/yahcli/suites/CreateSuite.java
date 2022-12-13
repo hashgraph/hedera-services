@@ -23,9 +23,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateSuite extends HapiApiSuite {
+public class CreateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateSuite.class);
 
     public static String NOVELTY = "novel";
@@ -64,11 +64,11 @@ public class CreateSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(doCreate());
     }
 
-    private HapiApiSpec doCreate() {
+    private HapiSpec doCreate() {
         if (!novelTarget.endsWith(NOVELTY + ".pem")) {
             throw new IllegalArgumentException(
                     "Only accepts tentative new key material named 'novel.pem'");
@@ -78,7 +78,7 @@ public class CreateSuite extends HapiApiSuite {
         final var newKey = "newKey";
         final var success = new AtomicBoolean(false);
         final var novelPass = TxnUtils.randomAlphaNumeric(12);
-        return HapiApiSpec.customHapiSpec("DoCreate")
+        return HapiSpec.customHapiSpec("DoCreate")
                 .withProperties(specConfig)
                 .given(
                         newKeyNamed(newKey)

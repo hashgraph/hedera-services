@@ -15,16 +15,16 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withLiveNode;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -32,38 +32,38 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
-    private static final Logger log =
-            LogManager.getLogger(UpdateApiPermissionsDuringReconnect.class);
+public class UpdatePermissionsDuringReconnect extends HapiSuite {
+    private static final Logger log = LogManager.getLogger(UpdatePermissionsDuringReconnect.class);
+    public static final String NODE_ACCOUNT = "0.0.6";
 
     public static void main(String... args) {
-        new UpdateApiPermissionsDuringReconnect().runSuiteSync();
+        new UpdatePermissionsDuringReconnect().runSuiteSync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(updateApiPermissionsDuringReconnect());
     }
 
-    private HapiApiSpec updateApiPermissionsDuringReconnect() {
+    private HapiSpec updateApiPermissionsDuringReconnect() {
         final String fileInfoRegistry = "apiPermissionsReconnect";
         return defaultHapiSpec("updateApiPermissionsDuringReconnect")
                 .given(
                         sleepFor(Duration.ofSeconds(25).toMillis()),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .when(
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("updateFile", "1-1011"))
                                 .payingWith(SYSTEM_ADMIN)
                                 .logged(),
-                        getAccountBalance(GENESIS).setNode("0.0.6").unavailableNode())
+                        getAccountBalance(GENESIS).setNode(NODE_ACCOUNT).unavailableNode())
                 .then(
-                        withLiveNode("0.0.6")
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
-                        UtilVerbs.sleepFor(30 * 1000),
-                        withLiveNode("0.0.6")
+                        UtilVerbs.sleepFor(30 * 1000L),
+                        withLiveNode(NODE_ACCOUNT)
                                 .within(5 * 60, TimeUnit.SECONDS)
                                 .loggingAvailabilityEvery(30)
                                 .sleepingBetweenRetriesFor(10),
@@ -74,7 +74,7 @@ public class UpdateApiPermissionsDuringReconnect extends HapiApiSuite {
                                 .saveToRegistry(fileInfoRegistry),
                         getFileContents(API_PERMISSIONS)
                                 .logged()
-                                .setNode("0.0.6")
+                                .setNode(NODE_ACCOUNT)
                                 .payingWith(SYSTEM_ADMIN)
                                 .hasContents(fileInfoRegistry));
     }

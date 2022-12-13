@@ -15,7 +15,7 @@
  */
 package com.hedera.services.yahcli.suites;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
@@ -42,15 +42,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
 import static com.hederahashgraph.api.proto.java.TokenKycStatus.Revoked;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenValidationSuite extends HapiApiSuite {
+public class TokenValidationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenValidationSuite.class);
 
     private final Map<String, String> specConfig;
@@ -60,14 +60,14 @@ public class TokenValidationSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     validateTokens(),
                 });
     }
 
-    private HapiApiSpec validateTokens() {
+    private HapiSpec validateTokens() {
         AtomicLong initialTreasuryBalance = new AtomicLong();
         return customHapiSpec("validateTokens")
                 .withProperties(specConfig)

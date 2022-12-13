@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.openzeppelin;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -27,9 +27,9 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ERC1155ContractInteractions extends HapiApiSuite {
+public class ERC1155ContractInteractions extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ERC1155ContractInteractions.class);
     private static final String ACCOUNT1 = "acc1";
     private static final String CONTRACT = "GameItems";
@@ -47,11 +47,16 @@ public class ERC1155ContractInteractions extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(erc1155());
     }
 
-    private HapiApiSpec erc1155() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    private HapiSpec erc1155() {
         return defaultHapiSpec("ERC-1155")
                 .given(cryptoCreate(ACCOUNT1), uploadInitCode(CONTRACT))
                 .when()
