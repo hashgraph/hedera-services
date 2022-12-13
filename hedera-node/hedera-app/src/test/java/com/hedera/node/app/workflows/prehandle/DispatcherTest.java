@@ -164,6 +164,7 @@ class DispatcherTest {
     private Handlers handlers;
     private Dispatcher dispatcher;
 
+    @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
     void setup(@Mock States states) {
         when(hederaState.createReadableStates(any())).thenReturn(states);
@@ -228,6 +229,7 @@ class DispatcherTest {
         dispatcher = new Dispatcher(handlers, hederaState);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new Dispatcher(null, hederaState))
@@ -236,6 +238,7 @@ class DispatcherTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     void testDispatchWithIllegalParameters() {
         // given

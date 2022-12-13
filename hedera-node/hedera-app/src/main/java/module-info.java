@@ -6,6 +6,7 @@ module com.hedera.node.app {
     requires static com.github.spotbugs.annotations;
     requires com.hedera.hashgraph.protobuf.java.api;
     requires grpc.stub;
+    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.spi;
     requires com.hedera.node.app.service.admin;
     requires com.hedera.node.app.service.consensus;

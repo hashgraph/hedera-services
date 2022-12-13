@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile;
 
 import static com.hedera.node.app.service.mono.ledger.ids.ExceptionalEntityIdSource.NOOP_ID_SOURCE;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -90,6 +91,7 @@ public class InfrastructureFactory {
     private final UsageLimits usageLimits;
     private final EntityIdSource ids;
     private final EncodingFacade encoder;
+    private final EvmEncodingFacade evmEncoder;
     private final OptionValidator validator;
     private final RecordsHistorian recordsHistorian;
     private final SigImpactHistorian sigImpactHistorian;
@@ -110,6 +112,7 @@ public class InfrastructureFactory {
             final UsageLimits usageLimits,
             final EntityIdSource ids,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final OptionValidator validator,
             final RecordsHistorian recordsHistorian,
             final SigImpactHistorian sigImpactHistorian,
@@ -122,6 +125,7 @@ public class InfrastructureFactory {
             final PureTransferSemanticChecks checks) {
         this.ids = ids;
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.validator = validator;
         this.usageLimits = usageLimits;
         this.recordsHistorian = recordsHistorian;
@@ -248,7 +252,7 @@ public class InfrastructureFactory {
 
     public RedirectViewExecutor newRedirectExecutor(
             final Bytes input, final MessageFrame frame, final ViewGasCalculator gasCalculator) {
-        return new RedirectViewExecutor(input, frame, encoder, gasCalculator);
+        return new RedirectViewExecutor(input, frame, evmEncoder, gasCalculator);
     }
 
     public ViewExecutor newViewExecutor(

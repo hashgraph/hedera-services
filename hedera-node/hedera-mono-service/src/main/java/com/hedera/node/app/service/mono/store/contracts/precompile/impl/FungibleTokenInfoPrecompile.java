@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -40,9 +41,10 @@ public class FungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
             SyntheticTxnFactory syntheticTxnFactory,
             WorldLedgers ledgers,
             EncodingFacade encoder,
+            EvmEncodingFacade evmEncoder,
             PrecompilePricingUtils pricingUtils,
             StateView stateView) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils, stateView);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils, stateView);
     }
 
     @Override

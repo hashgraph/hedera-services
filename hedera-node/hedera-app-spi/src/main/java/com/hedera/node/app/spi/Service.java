@@ -15,11 +15,19 @@
  */
 package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A definition of an interface that will be implemented by each conceptual "service" like
  * crypto-service, token-service etc.,
  */
-public interface Service {}
+public interface Service {
+    /**
+     * Returns the name of the service. This name must be unique for each service deployed on the
+     * application.
+     *
+     * @return the name
+     */
+    @NonNull
+    String getServiceName();
+}

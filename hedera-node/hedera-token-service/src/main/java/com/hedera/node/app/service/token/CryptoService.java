@@ -36,6 +36,13 @@ import java.util.ServiceLoader;
  * Service</a>.
  */
 public interface CryptoService extends Service {
+
+    @NonNull
+    @Override
+    default String getServiceName() {
+        return CryptoService.class.getSimpleName();
+    }
+
     /**
      * Returns the concrete implementation instance of the service
      *

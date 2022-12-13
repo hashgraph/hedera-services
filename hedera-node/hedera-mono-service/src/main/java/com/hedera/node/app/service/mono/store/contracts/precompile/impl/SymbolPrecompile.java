@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
@@ -29,13 +30,14 @@ public class SymbolPrecompile extends AbstractReadOnlyPrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
     public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
         final var symbol = ledgers.symbolOf(tokenId);
-        return encoder.encodeSymbol(symbol);
+        return evmEncoder.encodeSymbol(symbol);
     }
 }

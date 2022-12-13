@@ -28,6 +28,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsApprovedForAllPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -61,8 +62,9 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     public IsApprovedForAllPrecompile(
@@ -70,7 +72,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
             final PrecompilePricingUtils pricingUtils) {
-        this(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        this(null, syntheticTxnFactory, ledgers, encoder, null, pricingUtils);
     }
 
     @Override
@@ -103,7 +105,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile
         }
         return tokenId == null
                 ? encoder.encodeIsApprovedForAll(SUCCESS.getNumber(), answer)
-                : encoder.encodeIsApprovedForAll(answer);
+                : evmEncoder.encodeIsApprovedForAll(answer);
     }
 
     public static IsApproveForAllWrapper<TokenID, AccountID, AccountID> decodeIsApprovedForAll(
