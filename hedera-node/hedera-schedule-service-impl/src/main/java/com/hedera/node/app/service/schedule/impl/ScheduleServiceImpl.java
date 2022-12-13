@@ -29,6 +29,7 @@ public class ScheduleServiceImpl implements ScheduleService {
             @NonNull States states, @NonNull PreHandleContext ctx) {
         Objects.requireNonNull(states);
         Objects.requireNonNull(ctx);
-        return new SchedulePreTransactionHandlerImpl(ctx.keyLookup());
+        final var store = new ScheduleStore(states);
+        return new SchedulePreTransactionHandlerImpl(store, ctx.keyLookup());
     }
 }

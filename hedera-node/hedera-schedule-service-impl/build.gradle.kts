@@ -32,4 +32,5 @@ dependencies {
     testImplementation(testFixtures(project(":hedera-node:hedera-mono-service")))
     testImplementation(testLibs.bundles.mockito)
     compileOnly(libs.spotbugs.annotations)
+    implementation(libs.swirlds.virtualmap)
 }

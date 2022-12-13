@@ -6,10 +6,10 @@ module com.hedera.node.app.service.schedule.impl {
     requires com.hedera.hashgraph.protobuf.java.api;
     requires org.apache.commons.lang3;
     requires com.hedera.node.app.service.mono;
+    requires com.swirlds.virtualmap;
 
     exports com.hedera.node.app.service.schedule.impl to
-            com.hedera.node.app.service.schedule.impl.test,
-            com.hedera.node.app.service.scheduled.impl.test;
+            com.hedera.node.app.service.schedule.impl.test;
 
     provides com.hedera.node.app.service.schedule.ScheduleService with
             ScheduleServiceImpl;

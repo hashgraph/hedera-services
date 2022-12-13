@@ -24,9 +24,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
+import com.hedera.node.app.service.schedule.impl.ScheduleStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleDispatcher;
@@ -34,9 +38,13 @@ import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hedera.node.app.spi.state.State;
+import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.*;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,14 +54,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SchedulePreTransactionHandlerImplTest {
-    private SchedulePreTransactionHandler subject;
     @Mock private AccountKeyLookup keyLookup;
     @Mock private HederaKey schedulerKey;
-    private SigTransactionMetadata scheduledMeta;
+    @Mock private JKey adminJKey;
     @Mock private PreHandleDispatcher dispatcher;
-
+    @Mock private States states;
+    @Mock private ScheduleVirtualValue schedule;
+    @Mock private State schedulesById;
+    private SchedulePreTransactionHandler subject;
+    private SigTransactionMetadata scheduledMeta;
+    private ScheduleStore scheduleStore;
     private AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
     private AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
+    private ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
     private TransactionBody txn;
     private TransactionBody scheduledTxn;
 
@@ -65,7 +78,9 @@ class SchedulePreTransactionHandlerImplTest {
 
     @BeforeEach
     void setUp() {
-        subject = new SchedulePreTransactionHandlerImpl(keyLookup);
+        given(states.get("SCHEDULES_BY_ID")).willReturn(schedulesById);
+        scheduleStore = new ScheduleStore(states);
+        subject = new SchedulePreTransactionHandlerImpl(scheduleStore, keyLookup);
     }
 
     @Test
@@ -138,7 +153,7 @@ class SchedulePreTransactionHandlerImplTest {
 
     @Test
     void preHandleScheduleCreateFailsOnMissingPayer() {
-        givenSetup(payer);
+        givenSetupForScheduleCreate(payer);
         given(keyLookup.getKey(scheduler))
                 .willReturn(KeyOrLookupFailureReason.withFailureReason(INVALID_PAYER_ACCOUNT_ID));
         scheduledMeta =
@@ -162,7 +177,7 @@ class SchedulePreTransactionHandlerImplTest {
 
     @Test
     void preHandleScheduleCreateUsesSamePayerIfScheduledPayerNotSet() {
-        givenSetup(null);
+        givenSetupForScheduleCreate(null);
         scheduledMeta =
                 new SigTransactionMetadata(
                         asOrdinary(
@@ -220,7 +235,7 @@ class SchedulePreTransactionHandlerImplTest {
 
     @Test
     void innerTxnFailsSetsStatus() {
-        givenSetup(payer);
+        givenSetupForScheduleCreate(payer);
         scheduledMeta =
                 new SigTransactionMetadata(
                         asOrdinary(
@@ -251,18 +266,29 @@ class SchedulePreTransactionHandlerImplTest {
     }
 
     @Test
+    void scheduleSignVanilla() {
+        final var txn = scheduleSignTransaction();
+        final var ordinaryScheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler).build())
+                .build();
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(ordinaryScheduledTxn);
+        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(scheduler));
+
+        final var meta = subject.preHandleSignSchedule(txn, scheduler, dispatcher);
+    }
+
+    @Test
     void notImplementedForOthers() {
         final var txn = scheduleCreateTransaction(scheduler);
-        ;
-        assertThrows(
-                NotImplementedException.class,
-                () -> subject.preHandleSignSchedule(txn, scheduler, dispatcher));
         assertThrows(
                 NotImplementedException.class,
                 () -> subject.preHandleDeleteSchedule(txn, scheduler, dispatcher));
     }
 
-    private void givenSetup(final AccountID payer) {
+    private void givenSetupForScheduleCreate(final AccountID payer) {
         txn = scheduleCreateTransaction(payer);
         scheduledTxn =
                 asOrdinary(
@@ -291,6 +317,13 @@ class SchedulePreTransactionHandlerImplTest {
                 payer,
                 scheduler,
                 Timestamp.newBuilder().setSeconds(1_234_567L).build());
+    }
+
+    private TransactionBody scheduleSignTransaction() {
+        return TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler))
+                .setScheduleSign(ScheduleSignTransactionBody.newBuilder().setScheduleID(scheduleID))
+                .build();
     }
 
     private TransactionBody scheduleTxnNotRecognized() {
