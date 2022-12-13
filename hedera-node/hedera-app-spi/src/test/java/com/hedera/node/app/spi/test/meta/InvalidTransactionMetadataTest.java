@@ -15,19 +15,17 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
-import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
-import com.hederahashgraph.api.proto.java.*;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
+import com.hederahashgraph.api.proto.java.*;
+import java.util.List;
+import org.junit.jupiter.api.Test;
 
 public class InvalidTransactionMetadataTest {
     private InvalidTransactionMetadata subject;
     private AccountID payer = AccountID.newBuilder().setAccountNum(3L).build();
-
 
     @Test
     void gettersWork() {
@@ -42,9 +40,14 @@ public class InvalidTransactionMetadataTest {
     @Test
     void nullValuesThrow() {
         final var txn = createScheduleTransaction();
-        assertThrows(NullPointerException.class, () -> new InvalidTransactionMetadata(null, payer, INVALID_PAYER_ACCOUNT_ID));
-        assertThrows(NullPointerException.class, () -> new InvalidTransactionMetadata(txn, null, INVALID_PAYER_ACCOUNT_ID));
-        assertThrows(NullPointerException.class, () -> new InvalidTransactionMetadata(txn, payer, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> new InvalidTransactionMetadata(null, payer, INVALID_PAYER_ACCOUNT_ID));
+        assertThrows(
+                NullPointerException.class,
+                () -> new InvalidTransactionMetadata(txn, null, INVALID_PAYER_ACCOUNT_ID));
+        assertThrows(
+                NullPointerException.class, () -> new InvalidTransactionMetadata(txn, payer, null));
     }
 
     private TransactionBody createScheduleTransaction() {

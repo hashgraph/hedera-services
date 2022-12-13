@@ -15,6 +15,14 @@
  */
 package com.hedera.node.app.service.schedule.impl.test;
 
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
+import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
@@ -27,23 +35,14 @@ import com.hedera.node.app.spi.meta.InvalidTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.*;
+import java.time.Instant;
+import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.List;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.asOrdinary;
-import static com.hedera.test.factories.txns.ScheduledTxnFactory.scheduleCreateTxnWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SchedulePreTransactionHandlerImplTest {
@@ -252,11 +251,17 @@ class SchedulePreTransactionHandlerImplTest {
     }
 
     @Test
-    void notImplementedForOthers(){
-        assertThrows(NotImplementedException.class, () -> subject.preHandleSignSchedule(scheduleCreateTransaction(scheduler),
-                scheduler, dispatcher));
-        assertThrows(NotImplementedException.class, () -> subject.preHandleDeleteSchedule(scheduleCreateTransaction(scheduler),
-                scheduler, dispatcher));
+    void notImplementedForOthers() {
+        assertThrows(
+                NotImplementedException.class,
+                () ->
+                        subject.preHandleSignSchedule(
+                                scheduleCreateTransaction(scheduler), scheduler, dispatcher));
+        assertThrows(
+                NotImplementedException.class,
+                () ->
+                        subject.preHandleDeleteSchedule(
+                                scheduleCreateTransaction(scheduler), scheduler, dispatcher));
     }
 
     private void givenSetup(final AccountID payer) {
