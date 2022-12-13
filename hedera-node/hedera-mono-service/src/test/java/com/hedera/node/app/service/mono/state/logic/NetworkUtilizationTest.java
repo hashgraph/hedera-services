@@ -74,7 +74,7 @@ class NetworkUtilizationTest {
     @Test
     void standInCryptoTransferHasExpectedProperties() {
         assertEquals(HederaFunctionality.CryptoTransfer, STAND_IN_CRYPTO_TRANSFER.getFunction());
-        assertTrue(STAND_IN_CRYPTO_TRANSFER.areAutoCreationsCounted());
+        assertTrue(STAND_IN_CRYPTO_TRANSFER.areImplicitCreationsCounted());
     }
 
     @Test

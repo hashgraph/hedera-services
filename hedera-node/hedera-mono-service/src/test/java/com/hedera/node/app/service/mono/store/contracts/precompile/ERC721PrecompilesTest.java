@@ -68,6 +68,7 @@ import static org.hyperledger.besu.datatypes.Address.RIPEMD160;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -79,6 +80,9 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -112,10 +116,7 @@ import com.hedera.node.app.service.mono.store.TypedTokenStore;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.ApproveWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.BalanceOfWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetApprovedWrapper;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.SetApprovalForAllWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.ApprovePrecompile;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.BalanceOfPrecompile;
@@ -412,10 +413,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        eq(nestedPretendArguments), eq(token), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(accounts.get(any(), any())).willReturn(allowances);
@@ -513,10 +511,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
         isApprovedForAllPrecompile
-                .when(
-                        () ->
-                                IsApprovedForAllPrecompile.decodeIsApprovedForAll(
-                                        eq(nestedPretendArguments), eq(token), any()))
+                .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
 
@@ -1205,7 +1200,7 @@ class ERC721PrecompilesTest {
 
         given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
         getApprovedPrecompile
-                .when(() -> GetApprovedPrecompile.decodeGetApproved(nestedPretendArguments, token))
+                .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(GET_APPROVED_WRAPPER);
         given(wrappedLedgers.canonicalAddress(any())).willReturn(RIPEMD160);
 
@@ -1437,6 +1432,8 @@ class ERC721PrecompilesTest {
                 .willReturn(OK);
         given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
                 .willReturn(true);
+        given(sigsVerifier.hasActiveKeyOrNoReceiverSigReq(anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(true);
         given(infrastructureFactory.newImpliedTransfersMarshal(any()))
                 .willReturn(impliedTransfersMarshal);
@@ -1466,7 +1463,7 @@ class ERC721PrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1560,7 +1557,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1718,7 +1715,8 @@ class ERC721PrecompilesTest {
                 nestedPretendArguments);
     }
 
-    public static final BalanceOfWrapper BALANCE_OF_WRAPPER = new BalanceOfWrapper(sender);
+    public static final BalanceOfWrapper<AccountID> BALANCE_OF_WRAPPER =
+            new BalanceOfWrapper<>(sender);
 
     private void givenLedgers() {
         given(wrappedLedgers.accounts()).willReturn(accounts);
@@ -1733,8 +1731,8 @@ class ERC721PrecompilesTest {
         given(exchangeRate.getHbarEquiv()).willReturn(HBAR_RATE);
     }
 
-    public static final IsApproveForAllWrapper IS_APPROVE_FOR_ALL_WRAPPER =
-            new IsApproveForAllWrapper(token, sender, receiver);
+    public static final IsApproveForAllWrapper<TokenID, AccountID, AccountID>
+            IS_APPROVE_FOR_ALL_WRAPPER = new IsApproveForAllWrapper<>(token, sender, receiver);
 
     public static final GetApprovedWrapper GET_APPROVED_WRAPPER =
             new GetApprovedWrapper(token, token.getTokenNum());

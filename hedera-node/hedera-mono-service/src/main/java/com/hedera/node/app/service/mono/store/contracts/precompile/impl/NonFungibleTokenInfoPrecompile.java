@@ -17,18 +17,14 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFungibleTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -37,13 +33,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile {
-    private static final Function GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION =
-            new Function("getNonFungibleTokenInfo(address,int64)");
-    private static final Bytes GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_NON_FUNGIBLE_TOKEN_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_NON_FUNGIBLE_TOKEN_INFO_DECODER =
-            TypeFactory.create("(bytes32,int64)");
+public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile
+        implements EvmNonFungibleTokenInfoPrecompile {
+
     private long serialNumber;
 
     public NonFungibleTokenInfoPrecompile(
@@ -59,7 +51,7 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetNonFungibleTokenInfo(input);
-        tokenId = tokenInfoWrapper.tokenID();
+        tokenId = tokenInfoWrapper.token();
         serialNumber = tokenInfoWrapper.serialNumber();
         return super.body(input, aliasResolver);
     }
@@ -80,15 +72,11 @@ public class NonFungibleTokenInfoPrecompile extends AbstractTokenInfoPrecompile 
         return encoder.encodeGetNonFungibleTokenInfo(tokenInfo, nonFungibleTokenInfo);
     }
 
-    public static TokenInfoWrapper decodeGetNonFungibleTokenInfo(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_SELECTOR,
-                        GET_NON_FUNGIBLE_TOKEN_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        final var serialNum = (long) decodedArguments.get(1);
-        return TokenInfoWrapper.forNonFungibleToken(tokenID, serialNum);
+    public static TokenInfoWrapper<TokenID> decodeGetNonFungibleTokenInfo(final Bytes input) {
+        final var rawTokenInfoWrapper =
+                EvmNonFungibleTokenInfoPrecompile.decodeGetNonFungibleTokenInfo(input);
+        return TokenInfoWrapper.forNonFungibleToken(
+                convertAddressBytesToTokenID(rawTokenInfoWrapper.token()),
+                rawTokenInfoWrapper.serialNumber());
     }
 }

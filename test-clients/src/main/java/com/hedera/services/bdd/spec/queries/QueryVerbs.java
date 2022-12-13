@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLoca
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractBytecode;
@@ -73,6 +73,10 @@ public class QueryVerbs {
 
     public static HapiGetAccountInfo getAliasedAccountInfo(final String sourceKey) {
         return new HapiGetAccountInfo(sourceKey, ReferenceType.ALIAS_KEY_NAME);
+    }
+
+    public static HapiGetAccountInfo getLiteralAliasAccountInfo(final String alias) {
+        return new HapiGetAccountInfo(alias, ReferenceType.HEXED_CONTRACT_ALIAS);
     }
 
     public static HapiGetAccountRecords getAccountRecords(final String account) {
@@ -146,7 +150,7 @@ public class QueryVerbs {
     public static HapiContractCallLocal contractCallLocal(
             final String contract,
             final String functionName,
-            final Function<HapiApiSpec, Object[]> fn) {
+            final Function<HapiSpec, Object[]> fn) {
         final var abi = getABIFor(FUNCTION, functionName, contract);
         return new HapiContractCallLocal(abi, contract, fn);
     }

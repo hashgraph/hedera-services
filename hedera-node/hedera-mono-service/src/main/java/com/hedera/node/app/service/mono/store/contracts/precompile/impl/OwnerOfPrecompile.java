@@ -15,34 +15,25 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.UINT256;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.NftId;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
-    private static final Function OWNER_OF_NFT_FUNCTION = new Function("ownerOf(uint256)", INT);
-    private static final Bytes OWNER_OF_NFT_SELECTOR = Bytes.wrap(OWNER_OF_NFT_FUNCTION.selector());
-    private static final ABIType<Tuple> OWNER_OF_NFT_DECODER = TypeFactory.create(UINT256);
+public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile implements EvmOwnerOfPrecompile {
+
     private NftId nftId;
 
     public OwnerOfPrecompile(
@@ -80,11 +71,6 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile {
     }
 
     public static OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, OWNER_OF_NFT_SELECTOR, OWNER_OF_NFT_DECODER);
-
-        final var tokenId = (BigInteger) decodedArguments.get(0);
-
-        return new OwnerOfAndTokenURIWrapper(tokenId.longValueExact());
+        return EvmOwnerOfPrecompile.decodeOwnerOf(input);
     }
 }

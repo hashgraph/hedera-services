@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.utilops.grouping;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
@@ -39,7 +39,7 @@ public class ParallelSpecOps extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         Map<String, Throwable> subErrors = new HashMap<>();
 
         CompletableFuture<Void> future =
@@ -57,7 +57,7 @@ public class ParallelSpecOps extends UtilOp {
                                                                                                         op
                                                                                                                 .toString(),
                                                                                                         t)),
-                                                        HapiApiSpec.getCommonThreadPool()))
+                                                        HapiSpec.getCommonThreadPool()))
                                 .toArray(CompletableFuture[]::new));
         future.join();
 
@@ -77,12 +77,12 @@ public class ParallelSpecOps extends UtilOp {
     }
 
     @Override
-    public boolean requiresFinalization(HapiApiSpec spec) {
+    public boolean requiresFinalization(HapiSpec spec) {
         return Stream.of(subs).anyMatch(operation -> operation.requiresFinalization(spec));
     }
 
     @Override
-    public void finalizeExecFor(HapiApiSpec spec) throws Throwable {
+    public void finalizeExecFor(HapiSpec spec) throws Throwable {
         for (HapiSpecOperation op : subs) {
             if (op.requiresFinalization(spec)) {
                 op.finalizeExecFor(spec);

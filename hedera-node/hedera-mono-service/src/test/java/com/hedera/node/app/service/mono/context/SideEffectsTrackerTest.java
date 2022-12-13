@@ -145,14 +145,12 @@ class SideEffectsTrackerTest {
     void tracksAndResetsNewAccountIdAsExpected() {
         final var createdAutoAccount =
                 AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(20L).build();
-        final var alias = ByteString.copyFromUtf8("abcdefg");
 
-        subject.trackAutoCreation(createdAutoAccount, alias);
+        subject.trackAutoCreation(createdAutoAccount);
 
         assertTrue(subject.hasTrackedAutoCreation());
         assertFalse(subject.hasTrackedContractCreation());
         assertEquals(createdAutoAccount, subject.getTrackedAutoCreatedAccountId());
-        assertEquals(alias, subject.getNewEntityAlias());
 
         subject.reset();
         assertFalse(subject.hasTrackedAutoCreation());

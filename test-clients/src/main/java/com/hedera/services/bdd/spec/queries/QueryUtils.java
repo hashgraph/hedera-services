@@ -19,7 +19,7 @@ import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hederahashgraph.api.proto.java.ResponseType.ANSWER_ONLY;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
 import com.hederahashgraph.api.proto.java.Response;
@@ -110,7 +110,7 @@ public class QueryUtils {
         return "get" + field.substring(0, 1).toUpperCase() + field.substring(1);
     }
 
-    public static String lookUpAccountWithAlias(HapiApiSpec spec, String aliasKey) {
+    public static String lookUpAccountWithAlias(HapiSpec spec, String aliasKey) {
         final var lookedUpKey = spec.registry().getKey(aliasKey).toByteString().toStringUtf8();
         return asAccountString(spec.registry().getAccountID(lookedUpKey));
     }

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class NoFungibleTransfers implements ErroringAssertsProvider<List<TokenTr
     }
 
     @Override
-    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiApiSpec spec) {
+    public ErroringAsserts<List<TokenTransferList>> assertsFor(HapiSpec spec) {
         final List<Throwable> unexpectedFungibleChanges = new ArrayList<>();
         return tokenTransfers -> {
             for (var tokenTransfer : tokenTransfers) {

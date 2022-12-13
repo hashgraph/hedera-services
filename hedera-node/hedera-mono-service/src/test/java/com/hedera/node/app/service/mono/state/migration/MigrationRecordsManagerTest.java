@@ -31,7 +31,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.config.MockGlobalDynamicProps;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -251,12 +250,8 @@ class MigrationRecordsManagerTest {
 
         verify(sigImpactHistorian).markEntityChanged(800L);
         verify(sigImpactHistorian).markEntityChanged(801L);
-        verify(tracker800)
-                .trackAutoCreation(
-                        AccountID.newBuilder().setAccountNum(800L).build(), ByteString.EMPTY);
-        verify(tracker801)
-                .trackAutoCreation(
-                        AccountID.newBuilder().setAccountNum(801L).build(), ByteString.EMPTY);
+        verify(tracker800).trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
+        verify(tracker801).trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));
@@ -314,12 +309,8 @@ class MigrationRecordsManagerTest {
 
         verify(sigImpactHistorian).markEntityChanged(800L);
         verify(sigImpactHistorian).markEntityChanged(801L);
-        verify(tracker800)
-                .trackAutoCreation(
-                        AccountID.newBuilder().setAccountNum(800L).build(), ByteString.EMPTY);
-        verify(tracker801)
-                .trackAutoCreation(
-                        AccountID.newBuilder().setAccountNum(801L).build(), ByteString.EMPTY);
+        verify(tracker800).trackAutoCreation(AccountID.newBuilder().setAccountNum(800L).build());
+        verify(tracker801).trackAutoCreation(AccountID.newBuilder().setAccountNum(801L).build());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(
                         eq(DEFAULT_SOURCE_ID), bodyCaptor.capture(), eq(pretend800));

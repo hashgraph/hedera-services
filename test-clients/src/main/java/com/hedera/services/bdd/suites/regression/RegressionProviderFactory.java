@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.listeners.TokenAccountRegistryRel;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
@@ -80,7 +80,7 @@ import java.util.function.Supplier;
 public class RegressionProviderFactory {
     public static final String RESOURCE_DIR = "eet-config";
 
-    public static Function<HapiApiSpec, OpProvider> factoryFrom(Supplier<String> resource) {
+    public static Function<HapiSpec, OpProvider> factoryFrom(Supplier<String> resource) {
         return spec -> {
             String path = RESOURCE_DIR + "/" + resource.get();
             HapiPropertySource props = new JutilPropertySource(path);

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -31,12 +31,11 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -44,7 +43,7 @@ import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ContractMusicalChairsSuite extends HapiApiSuite {
+public class ContractMusicalChairsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ContractMusicalChairsSuite.class);
 
     public static void main(String... args) {
@@ -57,11 +56,11 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(playGame());
     }
 
-    private HapiApiSpec playGame() {
+    private HapiSpec playGame() {
         final var dj = "dj";
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";
@@ -71,7 +70,6 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
         List<HapiSpecOperation> then = new ArrayList<>();
 
         ////// Create contract //////
-        given.add(UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"));
         given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
         given.add(getAccountInfo(DEFAULT_CONTRACT_SENDER).savingSnapshot(DEFAULT_CONTRACT_SENDER));
         given.add(uploadInitCode(contract));
@@ -134,7 +132,6 @@ public class ContractMusicalChairsSuite extends HapiApiSuite {
                                                                                                                     .getAccountID(
                                                                                                                             "Player13")))
                                                                                 }))))));
-        then.add(UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
 
         return defaultHapiSpec("playGame")
                 .given(given.toArray(HapiSpecOperation[]::new))

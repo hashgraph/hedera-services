@@ -163,7 +163,7 @@ class GetTokenDefaultKycStatusTest {
                 .thenCallRealMethod();
         final var decodedInput = decodeTokenDefaultKycStatus(GET_TOKEN_DEFAULT_KYC_STATUS_INPUT);
 
-        assertTrue(decodedInput.tokenID().getTokenNum() > 0);
+        assertTrue(decodedInput.token().getTokenNum() > 0);
     }
 
     private void givenMinimalContextForSuccessfulCall() {

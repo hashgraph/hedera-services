@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.including;
@@ -64,20 +64,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
+public class AtomicCryptoTransferHTSSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AtomicCryptoTransferHTSSuite.class);
 
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
@@ -111,9 +111,9 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     cryptoTransferForHbarOnly(),
                     cryptoTransferForFungibleTokenOnly(),
                     cryptoTransferForNonFungibleTokenOnly(),
@@ -125,7 +125,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec cryptoTransferForHbarOnly() {
+    private HapiSpec cryptoTransferForHbarOnly() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
         final var cryptoTransferMultiTxn = "cryptoTransferMultiTxn";
         final var cryptoTransferRevertTxn = "cryptoTransferRevertTxn";
@@ -370,7 +370,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 INVALID_ACCOUNT_AMOUNTS)))));
     }
 
-    private HapiApiSpec cryptoTransferForFungibleTokenOnly() {
+    private HapiSpec cryptoTransferForFungibleTokenOnly() {
 
         final var cryptoTransferTxnForFungible = "cryptoTransferTxnForFungible";
 
@@ -456,7 +456,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                         .including(FUNGIBLE_TOKEN, RECEIVER, 50))));
     }
 
-    private HapiApiSpec cryptoTransferForNonFungibleTokenOnly() {
+    private HapiSpec cryptoTransferForNonFungibleTokenOnly() {
         final var cryptoTransferTxnForNft = "cryptoTransferTxnForNft";
 
         return defaultHapiSpec("cryptoTransferForNonFungibleTokenOnly")
@@ -542,7 +542,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                 NFT_TOKEN, SENDER, RECEIVER, 1L))));
     }
 
-    private HapiApiSpec cryptoTransferHBarFungibleNft() {
+    private HapiSpec cryptoTransferHBarFungibleNft() {
         final var cryptoTransferTxnForAll = "cryptoTransferTxnForAll";
 
         return defaultHapiSpec("cryptoTransferHBarFungibleNft")
@@ -691,7 +691,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                 50 * ONE_HBAR)))));
     }
 
-    private HapiApiSpec cryptoTransferAllowanceHbarToken() {
+    private HapiSpec cryptoTransferAllowanceHbarToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -717,7 +717,9 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                 .logged(),
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
-                                .has(accountWith().cryptoAllowancesContaining(CONTRACT, allowance))
+                                .has(
+                                        accountDetailsWith()
+                                                .cryptoAllowancesContaining(CONTRACT, allowance))
                                 .logged(),
                         withOpContext(
                                 (spec, opLog) -> {
@@ -819,7 +821,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
-                                                    .has(accountWith().noAllowances()),
+                                                    .has(accountDetailsWith().noAllowances()),
                                             // Try to send 1 hbar from owner to receiver
                                             // should fail as all allowance has been spent
                                             contractCall(
@@ -902,7 +904,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    private HapiApiSpec cryptoTransferAllowanceFungibleToken() {
+    private HapiSpec cryptoTransferAllowanceFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -934,7 +936,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .tokenAllowancesContaining(
                                                         FUNGIBLE_TOKEN, CONTRACT, allowance)))
                 .when(
@@ -1064,7 +1066,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                     .hasKnownStatus(SUCCESS),
                                             getAccountDetails(OWNER)
                                                     .payingWith(GENESIS)
-                                                    .has(accountWith().noAllowances()),
+                                                    .has(accountDetailsWith().noAllowances()),
                                             // Try to send 1 token from owner to receiver
                                             // should fail as all allowance has been spent
                                             contractCall(
@@ -1166,7 +1168,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                                 SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    private HapiApiSpec cryptoTransferAllowanceNft() {
+    private HapiSpec cryptoTransferAllowanceNft() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         return defaultHapiSpec("cryptoTransferAllowanceNft")
@@ -1272,7 +1274,7 @@ public class AtomicCryptoTransferHTSSuite extends HapiApiSuite {
                                                                 NFT_TOKEN, OWNER, RECEIVER, 2L))));
     }
 
-    private HapiApiSpec cryptoTransferSpecialAccounts() {
+    private HapiSpec cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
 
         return defaultHapiSpec("cryptoTransferEmptyKeyList")

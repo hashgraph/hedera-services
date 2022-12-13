@@ -33,7 +33,7 @@ class IsTokenPrecompileTest {
     @Test
     void decodeIsTokenAsExpected() {
         final var decodedInput = decodeIsToken(IS_TOKEN_INPUT);
-        assertEquals(TokenID.newBuilder().setTokenNum(2819).build(), decodedInput.tokenID());
+        assertEquals(TokenID.newBuilder().setTokenNum(2819).build(), decodedInput.token());
         assertEquals(-1, decodedInput.serialNumber());
     }
 }

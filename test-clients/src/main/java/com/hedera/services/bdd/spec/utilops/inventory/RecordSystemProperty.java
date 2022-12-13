@@ -16,9 +16,9 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.suites.HapiApiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class RecordSystemProperty<T> extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         Map<String, String> nodeProps = new HashMap<>();
         var op = QueryVerbs.getFileContents(APP_PROPERTIES).addingConfigListTo(nodeProps);
         allRunFor(spec, op);

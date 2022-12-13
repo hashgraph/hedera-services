@@ -295,9 +295,11 @@ class BalanceChangeManagerTest {
                     nonFungibleTokenId.asGrpcToken(),
                     firstOwnershipChange,
                     payer.asGrpcAccount());
-    private final BalanceChange payerHbarAdjust = BalanceChange.hbarAdjust(payer, -1_234_567);
-    private final BalanceChange fundingHbarAdjust = BalanceChange.hbarAdjust(funding, +1_234_567);
-    private final BalanceChange miscHbarAdjust = BalanceChange.hbarAdjust(misc, +1);
+    private final BalanceChange payerHbarAdjust =
+            BalanceChange.hbarCustomFeeAdjust(payer, -1_234_567);
+    private final BalanceChange fundingHbarAdjust =
+            BalanceChange.hbarCustomFeeAdjust(funding, +1_234_567);
+    private final BalanceChange miscHbarAdjust = BalanceChange.hbarCustomFeeAdjust(misc, +1);
 
     private final List<BalanceChange> startingList = new ArrayList<>();
 
