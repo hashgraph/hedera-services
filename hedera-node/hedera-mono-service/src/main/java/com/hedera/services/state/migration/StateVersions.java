@@ -62,7 +62,7 @@ public final class StateVersions {
     public static final SerializableSemVers FIRST_027X_VERSION =
             forHapiAndHedera(BASE_0270_VERSION, BASE_0270_VERSION);
     public static final SerializableSemVers LAST_027X_VERSION =
-            forHapiAndHedera(BASE_0270_VERSION, "0.27.3");
+            forHapiAndHedera(BASE_0270_VERSION, "0.27.4");
     public static final SerializableSemVers FIRST_028X_VERSION =
             forHapiAndHedera("0.28.0", "0.28.0");
     public static final SerializableSemVers FIRST_030X_VERSION =

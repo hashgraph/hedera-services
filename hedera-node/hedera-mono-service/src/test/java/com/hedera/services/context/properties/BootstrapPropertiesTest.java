@@ -243,7 +243,9 @@ class BootstrapPropertiesTest {
                     entry(STAKING_PERIOD_MINS, 1440L),
                     entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, false),
                     entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, 365),
-                    entry(STAKING_STARTUP_HELPER_RECOMPUTE, EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
+                    entry(
+                            STAKING_STARTUP_HELPER_RECOMPUTE,
+                            EnumSet.allOf(StakeStartupHelper.RecomputeType.class)),
                     entry(STAKING_REWARD_RATE, 0L),
                     entry(STAKING_START_THRESH, 25000000000000000L),
                     entry(STAKING_FEES_NODE_REWARD_PERCENT, 0),

@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.context.properties.SerializableSemVers;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
 import com.hedera.services.state.merkle.MerkleScheduledTransactions;
@@ -289,7 +290,7 @@ public class ServicesState extends PartialNaryMerkleInternal
             final BootstrapProperties bootstrapProps,
             SwirldDualState dualState,
             final InitTrigger trigger,
-            @Nullable final SoftwareVersion deserializedVersion) {
+            final SoftwareVersion deserializedVersion) {
         final var selfId = platform.getSelfId().getId();
 
         final ServicesApp app;
@@ -332,14 +333,19 @@ public class ServicesState extends PartialNaryMerkleInternal
             if (trigger == RESTART) {
                 // We may still want to change the address book without an upgrade. But note
                 // that without a dynamic address book, this MUST be a no-op during reconnect.
-                app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                if (((SerializableSemVers) deserializedVersion).isAfter(LAST_027X_VERSION)) {
+                    app.stakeStartupHelper().doRestartHousekeeping(addressBook(), stakingInfo());
+                }
                 if (isUpgrade) {
                     dualState.setFreezeTime(null);
                     networkCtx().discardPreparedUpgradeMeta();
                     if (deployedVersion.hasMigrationRecordsFrom(deserializedVersion)) {
                         networkCtx().markMigrationRecordsNotYetStreamed();
                     }
-                    app.stakeStartupHelper().doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+                    if (((SerializableSemVers) deserializedVersion).isAfter(LAST_027X_VERSION)) {
+                        app.stakeStartupHelper()
+                                .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
+                    }
                 }
             }
             networkCtx().setStateVersion(CURRENT_VERSION);

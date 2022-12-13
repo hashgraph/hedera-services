@@ -123,8 +123,10 @@ class StandardizedPropertySourcesTest {
     void getsExpectedRecomputeTypes() {
         final var prop = "NODE_STAKES,PENDING_REWARDS";
         final Set<StakeStartupHelper.RecomputeType> recomputes =
-                (Set<StakeStartupHelper.RecomputeType>) PropertySource.AS_RECOMPUTE_TYPES.apply(prop);
-        final Set<StakeStartupHelper.RecomputeType> expected = EnumSet.allOf(StakeStartupHelper.RecomputeType.class);
+                (Set<StakeStartupHelper.RecomputeType>)
+                        PropertySource.AS_RECOMPUTE_TYPES.apply(prop);
+        final Set<StakeStartupHelper.RecomputeType> expected =
+                EnumSet.allOf(StakeStartupHelper.RecomputeType.class);
         assertEquals(expected, recomputes);
 
         final var name = "recomputeTypes";

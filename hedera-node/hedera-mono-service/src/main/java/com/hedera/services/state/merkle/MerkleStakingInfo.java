@@ -125,11 +125,11 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     }
 
     /**
-     * Given up-to-date values for this node's stake to reward both at the start of this period,
-     * and now; and its stake to not reward now, updates this staking info to reflect the new values.
+     * Given up-to-date values for this node's stake to reward both at the start of this period, and
+     * now; and its stake to not reward now, updates this staking info to reflect the new values.
      *
-     * <p>Resets {@code unclaimedStakeRewardStart = 0} so that we only track unclaimed stake for
-     * the rest of the current period. (Any previously unclaimed stake will have already been
+     * <p>Resets {@code unclaimedStakeRewardStart = 0} so that we only track unclaimed stake for the
+     * rest of the current period. (Any previously unclaimed stake will have already been
      * incorporated into the stake period start value.)
      *
      * @param stakeToReward the node's current stake to reward
@@ -137,9 +137,7 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
      * @param stakeRewardStart the node's stake to reward at the start of this period
      */
     public void syncRecomputedStakeValues(
-            final long stakeToReward,
-            final long stakeToNotReward,
-            final long stakeRewardStart) {
+            final long stakeToReward, final long stakeToNotReward, final long stakeRewardStart) {
         this.stakeToReward = stakeToReward;
         this.stakeToNotReward = stakeToNotReward;
         this.stakeRewardStart = stakeRewardStart;
@@ -454,7 +452,6 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
             setStake(totalStake);
         }
     }
-
 
     @VisibleForTesting
     static String readableNonZeroHistory(final long[] rewardSumHistory) {

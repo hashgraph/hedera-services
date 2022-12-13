@@ -80,19 +80,20 @@ public interface PropertySource {
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
-    Function<String, Object> AS_SIDECARS = s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
-    Function<String, Object> AS_RECOMPUTE_TYPES = s -> asEnumSet(
-            StakeStartupHelper.RecomputeType.class,
-            StakeStartupHelper.RecomputeType::valueOf,
-            s);
+    Function<String, Object> AS_SIDECARS =
+            s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
+    Function<String, Object> AS_RECOMPUTE_TYPES =
+            s ->
+                    asEnumSet(
+                            StakeStartupHelper.RecomputeType.class,
+                            StakeStartupHelper.RecomputeType::valueOf,
+                            s);
 
     static <E extends Enum<E>> Set<E> asEnumSet(
-            final Class<E> type,
-            final Function<String, E> valueOf,
-            final String csv) {
+            final Class<E> type, final Function<String, E> valueOf, final String csv) {
         return csv.isEmpty()
-                        ? Collections.emptySet()
-                        : Arrays.stream(csv.split(","))
+                ? Collections.emptySet()
+                : Arrays.stream(csv.split(","))
                         .map(valueOf)
                         .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
     }

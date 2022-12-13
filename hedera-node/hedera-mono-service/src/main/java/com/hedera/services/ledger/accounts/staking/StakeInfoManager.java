@@ -19,9 +19,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.hedera.services.state.merkle.MerkleStakingInfo;
 import com.hedera.services.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,6 +26,8 @@ import java.util.stream.LongStream;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakeInfoManager {
@@ -71,7 +70,10 @@ public class StakeInfoManager {
                 return null;
             }
             if (nodeId >= cache.length) {
-                log.warn("Stake info requested for node id {} beyond cache size {}", nodeId, cache.length);
+                log.warn(
+                        "Stake info requested for node id {} beyond cache size {}",
+                        nodeId,
+                        cache.length);
                 return null;
             }
             return getFromCache(nodeId);

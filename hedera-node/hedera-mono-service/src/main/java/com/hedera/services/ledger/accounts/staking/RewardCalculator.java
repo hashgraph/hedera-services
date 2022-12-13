@@ -81,8 +81,7 @@ public class RewardCalculator {
     }
 
     public long estimatePendingRewards(
-            final MerkleAccount account,
-            @Nullable final MerkleStakingInfo nodeStakingInfo) {
+            final MerkleAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,

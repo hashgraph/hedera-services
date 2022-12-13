@@ -450,6 +450,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(platform.getSelfId()).willReturn(selfId);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         APPS.save(selfId.getId(), app);
 
@@ -612,6 +613,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -740,6 +742,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -773,6 +776,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 

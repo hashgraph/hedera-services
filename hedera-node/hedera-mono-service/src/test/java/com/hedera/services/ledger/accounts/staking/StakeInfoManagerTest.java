@@ -31,15 +31,13 @@ import com.hedera.services.utils.EntityNum;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 @ExtendWith(MockitoExtension.class)
 class StakeInfoManagerTest {

@@ -62,8 +62,7 @@ class RewardCalculatorTest {
 
     @Test
     void zeroRewardsForMissingNodeStakeInfo() {
-        final var reward =
-                subject.computeRewardFromDetails( new MerkleAccount(), null, 321, 123);
+        final var reward = subject.computeRewardFromDetails(new MerkleAccount(), null, 321, 123);
         assertEquals(0, reward);
     }
 
@@ -127,6 +126,7 @@ class RewardCalculatorTest {
         given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
         given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(todayNumber - 1);
         given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
+        given(stakeInfoManager.mutableStakeInfoFor(anyLong())).willReturn(new MerkleStakingInfo());
         willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
         final var reward = subject.computePendingReward(account);
