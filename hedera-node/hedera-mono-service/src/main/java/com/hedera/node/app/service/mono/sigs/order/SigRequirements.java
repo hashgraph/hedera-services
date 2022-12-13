@@ -33,7 +33,12 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenSigningMetadata;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
+import com.hedera.node.app.service.mono.state.virtual.EntityNumVirtualKey;
+import com.hedera.node.app.service.mono.state.virtual.UniqueTokenKey;
+import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hedera.node.app.service.mono.utils.MiscUtils;
+import com.hedera.node.app.service.mono.utils.NftNumPair;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -74,6 +79,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Encapsulates all policies related to which Hedera keys must have active signatures for a given
@@ -89,11 +95,22 @@ public class SigRequirements {
 
     private final SignatureWaivers signatureWaivers;
     private final SigMetadataLookup sigMetaLookup;
+    private final MapWarmer mapWarmer;
 
     public SigRequirements(
-            final SigMetadataLookup sigMetaLookup, final SignatureWaivers signatureWaivers) {
+            final SigMetadataLookup sigMetaLookup,
+            final SignatureWaivers signatureWaivers,
+            final MapWarmer mapWarmer) {
         this.sigMetaLookup = sigMetaLookup;
         this.signatureWaivers = signatureWaivers;
+        this.mapWarmer = mapWarmer;
+    }
+
+    public SigRequirements(
+            SigMetadataLookup sigMetadataLookup,
+            SignatureWaivers signatureWaivers,
+            Supplier<MapWarmer> mapWarmerSupplier) {
+        this(sigMetadataLookup, signatureWaivers, mapWarmerSupplier.get());
     }
 
     /**
@@ -692,6 +709,7 @@ public class SigRequirements {
             final var token = xfers.getToken();
             for (final NftTransfer adjust : xfers.getNftTransfersList()) {
                 final var sender = adjust.getSenderAccountID();
+                mapWarmer.warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(sender)));
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -707,6 +725,11 @@ public class SigRequirements {
                     return accountFailure(failure, factory);
                 }
                 final var receiver = adjust.getReceiverAccountID();
+                mapWarmer.warmAccount(EntityNumVirtualKey.from(EntityNum.fromAccountId(receiver)));
+                mapWarmer.warmNft(
+                        UniqueTokenKey.from(
+                                NftNumPair.fromLongs(
+                                        token.getTokenNum(), receiver.getAccountNum())));
                 if ((failure =
                                 nftIncludeIfNecessary(
                                         payer,
@@ -723,6 +746,10 @@ public class SigRequirements {
                             ? factory.forMissingToken()
                             : accountFailure(failure, factory);
                 }
+                mapWarmer.warmTokenRel(
+                        EntityNumVirtualKey.fromPair(
+                                EntityNumPair.fromLongs(
+                                        token.getTokenNum(), adjust.getSerialNumber())));
             }
         }
         for (final AccountAmount adjust : op.getTransfers().getAccountAmountsList()) {

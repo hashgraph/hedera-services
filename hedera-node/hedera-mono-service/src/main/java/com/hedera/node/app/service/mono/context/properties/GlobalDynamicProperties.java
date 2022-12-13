@@ -161,6 +161,7 @@ public class GlobalDynamicProperties implements EvmProperties {
     private boolean cryptoCreateWithAliasEnabled;
     private boolean enforceContractCreationThrottle;
     private EntityScaleFactors entityScaleFactors;
+    private int cryptoTransferWarmThreads;
 
     @Inject
     public GlobalDynamicProperties(
@@ -330,6 +331,7 @@ public class GlobalDynamicProperties implements EvmProperties {
                 properties.getBooleanProperty(CONTRACTS_ENFORCE_CREATION_THROTTLE);
         entityScaleFactors =
                 properties.getEntityScaleFactorsProperty(FEES_PERCENT_UTILIZATION_SCALE_FACTORS);
+        cryptoTransferWarmThreads = properties.getIntProperty(CRYPTO_TRANSFER_WARM_THREADS);
     }
 
     public int maxTokensPerAccount() {
@@ -790,5 +792,9 @@ public class GlobalDynamicProperties implements EvmProperties {
 
     public boolean shouldEnforceAccountCreationThrottleForContracts() {
         return enforceContractCreationThrottle;
+    }
+
+    public int cryptoTransferWarmThreads() {
+        return cryptoTransferWarmThreads;
     }
 }

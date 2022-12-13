@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.sigs;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.NodeInfo;
+import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.contracts.sources.TxnAwareEvmSigsVerifier;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
@@ -26,12 +27,16 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.annotations.WorkingStateSigReqs;
 import com.hedera.node.app.service.mono.sigs.metadata.StateChildrenSigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.TokenMetaUtils;
+import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
 import com.hedera.node.app.service.mono.sigs.utils.PrecheckUtils;
 import com.hedera.node.app.service.mono.sigs.verification.SyncVerifier;
 import com.hedera.node.app.service.mono.state.logic.PayerSigValidity;
+import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.TokenRelStorageAdapter;
+import com.hedera.node.app.service.mono.state.migration.UniqueTokenMapAdapter;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.system.Platform;
@@ -40,6 +45,7 @@ import dagger.Module;
 import dagger.Provides;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 @Module
@@ -65,16 +71,28 @@ public interface SigsModule {
     }
 
     @Provides
+    static Supplier<MapWarmer> provideMapWarmer(
+            Supplier<AccountStorageAdapter> accountStorageSupp,
+            Supplier<UniqueTokenMapAdapter> nftStorageSupp,
+            Supplier<TokenRelStorageAdapter> tokenRelStorageSupp,
+            GlobalDynamicProperties dynamicProps) {
+        return () ->
+                new MapWarmer(
+                        accountStorageSupp, nftStorageSupp, tokenRelStorageSupp, dynamicProps);
+    }
+
+    @Provides
     @Singleton
     @WorkingStateSigReqs
     static SigRequirements provideWorkingStateSigReqs(
             final FileNumbers fileNumbers,
             final SignatureWaivers signatureWaivers,
-            final MutableStateChildren workingState) {
+            final MutableStateChildren workingState,
+            final Supplier<MapWarmer> mapWarmer) {
         final var sigMetaLookup =
                 new StateChildrenSigMetadataLookup(
                         fileNumbers, workingState, TokenMetaUtils::signingMetaFrom);
-        return new SigRequirements(sigMetaLookup, signatureWaivers);
+        return new SigRequirements(sigMetaLookup, signatureWaivers, mapWarmer);
     }
 
     @Provides

@@ -244,6 +244,7 @@ public class PropertyNames {
             "hedera.recordStream.compressFilesOnCreation";
 
     public static final String TOKENS_AUTO_CREATIONS_ENABLED = "tokens.autoCreations.isEnabled";
+    public static final String CRYPTO_TRANSFER_WARM_THREADS = "cryptoTransferWarmThreads";
 
     /* ---- Node properties ----- */
     public static final String DEV_ONLY_DEFAULT_NODE_LISTENS = "dev.onlyDefaultNodeListens";

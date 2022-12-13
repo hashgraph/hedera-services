@@ -54,6 +54,7 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.sigs.factories.ReusableBodySigningFactory;
 import com.hedera.node.app.service.mono.sigs.metadata.SigMetadataLookup;
 import com.hedera.node.app.service.mono.sigs.metadata.lookups.HfsSigMetaLookup;
+import com.hedera.node.app.service.mono.sigs.order.MapWarmer;
 import com.hedera.node.app.service.mono.sigs.order.PolicyBasedSigWaivers;
 import com.hedera.node.app.service.mono.sigs.order.SigRequirements;
 import com.hedera.node.app.service.mono.sigs.order.SignatureWaivers;
@@ -82,6 +83,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class SigOpsRegressionTest {
     private HederaFs hfs;
@@ -97,6 +99,7 @@ class SigOpsRegressionTest {
     private SystemOpPolicies mockSystemOpPolicies = new SystemOpPolicies(mockEntityNumbers);
     private SignatureWaivers mockSignatureWaivers =
             new PolicyBasedSigWaivers(mockEntityNumbers, mockSystemOpPolicies);
+    private MapWarmer mapWarmer = Mockito.mock(MapWarmer.class);
 
     static boolean otherPartySigsAreActive(
             PlatformTxnAccessor accessor,
@@ -392,7 +395,8 @@ class SigOpsRegressionTest {
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
-                        mockSignatureWaivers);
+                        mockSignatureWaivers,
+                        mapWarmer);
         final var impliedOrdering =
                 keysOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
         final var impliedKey = impliedOrdering.getPayerKey();
@@ -416,7 +420,8 @@ class SigOpsRegressionTest {
                                 null,
                                 ref -> null,
                                 ref -> null),
-                        mockSignatureWaivers);
+                        mockSignatureWaivers,
+                        mapWarmer);
 
         return otherPartySigsAreActive(platformTxn, keysOrder, CODE_ORDER_RESULT_FACTORY);
     }
@@ -431,7 +436,8 @@ class SigOpsRegressionTest {
                         () -> null,
                         ref -> null,
                         ref -> null);
-        SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
+        SigRequirements keyOrder =
+                new SigRequirements(sigMetaLookups, mockSignatureWaivers, mapWarmer);
 
         final var pkToSigFn = new PojoSigMapPubKeyToSigBytes(platformTxn.getSigMap());
         expandIn(platformTxn, keyOrder, pkToSigFn);
@@ -451,7 +457,8 @@ class SigOpsRegressionTest {
                         () -> null,
                         ref -> null,
                         ref -> null);
-        SigRequirements keyOrder = new SigRequirements(sigMetaLookups, mockSignatureWaivers);
+        SigRequirements keyOrder =
+                new SigRequirements(sigMetaLookups, mockSignatureWaivers, mapWarmer);
 
         // given:
         final var rationalization =
@@ -480,7 +487,8 @@ class SigOpsRegressionTest {
                                 () -> null,
                                 ref -> null,
                                 ref -> null),
-                        mockSignatureWaivers);
+                        mockSignatureWaivers,
+                        mapWarmer);
         final var payerKeys =
                 signingOrder.keysForPayer(platformTxn.getTxn(), CODE_ORDER_RESULT_FACTORY);
         expectedSigs = new ArrayList<>();

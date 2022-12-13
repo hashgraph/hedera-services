@@ -328,7 +328,8 @@ public final class BootstrapProperties implements PropertySource {
                     HEDERA_ALLOWANCES_IS_ENABLED,
                     ENTITIES_LIMIT_TOKEN_ASSOCIATIONS,
                     UTIL_PRNG_IS_ENABLED,
-                    TOKENS_AUTO_CREATIONS_ENABLED);
+                    TOKENS_AUTO_CREATIONS_ENABLED,
+                    CRYPTO_TRANSFER_WARM_THREADS);
 
     static final Set<String> NODE_PROPS =
             Set.of(
@@ -569,5 +570,6 @@ public final class BootstrapProperties implements PropertySource {
                     entry(HEDERA_ALLOWANCES_IS_ENABLED, AS_BOOLEAN),
                     entry(ENTITIES_LIMIT_TOKEN_ASSOCIATIONS, AS_BOOLEAN),
                     entry(UTIL_PRNG_IS_ENABLED, AS_BOOLEAN),
-                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN));
+                    entry(TOKENS_AUTO_CREATIONS_ENABLED, AS_BOOLEAN),
+                    entry(CRYPTO_TRANSFER_WARM_THREADS, AS_INT));
 }
