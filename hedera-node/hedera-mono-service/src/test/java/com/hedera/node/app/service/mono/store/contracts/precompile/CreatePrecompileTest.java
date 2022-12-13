@@ -935,7 +935,6 @@ class CreatePrecompileTest {
         given(aliases.resolveForEvm(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(worldUpdater.aliases()).willReturn(aliases);
-        tokenCreatePrecompile.when(() -> validateTokenKeysInput(any())).thenCallRealMethod();
         given(
                         creator.createUnsuccessfulSyntheticRecord(
                                 INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE))
