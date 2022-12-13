@@ -70,6 +70,8 @@ public class PropertyNames {
     public static final String STAKING_PERIOD_MINS = "staking.periodMins";
     public static final String STAKING_REWARD_HISTORY_NUM_STORED_PERIODS =
             "staking.rewardHistory.numStoredPeriods";
+    public static final String STAKING_STARTUP_HELPER_RECOMPUTE =
+            "staking.startupHelper.recompute";
 
     /* ---- Global dynamic properties ---- */
     public static final String ACCOUNTS_MAX_NUM = "accounts.maxNumber";

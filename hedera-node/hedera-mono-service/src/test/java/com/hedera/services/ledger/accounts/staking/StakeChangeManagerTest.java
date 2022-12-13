@@ -19,6 +19,7 @@ import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.ledger.accounts.staking.StakingUtilsTest.buildPendingNodeStakeChanges;
 import static com.hedera.services.state.migration.ReleaseTwentySevenMigration.buildStakingInfoMap;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -56,6 +57,12 @@ class StakeChangeManagerTest {
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
         subject = new StakeChangeManager(stakeInfoManager, () -> accounts);
+    }
+
+    @Test
+    void ignoresRequestToWithdrawOrAddStakeFromMissingNodeIds() {
+        assertDoesNotThrow(() -> subject.awardStake(0L, 100L, false));
+        assertDoesNotThrow(() -> subject.withdrawStake(0L, 100L, false));
     }
 
     @Test

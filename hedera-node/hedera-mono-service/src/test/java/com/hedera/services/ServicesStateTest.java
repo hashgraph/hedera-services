@@ -52,6 +52,7 @@ import com.hedera.services.context.MutableStateChildren;
 import com.hedera.services.context.init.ServicesInitFlow;
 import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertyNames;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
 import com.hedera.services.state.forensics.HashLogger;
@@ -147,6 +148,7 @@ class ServicesStateTest {
     @Mock private MutableStateChildren workingState;
     @Mock private DualStateAccessor dualStateAccessor;
     @Mock private ServicesInitFlow initFlow;
+    @Mock private StakeStartupHelper stakeStartupHelper;
     @Mock private TreasuryCloner treasuryCloner;
     @Mock private ServicesApp.Builder appBuilder;
     @Mock private MerkleMap<EntityNum, MerkleAccount> accounts;
@@ -638,6 +640,7 @@ class ServicesStateTest {
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
         given(app.treasuryCloner()).willReturn(treasuryCloner);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         // and:
         APPS.save(selfId.getId(), app);
 
@@ -645,6 +648,8 @@ class ServicesStateTest {
         subject.init(platform, addressBook, dualState, RESTART, justPriorVersion);
 
         verify(networkContext).discardPreparedUpgradeMeta();
+        verify(stakeStartupHelper).doRestartHousekeeping(any(), any());
+        verify(stakeStartupHelper).doUpgradeHousekeeping(eq(networkContext), any(), any());
         verify(dualState).setFreezeTime(null);
         unmockMigrators();
     }
@@ -712,6 +717,7 @@ class ServicesStateTest {
         subject.init(platform, addressBook, dualState, RECONNECT, currentVersion);
 
         verify(networkContext, never()).discardPreparedUpgradeMeta();
+        verify(stakeStartupHelper, never()).doUpgradeHousekeeping(any(), any(), any());
     }
 
     @Test

@@ -124,15 +124,31 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         }
     }
 
+    /**
+     * Given up-to-date values for this node's stake to reward both at the start of this period,
+     * and now; and its stake to not reward now, updates this staking info to reflect the new values.
+     *
+     * <p>Resets {@code unclaimedStakeRewardStart = 0} so that we only track unclaimed stake for
+     * the rest of the current period. (Any previously unclaimed stake will have already been
+     * incorporated into the stake period start value.)
+     *
+     * @param stakeToReward the node's current stake to reward
+     * @param stakeToNotReward the node's current stake to not reward
+     * @param stakeRewardStart the node's stake to reward at the start of this period
+     */
+    public void syncRecomputedStakeValues(
+            final long stakeToReward,
+            final long stakeToNotReward,
+            final long stakeRewardStart) {
+        this.stakeToReward = stakeToReward;
+        this.stakeToNotReward = stakeToNotReward;
+        this.stakeRewardStart = stakeRewardStart;
+        clampConsensusStakeInMinMaxRange();
+        resetUnclaimedStakeRewardStart();
+    }
+
     public long reviewElectionsAndRecomputeStakes() {
-        final var totalStake = stakeToReward + stakeToNotReward;
-        if (totalStake > maxStake) {
-            setStake(maxStake);
-        } else if (totalStake < minStake) {
-            setStake(0);
-        } else {
-            setStake(totalStake);
-        }
+        clampConsensusStakeInMinMaxRange();
         stakeRewardStart = stakeToReward;
         return stakeRewardStart;
     }
@@ -428,6 +444,18 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
         }
     }
 
+    private void clampConsensusStakeInMinMaxRange() {
+        final var totalStake = stakeToReward + stakeToNotReward;
+        if (totalStake > maxStake) {
+            setStake(maxStake);
+        } else if (totalStake < minStake) {
+            setStake(0);
+        } else {
+            setStake(totalStake);
+        }
+    }
+
+
     @VisibleForTesting
     static String readableNonZeroHistory(final long[] rewardSumHistory) {
         int firstZero = -1;
@@ -467,5 +495,10 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
     @VisibleForTesting
     byte[] getHistoryHash() {
         return historyHash;
+    }
+
+    @VisibleForTesting
+    public int numRewardablePeriods() {
+        return rewardSumHistory.length;
     }
 }
