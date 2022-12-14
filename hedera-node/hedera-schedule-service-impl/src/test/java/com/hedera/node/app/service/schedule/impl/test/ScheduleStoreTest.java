@@ -1,26 +1,38 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.schedule.impl.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
 import com.hedera.node.app.service.schedule.impl.ScheduleStore;
-import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleStoreTest {
@@ -42,16 +54,18 @@ class ScheduleStoreTest {
     }
 
     @Test
-    void returnsEmptyIfMissingSchedule(){
+    void returnsEmptyIfMissingSchedule() {
         given(state.get(1L)).willReturn(Optional.empty());
 
-        assertEquals(Optional.empty(), subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
+        assertEquals(
+                Optional.empty(), subject.get(ScheduleID.newBuilder().setScheduleNum(1L).build()));
     }
 
     @Test
-    void getsScheduleMetaFromFetchedSchedule(){
+    void getsScheduleMetaFromFetchedSchedule() {
         given(state.get(1L)).willReturn(Optional.of(schedule));
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.getDefaultInstance());
+        given(schedule.ordinaryViewOfScheduledTxn())
+                .willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(true);
         given(schedule.payer()).willReturn(EntityId.fromNum(2L));
@@ -60,13 +74,15 @@ class ScheduleStoreTest {
 
         assertEquals(Optional.of(adminKey), meta.get().adminKey());
         assertEquals(TransactionBody.getDefaultInstance(), meta.get().scheduledTxn());
-        assertEquals(Optional.of(EntityId.fromNum(2L).toGrpcAccountId()), meta.get().designatedPayer());
+        assertEquals(
+                Optional.of(EntityId.fromNum(2L).toGrpcAccountId()), meta.get().designatedPayer());
     }
 
     @Test
-    void getsScheduleMetaFromFetchedScheduleNoExplicitPayer(){
+    void getsScheduleMetaFromFetchedScheduleNoExplicitPayer() {
         given(state.get(1L)).willReturn(Optional.of(schedule));
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(TransactionBody.getDefaultInstance());
+        given(schedule.ordinaryViewOfScheduledTxn())
+                .willReturn(TransactionBody.getDefaultInstance());
         given(schedule.adminKey()).willReturn(Optional.of(adminKey));
         given(schedule.hasExplicitPayer()).willReturn(false);
 

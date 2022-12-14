@@ -226,7 +226,7 @@ class SchedulePreTransactionHandlerImplTest {
         basicMetaAssertions(meta.scheduledMeta(), 0, true, SCHEDULED_TRANSACTION_NOT_IN_WHITELIST);
         assertEquals(schedulerKey, meta.payerKey());
         assertEquals(List.of(), meta.requiredNonPayerKeys());
-        assertEquals(schedulerKey, meta.scheduledMeta().payerKey());
+        assertEquals(null, meta.scheduledMeta().payerKey());
         assertEquals(List.of(), meta.scheduledMeta().requiredNonPayerKeys());
 
         verify(dispatcher, never()).dispatch(scheduledTxn, payer);
