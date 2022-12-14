@@ -19,6 +19,7 @@ import static com.hedera.services.bdd.spec.queries.contract.HapiContractCallLoca
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.consensus.HapiGetTopicInfo;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
