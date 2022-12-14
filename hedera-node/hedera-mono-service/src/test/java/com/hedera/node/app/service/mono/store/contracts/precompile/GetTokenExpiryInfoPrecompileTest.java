@@ -37,6 +37,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenExpiryInfoWrapper;
 import com.hedera.node.app.service.mono.config.NetworkInfo;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -92,6 +93,7 @@ class GetTokenExpiryInfoPrecompileTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -141,6 +143,7 @@ class GetTokenExpiryInfoPrecompileTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,

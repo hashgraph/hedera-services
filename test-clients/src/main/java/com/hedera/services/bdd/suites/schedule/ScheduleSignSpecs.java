@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -52,18 +52,18 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_ALREA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDING_EXPIRATION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ScheduleSignSpecs extends HapiApiSuite {
+public class ScheduleSignSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
@@ -80,7 +80,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return withAndWithoutLongTermEnabled(
                 () ->
                         List.of(
@@ -110,7 +110,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                 suiteCleanup()));
     }
 
-    private HapiApiSpec suiteCleanup() {
+    private HapiSpec suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -123,7 +123,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                                 "scheduling.whitelist", defaultWhitelist)));
     }
 
-    private HapiApiSpec suiteSetup() {
+    private HapiSpec suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -133,7 +133,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                 .overridingProps(Map.of("scheduling.whitelist", suiteWhitelist)));
     }
 
-    private HapiApiSpec signingDeletedSchedulesHasNoEffect() {
+    private HapiSpec signingDeletedSchedulesHasNoEffect() {
         String sender = "X", receiver = "Y", schedule = "Z", adminKey = "admin";
 
         return defaultHapiSpec("SigningDeletedSchedulesHasNoEffect")
@@ -155,7 +155,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then(getAccountBalance(receiver).hasTinyBars(0L));
     }
 
-    private HapiApiSpec changeInNestedSigningReqsRespected() {
+    private HapiSpec changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -218,7 +218,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
         return mutation;
     }
 
-    private HapiApiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
+    private HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -265,7 +265,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
+    private HapiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -325,7 +325,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
         return mutation;
     }
 
-    private HapiApiSpec nestedSigningReqsWorkAsExpected() {
+    private HapiSpec nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne =
                 senderShape.signedWith(
@@ -363,7 +363,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredNotConfusedByOrder() {
+    private HapiSpec receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -399,7 +399,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
+    private HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -439,7 +439,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1L));
     }
 
-    private HapiApiSpec receiverSigRequiredUpdateIsRecognized() {
+    private HapiSpec receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -479,7 +479,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    private HapiApiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
+    private HapiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -512,7 +512,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(receiver).hasTinyBars(1));
     }
 
-    private HapiApiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
+    private HapiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -547,7 +547,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance(sender).hasTinyBars(100));
     }
 
-    private HapiApiSpec basicSignatureCollectionWorks() {
+    private HapiSpec basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorks")
@@ -559,7 +559,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then(getScheduleInfo("basicXfer").hasSignatories("receiver"));
     }
 
-    private HapiApiSpec signalsIrrelevantSig() {
+    private HapiSpec signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo("sender", "receiver", 1));
 
         return defaultHapiSpec("SignalsIrrelevantSig")
@@ -576,7 +576,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                         NO_NEW_VALID_SIGNATURES, SOME_SIGNATURES_WERE_INVALID));
     }
 
-    private HapiApiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    private HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken("tokenA", 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdate")
@@ -603,7 +603,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         overriding("scheduling.whitelist", suiteWhitelist));
     }
 
-    private HapiApiSpec addingSignaturesToNonExistingTxFails() {
+    private HapiSpec addingSignaturesToNonExistingTxFails() {
         return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
                 .given(cryptoCreate("sender"), newKeyNamed("somebody"))
                 .when()
@@ -615,7 +615,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                 .hasKnownStatus(INVALID_SCHEDULE_ID));
     }
 
-    private HapiApiSpec addingSignaturesToExecutedTxFails() {
+    private HapiSpec addingSignaturesToExecutedTxFails() {
         var txnBody = cryptoCreate("somebody");
         var creation = "basicCryptoCreate";
 
@@ -629,7 +629,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                 .hasKnownStatus(SCHEDULE_ALREADY_EXECUTED));
     }
 
-    public HapiApiSpec triggersUponFinishingPayerSig() {
+    public HapiSpec triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSig")
                 .given(
                         cryptoCreate("payer").balance(ONE_HBAR),
@@ -647,7 +647,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then(getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    public HapiApiSpec triggersUponAdditionalNeededSig() {
+    public HapiSpec triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSig")
                 .given(
                         cryptoCreate("sender").balance(1L),
@@ -663,7 +663,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then(getAccountBalance("receiver").hasTinyBars(1L));
     }
 
-    public HapiApiSpec sharedKeyWorksAsExpected() {
+    public HapiSpec sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
                 .given(
                         newKeyNamed("sharedKey"),
@@ -682,7 +682,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then(getTxnRecord("creation").scheduled());
     }
 
-    public HapiApiSpec okIfAdminKeyOverlapsWithActiveScheduleKey() {
+    public HapiSpec okIfAdminKeyOverlapsWithActiveScheduleKey() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         var adminKey = "adminKey";
         var scheduledTxnKey = "scheduledTxnKey";
@@ -701,7 +701,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                 .then();
     }
 
-    public HapiApiSpec overlappingKeysTreatedAsExpected() {
+    public HapiSpec overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpected")
@@ -743,7 +743,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                                 .hasTinyBars(changeFromSnapshot("before", +2)));
     }
 
-    public HapiApiSpec retestsActivationOnSignWithEmptySigMap() {
+    public HapiSpec retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
                 .given(
                         newKeyNamed("a"),
@@ -764,7 +764,7 @@ public class ScheduleSignSpecs extends HapiApiSuite {
                         getAccountBalance("sender").hasTinyBars(666L));
     }
 
-    public HapiApiSpec signFailsDueToDeletedExpiration() {
+    public HapiSpec signFailsDueToDeletedExpiration() {
         final int FAST_EXPIRATION = 0;
         return defaultHapiSpec("SignFailsDueToDeletedExpiration")
                 .given(

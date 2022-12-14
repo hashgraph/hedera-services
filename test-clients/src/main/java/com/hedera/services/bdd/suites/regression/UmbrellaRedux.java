@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -27,9 +27,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.regression.RegressionProviderFactory.factoryFrom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class UmbrellaRedux extends HapiApiSuite {
+public class UmbrellaRedux extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UmbrellaRedux.class);
 
     public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
@@ -58,14 +58,14 @@ public class UmbrellaRedux extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     umbrellaRedux(),
                 });
     }
 
-    private HapiApiSpec umbrellaRedux() {
+    private HapiSpec umbrellaRedux() {
         return defaultHapiSpec("UmbrellaRedux")
                 .given(
                         withOpContext(
@@ -95,7 +95,7 @@ public class UmbrellaRedux extends HapiApiSuite {
                                                 .backoffSleepSecs(backoffSleepSecs::get)));
     }
 
-    private void configureFromCi(HapiApiSpec spec) {
+    private void configureFromCi(HapiSpec spec) {
         HapiPropertySource ciProps = spec.setup().ciPropertiesMap();
         if (ciProps.has("duration")) {
             duration.set(ciProps.getLong("duration"));

@@ -26,8 +26,8 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.consensus.SubmitMessageMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -49,7 +49,7 @@ import java.util.function.Function;
 
 public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     private Optional<String> topic = Optional.empty();
-    private Optional<Function<HapiApiSpec, TopicID>> topicFn = Optional.empty();
+    private Optional<Function<HapiSpec, TopicID>> topicFn = Optional.empty();
     private Optional<ByteString> message = Optional.empty();
     private OptionalInt totalChunks = OptionalInt.empty();
     private OptionalInt chunkNumber = OptionalInt.empty();
@@ -61,7 +61,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         this.topic = Optional.ofNullable(topic);
     }
 
-    public HapiMessageSubmit(final Function<HapiApiSpec, TopicID> topicFn) {
+    public HapiMessageSubmit(final Function<HapiSpec, TopicID> topicFn) {
         this.topicFn = Optional.of(topicFn);
     }
 
@@ -124,7 +124,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         final TopicID id = resolveTopicId(spec);
         final ConsensusSubmitMessageTransactionBody opBody =
                 spec.txns()
@@ -165,7 +165,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
         return b -> b.setConsensusSubmitMessage(opBody);
     }
 
-    private TopicID resolveTopicId(final HapiApiSpec spec) {
+    private TopicID resolveTopicId(final HapiSpec spec) {
         if (topicFn.isPresent()) {
             final TopicID topicID = topicFn.get().apply(spec);
             topic = Optional.of(HapiPropertySource.asTopicString(topicID));
@@ -178,7 +178,7 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Function<HapiApiSpec, List<Key>> variableDefaultSigners() {
+    protected Function<HapiSpec, List<Key>> variableDefaultSigners() {
         return spec -> {
             if (topic.isPresent() && spec.registry().hasKey(topic.get() + "Submit")) {
                 return List.of(spec.registry().getKey(topic.get() + "Submit"));
@@ -188,12 +188,12 @@ public class HapiMessageSubmit extends HapiTxnOp<HapiMessageSubmit> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getConsSvcStub(targetNodeFor(spec), useTls)::submitMessage;
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(ConsensusSubmitMessage, this::usageEstimate, txn, numPayerKeys);

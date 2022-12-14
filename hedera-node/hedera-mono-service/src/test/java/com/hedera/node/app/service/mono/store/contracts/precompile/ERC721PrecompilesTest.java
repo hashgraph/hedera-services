@@ -81,6 +81,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.IsApproveForAllWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
@@ -182,6 +183,7 @@ class ERC721PrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -254,6 +256,7 @@ class ERC721PrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -330,7 +333,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeName(any())).willReturn(successResult);
+        given(evmEncoder.encodeName(any())).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -364,7 +367,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeSymbol(any())).willReturn(successResult);
+        given(evmEncoder.encodeSymbol(any())).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -411,7 +414,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(encoder.encodeIsApprovedForAll(true)).willReturn(successResult);
+        given(evmEncoder.encodeIsApprovedForAll(true)).willReturn(successResult);
         isApprovedForAllPrecompile
                 .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
@@ -509,7 +512,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(encoder.encodeIsApprovedForAll(false)).willReturn(successResult);
+        given(evmEncoder.encodeIsApprovedForAll(false)).willReturn(successResult);
         isApprovedForAllPrecompile
                 .when(() -> IsApprovedForAllPrecompile.decodeIsApprovedForAll(any(), any(), any()))
                 .thenReturn(IS_APPROVE_FOR_ALL_WRAPPER);
@@ -1198,7 +1201,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
-        given(encoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
+        given(evmEncoder.encodeGetApproved(RIPEMD160)).willReturn(successResult);
         getApprovedPrecompile
                 .when(() -> GetApprovedPrecompile.decodeGetApproved(any(), any()))
                 .thenReturn(GET_APPROVED_WRAPPER);
@@ -1290,7 +1293,7 @@ class ERC721PrecompilesTest {
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
         given(wrappedLedgers.totalSupplyOf(any())).willReturn(10L);
-        given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
+        given(evmEncoder.encodeTotalSupply(10L)).willReturn(successResult);
 
         subject.prepareFields(frame);
         subject.prepareComputation(pretendArguments, a -> a);
@@ -1328,7 +1331,7 @@ class ERC721PrecompilesTest {
                 .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedPretendArguments), any()))
                 .thenReturn(BALANCE_OF_WRAPPER);
         given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
-        given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(evmEncoder.encodeBalance(10L)).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -1370,7 +1373,7 @@ class ERC721PrecompilesTest {
                 .willReturn(true);
         given(wrappedLedgers.ownerOf(any())).willReturn(senderAddress);
         given(wrappedLedgers.canonicalAddress(senderAddress)).willReturn(senderAddress);
-        given(encoder.encodeOwner(senderAddress)).willReturn(successResult);
+        given(evmEncoder.encodeOwner(senderAddress)).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);
@@ -1649,7 +1652,7 @@ class ERC721PrecompilesTest {
                 .when(() -> TokenURIPrecompile.decodeTokenUriNFT(nestedPretendArguments))
                 .thenReturn(ownerOfAndTokenUriWrapper);
         given(wrappedLedgers.metadataOf(any())).willReturn("Metadata");
-        given(encoder.encodeTokenUri("Metadata")).willReturn(successResult);
+        given(evmEncoder.encodeTokenUri("Metadata")).willReturn(successResult);
 
         // when:
         subject.prepareFields(frame);

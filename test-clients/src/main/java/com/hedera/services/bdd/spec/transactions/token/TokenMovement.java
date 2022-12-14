@@ -19,8 +19,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookU
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTokenId;
 
 import com.google.protobuf.UInt32Value;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -40,8 +40,8 @@ public class TokenMovement {
     private Optional<String> sender;
     private Optional<String> receiver;
     private final Optional<List<String>> receivers;
-    private final Optional<Function<HapiApiSpec, String>> senderFn;
-    private final Optional<Function<HapiApiSpec, String>> receiverFn;
+    private final Optional<Function<HapiSpec, String>> senderFn;
+    private final Optional<Function<HapiSpec, String>> receiverFn;
     private int expectedDecimals;
     private boolean isApproval = false;
 
@@ -66,9 +66,9 @@ public class TokenMovement {
 
     TokenMovement(
             String token,
-            Function<HapiApiSpec, String> senderFn,
+            Function<HapiSpec, String> senderFn,
             long amount,
-            Function<HapiApiSpec, String> receiverFn) {
+            Function<HapiSpec, String> receiverFn) {
         this.token = token;
         this.senderFn = Optional.of(senderFn);
         this.amount = amount;
@@ -126,7 +126,7 @@ public class TokenMovement {
     }
 
     public boolean isTrulyToken() {
-        return token != HapiApiSuite.HBAR_TOKEN_SENTINEL;
+        return token != HapiSuite.HBAR_TOKEN_SENTINEL;
     }
 
     public boolean isFungibleToken() {
@@ -160,7 +160,7 @@ public class TokenMovement {
         return all;
     }
 
-    public TokenTransferList specializedFor(HapiApiSpec spec) {
+    public TokenTransferList specializedFor(HapiSpec spec) {
         var scopedTransfers = TokenTransferList.newBuilder();
         var id = isTrulyToken() ? asTokenId(token, spec) : HBAR_SENTINEL_TOKEN_ID;
         scopedTransfers.setToken(id);
@@ -190,7 +190,7 @@ public class TokenMovement {
         return scopedTransfers.build();
     }
 
-    public TokenTransferList specializedForNft(HapiApiSpec spec) {
+    public TokenTransferList specializedForNft(HapiSpec spec) {
         var scopedTransfers = TokenTransferList.newBuilder();
         var id = isTrulyToken() ? asTokenId(token, spec) : HBAR_SENTINEL_TOKEN_ID;
         scopedTransfers.setToken(id);
@@ -204,7 +204,7 @@ public class TokenMovement {
         return scopedTransfers.build();
     }
 
-    private AccountAmount adjustment(String name, long value, HapiApiSpec spec) {
+    private AccountAmount adjustment(String name, long value, HapiSpec spec) {
         return AccountAmount.newBuilder()
                 .setAccountID(asIdForKeyLookUp(name, spec))
                 .setAmount(value)
@@ -213,7 +213,7 @@ public class TokenMovement {
     }
 
     private NftTransfer adjustment(
-            String senderName, String receiverName, long value, HapiApiSpec spec) {
+            String senderName, String receiverName, long value, HapiSpec spec) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
                 .setReceiverAccountID(asIdForKeyLookUp(receiverName, spec))
@@ -282,7 +282,7 @@ public class TokenMovement {
         }
 
         public TokenMovement between(
-                Function<HapiApiSpec, String> senderFn, Function<HapiApiSpec, String> receiverFn) {
+                Function<HapiSpec, String> senderFn, Function<HapiSpec, String> receiverFn) {
             return new TokenMovement(token, senderFn, amount, receiverFn);
         }
 
@@ -332,10 +332,10 @@ public class TokenMovement {
     }
 
     public static Builder movingHbar(long amount) {
-        return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL);
+        return new Builder(amount, HapiSuite.HBAR_TOKEN_SENTINEL);
     }
 
     public static Builder movingHbarWithAllowance(long amount) {
-        return new Builder(amount, HapiApiSuite.HBAR_TOKEN_SENTINEL, true);
+        return new Builder(amount, HapiSuite.HBAR_TOKEN_SENTINEL, true);
     }
 }

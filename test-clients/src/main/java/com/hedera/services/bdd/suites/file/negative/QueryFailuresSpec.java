@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file.negative;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -23,13 +23,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class QueryFailuresSpec extends HapiApiSuite {
+public class QueryFailuresSpec extends HapiSuite {
     private static final Logger log = LogManager.getLogger(QueryFailuresSpec.class);
 
     public static void main(String... args) {
@@ -37,14 +37,16 @@ public class QueryFailuresSpec extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(
-                new HapiApiSpec[] {
-                    getsExpectedRejections(),
-                });
+    public boolean canRunConcurrent() {
+        return true;
     }
 
-    private HapiApiSpec getsExpectedRejections() {
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(getsExpectedRejections());
+    }
+
+    private HapiSpec getsExpectedRejections() {
         return defaultHapiSpec("getsExpectedRejections")
                 .given(fileCreate("tbd"), fileDelete("tbd"))
                 .when()

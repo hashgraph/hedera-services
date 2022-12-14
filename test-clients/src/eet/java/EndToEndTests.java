@@ -13,60 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.hedera.services.bdd.suites.consensus.ChunkingSuite;
-import com.hedera.services.bdd.suites.consensus.SubmitMessageSuite;
-import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
-import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
-import com.hedera.services.bdd.suites.consensus.TopicGetInfoSuite;
-import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
-import com.hedera.services.bdd.suites.contract.hapi.ContractGetBytecodeSuite;
-import com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite;
+import com.hedera.services.bdd.suites.autorenew.GracePeriodRestrictionsSuite;
 import com.hedera.services.bdd.suites.contract.precompile.AssociatePrecompileSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractBurnHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractKeysHTSSuite;
 import com.hedera.services.bdd.suites.contract.precompile.ContractMintHTSSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoCreateSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoDeleteAllowanceSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoUpdateSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.CryptoTransferHTSSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DelegatePrecompileSuite;
+import com.hedera.services.bdd.suites.contract.precompile.DissociatePrecompileSuite;
 import com.hedera.services.bdd.suites.fees.CongestionPricingSuite;
-import com.hedera.services.bdd.suites.fees.SpecialAccountsAreExempted;
 import com.hedera.services.bdd.suites.file.ExchangeRateControlSuite;
-import com.hedera.services.bdd.suites.file.FetchSystemFiles;
-import com.hedera.services.bdd.suites.file.FileAppendSuite;
-import com.hedera.services.bdd.suites.file.FileCreateSuite;
 import com.hedera.services.bdd.suites.file.FileUpdateSuite;
-import com.hedera.services.bdd.suites.file.PermissionSemanticsSpec;
 import com.hedera.services.bdd.suites.file.ProtectedFilesUpdateSuite;
-import com.hedera.services.bdd.suites.file.negative.QueryFailuresSpec;
-import com.hedera.services.bdd.suites.file.negative.UpdateFailuresSpec;
-import com.hedera.services.bdd.suites.file.positive.SysDelSysUndelSpec;
-import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
-import com.hedera.services.bdd.suites.misc.CannotDeleteSystemEntitiesSuite;
-import com.hedera.services.bdd.suites.records.CharacterizationSuite;
+import com.hedera.services.bdd.suites.leaky.FeatureFlagSuite;
 import com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.CryptoRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.FileRecordsSanityCheckSuite;
 import com.hedera.services.bdd.suites.records.RecordCreationSuite;
-import com.hedera.services.bdd.suites.records.SignedTransactionBytesRecordsSuite;
+import com.hedera.services.bdd.suites.regression.TargetNetworkPrep;
 import com.hedera.services.bdd.suites.regression.UmbrellaRedux;
 import com.hedera.services.bdd.suites.schedule.ScheduleCreateSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleDeleteSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleExecutionSpecs;
 import com.hedera.services.bdd.suites.schedule.ScheduleRecordSpecs;
+import com.hedera.services.bdd.suites.schedule.ScheduleSignSpecs;
 import com.hedera.services.bdd.suites.throttling.ThrottleDefValidationSuite;
-import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
-import com.hedera.services.bdd.suites.token.TokenCreateSpecs;
-import com.hedera.services.bdd.suites.token.TokenDeleteSpecs;
-import com.hedera.services.bdd.suites.token.TokenManagementSpecs;
-import com.hedera.services.bdd.suites.token.TokenPauseSpecs;
-import com.hedera.services.bdd.suites.token.TokenTransactSpecs;
-import com.hedera.services.bdd.suites.token.TokenUpdateSpecs;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -75,13 +52,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class EndToEndTests extends E2ETestBase {
+    @Order(0)
+    @Tag("setup")
+    @TestFactory
+    Collection<DynamicContainer> networkSetup() {
+        return List.of(
+                extractSpecsFromSuite(TargetNetworkPrep::new),
+                extractSpecsFromSuite(FeatureFlagSuite::new));
+    }
 
     // These tests need to run first since they are hyper-sensitive to the tests in the
     // contractPrecompile group.
     // Running these after the the contractPrecompile group will cause the
     // GasLimitOverMaxGasLimitFailsPrecheck &
     // KvLimitsEnforced tests to fail.
-    @Order(0)
     @Tag("file")
     @TestFactory
     Collection<DynamicContainer> file() {
@@ -89,12 +73,12 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(DiverseStateCreation::new),
                 //				extractSpecsFromSuite(DiverseStateValidation::new),
                 extractSpecsFromSuite(ExchangeRateControlSuite::new),
-                extractSpecsFromSuite(FetchSystemFiles::new),
-                extractSpecsFromSuite(FileAppendSuite::new),
-                extractSpecsFromSuite(FileCreateSuite::new),
+                //              extractSpecsFromSuite(FetchSystemFiles::new),
+                //              extractSpecsFromSuite(FileAppendSuite::new),
+                //              extractSpecsFromSuite(FileCreateSuite::new),
                 //				extractSpecsFromSuite(FileDeleteSuite::new),
                 extractSpecsFromSuite(FileUpdateSuite::new),
-                extractSpecsFromSuite(PermissionSemanticsSpec::new),
+                //              extractSpecsFromSuite(PermissionSemanticsSpec::new),
                 extractSpecsFromSuite(ProtectedFilesUpdateSuite::new)
                 //				extractSpecsFromSuite(ValidateNewAddressBook::new)
                 );
@@ -106,7 +90,7 @@ class EndToEndTests extends E2ETestBase {
         return List.of(
                 //				extractSpecsFromSuite(AccountAutoRenewalSuite::new),
                 //				extractSpecsFromSuite(AutoRemovalCasesSuite::new),
-                //				extractSpecsFromSuite(GracePeriodRestrictionsSuite::new) TODO FAILS
+                extractSpecsFromSuite(GracePeriodRestrictionsSuite::new)
                 // extractSpecsFromSuite(MacroFeesChargedSanityCheckSuite::new), TODO FAILS
                 //				extractSpecsFromSuite(NoGprIfNoAutoRenewSuite::new),
                 //				extractSpecsFromSuite(TopicAutoRenewalSuite::new)
@@ -127,12 +111,13 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> consensus() {
         return List.of(
                 //				extractSpecsFromSuite(AssortedHcsOps::new),
-                extractSpecsFromSuite(ChunkingSuite::new),
-                extractSpecsFromSuite(SubmitMessageSuite::new),
-                extractSpecsFromSuite(TopicCreateSuite::new),
-                extractSpecsFromSuite(TopicDeleteSuite::new),
-                extractSpecsFromSuite(TopicGetInfoSuite::new),
-                extractSpecsFromSuite(TopicUpdateSuite::new));
+                //              extractSpecsFromSuite(ChunkingSuite::new),
+                //              extractSpecsFromSuite(SubmitMessageSuite::new),
+                //              extractSpecsFromSuite(TopicCreateSuite::new),
+                //              extractSpecsFromSuite(TopicDeleteSuite::new),
+                //              extractSpecsFromSuite(TopicGetInfoSuite::new),
+                //              extractSpecsFromSuite(TopicUpdateSuite::new)
+                );
     }
 
     @Tag("contract")
@@ -141,29 +126,31 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> contractPrecompile() {
         return List.of(
-                extractSpecsFromSuite(AssociatePrecompileSuite::new),
-                extractSpecsFromSuite(ContractBurnHTSSuite::new),
-                extractSpecsFromSuite(ContractHTSSuite::new),
-                extractSpecsFromSuite(ContractKeysHTSSuite::new),
-                extractSpecsFromSuite(ContractMintHTSSuite::new)
+                //              extractSpecsFromSuite(AssociatePrecompileSuite::new),
+                //              extractSpecsFromSuite(ContractBurnHTSSuite::new),
+                //              extractSpecsFromSuite(ContractHTSSuite::new),
+                //              extractSpecsFromSuite(ContractKeysHTSSuite::new),
+                //              extractSpecsFromSuite(ContractMintHTSSuite::new)
                 //				extractSpecsFromSuite(CreatePrecompileSuite::new)
                 );
     }
 
     @Tag("contract")
     @Tag("contract.precompile")
-    @Tag("contract.precompile.part1.eth")
+    @Order(1)
     @TestFactory
-    Collection<DynamicContainer> contractPrecompileEth() {
+    List<DynamicTest> contractPrecompileEth() {
         return List.of(
-                new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(AssociatePrecompileSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractBurnHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractKeysHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(ContractMintHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(CreatePrecompileSuite::new)
-                });
+                concurrentEthSpecsFrom(
+                        AssociatePrecompileSuite::new,
+                        ContractBurnHTSSuite::new,
+                        ContractHTSSuite::new,
+                        ContractKeysHTSSuite::new,
+                        ContractMintHTSSuite::new,
+                        CreatePrecompileSuite::new,
+                        DissociatePrecompileSuite::new,
+                        CryptoTransferHTSSuite::new,
+                        DelegatePrecompileSuite::new));
     }
 
     @Tag("contract")
@@ -173,24 +160,11 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> contractPrecompile2() {
         return List.of(
                 new DynamicContainer[] {
-                    //				extractSpecsFromSuite(CryptoTransferHTSSuite::new), TODO FAILS
-                    //				extractSpecsFromSuite(DelegatePrecompileSuite::new),  TODO FAILS
+                    //				extractSpecsFromSuite(CryptoTransferHTSSuite::new),
+                    //				extractSpecsFromSuite(DelegatePrecompileSuite::new),
                     //				extractSpecsFromSuite(DissociatePrecompileSuite::new),
-                    //				extractSpecsFromSuite(DynamicGasCostSuite::new),  TODO FAILS
-                    //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)  TODO FAILS
-                });
-    }
-
-    @Tag("contract")
-    @Tag("contract.precompile")
-    @Tag("contract.precompile.part2.eth")
-    @TestFactory
-    Collection<DynamicContainer> contractPrecompile2Eth() {
-        return List.of(
-                new DynamicContainer[] {
-                    //				extractSpecsFromSuiteForEth(DissociatePrecompileSuite::new), TODO FAILS
-                    //				extractSpecsFromSuiteForEth(CryptoTransferHTSSuite::new),
-                    //				extractSpecsFromSuiteForEth(DelegatePrecompileSuite::new)
+                    //				extractSpecsFromSuite(DynamicGasCostSuite::new),
+                    //				extractSpecsFromSuite(MixedHTSPrecompileTestsSuite::new)
                 });
     }
 
@@ -286,10 +260,10 @@ class EndToEndTests extends E2ETestBase {
                     //				extractSpecsFromSuite(ContractCallSuite::new), TODO FAILS
                     //				extractSpecsFromSuite(ContractCreateSuite::new),
                     //				extractSpecsFromSuite(ContractDeleteSuite::new), TODO FAILS
-                    extractSpecsFromSuite(ContractGetBytecodeSuite::new),
+                    //              extractSpecsFromSuite(ContractGetBytecodeSuite::new),
                     //				extractSpecsFromSuite(ContractGetInfoSuite::new),
                     //				extractSpecsFromSuite(ContractMusicalChairsSuite::new),
-                    extractSpecsFromSuite(ContractUpdateSuite::new)
+                    //              extractSpecsFromSuite(ContractUpdateSuite::new)
                 });
     }
 
@@ -318,15 +292,15 @@ class EndToEndTests extends E2ETestBase {
                 // PASS
                 //				extractSpecsFromSuite(AutoAccountUpdateSuite::new), // TODO Fails BUT SHOULD
                 // PASS
-                extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
-                extractSpecsFromSuite(CryptoDeleteAllowanceSuite::new),
+                //              extractSpecsFromSuite(CryptoApproveAllowanceSuite::new),
+                //              extractSpecsFromSuite(CryptoDeleteAllowanceSuite::new),
                 //				extractSpecsFromSuite(CryptoCornerCasesSuite::new),
-                extractSpecsFromSuite(CryptoCreateSuite::new),
+                //              extractSpecsFromSuite(CryptoCreateSuite::new),
                 //				extractSpecsFromSuite(CryptoDeleteSuite::new),
                 //				extractSpecsFromSuite(CryptoGetInfoRegression::new),
                 //				extractSpecsFromSuite(CryptoGetRecordsRegression::new), // TODO Fails
-                extractSpecsFromSuite(CryptoTransferSuite::new),
-                extractSpecsFromSuite(CryptoUpdateSuite::new)
+                //              extractSpecsFromSuite(CryptoTransferSuite::new),
+                //              extractSpecsFromSuite(CryptoUpdateSuite::new)
                 //				extractSpecsFromSuite(CrytoCreateSuiteWithUTF8::new),
                 //				extractSpecsFromSuite(HelloWorldSpec::new),
                 //				extractSpecsFromSuite(MiscCryptoSuite::new),
@@ -344,12 +318,12 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> fees() {
         return List.of(
                 //				extractSpecsFromSuite(AllBaseOpFeesSuite::new),
-                extractSpecsFromSuite(CongestionPricingSuite::new),
+                extractSpecsFromSuite(CongestionPricingSuite::new)
                 //				extractSpecsFromSuite(CostOfEverythingSuite::new),
                 //				extractSpecsFromSuite(CreateAndUpdateOps::new),
                 //				extractSpecsFromSuite(OverlappingKeysSuite::new),
                 //				extractSpecsFromSuite(QueryPaymentExploitsSuite::new),
-                extractSpecsFromSuite(SpecialAccountsAreExempted::new)
+                //              extractSpecsFromSuite(SpecialAccountsAreExempted::new)
                 //				extractSpecsFromSuite(TransferListServiceFeesSuite::new)
                 );
     }
@@ -360,7 +334,8 @@ class EndToEndTests extends E2ETestBase {
     Collection<DynamicContainer> filePositive() {
         return List.of(
                 //				extractSpecsFromSuite(CreateSuccessSpec::new),
-                extractSpecsFromSuite(SysDelSysUndelSpec::new));
+                //              extractSpecsFromSuite(SysDelSysUndelSpec::new)
+                );
     }
 
     @Tag("file")
@@ -371,8 +346,9 @@ class EndToEndTests extends E2ETestBase {
                 //				extractSpecsFromSuite(AppendFailuresSpec::new),
                 //				extractSpecsFromSuite(CreateFailuresSpec::new),
                 //				extractSpecsFromSuite(DeleteFailuresSpec::new),
-                extractSpecsFromSuite(QueryFailuresSpec::new),
-                extractSpecsFromSuite(UpdateFailuresSpec::new));
+                //              extractSpecsFromSuite(QueryFailuresSpec::new),
+                //              extractSpecsFromSuite(UpdateFailuresSpec::new)
+                );
     }
 
     // TODO MISSING: NewOpInConstructorSpecs, ChildStorageSpecs, BigArraySpec,
@@ -402,13 +378,17 @@ class EndToEndTests extends E2ETestBase {
     @Tag("meta")
     @TestFactory
     Collection<DynamicContainer> meta() {
-        return List.of(extractSpecsFromSuite(VersionInfoSpec::new));
+        return List.of(
+                //              extractSpecsFromSuite(VersionInfoSpec::new)
+                );
     }
 
     @Tag("meta")
     @TestFactory
     Collection<DynamicContainer> misc() {
-        return List.of(extractSpecsFromSuite(CannotDeleteSystemEntitiesSuite::new));
+        return List.of(
+                //              extractSpecsFromSuite(CannotDeleteSystemEntitiesSuite::new)
+                );
     }
 
     @Tag("perf")
@@ -524,13 +504,13 @@ class EndToEndTests extends E2ETestBase {
     @TestFactory
     Collection<DynamicContainer> records() {
         return List.of(
-                extractSpecsFromSuite(CharacterizationSuite::new),
-                extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
-                extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new),
-                //				extractSpecsFromSuite(DuplicateManagementTest::new),
-                extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
                 extractSpecsFromSuite(RecordCreationSuite::new),
-                extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new));
+                extractSpecsFromSuite(FileRecordsSanityCheckSuite::new),
+                extractSpecsFromSuite(ContractRecordsSanityCheckSuite::new),
+                extractSpecsFromSuite(CryptoRecordsSanityCheckSuite::new)
+                //				extractSpecsFromSuite(DuplicateManagementTest::new),
+                // extractSpecsFromSuite(SignedTransactionBytesRecordsSuite::new)
+                );
     }
 
     @Tag("regression")
@@ -542,16 +522,25 @@ class EndToEndTests extends E2ETestBase {
                 extractSpecsFromSuite(UmbrellaRedux::new));
     }
 
+    @Tag("throttling")
+    @TestFactory
+    Collection<DynamicContainer> throttling() {
+        return List.of(
+                //				extractSpecsFromSuite(GasLimitThrottlingSuite::new),
+                //				extractSpecsFromSuite(PrivilegedOpsSuite::new), TODO FAILS
+                extractSpecsFromSuite(ThrottleDefValidationSuite::new));
+    }
+
     @Tag("schedule")
     @TestFactory
     Collection<DynamicContainer> schedule() {
         return List.of(
                 extractSpecsFromSuite(ScheduleCreateSpecs::new),
+                extractSpecsFromSuite(ScheduleSignSpecs::new),
+                extractSpecsFromSuite(ScheduleRecordSpecs::new),
                 extractSpecsFromSuite(ScheduleDeleteSpecs::new),
-                extractSpecsFromSuite(ScheduleExecutionSpecs::new),
+                extractSpecsFromSuite(ScheduleExecutionSpecs::new)
                 //				extractSpecsFromSuite(ScheduleExecutionSpecStateful::new),
-                extractSpecsFromSuite(ScheduleRecordSpecs::new)
-                //				extractSpecsFromSuite(ScheduleSignSpecs::new) TODO FAILS
                 );
     }
 
@@ -563,32 +552,23 @@ class EndToEndTests extends E2ETestBase {
                 );
     }
 
-    @Tag("throttling")
-    @TestFactory
-    Collection<DynamicContainer> throttling() {
-        return List.of(
-                //				extractSpecsFromSuite(GasLimitThrottlingSuite::new),
-                //				extractSpecsFromSuite(PrivilegedOpsSuite::new), TODO FAILS
-                extractSpecsFromSuite(ThrottleDefValidationSuite::new));
-    }
-
     @Tag("token")
     @TestFactory
     Collection<DynamicContainer> token() {
         return List.of(
                 //				extractSpecsFromSuite(Hip17UnhappyAccountsSuite::new),
                 //				extractSpecsFromSuite(Hip17UnhappyTokensSuite::new),
-                extractSpecsFromSuite(TokenAssociationSpecs::new),
-                extractSpecsFromSuite(TokenCreateSpecs::new),
-                extractSpecsFromSuite(TokenDeleteSpecs::new),
+                //              extractSpecsFromSuite(TokenAssociationSpecs::new),
+                //              extractSpecsFromSuite(TokenCreateSpecs::new),
+                //              extractSpecsFromSuite(TokenDeleteSpecs::new),
                 //				extractSpecsFromSuite(TokenFeeScheduleUpdateSpecs::new),
-                extractSpecsFromSuite(TokenManagementSpecs::new),
+                //              extractSpecsFromSuite(TokenManagementSpecs::new),
                 //				extractSpecsFromSuite(TokenManagementSpecsStateful::new),
                 //				extractSpecsFromSuite(TokenMiscOps::new),
-                extractSpecsFromSuite(TokenPauseSpecs::new),
+                //              extractSpecsFromSuite(TokenPauseSpecs::new),
                 //				extractSpecsFromSuite(TokenTotalSupplyAfterMintBurnWipeSuite::new),
-                extractSpecsFromSuite(TokenTransactSpecs::new),
-                extractSpecsFromSuite(TokenUpdateSpecs::new)
+                //              extractSpecsFromSuite(TokenTransactSpecs::new),
+                //              extractSpecsFromSuite(TokenUpdateSpecs::new)
                 //				extractSpecsFromSuite(UniqueTokenManagementSpecs::new)
                 );
     }

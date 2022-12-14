@@ -28,6 +28,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetApprovedWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetApprovedPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
@@ -61,8 +62,9 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     public GetApprovedPrecompile(
@@ -70,7 +72,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
             final PrecompilePricingUtils pricingUtils) {
-        this(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        this(null, syntheticTxnFactory, ledgers, encoder, null, pricingUtils);
     }
 
     @Override
@@ -92,7 +94,7 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile
         final var canonicalSpender = ledgers.canonicalAddress(spender.toEvmAddress());
         return tokenId == null
                 ? encoder.encodeGetApproved(SUCCESS.getNumber(), canonicalSpender)
-                : encoder.encodeGetApproved(canonicalSpender);
+                : evmEncoder.encodeGetApproved(canonicalSpender);
     }
 
     public static GetApprovedWrapper<TokenID> decodeGetApproved(

@@ -15,14 +15,14 @@
  */
 package com.hedera.services.bdd.suites.perf;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ConsensusSubmitMessage;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +33,7 @@ import org.apache.logging.log4j.Logger;
  * ConsensusSubmitMessage to avoid the potential INSUFFICIENT_PAYER_BALANCE while the test is
  * running.
  */
-public class AdjustFeeScheduleSuite extends HapiApiSuite {
+public class AdjustFeeScheduleSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(AdjustFeeScheduleSuite.class);
 
     public AdjustFeeScheduleSuite() {}
@@ -43,11 +43,11 @@ public class AdjustFeeScheduleSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(updateFeesFor());
     }
 
-    private HapiApiSpec updateFeesFor() {
+    private HapiSpec updateFeesFor() {
         final var fixedFee = ONE_HUNDRED_HBARS;
         return customHapiSpec("updateFees")
                 .withProperties(
