@@ -19,9 +19,9 @@ import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.UpdateTrackingAccount;
-import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpdater {
 
@@ -35,12 +35,20 @@ public class HederaEvmStackedWorldStateUpdater extends AbstractLedgerEvmWorldUpd
     }
 
     @Override
-    public EvmAccount getAccount(Address address) {
-        final var balance = Wei.of(hederaEvmEntityAccess.getBalance(address));
-        final var evmAccount =
-                new UpdatedHederaEvmAccount(accountAccessor.canonicalAddress(address));
-        evmAccount.setBalance(balance);
+    public Account get(Address address) {
+        if (!address.equals(accountAccessor.canonicalAddress(address))) {
+            return null;
+        }
 
-        return new WrappedEvmAccount(new UpdateTrackingAccount<>(evmAccount));
+        final var accountBalance = Wei.of(hederaEvmEntityAccess.getBalance(address));
+        final var account = new UpdatedHederaEvmAccount(address);
+        account.setBalance(accountBalance);
+
+        return new UpdateTrackingAccount<>(account);
+    }
+
+    @Override
+    public EvmAccount getAccount(Address address) {
+        return (EvmAccount) get(address);
     }
 }
