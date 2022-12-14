@@ -173,6 +173,8 @@ public class LeakyContractTestsSuite extends HapiSuite {
             "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
+    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
+            KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
 
     public static void main(String... args) {
         new LeakyContractTestsSuite().runSuiteSync();
@@ -1294,8 +1296,6 @@ public class LeakyContractTestsSuite extends HapiSuite {
         final var CONTRACT = "CryptoTransfer";
         final var SENDER = "sender";
         final var FUNGIBLE_TOKEN = "fungibleToken";
-        final var DELEGATE_CONTRACT_KEY_SHAPE =
-                KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
         final var DELEGATE_KEY = "contractKey";
         final var NOT_SUPPORTED_TXN = "notSupportedTxn";
         final var TOTAL_SUPPLY = 1_000;

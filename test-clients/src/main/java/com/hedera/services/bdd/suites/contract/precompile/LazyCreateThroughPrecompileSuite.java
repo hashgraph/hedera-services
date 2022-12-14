@@ -136,11 +136,11 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final String NFT_TOKEN = "Token_NFT";
     private static final String TRANSFER_TXN = "transferTxn";
     private static final String TRANSFER_TXN2 = "transferTxn2";
-    private final String NFT_KEY = "nftKey";
-    private final String AUTO_CREATION_MODES = "AutoCreationModes";
-    private final String CREATION_ATTEMPT = "creationAttempt";
-    private final String ONE_TIME = "ONE TIME";
-    private final String CREATE_DIRECTLY = "createDirectly";
+    private static final String NFT_KEY = "nftKey";
+    private static final String AUTO_CREATION_MODES = "AutoCreationModes";
+    private static final String CREATION_ATTEMPT = "creationAttempt";
+    private static final String ONE_TIME = "ONE TIME";
+    private static final String CREATE_DIRECTLY = "createDirectly";
     private static final String ERC_721_CONTRACT = "ERC721Contract";
     private static final String TRANSFER_THEN_REVERT = "transferThenRevert";
     private static final String TRANSFER_FROM_THEN_REVERT = "transferFromThenRevert";
@@ -165,6 +165,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
     private static final ByteString META3 = ByteStringUtils.wrapUnsafely("meta3".getBytes());
     private static final ByteString META4 = ByteStringUtils.wrapUnsafely("meta4".getBytes());
     private static final String BASE_APPROVE_TXN = "baseApproveTxn";
+    private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
 
     public static void main(String... args) {
         new LazyCreateThroughPrecompileSuite().runSuiteAsync();
@@ -447,7 +448,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             cryptoUpdate(SENDER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -477,7 +478,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                                     .gas(GAS_TO_OFFER),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -571,7 +572,7 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                                             cryptoUpdate(SENDER).key(DELEGATE_KEY),
                                             contractCall(
                                                             CONTRACT,
-                                                            "transferMultipleTokens",
+                                                            TRANSFER_MULTIPLE_TOKENS,
                                                             tokenTransferLists()
                                                                     .withTokenTransferList(
                                                                             tokenTransferList()
@@ -1499,8 +1500,6 @@ public class LazyCreateThroughPrecompileSuite extends HapiSuite {
                 .when(
                         sourcing(
                                 () ->
-                                        /* FIXME -  IS FIXED BY ANOTHER PR
-                                         */
                                         contractCall(
                                                         AUTO_CREATION_MODES,
                                                         "createDirectlyViaFungible",
