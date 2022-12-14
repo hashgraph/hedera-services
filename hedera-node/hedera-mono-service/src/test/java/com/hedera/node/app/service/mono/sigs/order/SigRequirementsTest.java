@@ -313,7 +313,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
@@ -344,9 +344,11 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.swirlds.merkle.map.MerkleMap;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+
 import org.junit.jupiter.api.Test;
 
 public class SigRequirementsTest {
@@ -5413,8 +5415,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayer()
-                    throws Throwable {
+    getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -5430,8 +5432,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayerAsReceiver()
-                    throws Throwable {
+    getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOnWithCustomPayerAsReceiver()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_SIG_REQ);
 
@@ -5461,8 +5463,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayer()
-                    throws Throwable {
+    getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -5477,8 +5479,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayerAsReceiver()
-                    throws Throwable {
+    getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqOffWithCustomPayerAsReceiver()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_NO_FEE_COLLECTOR_NO_SIG_REQ);
 
@@ -5509,8 +5511,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqONWithCustomPayer()
-                    throws Throwable {
+    getsTokenFeeScheduleUpdateWithFeeScheduleKeyAndFeeCollectorWithReceiverSigReqONWithCustomPayer()
+            throws Throwable {
         // given:
         setupFor(UPDATE_TOKEN_WITH_FEE_SCHEDULE_KEY_WITH_FEE_COLLECTOR_SIG_REQ);
 
@@ -6240,8 +6242,8 @@ public class SigRequirementsTest {
 
     @Test
     void
-            getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithMasterPayerAsCustomPayer()
-                    throws Throwable {
+    getsScheduleCreateSysAccountUpdateWithPrivilegedCustomPayerAndRegularPayerWithMasterPayerAsCustomPayer()
+            throws Throwable {
         // given:
         setupFor(SCHEDULE_CREATE_SYS_ACCOUNT_UPDATE_WITH_PRIVILEGED_CUSTOM_PAYER_AND_REGULAR_PAYER);
 
@@ -6480,5 +6482,13 @@ public class SigRequirementsTest {
                             throw new AssertionError("All keys should be mappable!");
                         })
                 .collect(toList());
+    }
+
+    public static Key sanityRestored(HederaKey jKey) {
+        try {
+            return JKey.mapJKey((JKey) jKey);
+        } catch (Exception ignore) {
+            throw new AssertionError("All keys should be mappable!");
+        }
     }
 }

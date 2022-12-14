@@ -16,9 +16,8 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.isAlias;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_DELEGATING_SPENDER;
@@ -26,8 +25,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSF
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
+import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.key.HederaKey;
+import com.hedera.node.app.spi.meta.SigTransactionMetadata;
 import com.hedera.node.app.spi.meta.SigTransactionMetadataBuilder;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -46,15 +47,17 @@ import org.apache.commons.lang3.NotImplementedException;
  * A {@code CryptoPreTransactionHandler} implementation that pre-computes the required signing keys
  * (but not the candidate signatures) for each crypto operation.
  *
- * <p><b>NOTE:</b> this class intentionally changes two error response codes relative to
- * {@link com.hedera.node.app.service.mono.sigs.order.SigRequirements}.
+ * <p><b>NOTE:</b> this class intentionally changes two error response codes relative to {@link
+ * com.hedera.node.app.service.mono.sigs.order.SigRequirements}.
+ *
  * <ol>
- *     <li>When an immutable account (i.e., {@code 0.0.800} or {@code 0.0.801}) is put in
- *     any role other than exactly an hbar receiver, fails with
- *     {@code ACCOUNT_IS_IMMUTABLE} rather than {@code INVALID_ACCOUNT_ID}.</li>
- *     <li>When a missing account is used as an NFT sender, fails with {@code INVALID_ACCOUNT_ID}
- *     rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.</li>
+ *   <li>When an immutable account (i.e., {@code 0.0.800} or {@code 0.0.801}) is put in any role
+ *       other than exactly an hbar receiver, fails with {@code ACCOUNT_IS_IMMUTABLE} rather than
+ *       {@code INVALID_ACCOUNT_ID}.
+ *   <li>When a missing account is used as an NFT sender, fails with {@code INVALID_ACCOUNT_ID}
+ *       rather than {@code ACCOUNT_ID_DOES_NOT_EXIST}.
  * </ol>
+ *
  * EET expectations may need to be updated accordingly.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
@@ -172,8 +175,9 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
     public TransactionMetadata preHandleCryptoTransfer(final TransactionBody txn, AccountID payer) {
         Objects.requireNonNull(txn);
         final var op = txn.getCryptoTransfer();
-        final var payer = txn.getTransactionID().getAccountID();
-        final var meta = new SigTransactionMetadata(accountStore, txn, payer);
+        final var meta = new SigTransactionMetadataBuilder<>(accountStore)
+                .payerKeyFor(payer)
+                .txnBody(txn);
 
         for (TokenTransferList transfers : op.getTokenTransfersList()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.getToken());
@@ -181,15 +185,17 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                 handleTokenTransfers(transfers.getTransfersList(), meta);
                 handleNftTransfers(transfers.getNftTransfersList(), meta, tokenMeta, op);
             } else {
-                meta.setStatus(tokenMeta.failureReason());
+                meta.status(tokenMeta.failureReason());
             }
         }
         handleHbarTransfers(op, meta);
 
-        return meta;
+        return meta.build();
     }
 
-    private void handleTokenTransfers(List<AccountAmount> transfers, SigTransactionMetadata meta) {
+    private void handleTokenTransfers(
+            List<AccountAmount> transfers,
+            SigTransactionMetadataBuilder<?> meta) {
         for (AccountAmount accountAmount : transfers) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
             if (!keyOrFailure.failed()) {
@@ -208,7 +214,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                                 && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID)
                                 && isAlias(accountAmount.getAccountID());
                 if (!isMissingAcc) {
-                    meta.setStatus(keyOrFailure.failureReason());
+                    meta.status(keyOrFailure.failureReason());
                 }
             }
         }
@@ -216,7 +222,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
 
     private void handleNftTransfers(
             List<NftTransfer> nftTransfersList,
-            SigTransactionMetadata meta,
+            SigTransactionMetadataBuilder<?> meta,
             TokenStore.TokenMetaOrLookupFailureReason tokenMeta,
             CryptoTransferTransactionBody op) {
         for (NftTransfer nftTransfer : nftTransfersList) {
@@ -228,7 +234,7 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                         meta.addNonPayerKey(nftTransfer.getSenderAccountID());
                     }
                 } else {
-                    meta.setStatus(senderKeyOrFailure.failureReason());
+                    meta.status(senderKeyOrFailure.failureReason());
                 }
 
                 final var receiverKeyOrFailure =
@@ -255,17 +261,18 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
                             INVALID_ACCOUNT_ID.equals(receiverKeyOrFailure.failureReason())
                                     && isAlias(nftTransfer.getReceiverAccountID());
                     if (!isMissingAcc) {
-                        meta.setStatus(receiverKeyOrFailure.failureReason());
+                        meta.status(receiverKeyOrFailure.failureReason());
                     }
                 }
             } else {
-                meta.setStatus(INVALID_ACCOUNT_ID);
+                meta.status(INVALID_ACCOUNT_ID);
             }
         }
     }
 
     private void handleHbarTransfers(
-            CryptoTransferTransactionBody op, SigTransactionMetadata meta) {
+            CryptoTransferTransactionBody op,
+            SigTransactionMetadataBuilder<?> meta) {
         for (AccountAmount accountAmount : op.getTransfers().getAccountAmountsList()) {
             final var keyOrFailure = accountStore.getKey(accountAmount.getAccountID());
 
@@ -281,13 +288,13 @@ public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransacti
             } else {
                 final var isCredit = accountAmount.getAmount() > 0L;
                 final var isImmutableAcc =
-                        isCredit && keyOrFailure.failureReason().equals(ACCOUNT_IS_IMMUTABLE);
+                        isCredit && keyOrFailure.failureReason().equals(ALIAS_IS_IMMUTABLE);
                 final var isMissingAcc =
                         isCredit
                                 && keyOrFailure.failureReason().equals(INVALID_ACCOUNT_ID)
                                 && isAlias(accountAmount.getAccountID());
                 if (!isImmutableAcc && !isMissingAcc) {
-                    meta.setStatus(keyOrFailure.failureReason());
+                    meta.status(keyOrFailure.failureReason());
                 }
             }
         }

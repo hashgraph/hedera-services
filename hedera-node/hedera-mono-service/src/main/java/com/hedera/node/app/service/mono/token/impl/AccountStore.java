@@ -24,15 +24,13 @@ import static com.hedera.node.app.spi.KeyOrLookupFailureReason.PRESENT_BUT_NOT_R
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withFailureReason;
 import static com.hedera.node.app.spi.KeyOrLookupFailureReason.withKey;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
-import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -128,7 +126,7 @@ public final class AccountStore implements AccountKeyLookup {
             throw new IllegalArgumentException("Provided Key is null");
         }
         if (key.isEmpty()) {
-            return withFailureReason(ACCOUNT_IS_IMMUTABLE);
+            return withFailureReason(ALIAS_IS_IMMUTABLE);
         }
         return withKey(key);
     }

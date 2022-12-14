@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.BasicTransactionContext;
 import com.hedera.node.app.service.mono.context.MutableStateChildren;
 import com.hedera.node.app.service.mono.context.primitives.StateView;

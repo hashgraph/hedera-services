@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.config;
+package com.hedera.test.mocks;
 
-public class MockAccountNumbers extends AccountNumbers {
-    public MockAccountNumbers() {
-        super(null);
-    }
 
+import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+
+public class MockAccountNumbers implements HederaAccountNumbers {
     @Override
     public long treasury() {
         return 2;

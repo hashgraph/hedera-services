@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.never;
 import static org.mockito.BDDMockito.verify;
 
 import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.files.HFileMeta;

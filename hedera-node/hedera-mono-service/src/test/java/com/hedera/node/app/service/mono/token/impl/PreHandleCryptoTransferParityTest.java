@@ -17,46 +17,15 @@ package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.mono.sigs.order.SigRequirementsTest.sanityRestored;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_EXTANT_SENDERS;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_MISSING_SENDERS;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS;
-import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS;
 import static com.hedera.test.factories.scenarios.CryptoTransferScenarios.TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO;
 import static com.hedera.test.factories.scenarios.TxnHandlingScenario.FIRST_TOKEN_SENDER_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.MISC_ACCOUNT_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.NO_RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.RECEIVER_SIG_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.SECOND_TOKEN_SENDER_KT;
 import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,8 +33,8 @@ import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.node.app.service.mono.config.MockAccountNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.test.mocks.MockAccountNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
@@ -82,14 +51,15 @@ import org.junit.jupiter.api.Test;
 class PreHandleCryptoTransferParityTest {
     private final HederaAccountNumbers accountNumbers = new MockAccountNumbers();
     private final HederaFileNumbers fileNumbers = new MockFileNumbers();
-    private final PreHandleContext preHandleContext =
-            new PreHandleContext(accountNumbers, fileNumbers);
 
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
         final var now = Instant.now();
+        final var accountStore = AdapterUtils.wellKnownAccountStoreAt(now);
+        final PreHandleContext preHandleContext =
+                new PreHandleContext(accountNumbers, fileNumbers, accountStore);
         subject =
                 new CryptoPreTransactionHandlerImpl(
                         AdapterUtils.wellKnownAccountStoreAt(now),
@@ -97,348 +67,356 @@ class PreHandleCryptoTransferParityTest {
                         preHandleContext);
     }
 
-    @Test
-    void cryptoTransferReceiverIsMissingAliasScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackWhenReceiverIsTreasury() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferSenderIsMissingAliasScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO));
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
-    }
-
-    @Test
-    void cryptoTransferNoReceiverSigUsingAliasScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO));
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferToImmutableReceiverScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferTokenToImmutableReceiverScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO));
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
-    }
-
-    @Test
-    void cryptoTransferNftFromMissingSenderScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO));
-        // THEN
-        //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
-    }
-
-    @Test
-    void cryptoTransferNftToMissingReceiverAliasScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferNftFromImmutableSenderScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO));
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
-    }
-
-    @Test
-    void cryptoTransferNftToImmutableReceiverScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO));
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(
-                meta, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
-    }
-
-    @Test
-    void cryptoTransferFromImmutableSenderScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO));
-        // THEN
-        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
-        // NOW
-        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
-    }
-
-    @Test
-    void cryptoTransferNoReceiverSigScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO));
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferReceiverSigScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferReceiverSigUsingAliasScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void cryptoTransferMissingAccountScenario() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO));
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
-    }
-
-    @Test
-    void tokenTransactWithExtantSenders() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_EXTANT_SENDERS));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactMovingHbarsWithExtantSender() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithReceiverSigReqAndExtantSenders() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithMissingSenders() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS));
-        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChange() {
-        final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeUsingAlias() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeReceiverSigReq() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        RECEIVER_SIG_KT.asKey(),
-                        SECOND_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReq() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeNoReceiverSigReqButRoyaltyFeeWithFallbackTriggered() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(
-                        DEFAULT_PAYER_KT.asKey(),
-                        FIRST_TOKEN_SENDER_KT.asKey(),
-                        NO_RECEIVER_SIG_KT.asKey()));
-    }
-
-    @Test
-    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackTriggeredButSenderIsTreasury() {
-        final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY));
-        assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
-    }
-
+//    @Test
+//    void cryptoTransferReceiverIsMissingAliasScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_RECEIVER_IS_MISSING_ALIAS_SCENARIO));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackWhenReceiverIsTreasury() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(
+//                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_WHEN_RECEIVER_IS_TREASURY));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), NO_RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferSenderIsMissingAliasScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_SENDER_IS_MISSING_ALIAS_SCENARIO));
+//        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+//    }
+//
+//    @Test
+//    void cryptoTransferNoReceiverSigUsingAliasScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_USING_ALIAS_SCENARIO));
+//        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferToImmutableReceiverScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_TO_IMMUTABLE_RECEIVER_SCENARIO));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferTokenToImmutableReceiverScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_TOKEN_TO_IMMUTABLE_RECEIVER_SCENARIO));
+//        // THEN
+//        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
+//        // NOW
+//        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+//    }
+//
+//    @Test
+//    void cryptoTransferNftFromMissingSenderScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_NFT_FROM_MISSING_SENDER_SCENARIO));
+//        // THEN
+//        //        assertMetaFailedWith(meta, ACCOUNT_ID_DOES_NOT_EXIST);
+//        // NOW
+//        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+//    }
+//
+//    @Test
+//    void cryptoTransferNftToMissingReceiverAliasScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_NFT_TO_MISSING_RECEIVER_ALIAS_SCENARIO));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferNftFromImmutableSenderScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_NFT_FROM_IMMUTABLE_SENDER_SCENARIO));
+//        // THEN
+//        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
+//        // NOW
+//        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+//    }
+//
+//    @Test
+//    void cryptoTransferNftToImmutableReceiverScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_NFT_TO_IMMUTABLE_RECEIVER_SCENARIO));
+//        // THEN
+//        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
+//        // NOW
+//        assertMetaFailedWithReqPayerKeyAnd(
+//                meta, ACCOUNT_IS_IMMUTABLE, FIRST_TOKEN_SENDER_KT.asKey());
+//    }
+//
+//    @Test
+//    void cryptoTransferFromImmutableSenderScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_FROM_IMMUTABLE_SENDER_SCENARIO));
+//        // THEN
+//        //        assertMetaFailedWith(meta, INVALID_ACCOUNT_ID);
+//        // NOW
+//        assertMetaFailedWithReqPayerKeyAnd(meta, ACCOUNT_IS_IMMUTABLE);
+//    }
+//
+//    @Test
+//    void cryptoTransferNoReceiverSigScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_NO_RECEIVER_SIG_SCENARIO));
+//        assertThat(sanityRestored(meta.requiredNonPayerKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferReceiverSigScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_SCENARIO));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferReceiverSigUsingAliasScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(CRYPTO_TRANSFER_RECEIVER_SIG_USING_ALIAS_SCENARIO));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void cryptoTransferMissingAccountScenario() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(CRYPTO_TRANSFER_MISSING_ACCOUNT_SCENARIO));
+//        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
+//    }
+//
+//    @Test
+//    void tokenTransactWithExtantSenders() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_EXTANT_SENDERS));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), SECOND_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactMovingHbarsWithExtantSender() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(TOKEN_TRANSACT_MOVING_HBARS_WITH_EXTANT_SENDER));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactMovingHbarsWithReceiverSigReqAndExtantSender() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(
+//                                TOKEN_TRANSACT_MOVING_HBARS_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDER));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(
+//                        DEFAULT_PAYER_KT.asKey(),
+//                        FIRST_TOKEN_SENDER_KT.asKey(),
+//                        RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithReceiverSigReqAndExtantSenders() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(TOKEN_TRANSACT_WITH_RECEIVER_SIG_REQ_AND_EXTANT_SENDERS));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(
+//                        DEFAULT_PAYER_KT.asKey(),
+//                        FIRST_TOKEN_SENDER_KT.asKey(),
+//                        SECOND_TOKEN_SENDER_KT.asKey(),
+//                        RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithMissingSenders() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_MISSING_SENDERS));
+//        assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChange() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeUsingAlias() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_USING_ALIAS));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeReceiverSigReq() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_RECEIVER_SIG_REQ));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(
+//                        DEFAULT_PAYER_KT.asKey(),
+//                        FIRST_TOKEN_SENDER_KT.asKey(),
+//                        RECEIVER_SIG_KT.asKey(),
+//                        SECOND_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeNoReceiverSigReq() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeNoReceiverSigReqButRoyaltyFeeWithFallbackTriggered() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(
+//                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_BUT_ROYALTY_FEE_WITH_FALLBACK_TRIGGERED));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(
+//                        DEFAULT_PAYER_KT.asKey(),
+//                        FIRST_TOKEN_SENDER_KT.asKey(),
+//                        NO_RECEIVER_SIG_KT.asKey()));
+//    }
+//
+//    @Test
+//    void tokenTransactWithOwnershipChangeNoSigReqWithFallbackTriggeredButSenderIsTreasury() {
+//        final var meta =
+//                subject.preHandleCryptoTransfer(
+//                        txnFrom(
+//                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_SIG_REQ_WITH_FALLBACK_TRIGGERED_BUT_SENDER_IS_TREASURY));
+//        assertThat(
+//                sanityRestored(meta.requiredNonPayerKeys()),
+//                contains(DEFAULT_PAYER_KT.asKey(), MISC_ACCOUNT_KT.asKey()));
+//    }
+//
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToHbar() {
+        final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR);
         final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_HBAR));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndFallbackNotTriggeredDueToFt() {
+        final var theTxn = txnFrom( TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT);
         final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_FALLBACK_NOT_TRIGGERED_DUE_TO_FT));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), FIRST_TOKEN_SENDER_KT.asKey()));
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(FIRST_TOKEN_SENDER_KT.asKey()));
     }
 
     @Test
     void tokenTransactWithOwnershipChangeNoReceiverSigReqAndMissingToken() {
+        final var theTxn = txnFrom( TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN);
         final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(
-                                TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_NO_RECEIVER_SIG_REQ_AND_MISSING_TOKEN));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_TOKEN_ID);
     }
 
     @Test
     void tokenTransactWithOwnershipChangeMissingSender() {
+        final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER);
         final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_SENDER));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID);
     }
 
     @Test
     void tokenTransactWithOwnershipChangeMissingReceiver() {
+        final var theTxn = txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER);
         final var meta =
-                subject.preHandleCryptoTransfer(
-                        txnFrom(TOKEN_TRANSACT_WITH_OWNERSHIP_CHANGE_MISSING_RECEIVER));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
         assertMetaFailedWithReqPayerKeyAnd(meta, INVALID_ACCOUNT_ID, FIRST_TOKEN_SENDER_KT.asKey());
     }
 
     @Test
     void cryptoTransferAllowanceSpenderScenario() {
+        final var theTxn = txnFrom(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
                 subject.preHandleCryptoTransfer(
-                        txnFrom(CRYPTO_TRANSFER_ALLOWANCE_SPENDER_SCENARIO));
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+                        theTxn, theTxn.getTransactionID().getAccountID());
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
     void tokenTransferAllowanceSpenderScenario() {
+        final var theTxn = txnFrom(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(TOKEN_TRANSFER_ALLOWANCE_SPENDER_SCENARIO));
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
 
     @Test
     void nftTransferAllowanceSpenderScenario() {
+        final var theTxn = txnFrom(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO);
         final var meta =
-                subject.preHandleCryptoTransfer(txnFrom(NFT_TRANSFER_ALLOWANCE_SPENDER_SCENARIO));
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+                subject.preHandleCryptoTransfer(theTxn, theTxn.getTransactionID().getAccountID());
+
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
 
     private void assertMetaFailedWithReqPayerKeyAnd(
             final TransactionMetadata meta, final ResponseCodeEnum expectedFailure) {
         assertTrue(meta.failed());
         assertEquals(expectedFailure, meta.status());
-        assertThat(sanityRestored(meta.getReqKeys()), contains(DEFAULT_PAYER_KT.asKey()));
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
+        assertTrue(meta.requiredNonPayerKeys().isEmpty());
     }
 
     private void assertMetaFailedWithReqPayerKeyAnd(
@@ -447,9 +425,10 @@ class PreHandleCryptoTransferParityTest {
             final Key aNonPayerKey) {
         assertTrue(meta.failed());
         assertEquals(expectedFailure, meta.status());
+        assertEquals(sanityRestored(meta.payerKey()), DEFAULT_PAYER_KT.asKey());
         assertThat(
-                sanityRestored(meta.getReqKeys()),
-                contains(DEFAULT_PAYER_KT.asKey(), aNonPayerKey));
+                sanityRestored(meta.requiredNonPayerKeys()),
+                contains(aNonPayerKey));
     }
 
     private TransactionBody txnFrom(final TxnHandlingScenario scenario) {

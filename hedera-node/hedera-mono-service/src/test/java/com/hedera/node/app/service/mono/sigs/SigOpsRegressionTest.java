@@ -45,7 +45,7 @@ import static org.mockito.BDDMockito.mock;
 import com.hedera.node.app.service.mono.config.EntityNumbers;
 import com.hedera.node.app.service.mono.config.FileNumbers;
 import com.hedera.node.app.service.mono.config.MockEntityNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.files.HederaFs;
 import com.hedera.node.app.service.mono.keys.HederaKeyActivation;
 import com.hedera.node.app.service.mono.keys.KeyActivationCharacteristics;

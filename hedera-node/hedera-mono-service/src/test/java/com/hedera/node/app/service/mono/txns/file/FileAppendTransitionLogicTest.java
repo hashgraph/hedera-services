@@ -36,7 +36,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.FileNumbers;
-import com.hedera.node.app.service.mono.config.MockFileNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.files.HFileMeta;

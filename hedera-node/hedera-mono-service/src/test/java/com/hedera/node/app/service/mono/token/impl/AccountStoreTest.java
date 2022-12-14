@@ -18,7 +18,7 @@ package com.hedera.node.app.service.mono.token.impl;
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -246,13 +246,13 @@ class AccountStoreTest {
         var result = subject.getKey(payer);
 
         assertTrue(result.failed());
-        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
 
         result = subject.getKeyIfReceiverSigRequired(payer);
 
         assertTrue(result.failed());
-        assertEquals(ACCOUNT_IS_IMMUTABLE, result.failureReason());
+        assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
     }
 }

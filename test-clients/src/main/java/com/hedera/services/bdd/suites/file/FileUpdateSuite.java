@@ -180,21 +180,6 @@ public class FileUpdateSuite extends HapiSuite {
                 messageSubmissionSizeChange());
     }
 
-    private HapiApiSpec getMainnetInfo() {
-        return customHapiSpec("GetMainnetInfo")
-                .withProperties(
-                        Map.of(
-                                "nodes", "35.237.200.180",
-                                "fees.useFixedOffer", "true",
-                                "fees.fixedOffer", "100000000",
-                                "default.payer", "0.0.950",
-                                "default.payer.pemKeyLoc", "mainnet-account950.pem",
-                                "default.payer.pemKeyPassphrase", "BtUiHHK7rAnn4TPA"))
-                .given()
-                .when()
-                .then(getFileInfo("0.0.150").logged());
-    }
-
     private HapiSpec associateHasExpectedSemantics() {
         return defaultHapiSpec("AssociateHasExpectedSemantics")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))

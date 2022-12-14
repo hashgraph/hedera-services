@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.mono.config;
+package com.hedera.test.mocks;
 
+import com.hedera.node.app.service.mono.config.FileNumbers;
+import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import com.hederahashgraph.api.proto.java.FileID;
 
-public class MockFileNumbers extends FileNumbers {
-    public MockFileNumbers() {
-        super(null, null);
-    }
-
+public class MockFileNumbers implements HederaFileNumbers {
     @Override
     public long addressBook() {
         return 101;
@@ -67,7 +65,6 @@ public class MockFileNumbers extends FileNumbers {
         return 123;
     }
 
-    @Override
     public FileID toFid(long num) {
         return FileID.newBuilder().setRealmNum(0).setShardNum(0).setFileNum(num).build();
     }

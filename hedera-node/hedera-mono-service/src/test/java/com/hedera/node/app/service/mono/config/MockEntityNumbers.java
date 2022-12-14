@@ -15,6 +15,9 @@
  */
 package com.hedera.node.app.service.mono.config;
 
+import com.hedera.test.mocks.MockAccountNumbers;
+import com.hedera.test.mocks.MockFileNumbers;
+
 public class MockEntityNumbers extends EntityNumbers {
     public MockEntityNumbers() {
         super(new MockFileNumbers(), new MockHederaNumbers(), new MockAccountNumbers());

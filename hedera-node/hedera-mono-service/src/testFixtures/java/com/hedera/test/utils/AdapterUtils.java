@@ -64,10 +64,10 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link AccountStore} containing the "well-known" accounts and aliases
-     * that exist in a {@code SigRequirementsTest} scenario. This allows us to re-use
-     * these scenarios in unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler}
-     * implementations that require an {@link AccountStore}.
+     * Returns the {@link AccountStore} containing the "well-known" accounts and aliases that exist
+     * in a {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit
+     * tests of {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require
+     * an {@link AccountStore}.
      *
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known account store
@@ -81,10 +81,10 @@ public class AdapterUtils {
     }
 
     /**
-     * Returns the {@link TokenStore} containing the "well-known" tokens that exist in a
-     * {@code SigRequirementsTest} scenario. This allows us to re-use these scenarios in
-     * unit tests of {@link com.hedera.node.app.spi.PreTransactionHandler}  implementations
-     * that require a {@link TokenStore}.
+     * Returns the {@link TokenStore} containing the "well-known" tokens that exist in a {@code
+     * SigRequirementsTest} scenario. This allows us to re-use these scenarios in unit tests of
+     * {@link com.hedera.node.app.spi.PreTransactionHandler} implementations that require a {@link
+     * TokenStore}.
      *
      * @param mockLastModified the mock last modified time for the store to assume
      * @return the well-known token store
