@@ -15,17 +15,17 @@
  */
 package com.hedera.services.bdd.suites.misc;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TogglePayerRecordUse extends HapiApiSuite {
+public class TogglePayerRecordUse extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TogglePayerRecordUse.class);
 
     public static void main(String... args) throws Exception {
@@ -33,14 +33,14 @@ public class TogglePayerRecordUse extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     changePayerRecordStateStorage(),
                 });
     }
 
-    private HapiApiSpec changePayerRecordStateStorage() {
+    private HapiSpec changePayerRecordStateStorage() {
         final String NEW_VALUE = "false";
 
         return defaultHapiSpec("ChangePayerRecordStateStorage")

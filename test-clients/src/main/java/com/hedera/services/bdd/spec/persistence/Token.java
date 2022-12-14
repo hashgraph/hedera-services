@@ -32,7 +32,7 @@ import static com.hedera.services.bdd.spec.persistence.SpecKey.wipeKeyFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
@@ -61,7 +61,7 @@ public class Token {
     private String symbol = DEFAULT_SYMBOL;
     private String treasury = UNSPECIFIED_TREASURY;
 
-    public void registerWhatIsKnown(HapiApiSpec spec, String name, Optional<EntityId> entityId) {
+    public void registerWhatIsKnown(HapiSpec spec, String name, Optional<EntityId> entityId) {
         if (kycKey != UNUSED_KEY) {
             kycKey.registerWith(spec, asKycKeyFor(name));
         }

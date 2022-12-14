@@ -34,7 +34,7 @@ class PreCheckExceptionTest {
         assertThat(exception.getMessage()).isNull();
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
+    @SuppressWarnings({"ThrowableNotThrown", "ConstantConditions"})
     @Test
     void testConstructorWithIllegalParameters() {
         assertThatThrownBy(() -> new PreCheckException(null))

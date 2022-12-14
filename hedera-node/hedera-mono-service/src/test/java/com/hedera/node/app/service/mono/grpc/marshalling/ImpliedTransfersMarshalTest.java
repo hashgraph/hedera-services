@@ -130,7 +130,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void rejectsPerceivedMissing() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
@@ -149,7 +149,7 @@ class ImpliedTransfersMarshalTest {
     @Test
     void rejectsPerceivedInvalidAliasKey() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
@@ -166,9 +166,9 @@ class ImpliedTransfersMarshalTest {
     }
 
     @Test
-    void rejectsAutoCreationIfNotEnabled() {
+    void rejectsIfAutoAndLazyCreationNotEnabled() {
         setupHbarOnlyFixture();
-        setupPropsWithAutoCreationEnabled(false);
+        setupPropsWithAutoAndLazyCreation(false, false);
 
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
@@ -184,9 +184,45 @@ class ImpliedTransfersMarshalTest {
     }
 
     @Test
+    void rejectsAutoCreationIfAutoCreationDisabledAndLazyCreationEnabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(false, true);
+
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsWithLazyCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        assertEquals(result.getMeta(), expectedMeta);
+    }
+
+    @Test
+    void rejectsLazyCreationIfAutoAndLazyCreationDisabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(false, false);
+
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
+
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsNoAutoCreation, NOT_SUPPORTED, NO_CUSTOM_FEE_META, NO_ALIASES);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        assertEquals(result.getMeta(), expectedMeta);
+    }
+
+    @Test
     void startsWithChecks() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var expectedMeta =
                 new ImpliedTransfersMeta(
@@ -195,7 +231,7 @@ class ImpliedTransfersMarshalTest {
                         Collections.emptyList(),
                         NO_ALIASES);
 
-        givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED);
+        givenValidity(TRANSFER_LIST_SIZE_LIMIT_EXCEEDED, propsWithAutoCreation);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -203,9 +239,9 @@ class ImpliedTransfersMarshalTest {
     }
 
     @Test
-    void getsHbarOnly() {
+    void getsHbarWithOnlyAutoCreationEnabled() {
         setupHbarOnlyFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         given(aliasCheck.test(op)).willReturn(true);
         given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
         given(aliasResolver.perceivedAutoCreations()).willReturn(1);
@@ -217,7 +253,63 @@ class ImpliedTransfersMarshalTest {
                 new ImpliedTransfersMeta(
                         propsWithAutoCreation, OK, Collections.emptyList(), mockAliases, 1);
 
-        givenValidity(OK);
+        givenValidity(OK, propsWithAutoCreation);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        // then:
+        assertEquals(expectedChanges, result.getAllBalanceChanges());
+        assertEquals(result.getMeta(), expectedMeta);
+        assertTrue(result.getAssessedCustomFees().isEmpty());
+    }
+
+    @Test
+    void getsHbarWithOnlyLazyCreationEnabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(false, true);
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
+        given(aliasResolver.resolutions()).willReturn(mockAliases);
+
+        final var expectedChanges = expNonFeeChanges(false);
+        // and:
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsWithLazyCreation, OK, Collections.emptyList(), mockAliases, 0, 1);
+
+        givenValidity(OK, propsWithLazyCreation);
+
+        final var result = subject.unmarshalFromGrpc(op, payer);
+
+        // then:
+        assertEquals(expectedChanges, result.getAllBalanceChanges());
+        assertEquals(result.getMeta(), expectedMeta);
+        assertTrue(result.getAssessedCustomFees().isEmpty());
+    }
+
+    @Test
+    void getsHbarWithBothAutoAndLazyCreationEnabled() {
+        setupHbarOnlyFixture();
+        setupPropsWithAutoAndLazyCreation(true, true);
+        given(aliasCheck.test(op)).willReturn(true);
+        given(aliasResolver.resolve(op, aliasManager)).willReturn(op);
+        given(aliasResolver.perceivedAutoCreations()).willReturn(1);
+        given(aliasResolver.perceivedLazyCreations()).willReturn(1);
+        given(aliasResolver.resolutions()).willReturn(mockAliases);
+
+        final var expectedChanges = expNonFeeChanges(false);
+        // and:
+        final var expectedMeta =
+                new ImpliedTransfersMeta(
+                        propsWithAutoAndLazyCreation,
+                        OK,
+                        Collections.emptyList(),
+                        mockAliases,
+                        1,
+                        1);
+
+        givenValidity(OK, propsWithAutoAndLazyCreation);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -240,7 +332,7 @@ class ImpliedTransfersMarshalTest {
                         .build();
         AccountID validAliasAccount =
                 AccountID.newBuilder().setAlias(aliasB.toByteString()).build();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var builder =
                 CryptoTransferTransactionBody.newBuilder()
@@ -259,7 +351,7 @@ class ImpliedTransfersMarshalTest {
                 new ImpliedTransfersMeta(
                         propsWithAutoCreation, OK, Collections.emptyList(), NO_ALIASES);
 
-        givenValidity(OK);
+        givenValidity(OK, propsWithAutoCreation);
 
         final var result = subject.unmarshalFromGrpc(op, payer);
 
@@ -312,7 +404,7 @@ class ImpliedTransfersMarshalTest {
                         .setAmount(50)
                         .setIsApproval(true)
                         .build();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
 
         final var builder =
                 CryptoTransferTransactionBody.newBuilder()
@@ -346,7 +438,7 @@ class ImpliedTransfersMarshalTest {
         expectedChanges.add(bc5);
         expectedChanges.add(bc6);
 
-        givenValidity(OK);
+        givenValidity(OK, propsWithAutoCreation);
         given(changeManagerFactory.from(any(), anyInt())).willReturn(changeManager);
         given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
 
@@ -382,14 +474,14 @@ class ImpliedTransfersMarshalTest {
     void getsHappyPath() {
         // setup:
         setupFullFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
         final var expectedMeta =
                 new ImpliedTransfersMeta(propsWithAutoCreation, OK, mockFinalMeta, NO_ALIASES);
 
-        givenValidity(OK);
+        givenValidity(OK, propsWithAutoCreation);
         // and:
         given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
         given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
@@ -437,7 +529,7 @@ class ImpliedTransfersMarshalTest {
     void getsUnhappyPath() {
         // setup:
         setupFullFixture();
-        setupProps();
+        setupPropsWithAutoAndLazyCreation(true, false);
         // and:
         final var nonFeeChanges = expNonFeeChanges(true);
         // and:
@@ -448,7 +540,7 @@ class ImpliedTransfersMarshalTest {
                         mockFinalMeta,
                         NO_ALIASES);
 
-        givenValidity(OK);
+        givenValidity(OK, propsWithAutoCreation);
         // and:
         given(changeManagerFactory.from(nonFeeChanges, 3)).willReturn(changeManager);
         given(customSchedulesFactory.apply(customFeeSchedules)).willReturn(schedulesManager);
@@ -474,27 +566,21 @@ class ImpliedTransfersMarshalTest {
         assertEquals(expectedMeta, result.getMeta());
     }
 
-    private void givenValidity(ResponseCodeEnum s) {
-        given(
-                        xferChecks.fullPureValidation(
-                                op.getTransfers(),
-                                op.getTokenTransfersList(),
-                                propsWithAutoCreation))
+    private void givenValidity(ResponseCodeEnum s, ImpliedTransfersMeta.ValidationProps props) {
+        given(xferChecks.fullPureValidation(op.getTransfers(), op.getTokenTransfersList(), props))
                 .willReturn(s);
     }
 
-    private void setupProps() {
-        setupPropsWithAutoCreationEnabled(true);
-    }
-
-    private void setupPropsWithAutoCreationEnabled(final boolean flag) {
+    private void setupPropsWithAutoAndLazyCreation(
+            final boolean isAutoCreationEnabled, final boolean isLazyCreationEnabled) {
         given(dynamicProperties.maxTransferListSize()).willReturn(maxExplicitHbarAdjusts);
         given(dynamicProperties.maxTokenTransferListSize()).willReturn(maxExplicitTokenAdjusts);
         given(dynamicProperties.maxNftTransfersLen()).willReturn(maxExplicitOwnershipChanges);
         given(dynamicProperties.maxXferBalanceChanges()).willReturn(maxBalanceChanges);
         given(dynamicProperties.maxCustomFeeDepth()).willReturn(maxFeeNesting);
         given(dynamicProperties.areNftsEnabled()).willReturn(areNftsEnabled);
-        given(dynamicProperties.isAutoCreationEnabled()).willReturn(flag);
+        given(dynamicProperties.isAutoCreationEnabled()).willReturn(isAutoCreationEnabled);
+        given(dynamicProperties.isLazyCreationEnabled()).willReturn(isLazyCreationEnabled);
         given(dynamicProperties.areAllowancesEnabled()).willReturn(areAllowancesEnabled);
     }
 
@@ -547,14 +633,14 @@ class ImpliedTransfersMarshalTest {
         ans.add(changingHbar(adjustFrom(cModel, +50), payer));
         if (incTokens) {
             final var adjustOne =
-                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false);
+                    tokenAdjust(aAccount, Id.fromGrpcToken(anotherId), -50, payer, false, false);
             adjustOne.setExpectedDecimals(2);
 
             ans.add(adjustOne);
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false));
-            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false));
-            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anotherId), 25, payer, false, false));
+            ans.add(tokenAdjust(bAccount, Id.fromGrpcToken(anId), -100, payer, false, false));
+            ans.add(tokenAdjust(cAccount, Id.fromGrpcToken(anId), 100, payer, false, false));
             ans.add(
                     changingNftOwnership(
                             Id.fromGrpcToken(yetAnotherId),
@@ -587,6 +673,7 @@ class ImpliedTransfersMarshalTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     true,
+                    false,
                     areAllowancesEnabled);
     private final ImpliedTransfersMeta.ValidationProps propsNoAutoCreation =
             new ImpliedTransfersMeta.ValidationProps(
@@ -597,6 +684,31 @@ class ImpliedTransfersMarshalTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     false,
+                    false,
+                    areAllowancesEnabled);
+
+    private final ImpliedTransfersMeta.ValidationProps propsWithAutoAndLazyCreation =
+            new ImpliedTransfersMeta.ValidationProps(
+                    maxExplicitHbarAdjusts,
+                    maxExplicitTokenAdjusts,
+                    maxExplicitOwnershipChanges,
+                    maxFeeNesting,
+                    maxBalanceChanges,
+                    areNftsEnabled,
+                    true,
+                    true,
+                    areAllowancesEnabled);
+
+    private final ImpliedTransfersMeta.ValidationProps propsWithLazyCreation =
+            new ImpliedTransfersMeta.ValidationProps(
+                    maxExplicitHbarAdjusts,
+                    maxExplicitTokenAdjusts,
+                    maxExplicitOwnershipChanges,
+                    maxFeeNesting,
+                    maxBalanceChanges,
+                    areNftsEnabled,
+                    false,
+                    true,
                     areAllowancesEnabled);
 
     private final AccountID aModel = asAccount("1.2.3");
@@ -616,9 +728,9 @@ class ImpliedTransfersMarshalTest {
     private final AccountID payer = AccountID.newBuilder().setAccountNum(1_234L).build();
 
     private final BalanceChange aTrigger =
-            BalanceChange.tokenAdjust(aAccount, Id.fromGrpcToken(anId), -1);
+            BalanceChange.tokenCustomFeeAdjust(aAccount, Id.fromGrpcToken(anId), -1);
     private final BalanceChange bTrigger =
-            BalanceChange.tokenAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
+            BalanceChange.tokenCustomFeeAdjust(bAccount, Id.fromGrpcToken(anotherId), -2);
 
     private final List<CustomFeeMeta> mockFinalMeta =
             List.of(new CustomFeeMeta(aAccount, aAccount, Collections.emptyList()));

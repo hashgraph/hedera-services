@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -29,13 +29,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECORD_NOT_FOUND;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
+public class SignedTransactionBytesRecordsSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(SignedTransactionBytesRecordsSuite.class);
 
@@ -44,11 +44,12 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {transactionsWithOnlySigMap()
-                    //						transactionsWithSignedTxnBytesAndSigMap(),
-                    //						transactionsWithSignedTxnBytesAndBodyBytes()
+                new HapiSpec[] {
+                    transactionsWithOnlySigMap(),
+                    transactionsWithSignedTxnBytesAndSigMap(),
+                    transactionsWithSignedTxnBytesAndBodyBytes()
                 });
     }
 
@@ -57,7 +58,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
         return true;
     }
 
-    private HapiApiSpec transactionsWithOnlySigMap() {
+    private HapiSpec transactionsWithOnlySigMap() {
         final var contract = "BalanceLookup";
         return defaultHapiSpec("TransactionsWithOnlySigMap")
                 .given(
@@ -85,7 +86,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
                                 .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
     }
 
-    private HapiApiSpec transactionsWithSignedTxnBytesAndSigMap() {
+    private HapiSpec transactionsWithSignedTxnBytesAndSigMap() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndSigMap")
                 .given()
                 .when(
@@ -98,7 +99,7 @@ public class SignedTransactionBytesRecordsSuite extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(RECORD_NOT_FOUND));
     }
 
-    private HapiApiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
+    private HapiSpec transactionsWithSignedTxnBytesAndBodyBytes() {
         return defaultHapiSpec("TransactionsWithSignedTxnBytesAndBodyBytes")
                 .given()
                 .when(
