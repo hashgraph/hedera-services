@@ -58,31 +58,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.accountId;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.TRUE;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenSupplyType.FINITE;
@@ -199,8 +186,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-                feesAreCorrectForHollowAccountCreationWithCryptoTransfer());
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -860,106 +846,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                 .expectedBalanceWithChargedUsd(
                                                         ONE_HUNDRED_HBARS, 0, 0))
                                 .logged());
-    }
-
-    private HapiSpec feesAreCorrectForHollowAccountCreationWithCryptoTransfer() {
-        final long REDUCED_NODE_FEE = 2L;
-        final long REDUCED_NETWORK_FEE = 3L;
-        final long REDUCED_SERVICE_FEE = 3L;
-        final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
-        return defaultHapiSpec("FeesAreCorrectForHollowAccountCreationWithCryptoTransfer")
-            .given(
-                UtilVerbs.overriding(LAZY_CREATE_FEATURE_FLAG, "true"),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                cryptoCreate(LAZY_CREATE_SPONSOR)
-                    .balance(ONE_HUNDRED_HBARS + 2 * REDUCED_TOTAL_FEE))
-            .when(
-                reduceFeeFor(
-                    CryptoTransfer,
-                    REDUCED_NODE_FEE,
-                    REDUCED_NETWORK_FEE,
-                    REDUCED_SERVICE_FEE),
-                reduceFeeFor(
-                    CryptoUpdate,
-                    REDUCED_NODE_FEE,
-                    REDUCED_NETWORK_FEE,
-                    REDUCED_SERVICE_FEE),
-                reduceFeeFor(
-                    CryptoCreate,
-                    REDUCED_NODE_FEE,
-                    REDUCED_NETWORK_FEE,
-                    REDUCED_SERVICE_FEE))
-            .then(
-                withOpContext(
-                    (spec, opLog) -> {
-                        final var ecdsaKey =
-                            spec.registry()
-                                .getKey(SECP_256K1_SOURCE_KEY)
-                                .getECDSASecp256K1()
-                                .toByteArray();
-                        final var evmAddress =
-                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                        // try to create the hollow account without having enough
-                        // balance to pay for the finalization (CryptoUpdate) fee
-                        final var op =
-                            cryptoTransfer(
-                                tinyBarsFromTo(
-                                    LAZY_CREATE_SPONSOR,
-                                    evmAddress,
-                                    ONE_HUNDRED_HBARS))
-                                .payingWith(LAZY_CREATE_SPONSOR)
-                                .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                                .via(TRANSFER_TXN);
-                        final var notExistingAccountInfo =
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
-                        // transfer the needed balance for the finalization fee to the
-                        // sponsor; we need + 2 * TOTAL_FEE, not 1, since we paid for
-                        // the
-                        // failed crypto transfer
-                        final var op2 =
-                            cryptoTransfer(
-                                tinyBarsFromTo(
-                                    GENESIS,
-                                    LAZY_CREATE_SPONSOR,
-                                    2 * REDUCED_TOTAL_FEE));
-                        // now the sponsor can successfully create the hollow account
-                        final var op3 =
-                            cryptoTransfer(
-                                tinyBarsFromTo(
-                                    LAZY_CREATE_SPONSOR,
-                                    evmAddress,
-                                    ONE_HUNDRED_HBARS))
-                                .payingWith(LAZY_CREATE_SPONSOR)
-                                .hasKnownStatus(SUCCESS)
-                                .via(TRANSFER_TXN);
-                        final var op4 =
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(
-                                    accountWith()
-                                        .hasEmptyKey()
-                                        .alias(evmAddress)
-                                        .expectedBalanceWithChargedUsd(
-                                            ONE_HUNDRED_HBARS, 0, 0)
-                                        .autoRenew(
-                                            THREE_MONTHS_IN_SECONDS)
-                                        .receiverSigReq(false)
-                                        .memo(LAZY_MEMO));
-                        final var op5 =
-                            getAccountBalance(LAZY_CREATE_SPONSOR)
-                                .hasTinyBars(0)
-                                .logged();
-                        allRunFor(
-                            spec,
-                            op,
-                            notExistingAccountInfo,
-                            op2,
-                            op3,
-                            op4,
-                            op5,
-                            resetToDefault(LAZY_CREATE_FEATURE_FLAG),
-                            uploadDefaultFeeSchedules(GENESIS));
-                    }));
     }
 
     private HapiSpec aliasCanBeUsedOnManyAccountsNotAsAlias() {

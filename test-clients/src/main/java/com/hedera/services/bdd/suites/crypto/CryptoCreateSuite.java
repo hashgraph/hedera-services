@@ -26,31 +26,19 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUtf8Bytes;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -101,8 +89,7 @@ public class CryptoCreateSuite extends HapiSuite {
                 createAnAccountWithECKeyAndNoAlias(),
                 createAnAccountWithEDKeyAndNoAlias(),
                 createAnAccountWithED25519KeyAndED25519Alias(),
-                createAnAccountWithECKeyAndECKeyAlias(),
-            hollowAccountCreationChargesExpectedFees());
+                createAnAccountWithECKeyAndECKeyAlias());
     }
 
     private HapiSpec createAnAccountWithStakingFields() {
@@ -684,62 +671,6 @@ public class CryptoCreateSuite extends HapiSuite {
                                     allRunFor(spec, hapiGetAccountInfo);
                                 }))
                 .then();
-    }
-
-    private HapiApiSpec hollowAccountCreationChargesExpectedFees() {
-        final long REDUCED_NODE_FEE = 2L;
-        final long REDUCED_NETWORK_FEE = 3L;
-        final long REDUCED_SERVICE_FEE = 3L;
-        final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
-        final var payer = "payer";
-        return defaultHapiSpec("HollowAccountCreationChargesExpectedFees")
-                .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, TRUE),
-                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(payer).balance(ONE_HUNDRED_HBARS + REDUCED_TOTAL_FEE),
-                        reduceFeeFor(
-                                CryptoUpdate,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE),
-                        reduceFeeFor(
-                                CryptoCreate,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE))
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry().getKey(SECP_256K1_SOURCE_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                                    final var op =
-                                            cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
-                                                    .payingWith(payer)
-                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                                                    .balance(ONE_HUNDRED_HBARS);
-                                    final var op2 =
-                                            cryptoTransfer(
-                                                    tinyBarsFromTo(
-                                                            GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
-                                    final var op3 =
-                                            cryptoCreate(ACCOUNT)
-                                                    .alias(evmAddressBytes)
-                                                    .payingWith(payer)
-                                                    .hasKnownStatus(SUCCESS)
-                                                    .balance(ONE_HUNDRED_HBARS);
-                                    final var op4 =
-                                            getAccountBalance(payer).hasTinyBars(0).logged();
-                                    allRunFor(spec, op, op2, op3, op4);
-                                }))
-                .then(
-                        uploadDefaultFeeSchedules(GENESIS),
-                        UtilVerbs.resetToDefault(
-                                LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED));
     }
 
     @Override
