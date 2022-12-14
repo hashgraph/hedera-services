@@ -19,8 +19,8 @@ import static com.hedera.node.app.hapi.utils.SignatureGenerator.BOUNCYCASTLE_PRO
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
@@ -62,7 +62,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
     }
 
     static void createAndLinkEcdsaKey(
-            final HapiApiSpec spec,
+            final HapiSpec spec,
             final byte[] pubKey,
             final PrivateKey privateKey,
             final String name,
@@ -85,7 +85,7 @@ public class SpecKeyFromEcdsaFile extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(final HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(final HapiSpec spec) throws Throwable {
         final var params = ECNamedCurveTable.getParameterSpec("secp256k1");
         final var keySpec = new ECPrivateKeySpec(s, params);
         final KeyFactory kf = KeyFactory.getInstance("EC", BOUNCYCASTLE_PROVIDER);

@@ -37,6 +37,8 @@ configurations.all {
 }
 
 dependencies {
+    annotationProcessor(libs.dagger.compiler)
+
     compileOnlyApi(libs.spotbugs.annotations)
     api(libs.slf4j.api)
     api(libs.besu.evm)
@@ -51,6 +53,10 @@ dependencies {
 
     implementation(libs.jna)
     implementation(libs.caffeine)
+    implementation(libs.headlong)
+    implementation(libs.dagger.compiler)
+    implementation(libs.javax.inject)
+
 
     testImplementation(testLibs.mockito.jupiter)
 }

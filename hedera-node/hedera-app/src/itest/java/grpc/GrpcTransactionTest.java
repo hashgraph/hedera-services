@@ -80,12 +80,12 @@ class GrpcTransactionTest extends GrpcTestBase {
         final var iw =
                 new IngestWorkflow() {
                     @Override
-                    public void handleTransaction(
+                    public void submitTransaction(
                             @NonNull SessionContext session,
                             @NonNull ByteBuffer requestBuffer,
                             @NonNull ByteBuffer responseBuffer) {
                         if (ingestWorkflow != null) {
-                            ingestWorkflow.handleTransaction(
+                            ingestWorkflow.submitTransaction(
                                     session, requestBuffer, responseBuffer);
                         }
                     }

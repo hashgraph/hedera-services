@@ -84,6 +84,7 @@ public class ImpliedTransfersMarshal {
         final var props = currentProps();
 
         var numAutoCreations = 0;
+        var numLazyCreations = 0;
         Map<ByteString, EntityNum> resolvedAliases = NO_ALIASES;
         if (aliasCheck.test(op)) {
             final var aliasResolver = aliasResolverFactory.get();
@@ -92,6 +93,12 @@ public class ImpliedTransfersMarshal {
             if (numAutoCreations > 0 && !props.isAutoCreationEnabled()) {
                 return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
             }
+
+            numLazyCreations = aliasResolver.perceivedLazyCreations();
+            if (numLazyCreations > 0 && !props.isLazyCreationEnabled()) {
+                return ImpliedTransfers.invalid(props, NOT_SUPPORTED);
+            }
+
             if (aliasResolver.perceivedMissingAliases() > 0) {
                 return ImpliedTransfers.invalid(
                         props, aliasResolver.resolutions(), INVALID_ACCOUNT_ID);
@@ -127,7 +134,8 @@ public class ImpliedTransfersMarshal {
                     NO_CUSTOM_FEE_META,
                     NO_CUSTOM_FEES,
                     resolvedAliases,
-                    numAutoCreations);
+                    numAutoCreations,
+                    numLazyCreations);
         }
 
         /* Add in the HTS balance changes from the transaction */
@@ -135,7 +143,7 @@ public class ImpliedTransfersMarshal {
         appendToken(op, changes, payerID);
 
         return assessCustomFeesAndValidate(
-                hbarOnly, numAutoCreations, changes, resolvedAliases, props);
+                hbarOnly, numAutoCreations, numLazyCreations, changes, resolvedAliases, props);
     }
 
     public ResponseCodeEnum validityWithCurrentProps(CryptoTransferTransactionBody op) {
@@ -146,6 +154,7 @@ public class ImpliedTransfersMarshal {
     public ImpliedTransfers assessCustomFeesAndValidate(
             final int hbarOnly,
             final int numAutoCreations,
+            final int numLazyCreations,
             final List<BalanceChange> changes,
             final Map<ByteString, EntityNum> resolvedAliases,
             final ImpliedTransfersMeta.ValidationProps props) {
@@ -172,7 +181,8 @@ public class ImpliedTransfersMarshal {
                 schedulesManager.metaUsed(),
                 fees,
                 resolvedAliases,
-                numAutoCreations);
+                numAutoCreations,
+                numLazyCreations);
     }
 
     private void appendToken(
@@ -241,6 +251,7 @@ public class ImpliedTransfersMarshal {
                 dynamicProperties.maxXferBalanceChanges(),
                 dynamicProperties.areNftsEnabled(),
                 dynamicProperties.isAutoCreationEnabled(),
+                dynamicProperties.isLazyCreationEnabled(),
                 dynamicProperties.areAllowancesEnabled());
     }
 

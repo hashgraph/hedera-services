@@ -15,41 +15,34 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.INT;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile {
-    private static final Function GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION =
-            new Function("getTokenDefaultFreezeStatus(address)", INT);
-    private static final Bytes GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR =
-            Bytes.wrap(GET_TOKEN_DEFAULT_FREEZE_STATUS_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER =
-            TypeFactory.create(BYTES32);
-    private GetTokenDefaultFreezeStatusWrapper defaultFreezeStatusWrapper;
+public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile
+        implements EvmGetTokenDefaultFreezeStatus {
+
+    private GetTokenDefaultFreezeStatusWrapper<TokenID> defaultFreezeStatusWrapper;
 
     public GetTokenDefaultFreezeStatus(
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(null, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -66,20 +59,15 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile {
                 "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultFreezeStatus =
-                ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.tokenID());
+                ledgers.defaultFreezeStatus(defaultFreezeStatusWrapper.token());
         return encoder.encodeGetTokenDefaultFreezeStatus(defaultFreezeStatus);
     }
 
-    public static GetTokenDefaultFreezeStatusWrapper decodeTokenDefaultFreezeStatus(
+    public static GetTokenDefaultFreezeStatusWrapper<TokenID> decodeTokenDefaultFreezeStatus(
             final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(
-                        input,
-                        GET_TOKEN_DEFAULT_FREEZE_STATUS_SELECTOR,
-                        GET_TOKEN_DEFAULT_FREEZE_STATUS_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-
-        return new GetTokenDefaultFreezeStatusWrapper(tokenID);
+        final var rawGetTokenDefaultFreezeStatusWrapper =
+                EvmGetTokenDefaultFreezeStatus.decodeTokenDefaultFreezeStatus(input);
+        return new GetTokenDefaultFreezeStatusWrapper<>(
+                convertAddressBytesToTokenID(rawGetTokenDefaultFreezeStatusWrapper.token()));
     }
 }

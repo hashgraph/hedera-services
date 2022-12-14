@@ -23,7 +23,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -50,6 +51,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     private String account;
     @Nullable private String protoSaveLoc = null;
     private boolean loggingHexedCryptoKeys = false;
+    private String hexedAliasSource = null;
     private String aliasKeySource = null;
     private Optional<String> registryEntry = Optional.empty();
     private List<String> absentRelationships = new ArrayList<>();
@@ -62,6 +64,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     Optional<Integer> maxAutomaticAssociations = Optional.empty();
     Optional<Integer> alreadyUsedAutomaticAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> idObserver = Optional.empty();
+    private Optional<Consumer<String>> contractAccountIdObserver = Optional.empty();
     private Optional<Integer> tokenAssociationsCount = Optional.empty();
     private boolean assertAliasKeyMatches = false;
     private boolean assertAccountIDIsNotAlias = false;
@@ -75,6 +78,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
         this.referenceType = type;
         if (type == ReferenceType.ALIAS_KEY_NAME) {
             aliasKeySource = reference;
+        } else if (type == ReferenceType.HEXED_CONTRACT_ALIAS) {
+            hexedAliasSource = reference;
         } else {
             account = reference;
         }
@@ -112,6 +117,11 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
 
     public HapiGetAccountInfo exposingIdTo(Consumer<AccountID> obs) {
         this.idObserver = Optional.of(obs);
+        return this;
+    }
+
+    public HapiGetAccountInfo exposingContractAccountIdTo(Consumer<String> obs) {
+        this.contractAccountIdObserver = Optional.of(obs);
         return this;
     }
 
@@ -171,7 +181,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     }
 
     @Override
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         final var actualInfo = response.getCryptoGetInfo().getAccountInfo();
         if (assertAliasKeyMatches) {
             Objects.requireNonNull(aliasKeySource);
@@ -221,7 +231,7 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountInfoQuery(spec, payment, false);
         response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
@@ -255,6 +265,8 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
             exposingBalanceTo.ifPresent(
                     cb -> cb.accept(infoResponse.getAccountInfo().getBalance()));
             idObserver.ifPresent(cb -> cb.accept(infoResponse.getAccountInfo().getAccountID()));
+            contractAccountIdObserver.ifPresent(
+                    cb -> cb.accept(infoResponse.getAccountInfo().getContractAccountID()));
         }
         if (verboseLoggingOn) {
             log.info("Info for '" + repr() + "': " + response.getCryptoGetInfo().getAccountInfo());
@@ -270,19 +282,24 @@ public class HapiGetAccountInfo extends HapiQueryOp<HapiGetAccountInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getAccountInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getAccountInfo(query);
         return costFrom(response);
     }
 
-    private Query getAccountInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getAccountInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         AccountID target;
         if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
             target =
                     AccountID.newBuilder()
                             .setAlias(spec.registry().getKey(aliasKeySource).toByteString())
+                            .build();
+        } else if (referenceType == ReferenceType.HEXED_CONTRACT_ALIAS) {
+            target =
+                    AccountID.newBuilder()
+                            .setAlias(ByteString.copyFrom(CommonUtils.unhex(hexedAliasSource)))
                             .build();
         } else {
             target = TxnUtils.asId(account, spec);

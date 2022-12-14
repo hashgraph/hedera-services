@@ -126,22 +126,7 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
 
-        // Enable tracing of contract actions if action sidecars are enabled and this is not a
-        // static call
-        final HederaTracer hederaTracer =
-                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
-
-        super.setOperationTracer(hederaTracer);
-        super.execute(
-                sender,
-                receiver,
-                gasPrice,
-                gasLimit,
-                value,
-                payload,
-                contractCreation,
-                isStatic,
-                mirrorReceiver);
+        super.setupFields(contractCreation);
 
         final var chargingResult =
                 chargeForGas(
@@ -157,6 +142,30 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
                         sender.getId().asEvmAddress(),
                         relayer == null ? null : relayer.getId().asEvmAddress(),
                         (HederaWorldState.Updater) updater);
+
+        // Enable tracing of contract actions if action sidecars are enabled and this is not a
+        // static call
+        final HederaTracer hederaTracer =
+                new HederaTracer(!isStatic && isSideCarTypeEnabled(SidecarType.CONTRACT_ACTION));
+        super.setOperationTracer(hederaTracer);
+
+        try {
+            super.execute(
+                    sender, receiver, gasPrice, gasLimit, value, payload, isStatic, mirrorReceiver);
+        } catch (final ResourceLimitException e) {
+            handleResourceLimitExceeded(
+                    sender,
+                    gasPrice,
+                    gasLimit,
+                    value,
+                    isStatic,
+                    userOfferedGasPrice,
+                    maxGasAllowanceInTinybars,
+                    relayer,
+                    gasCost,
+                    upfrontCost);
+            return createResourceLimitExceededResult(gasPrice, gasLimit, e);
+        }
 
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
@@ -197,33 +206,18 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             try {
                 updater.commit();
             } catch (final ResourceLimitException e) {
-                // Consume all gas on resource exhaustion, using a clean updater
-                final var feesOnlyUpdater = (HederaWorldState.Updater) worldState.updater();
-                chargeForGas(
-                        gasCost,
-                        upfrontCost,
-                        value,
-                        maxGasAllowanceInTinybars,
-                        intrinsicGas,
+                handleResourceLimitExceeded(
+                        sender,
                         gasPrice,
                         gasLimit,
+                        value,
                         isStatic,
                         userOfferedGasPrice,
-                        sender.getId().asEvmAddress(),
-                        relayer == null ? null : relayer.getId().asEvmAddress(),
-                        feesOnlyUpdater);
-                sendToCoinbase(coinbase, gasLimit, gasPrice, feesOnlyUpdater);
-                // We can't go through the top-level commit() because that would
-                // re-try to commit the storage changes
-                feesOnlyUpdater.trackingAccounts().commit();
-                return TransactionProcessingResult.failed(
-                        gasLimit,
-                        0,
-                        gasPrice,
-                        Optional.of(e.messageBytes()),
-                        Optional.empty(),
-                        Collections.emptyMap(),
-                        List.of());
+                        maxGasAllowanceInTinybars,
+                        relayer,
+                        gasCost,
+                        upfrontCost);
+                return createResourceLimitExceededResult(gasPrice, gasLimit, e);
             }
         }
 
@@ -343,5 +337,49 @@ abstract class EvmTxProcessor extends HederaEvmTxProcessor {
             }
         }
         return new ChargingResult(mutableSender, mutableRelayer, allowanceCharged);
+    }
+
+    private void handleResourceLimitExceeded(
+            final Account sender,
+            final long gasPrice,
+            final long gasLimit,
+            final long value,
+            final boolean isStatic,
+            final BigInteger userOfferedGasPrice,
+            final long maxGasAllowanceInTinybars,
+            final Account relayer,
+            final Wei gasCost,
+            final Wei upfrontCost) {
+        // Consume all gas on resource exhaustion, using a clean updater
+        final var feesOnlyUpdater = (HederaWorldState.Updater) worldState.updater();
+        chargeForGas(
+                gasCost,
+                upfrontCost,
+                value,
+                maxGasAllowanceInTinybars,
+                intrinsicGas,
+                gasPrice,
+                gasLimit,
+                isStatic,
+                userOfferedGasPrice,
+                sender.getId().asEvmAddress(),
+                relayer == null ? null : relayer.getId().asEvmAddress(),
+                feesOnlyUpdater);
+        sendToCoinbase(coinbase, gasLimit, gasPrice, feesOnlyUpdater);
+        // We can't go through the top-level commit() because that would
+        // re-try to commit the storage changes
+        feesOnlyUpdater.trackingAccounts().commit();
+    }
+
+    private TransactionProcessingResult createResourceLimitExceededResult(
+            final long gasPrice, final long gasLimit, final ResourceLimitException e) {
+        return TransactionProcessingResult.failed(
+                gasLimit,
+                0,
+                gasPrice,
+                Optional.of(e.messageBytes()),
+                Optional.empty(),
+                Collections.emptyMap(),
+                List.of());
     }
 }

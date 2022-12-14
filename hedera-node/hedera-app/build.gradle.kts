@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":hedera-node:hedera-smart-contract-service-impl"))
     implementation(project(":hedera-node:hedera-token-service-impl"))
     implementation(project(":hedera-node:hedera-util-service-impl"))
+    implementation(project(":hedera-node:hedera-evm"))
     implementation(libs.bundles.swirlds)
     implementation(libs.bundles.helidon)
     implementation(libs.helidon.grpc.server)

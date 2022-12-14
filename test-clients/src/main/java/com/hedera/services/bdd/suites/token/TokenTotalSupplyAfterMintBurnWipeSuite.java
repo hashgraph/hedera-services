@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -30,14 +30,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccoun
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
+public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(TokenTotalSupplyAfterMintBurnWipeSuite.class);
 
@@ -48,14 +48,12 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()
-                });
+                new HapiSpec[] {checkTokenTotalSupplyAfterMintAndBurn(), totalSupplyAfterWipe()});
     }
 
-    public HapiApiSpec checkTokenTotalSupplyAfterMintAndBurn() {
+    public HapiSpec checkTokenTotalSupplyAfterMintAndBurn() {
         String tokenName = "tokenToTest";
         return defaultHapiSpec("checkTokenTotalSupplyAfterMintAndBurn")
                 .given(
@@ -84,7 +82,7 @@ public class TokenTotalSupplyAfterMintBurnWipeSuite extends HapiApiSuite {
                                 .hasTotalSupply(1800));
     }
 
-    public HapiApiSpec totalSupplyAfterWipe() {
+    public HapiSpec totalSupplyAfterWipe() {
         var tokenToWipe = "tokenToWipe";
 
         return defaultHapiSpec("totalSupplyAfterWipe")

@@ -17,7 +17,7 @@ package com.hedera.services.bdd.spec.utilops.pauses;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -59,7 +59,7 @@ public class HapiSpecWaitUntil extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
         final var now = Instant.now();
         if (startOfNextStakingPeriod) {

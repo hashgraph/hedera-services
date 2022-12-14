@@ -15,6 +15,7 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.state.EntityCreator.EMPTY_MEMO;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.DescriptorUtils.isTokenProxyRedirect;
@@ -26,6 +27,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -133,13 +135,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             "Invalid operation for ERC-20 token!";
     private static final String NOT_SUPPORTED_NON_FUNGIBLE_OPERATION_REASON =
             "Invalid operation for ERC-721 token!";
-    private static final Bytes ERROR_DECODING_INPUT_REVERT_REASON =
-            Bytes.of("Error decoding precompile input".getBytes());
     public static final String URI_QUERY_NON_EXISTING_TOKEN_ERROR =
             "ERC721Metadata: URI query for nonexistent token";
 
     private final EntityCreator creator;
     private final EncodingFacade encoder;
+    private final EvmEncodingFacade evmEncoder;
     private final GlobalDynamicProperties dynamicProperties;
     private final EvmSigsVerifier sigsVerifier;
     private final RecordsHistorian recordsHistorian;
@@ -164,6 +165,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final RecordsHistorian recordsHistorian,
             final TxnAwareEvmSigsVerifier sigsVerifier,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final SyntheticTxnFactory syntheticTxnFactory,
             final ExpiringCreations creator,
             final Provider<FeeCalculator> feeCalculator,
@@ -172,6 +174,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
             final InfrastructureFactory infrastructureFactory) {
         super("HTS", gasCalculator);
         this.encoder = encoder;
+        this.evmEncoder = evmEncoder;
         this.sigsVerifier = sigsVerifier;
         this.recordsHistorian = recordsHistorian;
         this.syntheticTxnFactory = syntheticTxnFactory;
@@ -227,7 +230,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
 
         gasRequirement = defaultGas();
         if (this.precompile == null || this.transactionBody == null) {
-            frame.setRevertReason(ERROR_DECODING_INPUT_REVERT_REASON);
+            frame.setExceptionalHaltReason(Optional.of(ERROR_DECODING_PRECOMPILE_INPUT));
             return NO_RESULT;
         }
 
@@ -429,12 +432,25 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                             precompilePricingUtils));
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_DEFAULT_FREEZE_STATUS -> new GetTokenDefaultFreezeStatus(
-                            syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_DEFAULT_KYC_STATUS -> new GetTokenDefaultKycStatus(
-                            syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_IS_KYC -> new IsKycPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_GRANT_TOKEN_KYC -> new GrantKycPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -471,7 +487,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_IS_FROZEN -> new IsFrozenPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_FREEZE -> new FreezeTokenPrecompile(
                             ledgers,
                             updater.aliases(),
@@ -518,7 +539,12 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             infrastructureFactory,
                             precompilePricingUtils);
                     case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {
                         final var target = DescriptorUtils.getRedirectTarget(input);
                         final var tokenId = target.tokenId();
@@ -531,12 +557,14 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     syntheticTxnFactory,
                                     ledgers,
                                     encoder,
+                                    evmEncoder,
                                     precompilePricingUtils);
                             case AbiConstants.ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(
                                     tokenId,
                                     syntheticTxnFactory,
                                     ledgers,
                                     encoder,
+                                    evmEncoder,
                                     precompilePricingUtils);
                             case AbiConstants.ABI_ID_ERC_DECIMALS -> checkFungible(
                                     isFungibleToken,
@@ -546,6 +574,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             case AbiConstants
                                     .ABI_ID_ERC_TOTAL_SUPPLY_TOKEN -> new TotalSupplyPrecompile(
@@ -553,6 +582,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     syntheticTxnFactory,
                                     ledgers,
                                     encoder,
+                                    evmEncoder,
                                     precompilePricingUtils);
                             case AbiConstants
                                     .ABI_ID_ERC_BALANCE_OF_TOKEN -> new BalanceOfPrecompile(
@@ -560,6 +590,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                     syntheticTxnFactory,
                                     ledgers,
                                     encoder,
+                                    evmEncoder,
                                     precompilePricingUtils);
                             case AbiConstants.ABI_ID_ERC_OWNER_OF_NFT -> checkNFT(
                                     isFungibleToken,
@@ -569,6 +600,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             case AbiConstants.ABI_ID_ERC_TOKEN_URI_NFT -> checkNFT(
                                     isFungibleToken,
@@ -578,6 +610,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             case AbiConstants.ABI_ID_ERC_TRANSFER -> checkFungible(
                                     isFungibleToken,
@@ -620,6 +653,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             case AbiConstants.ABI_ID_ERC_APPROVE -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -655,6 +689,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             case AbiConstants.ABI_ID_ERC_IS_APPROVED_FOR_ALL -> checkFeatureFlag(
                                     dynamicProperties.areAllowancesEnabled(),
@@ -664,6 +699,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                                                     syntheticTxnFactory,
                                                     ledgers,
                                                     encoder,
+                                                    evmEncoder,
                                                     precompilePricingUtils));
                             default -> null;
                         };
@@ -702,6 +738,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
@@ -710,6 +747,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
@@ -718,6 +756,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants.ABI_ID_IS_TOKEN -> new IsTokenPrecompile(
@@ -725,6 +764,7 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants.ABI_ID_GET_TOKEN_TYPE -> new GetTokenTypePrecompile(
@@ -732,17 +772,24 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_CUSTOM_FEES -> new TokenGetCustomFeesPrecompile(
-                            null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
+                            null,
+                            syntheticTxnFactory,
+                            ledgers,
+                            encoder,
+                            evmEncoder,
+                            precompilePricingUtils);
                     case AbiConstants
                             .ABI_ID_GET_TOKEN_EXPIRY_INFO -> new GetTokenExpiryInfoPrecompile(
                             null,
                             syntheticTxnFactory,
                             ledgers,
                             encoder,
+                            evmEncoder,
                             precompilePricingUtils,
                             currentView);
                     case AbiConstants.ABI_ID_UPDATE_TOKEN_EXPIRY_INFO,

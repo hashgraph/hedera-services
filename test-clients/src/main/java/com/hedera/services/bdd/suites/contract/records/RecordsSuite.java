@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -23,9 +23,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
@@ -35,19 +35,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 
-public class RecordsSuite extends HapiApiSuite {
+public class RecordsSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordsSuite.class);
 
     public static void main(String... args) {
-        new RecordsSuite().runSuiteSync();
+        new RecordsSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return List.of(new HapiApiSpec[] {bigCall(), txRecordsContainValidTransfers()});
+    public List<HapiSpec> getSpecsInSuite() {
+        return List.of(bigCall(), txRecordsContainValidTransfers());
     }
 
-    HapiApiSpec bigCall() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    HapiSpec bigCall() {
         final var contract = "BigBig";
         final long byteArraySize = (long) (87.5 * 1_024);
 
@@ -64,7 +69,7 @@ public class RecordsSuite extends HapiApiSuite {
                 .then(getTxnRecord("bigCall"));
     }
 
-    HapiApiSpec txRecordsContainValidTransfers() {
+    HapiSpec txRecordsContainValidTransfers() {
         final var contract = "ParentChildTransfer";
 
         return defaultHapiSpec("TXRecordsContainValidTransfers")

@@ -15,7 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.records;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -24,24 +25,27 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LogsSuite extends HapiApiSuite {
+public class LogsSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(LogsSuite.class);
     private static final String CONTRACT = "Logs";
+    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT =
+            "contracts.maxRefundPercentOfGasLimit";
 
     public static void main(String... args) {
-        new LogsSuite().runSuiteAsync();
+        new LogsSuite().runSuiteSync();
     }
 
     @Override
@@ -50,14 +54,15 @@ public class LogsSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(log0Works(), log1Works(), log2Works(), log3Works(), log4Works());
     }
 
-    private HapiApiSpec log0Works() {
-        return defaultHapiSpec("log0Works")
+    private HapiSpec log0Works() {
+        return propertyPreservingHapiSpec("log0Works")
+                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT)
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log0", BigInteger.valueOf(15)).via("log0"))
@@ -74,14 +79,13 @@ public class LogsSuite extends HapiApiSuite {
                                                                                         .noTopics()
                                                                                         .longValue(
                                                                                                 15)))
-                                                                .gasUsed(22_285))),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                                                                .gasUsed(22_285))));
     }
 
-    private HapiApiSpec log1Works() {
+    private HapiSpec log1Works() {
         return defaultHapiSpec("log1Works")
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log1", BigInteger.valueOf(15)).via("log1"))
@@ -104,13 +108,13 @@ public class LogsSuite extends HapiApiSuite {
                                                                                                                 parsedToByteString(
                                                                                                                         15)))))
                                                                 .gasUsed(22_583))),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    private HapiApiSpec log2Works() {
+    private HapiSpec log2Works() {
         return defaultHapiSpec("log2Works")
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, "log2", BigInteger.ONE, BigInteger.TWO).via("log2"))
@@ -135,13 +139,13 @@ public class LogsSuite extends HapiApiSuite {
                                                                                                                 parsedToByteString(
                                                                                                                         2)))))
                                                                 .gasUsed(23_112))),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    private HapiApiSpec log3Works() {
+    private HapiSpec log3Works() {
         return defaultHapiSpec("log3Works")
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(
@@ -175,13 +179,13 @@ public class LogsSuite extends HapiApiSuite {
                                                                                                                 parsedToByteString(
                                                                                                                         3)))))
                                                                 .gasUsed(23_638))),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 
-    private HapiApiSpec log4Works() {
+    private HapiSpec log4Works() {
         return defaultHapiSpec("log4Works")
                 .given(
-                        UtilVerbs.overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT))
                 .when(
@@ -218,6 +222,6 @@ public class LogsSuite extends HapiApiSuite {
                                                                                                                 parsedToByteString(
                                                                                                                         3)))))
                                                                 .gasUsed(24_294))),
-                        UtilVerbs.resetToDefault("contracts.maxRefundPercentOfGasLimit"));
+                        UtilVerbs.resetToDefault(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT));
     }
 }

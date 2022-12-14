@@ -24,7 +24,6 @@ import static com.hedera.node.app.service.mono.state.initialization.BackedSystem
 import static com.hedera.node.app.service.mono.utils.MiscUtils.asKeyUnchecked;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.mono.config.AccountNumbers;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
@@ -202,7 +201,7 @@ public class MigrationRecordsManager {
             final String description,
             final long balance) {
         final var tracker = sideEffectsFactory.get();
-        tracker.trackAutoCreation(num.toGrpcAccountId(), ByteString.EMPTY);
+        tracker.trackAutoCreation(num.toGrpcAccountId());
         final var synthBody =
                 synthCreation(
                         autoRenewPeriod,

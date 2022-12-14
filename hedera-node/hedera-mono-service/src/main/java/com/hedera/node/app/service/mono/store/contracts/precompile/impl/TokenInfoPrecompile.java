@@ -15,21 +15,17 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.BYTES32;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
-import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
-import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.EncodingFacade;
-import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -37,26 +33,24 @@ import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 
-public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
-    private static final Function GET_TOKEN_INFO_FUNCTION = new Function("getTokenInfo(address)");
-    private static final Bytes GET_TOKEN_INFO_SELECTOR =
-            Bytes.wrap(GET_TOKEN_INFO_FUNCTION.selector());
-    private static final ABIType<Tuple> GET_TOKEN_INFO_DECODER = TypeFactory.create(BYTES32);
+public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile
+        implements EvmTokenInfoPrecompile {
 
     public TokenInfoPrecompile(
             final TokenID tokenId,
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils,
             final StateView stateView) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils, stateView);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils, stateView);
     }
 
     @Override
     public Builder body(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         final var tokenInfoWrapper = decodeGetTokenInfo(input);
-        tokenId = tokenInfoWrapper.tokenID();
+        tokenId = tokenInfoWrapper.token();
         return super.body(input, aliasResolver);
     }
 
@@ -69,11 +63,8 @@ public class TokenInfoPrecompile extends AbstractTokenInfoPrecompile {
         return encoder.encodeGetTokenInfo(tokenInfo);
     }
 
-    public static TokenInfoWrapper decodeGetTokenInfo(final Bytes input) {
-        final Tuple decodedArguments =
-                decodeFunctionCall(input, GET_TOKEN_INFO_SELECTOR, GET_TOKEN_INFO_DECODER);
-
-        final var tokenID = convertAddressBytesToTokenID(decodedArguments.get(0));
-        return TokenInfoWrapper.forToken(tokenID);
+    public static TokenInfoWrapper<TokenID> decodeGetTokenInfo(final Bytes input) {
+        final var rawTokenInfoWrapper = EvmTokenInfoPrecompile.decodeGetTokenInfo(input);
+        return TokenInfoWrapper.forToken(convertAddressBytesToTokenID(rawTokenInfoWrapper.token()));
     }
 }
