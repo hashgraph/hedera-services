@@ -37,6 +37,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
@@ -139,6 +140,7 @@ class ServicesAppTest {
         assertThat(subject.upgradeActions(), instanceOf(UpgradeActions.class));
         assertThat(subject.virtualMapFactory(), instanceOf(VirtualMapFactory.class));
         assertThat(subject.prefetchProcessor(), instanceOf(PrefetchProcessor.class));
+        assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
         assertSame(subject.nodeId(), selfNodeId);
         assertSame(subject.pause(), SLEEPING_PAUSE);
         assertTrue(subject.consoleOut().isEmpty());

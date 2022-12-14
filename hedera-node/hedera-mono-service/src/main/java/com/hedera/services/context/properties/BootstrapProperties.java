@@ -205,7 +205,8 @@ public final class BootstrapProperties implements PropertySource {
                     LEDGER_TOTAL_TINY_BAR_FLOAT,
                     LEDGER_ID,
                     STAKING_PERIOD_MINS,
-                    STAKING_REWARD_HISTORY_NUM_STORED_PERIODS);
+                    STAKING_REWARD_HISTORY_NUM_STORED_PERIODS,
+                    STAKING_STARTUP_HELPER_RECOMPUTE);
 
     static final Set<String> GLOBAL_DYNAMIC_PROPS =
             Set.of(
@@ -483,6 +484,7 @@ public final class BootstrapProperties implements PropertySource {
                     entry(STAKING_FEES_STAKING_REWARD_PERCENT, AS_INT),
                     entry(STAKING_PERIOD_MINS, AS_LONG),
                     entry(STAKING_REWARD_HISTORY_NUM_STORED_PERIODS, AS_INT),
+                    entry(STAKING_STARTUP_HELPER_RECOMPUTE, AS_RECOMPUTE_TYPES),
                     entry(STAKING_REQUIRE_MIN_STAKE_TO_REWARD, AS_BOOLEAN),
                     entry(STAKING_REWARD_RATE, AS_LONG),
                     entry(STAKING_START_THRESH, AS_LONG),

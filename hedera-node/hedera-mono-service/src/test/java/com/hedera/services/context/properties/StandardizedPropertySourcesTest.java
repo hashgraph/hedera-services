@@ -23,11 +23,13 @@ import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doCallRealMethod;
 
 import com.hedera.services.keys.LegacyContractIdActivations;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.MapAccessType;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,6 +116,25 @@ class StandardizedPropertySourcesTest {
         given(mockSubject.getProperty(name)).willReturn(expected);
         doCallRealMethod().when(mockSubject).getTypedProperty(List.class, name);
         assertEquals(expected, mockSubject.getAccessListProperty(name));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getsExpectedRecomputeTypes() {
+        final var prop = "NODE_STAKES,PENDING_REWARDS";
+        final Set<StakeStartupHelper.RecomputeType> recomputes =
+                (Set<StakeStartupHelper.RecomputeType>)
+                        PropertySource.AS_RECOMPUTE_TYPES.apply(prop);
+        final Set<StakeStartupHelper.RecomputeType> expected =
+                EnumSet.allOf(StakeStartupHelper.RecomputeType.class);
+        assertEquals(expected, recomputes);
+
+        final var name = "recomputeTypes";
+        final var mockSubject = Mockito.mock(PropertySource.class);
+        doCallRealMethod().when(mockSubject).getRecomputeTypesProperty(name);
+        given(mockSubject.getProperty(name)).willReturn(expected);
+        doCallRealMethod().when(mockSubject).getTypedProperty(Set.class, name);
+        assertEquals(expected, mockSubject.getRecomputeTypesProperty(name));
     }
 
     @Test

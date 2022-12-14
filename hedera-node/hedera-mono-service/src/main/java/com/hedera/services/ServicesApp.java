@@ -34,6 +34,7 @@ import com.hedera.services.grpc.GrpcServerManager;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.keys.KeysModule;
 import com.hedera.services.ledger.LedgerModule;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.ledger.backing.BackingStore;
 import com.hedera.services.queries.QueriesModule;
 import com.hedera.services.records.RecordsModule;
@@ -165,6 +166,8 @@ public interface ServicesApp {
     GrpcServerManager grpc();
 
     NamedDigestFactory digestFactory();
+
+    StakeStartupHelper stakeStartupHelper();
 
     SystemFilesManager sysFilesManager();
 
