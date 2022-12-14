@@ -23,6 +23,9 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.impl.AbstractTokenUpdatePrecompile.UpdateType.UPDATE_TOKEN_KEYS;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateAdminKey;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils.validateTokenKeysInput;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -36,6 +39,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.DecodingFacade;
+import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
@@ -43,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
@@ -58,7 +63,8 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
                             + DecodingFacade.TOKEN_KEY_DECODER
                             + ARRAY_BRACKETS
                             + ")");
-    TokenUpdateKeysWrapper updateOp;
+    private TokenUpdateKeysWrapper updateOp;
+    private final Address senderAddress;
 
     public TokenUpdateKeysPrecompile(
             final WorldLedgers ledgers,
@@ -67,7 +73,8 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             final SideEffectsTracker sideEffectsTracker,
             final SyntheticTxnFactory syntheticTxnFactory,
             final InfrastructureFactory infrastructureFactory,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrecompilePricingUtils pricingUtils,
+            final Address senderAddress) {
         super(
                 ledgers,
                 aliases,
@@ -76,12 +83,17 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
                 syntheticTxnFactory,
                 infrastructureFactory,
                 pricingUtils);
+
+        this.senderAddress = senderAddress;
     }
 
     @Override
     public TransactionBody.Builder body(
             final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         updateOp = decodeUpdateTokenKeys(input, aliasResolver);
+        Objects.requireNonNull(updateOp);
+        final var tokenKeys = updateOp.tokenKeys();
+        validateTokenKeysInput(tokenKeys);
         transactionBody = syntheticTxnFactory.createTokenUpdateKeys(updateOp);
         return transactionBody;
     }
@@ -92,6 +104,24 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
         validateTrue(updateOp.tokenID() != null, INVALID_TOKEN_ID);
         tokenId = Id.fromGrpcToken(updateOp.tokenID());
         type = UPDATE_TOKEN_KEYS;
+
+        updateOp.tokenKeys().stream()
+                .filter(TokenKeyWrapper::isUsedForAdminKey)
+                .findFirst()
+                .ifPresent(
+                        key ->
+                                validateTrue(
+                                        validateAdminKey(
+                                                frame,
+                                                key,
+                                                senderAddress,
+                                                sigsVerifier,
+                                                ledgers,
+                                                aliases),
+                                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
+                                        "New admin account signature missing in token update"
+                                                + " keys!"));
+
         super.run(frame);
     }
 

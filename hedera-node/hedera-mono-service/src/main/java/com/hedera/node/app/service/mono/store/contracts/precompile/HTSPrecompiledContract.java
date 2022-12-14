@@ -516,7 +516,8 @@ public class HTSPrecompiledContract extends AbstractPrecompiledContract {
                             sideEffectsTracker,
                             syntheticTxnFactory,
                             infrastructureFactory,
-                            precompilePricingUtils);
+                            precompilePricingUtils,
+                            senderAddress);
                     case AbiConstants.ABI_ID_GET_TOKEN_KEY -> new GetTokenKeyPrecompile(
                             null, syntheticTxnFactory, ledgers, encoder, precompilePricingUtils);
                     case AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN -> {

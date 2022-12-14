@@ -177,6 +177,8 @@ class TokenUpdateKeysPrecompileTest {
         givenFrameContext();
         given(frame.getBlockValues())
                 .willReturn(new HederaBlockValues(10L, 123L, Instant.ofEpochSecond(123L)));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         givenLedgers();
         givenMinimalContextForSuccessfulCall();
         givenMinimalRecordStructureForSuccessfulCall();
@@ -203,6 +205,8 @@ class TokenUpdateKeysPrecompileTest {
         given(worldUpdater.aliases()).willReturn(aliases);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(sigsVerifier.hasActiveKey(Mockito.anyBoolean(), any(), any(), any()))
+                .willReturn(true);
         given(updateLogic.validate(any())).willReturn(FAIL_INVALID);
         // when
         subject.prepareFields(frame);

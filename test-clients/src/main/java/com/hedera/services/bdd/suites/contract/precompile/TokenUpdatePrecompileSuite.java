@@ -109,8 +109,8 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final String DELEGATE_KEY = "tokenUpdateAsKeyDelegate";
     private static final String ACCOUNT_TO_ASSOCIATE = "account3";
     private static final String ACCOUNT_TO_ASSOCIATE_KEY = "associateKey";
-    public static final String UPDATE_TOKEN_WITH_ALL_FIELDS = "updateTokenWithAllFields";
-    public static final String UPDATE_TOKEN_TREASURY = "updateTokenTreasury";
+    private static final String UPDATE_TOKEN_WITH_ALL_FIELDS = "updateTokenWithAllFields";
+    private static final String UPDATE_TOKEN_TREASURY = "updateTokenTreasury";
     private static final String CUSTOM_NAME = "customName";
     private static final String CUSTOM_SYMBOL = "Ω";
     private static final String CUSTOM_MEMO = "Omega";
@@ -954,6 +954,32 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                                                                 TOKEN_UPDATE_CONTRACT))))
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .via("updateWithoutNewAdminSigTxn")
+                                                        .payingWith(ACCOUNT)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                TOKEN_UPDATE_CONTRACT,
+                                                                UPDATE_KEY_FUNC,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                vanillaTokenID
+                                                                                        .get())),
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray(),
+                                                                spec.registry()
+                                                                        .getKey(ECDSA_KEY)
+                                                                        .getECDSASecp256K1()
+                                                                        .toByteArray(),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_UPDATE_CONTRACT))))
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(ED25519KEY)
                                                         .payingWith(ACCOUNT),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -1051,6 +1077,12 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .hasFeeScheduleKey(DELEGATE_KEY)
                                                         .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
                                                         .hasPauseKey(TOKEN_UPDATE_AS_KEY),
+                                                childRecordsCheck(
+                                                        "updateWithoutNewAdminSigTxn",
+                                                        CONTRACT_REVERT_EXECUTED,
+                                                        TransactionRecordAsserts.recordWith()
+                                                                .status(
+                                                                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
                                                 childRecordsCheck(
                                                         GET_ADMIN_KEY_TXN,
                                                         SUCCESS,
@@ -1239,6 +1271,31 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .via("updateWithoutNewAdminSigTxn")
+                                                        .payingWith(ACCOUNT)
+                                                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                                                contractCall(
+                                                                TOKEN_UPDATE_CONTRACT,
+                                                                UPDATE_KEY_FUNC,
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(nftToken.get())),
+                                                                spec.registry()
+                                                                        .getKey(ED25519KEY)
+                                                                        .getEd25519()
+                                                                        .toByteArray(),
+                                                                spec.registry()
+                                                                        .getKey(ECDSA_KEY)
+                                                                        .getECDSASecp256K1()
+                                                                        .toByteArray(),
+                                                                HapiParserUtil.asHeadlongAddress(
+                                                                        asAddress(
+                                                                                spec.registry()
+                                                                                        .getContractId(
+                                                                                                TOKEN_UPDATE_CONTRACT))))
+                                                        .via(UPDATE_TXN)
+                                                        .gas(GAS_TO_OFFER)
+                                                        .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(ED25519KEY)
                                                         .payingWith(ACCOUNT),
                                                 newKeyNamed(DELEGATE_KEY)
                                                         .shape(
@@ -1265,7 +1322,13 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .hasWipeKey(ECDSA_KEY)
                                                         .hasFeeScheduleKey(DELEGATE_KEY)
                                                         .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
-                                                        .hasPauseKey(TOKEN_UPDATE_AS_KEY))));
+                                                        .hasPauseKey(TOKEN_UPDATE_AS_KEY),
+                                                childRecordsCheck(
+                                                        "updateWithoutNewAdminSigTxn",
+                                                        CONTRACT_REVERT_EXECUTED,
+                                                        TransactionRecordAsserts.recordWith()
+                                                                .status(
+                                                                        INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
     public HapiSpec updateNftTokenKeysWithWrongTokenIdAndMissingAdmin() {
@@ -1320,6 +1383,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(ED25519KEY)
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
@@ -1343,6 +1407,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .via(NO_ADMIN_KEY)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
+                                                        .alsoSigningWithFullPrefix(ED25519KEY)
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(

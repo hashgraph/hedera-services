@@ -57,6 +57,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
+
     private static final String UPDATE_TOKEN_INFO_STRING = "updateTokenInfo(address,";
     private static final Function TOKEN_UPDATE_INFO_FUNCTION =
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT + ")");
@@ -73,6 +74,10 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             new Function(UPDATE_TOKEN_INFO_STRING + HEDERA_TOKEN_STRUCT_V3 + ")");
     private static final Bytes TOKEN_UPDATE_INFO_SELECTOR_V3 =
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
+    private static final String TREASURY_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE =
+            "Treasury account signature missing in token update!";
+    private static final String NEW_ADMIN_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE =
+            "New admin account signature missing in token update!";
     private TokenUpdateWrapper updateOp;
     private final int functionId;
     private final Address senderAddress;
@@ -139,7 +144,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             validateTrue(
                     treasuryHasSigned,
                     INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
-                    "Treasury account signature missing in token update!");
+                    TREASURY_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE);
         }
 
         updateOp.tokenKeys().stream()
@@ -156,7 +161,7 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
                                                 ledgers,
                                                 aliases),
                                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
-                                        "New admin account signature missing in token update!"));
+                                        NEW_ADMIN_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE));
 
         super.run(frame);
     }
