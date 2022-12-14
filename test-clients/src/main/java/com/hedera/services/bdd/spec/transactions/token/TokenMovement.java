@@ -152,7 +152,7 @@ public class TokenMovement {
     }
 
     public boolean isTrulyToken() {
-        return token != HapiSuite.HBAR_TOKEN_SENTINEL;
+        return token != null && !token.equals(HapiSuite.HBAR_TOKEN_SENTINEL);
     }
 
     public boolean isFungibleToken() {
@@ -163,13 +163,15 @@ public class TokenMovement {
         if (sender.isPresent()) {
             Map.Entry<String, Long> senderEntry =
                     new AbstractMap.SimpleEntry<>(token + "|" + sender.get(), -amount);
-            return receiver.isPresent()
-                    ? List.of(
-                            senderEntry,
-                            new AbstractMap.SimpleEntry<>(token + "|" + receiver.get(), +amount))
-                    : (receivers.isPresent()
-                            ? involvedInDistribution(senderEntry)
-                            : List.of(senderEntry));
+            if (receiver.isPresent()) {
+                return List.of(
+                        senderEntry,
+                        new AbstractMap.SimpleEntry<>(token + "|" + receiver.get(), +amount));
+            }
+
+            return (receivers.isPresent()
+                    ? involvedInDistribution(senderEntry)
+                    : List.of(senderEntry));
         }
         return Collections.emptyList();
     }
