@@ -47,8 +47,7 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     @Override
     public TransactionMetadata preHandleCreateToken(final TransactionBody txn) {
         final var payer = txn.getTransactionID().getAccountID();
-        final var receiverSigReq = accountStore.getKeyIfReceiverSigRequired(payer) == null;
-        return buildSigTransactionMetadata(txn, payer, receiverSigReq);
+        return buildSigTransactionMetadata(txn, payer);
     }
 
     @Override
@@ -127,11 +126,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
      *
      * @param txn given transaction body
      * @param payer payer for the transaction
-     * @param receiverSigReq flag for receiverSigReq on the given transaction body
      * @return transaction's metadata needed to validate signatures
      */
     private TransactionMetadata buildSigTransactionMetadata(
-            final TransactionBody txn, final AccountID payer, final boolean receiverSigReq) {
+            final TransactionBody txn, final AccountID payer) {
         final var tokenCreateTxnBody = txn.getTokenCreation();
         final var customFees = tokenCreateTxnBody.getCustomFeesList();
         final var treasuryId = tokenCreateTxnBody.getTreasury();
@@ -144,14 +142,12 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             final var adminKey = asUsableFcKey(tokenCreateTxnBody.getAdminKey());
             adminKey.ifPresent(meta::addToReqKeys);
         }
-        addCustomFeeKey(meta, customFees, receiverSigReq);
+        addCustomFeeKey(meta, customFees);
         return meta.build();
     }
 
     private void addCustomFeeKey(
-            final SigTransactionMetadataBuilder meta,
-            final List<CustomFee> customFeesList,
-            final boolean sigRequirement) {
+            SigTransactionMetadataBuilder meta, final List<CustomFee> customFeesList) {
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
@@ -164,8 +160,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                 alwaysAdd =
                         fixedFee.hasDenominatingTokenId()
                                 && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
-                if (alwaysAdd || sigRequirement) {
+                if (alwaysAdd) {
                     meta.addNonPayerKey(collector, failureStatus);
+                } else {
+                    meta.addNonPayerKeyIfReceiverSigRequired(collector, failureStatus);
                 }
             } else if (customFee.hasFractionalFee()) {
                 meta.addNonPayerKey(collector, failureStatus);
@@ -176,8 +174,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                     alwaysAdd =
                             fFee.hasDenominatingTokenId()
                                     && fFee.getDenominatingTokenId().getTokenNum() == 0;
-                    if (alwaysAdd || sigRequirement) {
+                    if (alwaysAdd) {
                         meta.addNonPayerKey(collector, failureStatus);
+                    } else {
+                        meta.addNonPayerKeyIfReceiverSigRequired(collector, failureStatus);
                     }
                 }
             } else {
