@@ -15,4 +15,5 @@ module com.hedera.node.app.service.token.impl.test {
 			org.junit.platform.commons;
 	opens com.hedera.node.app.service.token.impl.test.entity to
 			org.junit.platform.commons;
+	opens com.hedera.node.app.service.token.impl.test.util to org.junit.platform.commons;
 }
