@@ -914,9 +914,14 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
             } else {
                 final var fee = rcd.getTransactionFee();
                 final var rates = spec.ratesProvider();
-                final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
-                LOG.info(
-                        "{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
+                if (rates.hasRateSet()) {
+                    final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
+                    LOG.info(
+                            "{}Record (charged ${}): {}",
+                            spec::logPrefix,
+                            () -> priceInUsd,
+                            () -> rcd);
+                }
                 LOG.info(
                         "{}  And {} child record{}: {}",
                         spec::logPrefix,
