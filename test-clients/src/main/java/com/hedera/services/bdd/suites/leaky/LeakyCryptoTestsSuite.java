@@ -704,6 +704,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
         final long REDUCED_SERVICE_FEE = 3L;
         final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
         final var payer = "payer";
+        final var secondKey = "secondKey";
         return propertyPreservingHapiSpec("hollowAccountCreationViaCryptoCreateChargesExpectedFees")
                 .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
@@ -713,20 +714,17 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 CRYPTO_CREATE_WITH_ALIAS_ENABLED,
                                 "true"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(secondKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(payer).balance(ONE_HUNDRED_HBARS + REDUCED_TOTAL_FEE),
                         reduceFeeFor(
-                                CryptoUpdate,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE),
-                        reduceFeeFor(
-                                CryptoCreate,
+                                List.of(CryptoTransfer, CryptoUpdate, CryptoCreate),
                                 REDUCED_NODE_FEE,
                                 REDUCED_NETWORK_FEE,
                                 REDUCED_SERVICE_FEE))
                 .when(
                         withOpContext(
                                 (spec, opLog) -> {
+                                    // crypto create fees check
                                     final var ecdsaKey =
                                             spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
@@ -751,6 +749,77 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var op4 =
                                             getAccountBalance(payer).hasTinyBars(0).logged();
                                     allRunFor(spec, op, op2, op3, op4);
+
+                                    // crypto transfer fees check
+                                    final HapiCryptoTransfer transferToPayerAgain =
+                                            cryptoTransfer(
+                                                    tinyBarsFromTo(
+                                                            GENESIS,
+                                                            payer,
+                                                            ONE_HUNDRED_HBARS
+                                                                    + 2 * REDUCED_TOTAL_FEE));
+                                    final var secondEvmAddress =
+                                            ByteString.copyFrom(
+                                                    recoverAddressFromPubKey(
+                                                            spec.registry()
+                                                                    .getKey(secondKey)
+                                                                    .getECDSASecp256K1()
+                                                                    .toByteArray()));
+                                    // try to create the hollow account without having enough
+                                    // balance to pay for the finalization (CryptoUpdate) fee
+                                    final var op5 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    payer,
+                                                                    secondEvmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                                                    .via(TRANSFER_TXN);
+                                    final var notExistingAccountInfo =
+                                            getAliasedAccountInfo(secondKey)
+                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
+                                    // transfer the needed balance for the finalization fee to the
+                                    // sponsor; we need + 2 * TOTAL_FEE, not 1, since we paid for
+                                    // the
+                                    // failed crypto transfer
+                                    final var op6 =
+                                            cryptoTransfer(
+                                                    tinyBarsFromTo(
+                                                            GENESIS, payer, 2 * REDUCED_TOTAL_FEE));
+                                    // now the sponsor can successfully create the hollow account
+                                    final var op7 =
+                                            cryptoTransfer(
+                                                            tinyBarsFromTo(
+                                                                    payer,
+                                                                    secondEvmAddress,
+                                                                    ONE_HUNDRED_HBARS))
+                                                    .payingWith(payer)
+                                                    .hasKnownStatus(SUCCESS)
+                                                    .via(TRANSFER_TXN);
+                                    final var op8 =
+                                            getAliasedAccountInfo(secondKey)
+                                                    .has(
+                                                            accountWith()
+                                                                    .hasEmptyKey()
+                                                                    .expectedBalanceWithChargedUsd(
+                                                                            ONE_HUNDRED_HBARS, 0, 0)
+                                                                    .autoRenew(
+                                                                            THREE_MONTHS_IN_SECONDS)
+                                                                    .receiverSigReq(false)
+                                                                    .memo(LAZY_MEMO));
+                                    final var op9 =
+                                            getAccountBalance(payer).hasTinyBars(0).logged();
+                                    allRunFor(
+                                            spec,
+                                            transferToPayerAgain,
+                                            op5,
+                                            notExistingAccountInfo,
+                                            op6,
+                                            op7,
+                                            op8,
+                                            op9,
+                                            uploadDefaultFeeSchedules(GENESIS));
                                 }))
                 .then(uploadDefaultFeeSchedules(GENESIS));
     }
