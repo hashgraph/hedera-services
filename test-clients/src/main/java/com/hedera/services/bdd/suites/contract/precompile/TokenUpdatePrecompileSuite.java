@@ -121,6 +121,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
     private static final long SUPPLY_KEY_TYPE = 16L;
     private static final long FEE_SCHEDULE_KEY_TYPE = 32L;
     private static final long PAUSE_KEY_TYPE = 64L;
+    private static final String UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN = "updateWithoutNewAdminSigTxn";
 
     public static void main(String... args) {
         new TokenUpdatePrecompileSuite().runSuiteAsync();
@@ -223,7 +224,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                                 CUSTOM_NAME,
                                                                 CUSTOM_SYMBOL,
                                                                 CUSTOM_MEMO)
-                                                        .via("updateWithoutNewAdminSigTxn")
+                                                        .via(UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
@@ -314,7 +315,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                                         TOKEN_UPDATE_CONTRACT)))))
                 .then(
                         childRecordsCheck(
-                                "updateWithoutNewAdminSigTxn",
+                                UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN,
                                 CONTRACT_REVERT_EXECUTED,
                                 TransactionRecordAsserts.recordWith()
                                         .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
@@ -954,7 +955,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                                                                 TOKEN_UPDATE_CONTRACT))))
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .via("updateWithoutNewAdminSigTxn")
+                                                        .via(UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN)
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
@@ -1078,7 +1079,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
                                                         .hasPauseKey(TOKEN_UPDATE_AS_KEY),
                                                 childRecordsCheck(
-                                                        "updateWithoutNewAdminSigTxn",
+                                                        UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN,
                                                         CONTRACT_REVERT_EXECUTED,
                                                         TransactionRecordAsserts.recordWith()
                                                                 .status(
@@ -1271,7 +1272,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .via(UPDATE_TXN)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
-                                                        .via("updateWithoutNewAdminSigTxn")
+                                                        .via(UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN)
                                                         .payingWith(ACCOUNT)
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                                                 contractCall(
@@ -1324,7 +1325,7 @@ public class TokenUpdatePrecompileSuite extends HapiSuite {
                                                         .hasSupplyKey(TOKEN_UPDATE_AS_KEY)
                                                         .hasPauseKey(TOKEN_UPDATE_AS_KEY),
                                                 childRecordsCheck(
-                                                        "updateWithoutNewAdminSigTxn",
+                                                        UPDATE_WITHOUT_NEW_ADMIN_SIG_TXN,
                                                         CONTRACT_REVERT_EXECUTED,
                                                         TransactionRecordAsserts.recordWith()
                                                                 .status(
