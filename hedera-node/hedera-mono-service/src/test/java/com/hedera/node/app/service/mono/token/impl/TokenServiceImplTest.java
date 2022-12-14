@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TokenServiceImplTest {
+class TokenServiceImplTest {
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
     @Mock private InMemoryStateImpl tokens;

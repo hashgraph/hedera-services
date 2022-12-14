@@ -52,7 +52,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TokenPreTransactionHandlerImplTest {
+class TokenPreTransactionHandlerImplTest {
     private final Timestamp consensusTimestamp =
             Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final AccountID payer = asAccount("0.0.3");
