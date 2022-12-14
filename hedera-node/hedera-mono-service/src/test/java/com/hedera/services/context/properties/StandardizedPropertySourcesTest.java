@@ -22,11 +22,15 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
 import static org.mockito.Mockito.doCallRealMethod;
 
+import com.hedera.services.keys.LegacyContractIdActivations;
+import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.throttling.MapAccessType;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ServicesConfigurationList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +69,33 @@ class StandardizedPropertySourcesTest {
         assertEquals(expected, mockSubject.getNodeStakeRatiosProperty(name));
 
         assertEquals(Collections.emptyMap(), PropertySource.AS_NODE_STAKE_RATIOS.apply(""));
+    }
+
+    @Test
+    void getsLegacyActivations() {
+        final var prop = "1058134by[1062784]";
+        final LegacyContractIdActivations activations =
+                (LegacyContractIdActivations) PropertySource.AS_LEGACY_ACTIVATIONS.apply(prop);
+        final var expected =
+                new LegacyContractIdActivations(
+                        Map.of(
+                                EntityIdUtils.asTypedEvmAddress(new EntityId(0, 0, 1058134)),
+                                Set.of(
+                                        EntityIdUtils.asTypedEvmAddress(
+                                                new EntityId(0, 0, 1062784)))));
+        assertEquals(expected, activations);
+
+        final var name = "activations";
+        final var mockSubject = Mockito.mock(PropertySource.class);
+        doCallRealMethod().when(mockSubject).getLegacyActivationsProperty(name);
+        given(mockSubject.getProperty(name)).willReturn(expected);
+        doCallRealMethod()
+                .when(mockSubject)
+                .getTypedProperty(LegacyContractIdActivations.class, name);
+        assertEquals(expected, mockSubject.getLegacyActivationsProperty(name));
+
+        final var noActivations = new LegacyContractIdActivations(Collections.emptyMap());
+        assertEquals(noActivations, PropertySource.AS_LEGACY_ACTIVATIONS.apply(""));
     }
 
     @Test

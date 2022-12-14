@@ -32,16 +32,29 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilJustBeforeNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.records.ContractRecordsSanityCheckSuite.PAYABLE_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 
 import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntFunction;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +101,206 @@ public class StakingSuite extends HapiApiSuite {
                 secondOrderRewardSituationsWork(),
                 endOfStakingPeriodRecTest(),
                 rewardsOfDeletedAreRedirectedToBeneficiary(),
-                canBeRewardedWithoutMinStakeIfSoConfigured());
+                canBeRewardedWithoutMinStakeIfSoConfigured(),
+                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
+                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds());
+    }
+
+    /**
+     * Tests a scenario in which Alice repeatedly transfers her balance to Baldwin right before the
+     * end of a staking period, only to receive it back shortly after that period starts.
+     */
+    private HapiApiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
+        final var zeroStakeAccount = "zeroStakeAccount";
+        final var numZeroStakeAccounts = 10;
+        final var stakePeriodMins = 1L;
+
+        return defaultHapiSpec("ZeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds")
+                .given(
+                        overridingAllOf(
+                                Map.of(
+                                        STAKING_START_THRESHOLD,
+                                        "" + ONE_HBAR,
+                                        STAKING_REWARD_RATE,
+                                        "273972602739726")),
+                        cryptoTransfer(
+                                tinyBarsFromTo(GENESIS, STAKING_REWARD, 250 * ONE_MILLION_HBARS)),
+                        inParallel(
+                                IntStream.range(0, numZeroStakeAccounts)
+                                        .mapToObj(
+                                                i ->
+                                                        cryptoCreate(zeroStakeAccount + i)
+                                                                .stakedNodeId(0)
+                                                                .balance(0L))
+                                        .toArray(HapiSpecOperation[]::new)),
+                        cryptoCreate("somebody").stakedNodeId(0).balance(10 * ONE_MILLION_HBARS),
+                        // Wait a few periods
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins))
+                .when()
+                .then(
+                        sleepFor(5_000),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    for (int i = 0; i < numZeroStakeAccounts; i++) {
+                                        final var target = zeroStakeAccount + i;
+                                        final var setupTxn = "setup" + i;
+                                        final var fundingTxn = "funding" + i;
+                                        final var withdrawingTxn = "withdrawing" + i;
+                                        final var first =
+                                                cryptoTransfer(tinyBarsFromTo(GENESIS, target, 1))
+                                                        .via(setupTxn);
+                                        final var second =
+                                                cryptoTransfer(
+                                                                tinyBarsFromTo(
+                                                                        GENESIS,
+                                                                        target,
+                                                                        ONE_MILLION_HBARS))
+                                                        .via(fundingTxn);
+                                        final var third =
+                                                cryptoTransfer(
+                                                                tinyBarsFromTo(
+                                                                        target,
+                                                                        GENESIS,
+                                                                        ONE_MILLION_HBARS))
+                                                        .via(withdrawingTxn);
+                                        allRunFor(
+                                                spec,
+                                                first,
+                                                second,
+                                                third,
+                                                getTxnRecord(setupTxn).logged(),
+                                                getTxnRecord(fundingTxn).logged(),
+                                                getTxnRecord(withdrawingTxn).logged());
+                                    }
+                                }));
+    }
+
+    /**
+     * Tests a scenario in which Alice repeatedly transfers her balance to Baldwin right before the
+     * end of a staking period, only to receive it back shortly after that period starts.
+     */
+    private HapiApiSpec stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries() {
+        final var alice = "alice";
+        final var baldwin = "baldwin";
+        final var stakePeriodMins = 1L;
+        final AtomicLong currentAliceBalance = new AtomicLong();
+        final AtomicLong currentBaldwinBalance = new AtomicLong();
+        final List<List<AccountAmount>> rewardsPaid = new ArrayList<>();
+
+        final int numPeriodsToRepeat = 5;
+        final long secsBeforePeriodEndToDoTransfer = 5;
+        final IntFunction<String> returnToAliceTxns = n -> "returnToAlice" + n;
+        final IntFunction<String> sendToBobTxns = n -> "sendToBob" + n;
+        final IntFunction<HapiSpecOperation> returnRecordLookup =
+                n ->
+                        getTxnRecord(returnToAliceTxns.apply(n))
+                                .logged()
+                                .exposingStakingRewardsTo(rewardsPaid::add);
+        final IntFunction<HapiSpecOperation> sendRecordLookup =
+                n ->
+                        getTxnRecord(sendToBobTxns.apply(n))
+                                .logged()
+                                .exposingStakingRewardsTo(rewardsPaid::add);
+
+        return defaultHapiSpec("StakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries")
+                .given(
+                        overridingAllOf(
+                                Map.of(
+                                        STAKING_START_THRESHOLD,
+                                        "" + ONE_HBAR,
+                                        STAKING_REWARD_RATE,
+                                        "273972602739726")),
+                        cryptoTransfer(
+                                tinyBarsFromTo(GENESIS, STAKING_REWARD, 250 * ONE_MILLION_HBARS)),
+                        cryptoCreate(alice).stakedNodeId(0).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(baldwin).stakedNodeId(0).balance(0L),
+                        // Reach a period where stakers can collect rewards
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins))
+                .when(
+                        IntStream.range(0, numPeriodsToRepeat)
+                                .mapToObj(
+                                        i ->
+                                                blockingOrder(
+                                                        waitUntilJustBeforeNextStakingPeriod(
+                                                                stakePeriodMins,
+                                                                secsBeforePeriodEndToDoTransfer),
+                                                        getAccountBalance(alice)
+                                                                .exposingBalanceTo(
+                                                                        currentAliceBalance::set),
+                                                        // From Alice to Baldwin
+                                                        sourcing(
+                                                                () ->
+                                                                        cryptoTransfer(
+                                                                                        tinyBarsFromTo(
+                                                                                                alice,
+                                                                                                baldwin,
+                                                                                                currentAliceBalance
+                                                                                                        .get()))
+                                                                                .via(
+                                                                                        sendToBobTxns
+                                                                                                .apply(
+                                                                                                        i))),
+                                                        sourcing(() -> sendRecordLookup.apply(i)),
+                                                        // Wait until the next period starts
+                                                        sleepFor(
+                                                                2
+                                                                        * secsBeforePeriodEndToDoTransfer
+                                                                        * 1000),
+                                                        // Back to Alice from Baldwin
+                                                        getAccountBalance(baldwin)
+                                                                .exposingBalanceTo(
+                                                                        currentBaldwinBalance::set),
+                                                        sourcing(
+                                                                () ->
+                                                                        cryptoTransfer(
+                                                                                        tinyBarsFromTo(
+                                                                                                baldwin,
+                                                                                                alice,
+                                                                                                currentBaldwinBalance
+                                                                                                        .get()))
+                                                                                .via(
+                                                                                        returnToAliceTxns
+                                                                                                .apply(
+                                                                                                        i))),
+                                                        sourcing(
+                                                                () -> returnRecordLookup.apply(i))))
+                                .toArray(HapiSpecOperation[]::new))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var registry = spec.registry();
+                                    final var aliceNum =
+                                            registry.getAccountID(alice).getAccountNum();
+                                    final var baldwinNum =
+                                            registry.getAccountID(baldwin).getAccountNum();
+                                    for (int i = 0; i < rewardsPaid.size(); i++) {
+                                        if (i % 2 == 0) {
+                                            opLog.info(
+                                                    "======= Send-to-Baldwin #{} =======", i / 2);
+                                        } else {
+                                            opLog.info(
+                                                    "======= Return-to-Alice #{} =======", i / 2);
+                                        }
+                                        final var paidThisTime = rewardsPaid.get(i);
+                                        var aliceReward = 0L;
+                                        var baldwinReward = 0L;
+                                        for (final var paid : paidThisTime) {
+                                            if (paid.getAccountID().getAccountNum() == aliceNum) {
+                                                aliceReward = paid.getAmount();
+                                            }
+                                            if (paid.getAccountID().getAccountNum() == baldwinNum) {
+                                                baldwinReward = paid.getAmount();
+                                            }
+                                        }
+                                        opLog.info("=  Alice   : {}", aliceReward);
+                                        opLog.info("=  Baldwin : {}", baldwinReward);
+                                        opLog.info("==============================\n");
+                                    }
+                                }));
     }
 
     private HapiApiSpec canBeRewardedWithoutMinStakeIfSoConfigured() {

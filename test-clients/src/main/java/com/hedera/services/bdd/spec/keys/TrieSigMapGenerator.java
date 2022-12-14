@@ -117,6 +117,7 @@ public class TrieSigMapGenerator implements SigMapGenerator {
         final var fullPrefixSet = new HashSet<ByteString>();
         for (final var key : fullPrefixKeys) {
             final var explicitKey = registry.getKey(key);
+
             accumulateFullPrefixes(explicitKey, fullPrefixSet);
         }
         return fullPrefixSet;
@@ -125,6 +126,8 @@ public class TrieSigMapGenerator implements SigMapGenerator {
     private void accumulateFullPrefixes(final Key explicit, final Set<ByteString> fullPrefixSet) {
         if (!explicit.getEd25519().isEmpty()) {
             fullPrefixSet.add(explicit.getEd25519());
+        } else if (!explicit.getECDSASecp256K1().isEmpty()) {
+            fullPrefixSet.add(explicit.getECDSASecp256K1());
         } else if (explicit.hasKeyList()) {
             for (final var innerKey : explicit.getKeyList().getKeysList()) {
                 accumulateFullPrefixes(innerKey, fullPrefixSet);

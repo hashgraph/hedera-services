@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -72,6 +73,7 @@ public interface PropertySource {
     Function<String, Object> AS_FUNCTIONS =
             s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+    Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
     Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ThrottleReqOpsScaleFactor::from;
     Function<String, Object> AS_ENTITY_NUM_RANGE = EntityIdUtils::parseEntityNumRange;
@@ -130,6 +132,10 @@ public interface PropertySource {
 
     default Map<Long, Long> getNodeStakeRatiosProperty(String name) {
         return getTypedProperty(Map.class, name);
+    }
+
+    default LegacyContractIdActivations getLegacyActivationsProperty(String name) {
+        return getTypedProperty(LegacyContractIdActivations.class, name);
     }
 
     default ThrottleReqOpsScaleFactor getThrottleScaleFactor(String name) {

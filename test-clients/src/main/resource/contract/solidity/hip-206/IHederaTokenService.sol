@@ -13,6 +13,7 @@ interface IHederaTokenService {
     /// transaction fee is still charged. This transaction must be signed by the keys for all the sending
     /// accounts, and for any receiving accounts that have receiverSigRequired == true. The signatures
     /// are in the same order as the accounts, skipping those accounts that don't need a signature.
+    /// @custom:version 0.3.0 previous version did not include isApproval
     struct AccountAmount {
         // The Account ID, as a solidity address, that sends/receives cryptocurrency or tokens
         address accountID;
@@ -20,11 +21,16 @@ interface IHederaTokenService {
         // The amount of  the lowest denomination of the given token that
         // the account sends(negative) or receives(positive)
         int64 amount;
+
+        // If true then the transfer is expected to be an approved allowance and the
+        // accountID is expected to be the owner. The default is false (omitted).
+        bool isApproval;
     }
 
     /// A sender account, a receiver account, and the serial number of an NFT of a Token with
     /// NON_FUNGIBLE_UNIQUE type. When minting NFTs the sender will be the default AccountID instance
     /// (0.0.0 aka 0x0) and when burning NFTs, the receiver will be the default AccountID instance.
+    /// @custom:version 0.3.0 previous version did not include isApproval
     struct NftTransfer {
         // The solidity address of the sender
         address senderAccountID;
@@ -34,6 +40,10 @@ interface IHederaTokenService {
 
         // The serial number of the NFT
         int64 serialNumber;
+
+        // If true then the transfer is expected to be an approved allowance and the
+        // accountID is expected to be the owner. The default is false (omitted).
+        bool isApproval;
     }
 
     struct TokenTransferList {
@@ -47,6 +57,12 @@ interface IHederaTokenService {
         // Applicable to tokens of type NON_FUNGIBLE_UNIQUE. Multiple list of NftTransfers, each of
         // which has a sender and receiver account, including the serial number of the NFT
         NftTransfer[] nftTransfers;
+    }
+
+    struct TransferList {
+        // Multiple list of AccountAmounts, each of which has an account and amount.
+        // Used to transfer hbars between the accounts in the list.
+        AccountAmount[] transfers;
     }
 
     /// Expiry properties of a Hedera token - second, autoRenewAccount, autoRenewPeriod
@@ -140,7 +156,7 @@ interface IHederaTokenService {
         // IWA Compatibility. Depends on TokenSupplyType. For tokens of type FUNGIBLE_COMMON - the
         // maximum number of tokens that can be in circulation. For tokens of type NON_FUNGIBLE_UNIQUE -
         // the maximum number of NFTs (serial numbers) that can be minted. This field can never be changed!
-        uint32 maxSupply;
+        int64 maxSupply;
 
         // The default Freeze status (frozen or unfrozen) of Hedera accounts relative to this token. If
         // true, an account must be unfrozen before it can receive the token
@@ -155,8 +171,20 @@ interface IHederaTokenService {
 
     /// Additional post creation fungible and non fungible properties of a Hedera Token.
     struct TokenInfo {
-        /// The hedera token;
-        HederaToken hedera;
+        /// Basic properties of a Hedera Token
+        HederaToken token;
+
+        /// The number of tokens (fungible) or serials (non-fungible) of the token
+        uint64 totalSupply;
+
+        /// Specifies whether the token is deleted or not
+        bool deleted;
+
+        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
+        bool defaultKycStatus;
+
+        /// Specifies whether the token is currently paused or not
+        bool pauseStatus;
 
         /// The fixed fees collected when transferring the token
         FixedFee[] fixedFees;
@@ -167,20 +195,8 @@ interface IHederaTokenService {
         /// The royalty fees collected when transferring the token
         RoyaltyFee[] royaltyFees;
 
-        /// Specifies whether the token kyc was defaulted with KycNotApplicable (true) or Revoked (false)
-        bool defaultKycStatus;
-
-        /// Specifies whether the token is deleted or not
-        bool deleted;
-
         /// The ID of the network ledger
         string ledgerId;
-
-        /// Specifies whether the token is currently paused or not
-        bool pauseStatus;
-
-        /// The number of tokens (fungible) or serials (non-fungible) of the token
-        uint64 totalSupply;
     }
 
     /// Additional fungible properties of a Hedera Token.
@@ -284,10 +300,11 @@ interface IHederaTokenService {
      * Direct HTS Calls   *
      **********************/
 
-    /// Initiates a Token Transfer
-    /// @param tokenTransfers the list of transfers to do
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    function cryptoTransfer(TokenTransferList[] memory tokenTransfers)
+    /// Performs transfers among combinations of tokens and hbars
+    /// @param transferList the list of hbar transfers to do
+    /// @param tokenTransfers the list of token transfers to do
+    /// @custom:version 0.3.0 the signature of the previous version was cryptoTransfer(TokenTransferList[] memory tokenTransfers)
+    function cryptoTransfer(TransferList memory transferList, TokenTransferList[] memory tokenTransfers)
         external
         returns (int64 responseCode);
 
@@ -395,8 +412,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleToken(
         HederaToken memory token,
-        uint initialTotalSupply,
-        uint decimals
+        uint64 initialTotalSupply,
+        uint32 decimals
     ) external payable returns (int64 responseCode, address tokenAddress);
 
     /// Creates a Fungible Token with the specified properties
@@ -410,8 +427,8 @@ interface IHederaTokenService {
     /// @return tokenAddress the created token's address
     function createFungibleTokenWithCustomFees(
         HederaToken memory token,
-        uint initialTotalSupply,
-        uint decimals,
+        uint64 initialTotalSupply,
+        uint32 decimals,
         FixedFee[] memory fixedFees,
         FractionalFee[] memory fractionalFees
     ) external payable returns (int64 responseCode, address tokenAddress);
@@ -504,6 +521,16 @@ interface IHederaTokenService {
         uint256 amount
     ) external returns (int64 responseCode);
 
+    /// Transfers `amount` tokens from `from` to `to` using the
+    //  allowance mechanism. `amount` is then deducted from the caller's allowance.
+    /// Only applicable to fungible tokens
+    /// @param token The address of the fungible Hedera token to transfer
+    /// @param from The account address of the owner of the token, on the behalf of which to transfer `amount` tokens
+    /// @param to The account address of the receiver of the `amount` tokens
+    /// @param amount The amount of tokens to transfer from `from` to `to`
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function transferFrom(address token, address from, address to, uint256 amount) external returns (int64 responseCode);
+
     /// Returns the amount which spender is still allowed to withdraw from owner.
     /// Only Applicable to Fungible Tokens
     /// @param token The Hedera token address to check the allowance of
@@ -526,8 +553,17 @@ interface IHederaTokenService {
     function approveNFT(
         address token,
         address approved,
-        int64 serialNumber
+        uint256 serialNumber
     ) external returns (int64 responseCode);
+
+    /// Transfers `serialNumber` of `token` from `from` to `to` using the allowance mechanism.
+    /// Only applicable to NFT tokens
+    /// @param token The address of the non-fungible Hedera token to transfer
+    /// @param from The account address of the owner of `serialNumber` of `token`
+    /// @param to The account address of the receiver of `serialNumber`
+    /// @param serialNumber The NFT serial number to transfer
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
+    function transferFromNFT(address token, address from, address to, uint256 serialNumber) external returns (int64 responseCode);
 
     /// Get the approved address for a single NFT
     /// Only Applicable to NFT Tokens
@@ -535,7 +571,7 @@ interface IHederaTokenService {
     /// @param serialNumber The NFT to find the approved address for
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
     /// @return approved The approved address for this NFT, or the zero address if there is none
-    function getApproved(address token, int64 serialNumber)
+    function getApproved(address token, uint256 serialNumber)
         external
         returns (int64 responseCode, address approved);
 
@@ -604,7 +640,7 @@ interface IHederaTokenService {
     function getTokenDefaultFreezeStatus(address token)
         external
         returns (int64 responseCode, bool defaultFreezeStatus);
-
+    
     /// Query token default kyc status
     /// @param token The token address to check
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -735,15 +771,7 @@ interface IHederaTokenService {
         external
         returns (int64 responseCode);
 
-    /// Query token expiry info
-    /// @param token The token address to check
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return expiry Expiry info for `token`
-    function getTokenExpiryInfo(address token)
-    external
-    returns (int64 responseCode, Expiry memory expiry);
-
-    /// Operation to update token keys
+    /// Operation to update token expiry info
     /// @param token The token address
     /// @param keys The token keys
     /// @return responseCode The response code for the status of the request. SUCCESS is 22.
@@ -753,17 +781,17 @@ interface IHederaTokenService {
 
     /// Query if valid token found for the given address
     /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return isToken True if valid token found for the given address
-    function isToken(address token)
-        external returns
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.    
+    /// @return isToken True if valid token found for the given address     
+    function isToken(address token) 
+        external returns 
         (int64 responseCode, bool isToken);
 
     /// Query to return the token type for a given address
     /// @param token The token address
-    /// @return responseCode The response code for the status of the request. SUCCESS is 22.
-    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED
+    /// @return responseCode The response code for the status of the request. SUCCESS is 22.    
+    /// @return tokenType the token type. 0 is FUNGIBLE_COMMON, 1 is NON_FUNGIBLE_UNIQUE, -1 is UNRECOGNIZED   
     function getTokenType(address token)
-        external returns
+        external returns 
         (int64 responseCode, int32 tokenType);
 }

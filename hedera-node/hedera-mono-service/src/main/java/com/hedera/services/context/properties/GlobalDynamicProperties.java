@@ -24,6 +24,7 @@ import com.hedera.services.config.HederaNumbers;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.charging.ContractStoragePriceTiers;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
@@ -151,6 +152,7 @@ public class GlobalDynamicProperties {
     private boolean compressAccountBalanceFilesOnCreation;
     private long traceabilityMaxExportsPerConsSec;
     private long traceabilityMinFreeToUsedGasThrottleRatio;
+    private LegacyContractIdActivations legacyContractIdActivations;
 
     @Inject
     public GlobalDynamicProperties(
@@ -310,6 +312,8 @@ public class GlobalDynamicProperties {
                 properties.getLongProperty(TRACEABILITY_MAX_EXPORTS_PER_CONS_SEC);
         traceabilityMinFreeToUsedGasThrottleRatio =
                 properties.getLongProperty(TRACEABILITY_MIN_FREE_TO_USED_GAS_THROTTLE_RATIO);
+        legacyContractIdActivations =
+                properties.getLegacyActivationsProperty(CONTRACTS_KEYS_LEGACY_ACTIVATIONS);
     }
 
     public int maxTokensPerAccount() {
@@ -746,5 +750,9 @@ public class GlobalDynamicProperties {
 
     public long traceabilityMaxExportsPerConsSec() {
         return traceabilityMaxExportsPerConsSec;
+    }
+
+    public LegacyContractIdActivations legacyContractIdActivations() {
+        return legacyContractIdActivations;
     }
 }

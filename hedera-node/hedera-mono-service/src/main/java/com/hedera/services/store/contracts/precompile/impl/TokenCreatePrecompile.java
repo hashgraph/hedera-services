@@ -71,6 +71,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.F
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.FractionalFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenCreateWrapper.RoyaltyFeeWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.contracts.precompile.impl.sigs.TokenCreateReqs;
 import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
@@ -253,6 +254,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final Address senderAddress;
     private final AccountID fundingAccount;
     private final Provider<FeeCalculator> feeCalculator;
+    private final TokenCreateReqs.Factory tokenCreateReqsFactory;
     private TokenCreateWrapper tokenCreateOp;
 
     public TokenCreatePrecompile(
@@ -268,7 +270,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             final Address senderAddress,
             final AccountID fundingAccount,
             final Provider<FeeCalculator> feeCalculator,
-            final PrecompilePricingUtils pricingUtils) {
+            final PrecompilePricingUtils pricingUtils,
+            final TokenCreateReqs.Factory tokenCreateReqsFactory) {
         super(ledgers, sideEffects, syntheticTxnFactory, infrastructureFactory, pricingUtils);
         this.encoder = encoder;
         this.updater = updater;
@@ -278,6 +281,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         this.senderAddress = senderAddress;
         this.fundingAccount = fundingAccount;
         this.feeCalculator = feeCalculator;
+        this.tokenCreateReqsFactory = tokenCreateReqsFactory;
     }
 
     @Override
@@ -328,12 +332,13 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         /* --- Validate the synthetic create txn body before proceeding with the rest of the execution --- */
         final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
         final var tokenCreateChecks = infrastructureFactory.newCreateChecks();
-        final var result =
-                tokenCreateChecks.validatorForConsTime(creationTime).apply(transactionBody.build());
+        final var txn = transactionBody.build();
+        final var result = tokenCreateChecks.validatorForConsTime(creationTime).apply(txn);
         validateTrue(result == OK, result);
 
         /* --- Check required signatures --- */
         final var treasuryId = Id.fromGrpcAccount(tokenCreateOp.getTreasury());
+        final var aliases = updater.aliases();
         final var treasuryHasSigned =
                 KeyActivationUtils.validateKey(
                         frame,
@@ -350,6 +355,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
                                         validateAdminKey(frame, key),
                                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
                                         TOKEN_CREATE));
+        final var tokenCreateReqs =
+                tokenCreateReqsFactory.newReqs(
+                        frame,
+                        KeyActivationUtils::validateLegacyKey,
+                        aliases,
+                        sigsVerifier,
+                        ledgers);
+        tokenCreateReqs.assertNonAdminOrTreasurySigs(txn.getTokenCreation());
 
         /* --- Build the necessary infrastructure to execute the transaction --- */
         final var accountStore = infrastructureFactory.newAccountStore(ledgers.accounts());

@@ -74,6 +74,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -137,6 +138,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
     private Consumer<List<?>> eventDataObserver;
     private Predicate<Abi.Event> eventMatcher;
     private String contractResultAbi = null;
+    @Nullable private Consumer<List<AccountAmount>> stakingRewardsObserver = null;
 
     public static ByteString sha384HashOf(final Transaction transaction) {
         if (transaction.getSignedTransactionBytes().isEmpty()) {
@@ -192,6 +194,11 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord assertingOnlyPriority() {
         assertOnlyPriority = true;
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingStakingRewardsTo(final Consumer<List<AccountAmount>> observer) {
+        stakingRewardsObserver = observer;
         return this;
     }
 
@@ -839,6 +846,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
+        }
+        if (stakingRewardsObserver != null) {
+            stakingRewardsObserver.accept(rcd.getPaidStakingRewardsList());
         }
         observer.ifPresent(obs -> obs.accept(rcd));
         childRecords = response.getTransactionGetRecord().getChildTransactionRecordsList();

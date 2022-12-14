@@ -303,7 +303,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
     private HapiApiSpec fungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
-        return defaultHapiSpec("fungibleTokenCreateWithFeesHappyPath")
+        return defaultHapiSpec("FungibleTokenCreateWithFeesHappyPath")
                 .given(
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ECDSA_KEY),
@@ -338,6 +338,8 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                                                         ACCOUNT)),
                                                                 AUTO_RENEW_PERIOD)
                                                         .via(FIRST_CREATE_TXN)
+                                                        .alsoSigningWithFullPrefix(
+                                                                feeCollector, ACCOUNT)
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
@@ -1471,6 +1473,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .alsoSigningWithFullPrefix(feeCollector)
                                                         .refusingEthConversion()
                                                         .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
                 .then(

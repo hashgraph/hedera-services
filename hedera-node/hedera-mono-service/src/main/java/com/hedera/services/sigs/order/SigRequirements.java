@@ -1345,12 +1345,14 @@ public class SigRequirements {
                 } else {
                     final var tokenMeta = tokenResult.metadata();
                     if (tokenMeta.hasRoyaltyWithFallback()) {
-                        final var fallbackApplies =
-                                !receivesFungibleValue(counterparty, op)
-                                        && counterparty.getAccountNum()
-                                                != tokenMeta.treasury().num();
-                        if (fallbackApplies) {
-                            required.add(meta.key());
+                        if (!receivesFungibleValue(counterparty, op)) {
+                            // Fallback situation; but we still need to check if the treasury is
+                            // the sender or receiver, since in neither case will the fallback fee
+                            // actually be charged
+                            final var treasury = tokenMeta.treasury().toGrpcAccountId();
+                            if (!treasury.equals(party) && !treasury.equals(counterparty)) {
+                                required.add(meta.key());
+                            }
                         }
                     }
                 }

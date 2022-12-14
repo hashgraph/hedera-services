@@ -38,6 +38,7 @@ import com.hedera.services.store.contracts.WorldLedgers;
 import com.hedera.services.store.contracts.precompile.InfrastructureFactory;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.TokenUpdateKeysWrapper;
+import com.hedera.services.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -65,6 +66,8 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
             InfrastructureFactory infrastructureFactory,
             PrecompilePricingUtils pricingUtils) {
         super(
+                KeyActivationUtils::validateKey,
+                KeyActivationUtils::validateLegacyKey,
                 ledgers,
                 aliases,
                 sigsVerifier,

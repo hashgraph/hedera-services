@@ -90,6 +90,8 @@ public class PropertyNames {
             "contract.storageSlotPriceTiers";
     public static final String CONTRACTS_DEFAULT_LIFETIME = "contracts.defaultLifetime";
     public static final String CONTRACTS_KNOWN_BLOCK_HASH = "contracts.knownBlockHash";
+    public static final String CONTRACTS_KEYS_LEGACY_ACTIVATIONS =
+            "contracts.keys.legacyActivations";
     public static final String CONTRACTS_LOCAL_CALL_EST_RET_BYTES =
             "contracts.localCall.estRetBytes";
     public static final String CONTRACTS_ALLOW_CREATE2 = "contracts.allowCreate2";

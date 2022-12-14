@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.services.fees.calculation.CongestionMultipliers;
+import com.hedera.services.keys.LegacyContractIdActivations;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.throttling.ThrottleReqOpsScaleFactor;
 import com.hedera.test.extensions.LogCaptor;
@@ -113,6 +114,9 @@ class BootstrapPropertiesTest {
                     entry(CONTRACTS_MAX_KV_PAIRS_INDIVIDUAL, 163_840),
                     entry(CONTRACTS_CHAIN_ID, 295),
                     entry(CONTRACTS_THROTTLE_THROTTLE_BY_GAS, true),
+                    entry(
+                            CONTRACTS_KEYS_LEGACY_ACTIVATIONS,
+                            LegacyContractIdActivations.from("1058134by[1062784]")),
                     entry(CONTRACTS_KNOWN_BLOCK_HASH, MISSING_BLOCK_VALUES),
                     entry(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, 20),
                     entry(CONTRACTS_SCHEDULE_THROTTLE_MAX_GAS_LIMIT, 5000000L),
