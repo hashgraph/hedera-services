@@ -17,10 +17,6 @@ package com.hedera.node.app.hapi.utils.exports;
 
 import static com.hedera.services.stream.proto.SignatureType.SHA_384_WITH_RSA;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeEntireHash;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.computeMetaHash;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.readFirstIntFromFile;
-import static com.swirlds.common.stream.internal.TimestampStreamFileWriter.writeSignatureFile;
 import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,13 +31,11 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.DigestType;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.stream.EventStreamType;
 import com.swirlds.common.stream.StreamType;
-import com.swirlds.common.stream.internal.InvalidStreamFileException;
 import com.swirlds.common.stream.internal.StreamTypeFromJson;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedOutputStream;
@@ -60,7 +54,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
@@ -168,42 +161,6 @@ public class FileSignTool {
     }
 
     /**
-     * check whether the given signature is valid
-     *
-     * @param data the data that was signed
-     * @param signature the claimed signature of that data
-     * @param publicKey publicKey in the sign keyPair
-     * @param sigFilePath the signature file
-     * @return true if the signature is valid
-     */
-    public static boolean verifySignature(
-            final byte[] data,
-            final byte[] signature,
-            final PublicKey publicKey,
-            final String sigFilePath) {
-        try {
-            final Signature sig =
-                    Signature.getInstance(
-                            SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
-            sig.initVerify(publicKey);
-            sig.update(data);
-            return sig.verify(signature);
-        } catch (final NoSuchAlgorithmException
-                | NoSuchProviderException
-                | InvalidKeyException
-                | SignatureException e) {
-            LOGGER.error(
-                    MARKER,
-                    "Failed to verify Signature: {}, PublicKey: {}, File: {}",
-                    hex(signature),
-                    hex(publicKey.getEncoded()),
-                    sigFilePath,
-                    e);
-        }
-        return false;
-    }
-
-    /**
      * Loads a pfx key file and return a KeyPair object
      *
      * @param keyFileName a pfx key file
@@ -246,33 +203,6 @@ public class FileSignTool {
     }
 
     /**
-     * creates a signature file for an event stream version3 file, or a record stream v2 file, or an
-     * account balance file This signature file contains the Hash of the file to be signed, and a
-     * signature signed by the node's Key
-     *
-     * @param filePath file name for the new signature file
-     * @param signature signature bytes generated for event file
-     * @param fileHash event file hash value
-     */
-    public static void generateSigFileOldVersion(
-            final String filePath, final byte[] signature, final byte[] fileHash) {
-        try (final FileOutputStream output = new FileOutputStream(filePath, false)) {
-            output.write(TYPE_FILE_HASH);
-            output.write(fileHash);
-            output.write(TYPE_SIGNATURE);
-            output.write(integerToBytes(signature.length));
-            output.write(signature);
-        } catch (final IOException e) {
-            LOGGER.error(
-                    MARKER,
-                    "generateSigFile :: Fail to generate signature file for {}. Exception: {}",
-                    filePath,
-                    e);
-        }
-        System.out.println("generate sig file: " + filePath);
-    }
-
-    /**
      * convert an int to a byte array
      *
      * @param number an int number
@@ -301,81 +231,18 @@ public class FileSignTool {
             final StreamType streamType) {
         final String destSigFilePath = buildDestSigFilePath(destDir, streamFile);
         try {
-            if (streamType.isStreamFile(streamFile)) {
-                if (streamType.getExtension().equalsIgnoreCase(RECORD_STREAM_EXTENSION)) {
-                    createSignatureFileForRecordFile(
-                            streamFile.getAbsolutePath(),
-                            streamType,
-                            sigKeyPair,
-                            destDir.getPath());
-                    return;
-                }
-
-                final int version = readFirstIntFromFile(streamFile);
-                if (version != VERSION_5) {
-                    LOGGER.error(
-                            MARKER,
-                            "Failed to sign file {} with unsupported version {} ",
-                            streamFile.getName(),
-                            version);
-                    return;
-                }
-
-                // get entire Hash for this stream file
-                final Hash entireHash = computeEntireHash(streamFile);
-                // get metaData Hash for this stream file
-                final Hash metaHash = computeMetaHash(streamFile, streamType);
-
-                // generate signature for entire Hash
-                final com.swirlds.common.crypto.Signature entireSignature =
-                        new com.swirlds.common.crypto.Signature(
-                                SignatureType.RSA, sign(entireHash.getValue(), sigKeyPair));
-                // generate signature for metaData Hash
-                final com.swirlds.common.crypto.Signature metaSignature =
-                        new com.swirlds.common.crypto.Signature(
-                                SignatureType.RSA, sign(metaHash.getValue(), sigKeyPair));
-                writeSignatureFile(
-                        entireHash,
-                        entireSignature,
-                        metaHash,
-                        metaSignature,
-                        destSigFilePath,
-                        streamType);
-            } else {
-                signSingleFileOldVersion(sigKeyPair, streamFile, destSigFilePath);
+            if (streamType.getExtension().equalsIgnoreCase(RECORD_STREAM_EXTENSION)) {
+                createSignatureFileForRecordFile(
+                        streamFile.getAbsolutePath(), streamType, sigKeyPair, destDir.getPath());
+                return;
             }
         } catch (final NoSuchAlgorithmException
                 | NoSuchProviderException
                 | InvalidKeyException
-                | SignatureException
-                | InvalidStreamFileException
-                | IOException e) {
+                | SignatureException e) {
             LOGGER.error(MARKER, "Failed to sign file {} ", streamFile.getName(), e);
         }
         LOGGER.info(MARKER, "Finish generating signature file {}", destSigFilePath);
-    }
-
-    /**
-     * generate old version signature file for a single file: for account balance files
-     *
-     * @param sigKeyPair keyPair used for signing
-     * @param streamFile stream file to be signed
-     * @param destSigFilePath path of the signature file
-     * @throws IOException thrown if fail to read the stream file
-     * @throws NoSuchAlgorithmException thrown if the specified algorithm is not available from the
-     *     specified provider
-     * @throws NoSuchProviderException thrown if the specified provider is not registered in the
-     *     security provider list
-     * @throws InvalidKeyException thrown if the key is invalid
-     * @throws SignatureException thrown if this signature object is not initialized properly
-     */
-    public static void signSingleFileOldVersion(
-            final KeyPair sigKeyPair, final File streamFile, final String destSigFilePath)
-            throws IOException, NoSuchAlgorithmException, NoSuchProviderException,
-                    InvalidKeyException, SignatureException {
-        final byte[] fileHash = computeEntireHash(streamFile).getValue();
-        final byte[] signature = sign(fileHash, sigKeyPair);
-        generateSigFileOldVersion(destSigFilePath, signature, fileHash);
     }
 
     /**
