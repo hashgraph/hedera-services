@@ -264,7 +264,7 @@ public class TokenMovement {
     }
 
     private NftTransfer adjustment(
-            String senderName, ByteString evmAddress, long value, HapiApiSpec spec) {
+            String senderName, ByteString evmAddress, long value, HapiSpec spec) {
         return NftTransfer.newBuilder()
                 .setSenderAccountID(asIdForKeyLookUp(senderName, spec))
                 .setReceiverAccountID(asIdWithAlias(evmAddress))

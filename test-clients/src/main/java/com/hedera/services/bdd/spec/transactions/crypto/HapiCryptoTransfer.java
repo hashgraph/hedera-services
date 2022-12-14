@@ -284,7 +284,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
-            final  ByteString from,final ByteString to,final long amount) {
+            final ByteString from, final ByteString to, final long amount) {
         return tinyBarsFromTo(from, to, ignore -> amount);
     }
 
@@ -310,7 +310,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
-            final  ByteString from,final ByteString to,final ToLongFunction<HapiSpec> amountFn) {
+            final ByteString from, final ByteString to, final ToLongFunction<HapiSpec> amountFn) {
         return spec -> {
             long amount = amountFn.applyAsLong(spec);
             AccountID fromAccount = asIdWithAlias(from);
