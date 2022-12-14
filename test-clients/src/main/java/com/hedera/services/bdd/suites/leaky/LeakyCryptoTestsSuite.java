@@ -305,12 +305,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-                                FALSE_VALUE),
+                                LAZY_CREATION_ENABLED, FALSE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, FALSE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519))
                 .when(
@@ -540,11 +538,11 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         remembering(
                                 startingProps,
                                 LAZY_CREATION_ENABLED,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED),
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED),
                         overridingTwo(
                                 LAZY_CREATION_ENABLED,
                                 FALSE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED,
                                 TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
@@ -559,8 +557,9 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                     final var op =
                                             cryptoCreate(ACCOUNT)
                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                    .alias(evmAddressBytes)
-                                                    .balance(100 * ONE_HBAR);
+                                                    .evmAddress(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .via("createTxn");
                                     final var op2 =
                                             cryptoCreate(ACCOUNT)
                                                     .alias(ecdsaKey.toByteString())
@@ -582,8 +581,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .alias(ByteString.copyFromUtf8("Invalid alias"))
                                                     .hasPrecheck(INVALID_ALIAS_KEY)
                                                     .balance(100 * ONE_HBAR);
+                                    final var op6 =
+                                            cryptoCreate(ACCOUNT)
+                                                    .key(SECP_256K1_SOURCE_KEY)
+                                                    .alias(evmAddressBytes)
+                                                    .balance(100 * ONE_HBAR)
+                                                    .hasPrecheck(INVALID_ALIAS_KEY);
 
-                                    allRunFor(spec, op, op2, op3, op4, op5);
+                                    allRunFor(spec, op, op2, op3, op4, op5, op6);
                                     var hapiGetAccountInfo =
                                             getAccountInfo(ACCOUNT)
                                                     .has(
@@ -594,7 +599,10 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
-                                    allRunFor(spec, hapiGetAccountInfo);
+                                    final var getTxnRecord =
+                                            getTxnRecord("createTxn")
+                                                    .hasPriority(recordWith().hasNoAlias());
+                                    allRunFor(spec, hapiGetAccountInfo, getTxnRecord);
                                 }))
                 .then(overridingAllOfDeferred(() -> startingProps));
     }

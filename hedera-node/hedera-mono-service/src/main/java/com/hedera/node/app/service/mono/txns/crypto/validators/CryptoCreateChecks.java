@@ -15,7 +15,7 @@
  */
 package com.hedera.node.app.service.mono.txns.crypto.validators;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.recoverAddressFromPubKey;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.node.app.service.mono.ledger.accounts.HederaAccountCustomizer.hasStakedId;
 import static com.hedera.node.app.service.mono.utils.EntityIdUtils.EVM_ADDRESS_SIZE;
 import static com.hedera.node.app.service.mono.utils.EntityNum.MISSING_NUM;
@@ -131,7 +131,7 @@ public class CryptoCreateChecks {
 
     private ResponseCodeEnum tryToRecoverEVMAddressAndCheckValidity(final byte[] key) {
         var recoveredEVMAddress = recoverAddressFromPubKey(key);
-        if (recoveredEVMAddress != null) {
+        if (recoveredEVMAddress.length > 0) {
             return isUsedAsAliasCheck(ByteString.copyFrom(recoveredEVMAddress));
         }
         return OK;

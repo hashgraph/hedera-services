@@ -42,7 +42,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
@@ -471,8 +470,8 @@ public class CryptoCreateSuite extends HapiSuite {
                 .then();
     }
 
-    private HapiSpec createAnAccountWithEVMAddressAlias() {
-        return defaultHapiSpec("CreateAnAccountWithEVMAddressAlias")
+    private HapiSpec createAnAccountWithEVMAddress() {
+        return defaultHapiSpec("CreateAnAccountWithEVMAddress")
                 .given(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE))
                 .when(
                         withOpContext(

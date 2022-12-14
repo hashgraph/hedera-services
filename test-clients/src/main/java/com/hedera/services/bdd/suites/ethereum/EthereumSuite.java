@@ -768,27 +768,6 @@ public class EthereumSuite extends HapiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-  HapiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
-    final String ACCOUNT = "account";
-    return defaultHapiSpec(
-        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
-        .given(
-            UtilVerbs.overriding(
-                CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED, "false"),
-            newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-            cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
-        .when(
-            ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                .type(EthTxData.EthTransactionType.EIP1559)
-                .signingWith(SECP_256K1_SOURCE_KEY)
-                .payingWith(ACCOUNT)
-                .maxGasAllowance(FIVE_HBARS)
-                .nonce(0)
-                .gasLimit(GAS_LIMIT)
-                .hasKnownStatus(INVALID_ACCOUNT_ID))
-        .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_AND_EVM_ADDRESS_ENABLED));
-  }
-
     HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
