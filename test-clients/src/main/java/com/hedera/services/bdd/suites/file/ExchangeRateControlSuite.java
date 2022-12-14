@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -26,17 +26,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXCHANGE_RATE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ExchangeRateControlSuite extends HapiApiSuite {
+public class ExchangeRateControlSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ExchangeRateControlSuite.class);
 
     public static void main(String... args) {
@@ -44,16 +44,16 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return Arrays.asList(
                 midnightRateChangesWhenAcct50UpdatesFile112(), acct57CanMakeSmallChanges());
     }
 
-    private List<HapiApiSpec> negativeTests() {
+    private List<HapiSpec> negativeTests() {
         return Arrays.asList(anonCantUpdateRates(), acct57CantMakeLargeChanges());
     }
 
@@ -63,7 +63,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
                     .fee(ADEQUATE_FUNDS)
                     .contents(spec -> spec.ratesProvider().rateSetWith(1, 12).toByteString());
 
-    private HapiApiSpec acct57CanMakeSmallChanges() {
+    private HapiSpec acct57CanMakeSmallChanges() {
         return defaultHapiSpec("Acct57CanMakeSmallChanges")
                 .given(
                         resetRatesOp,
@@ -89,7 +89,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
                         resetRatesOp);
     }
 
-    private HapiApiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
+    private HapiSpec acct57UpdatesMidnightRateAtMidNight() throws ParseException {
         return defaultHapiSpec("Acct57UpdatesMidnightRateAtMidNight")
                 .given(
                         resetRatesOp,
@@ -128,7 +128,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
                         resetRatesOp);
     }
 
-    private HapiApiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
+    private HapiSpec midnightRateChangesWhenAcct50UpdatesFile112() {
         return defaultHapiSpec("MidnightRateChangesWhenAcct50UpdatesFile112")
                 .given(
                         resetRatesOp,
@@ -193,7 +193,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
                                 .hasKnownStatus(SUCCESS));
     }
 
-    private HapiApiSpec anonCantUpdateRates() {
+    private HapiSpec anonCantUpdateRates() {
         return defaultHapiSpec("AnonCantUpdateRates")
                 .given(resetRatesOp, cryptoCreate("randomAccount"))
                 .when()
@@ -204,7 +204,7 @@ public class ExchangeRateControlSuite extends HapiApiSuite {
                                 .hasPrecheck(AUTHORIZATION_FAILED));
     }
 
-    private HapiApiSpec acct57CantMakeLargeChanges() {
+    private HapiSpec acct57CantMakeLargeChanges() {
         return defaultHapiSpec("Acct57CantMakeLargeChanges")
                 .given(
                         resetRatesOp,

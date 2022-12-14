@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.consensus;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -34,10 +34,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
@@ -46,7 +46,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TopicUpdateSuite extends HapiApiSuite {
+public class TopicUpdateSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TopicUpdateSuite.class);
 
     private static final long validAutoRenewPeriod = 7_000_000L;
@@ -54,41 +54,39 @@ public class TopicUpdateSuite extends HapiApiSuite {
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     public static void main(String... args) {
-        new TopicUpdateSuite().runSuiteSync();
+        new TopicUpdateSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
-                    validateMultipleFields(),
-                    topicUpdateSigReqsEnforcedAtConsensus(),
-                    updateSubmitKeyToDiffKey(),
-                    updateAdminKeyToDiffKey(),
-                    updateAdminKeyToEmpty(),
-                    updateMultipleFields(),
-                    expirationTimestampIsValidated(),
-                    updateSubmitKeyOnTopicWithNoAdminKeyFails(),
-                    clearingAdminKeyWhenAutoRenewAccountPresent(),
-                    feeAsExpected(),
-                    updateExpiryOnTopicWithNoAdminKey(),
-                    updateToMissingTopicFails()
-                });
+                validateMultipleFields(),
+                topicUpdateSigReqsEnforcedAtConsensus(),
+                updateSubmitKeyToDiffKey(),
+                updateAdminKeyToDiffKey(),
+                updateAdminKeyToEmpty(),
+                updateMultipleFields(),
+                expirationTimestampIsValidated(),
+                updateSubmitKeyOnTopicWithNoAdminKeyFails(),
+                clearingAdminKeyWhenAutoRenewAccountPresent(),
+                feeAsExpected(),
+                updateExpiryOnTopicWithNoAdminKey(),
+                updateToMissingTopicFails());
     }
 
     @Override
     public boolean canRunConcurrent() {
-        return false;
+        return true;
     }
 
-    private HapiApiSpec updateToMissingTopicFails() {
+    private HapiSpec updateToMissingTopicFails() {
         return defaultHapiSpec("UpdateTopicHandlesMissingTopicGracefully")
                 .given()
                 .when()
                 .then(updateTopic("1.2.3").hasKnownStatus(INVALID_TOPIC_ID));
     }
 
-    private HapiApiSpec validateMultipleFields() {
+    private HapiSpec validateMultipleFields() {
         byte[] longBytes = new byte[1000];
         Arrays.fill(longBytes, (byte) 33);
         String longMemo = new String(longBytes, StandardCharsets.UTF_8);
@@ -112,7 +110,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                                 .hasKnownStatus(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 
-    private HapiApiSpec topicUpdateSigReqsEnforcedAtConsensus() {
+    private HapiSpec topicUpdateSigReqsEnforcedAtConsensus() {
         long PAYER_BALANCE = 199_999_999_999L;
         Function<String[], HapiTopicUpdate> updateTopicSignedBy =
                 (signers) -> {
@@ -161,7 +159,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                                 .hasAutoRenewAccount("newAutoRenewAccount"));
     }
 
-    private HapiApiSpec updateSubmitKeyToDiffKey() {
+    private HapiSpec updateSubmitKeyToDiffKey() {
         return defaultHapiSpec("updateSubmitKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -175,7 +173,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec updateAdminKeyToDiffKey() {
+    private HapiSpec updateAdminKeyToDiffKey() {
         return defaultHapiSpec("updateAdminKeyToDiffKey")
                 .given(
                         newKeyNamed("adminKey"),
@@ -185,7 +183,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                 .then(getTopicInfo("testTopic").hasAdminKey("updateAdminKey").logged());
     }
 
-    private HapiApiSpec updateAdminKeyToEmpty() {
+    private HapiSpec updateAdminKeyToEmpty() {
         return defaultHapiSpec("updateAdminKeyToEmpty")
                 .given(newKeyNamed("adminKey"), createTopic("testTopic").adminKeyName("adminKey"))
                 /* if adminKey is empty list should clear adminKey */
@@ -193,7 +191,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                 .then(getTopicInfo("testTopic").hasNoAdminKey().logged());
     }
 
-    private HapiApiSpec updateMultipleFields() {
+    private HapiSpec updateMultipleFields() {
         long expirationTimestamp =
                 Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
         // .secs=7000000
@@ -229,7 +227,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    private HapiApiSpec expirationTimestampIsValidated() {
+    private HapiSpec expirationTimestampIsValidated() {
         long now = Instant.now().getEpochSecond();
         return defaultHapiSpec("expirationTimestampIsValidated")
                 .given(createTopic("testTopic").autoRenewPeriod(validAutoRenewPeriod))
@@ -244,7 +242,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
     }
 
     /* If admin key is not set, only expiration timestamp updates are allowed */
-    private HapiApiSpec updateExpiryOnTopicWithNoAdminKey() {
+    private HapiSpec updateExpiryOnTopicWithNoAdminKey() {
         long overlyDistantNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime + 12_345L;
         long reasonableNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime - 12_345L;
         return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
@@ -257,7 +255,7 @@ public class TopicUpdateSuite extends HapiApiSuite {
                 .then(getTopicInfo("testTopic").hasExpiry(reasonableNewExpiry));
     }
 
-    private HapiApiSpec clearingAdminKeyWhenAutoRenewAccountPresent() {
+    private HapiSpec clearingAdminKeyWhenAutoRenewAccountPresent() {
         return defaultHapiSpec("clearingAdminKeyWhenAutoRenewAccountPresent")
                 .given(
                         newKeyNamed("adminKey"),
@@ -273,14 +271,14 @@ public class TopicUpdateSuite extends HapiApiSuite {
                 .then(getTopicInfo("testTopic").hasNoAdminKey());
     }
 
-    private HapiApiSpec updateSubmitKeyOnTopicWithNoAdminKeyFails() {
+    private HapiSpec updateSubmitKeyOnTopicWithNoAdminKeyFails() {
         return defaultHapiSpec("updateSubmitKeyOnTopicWithNoAdminKeyFails")
                 .given(newKeyNamed("submitKey"), createTopic("testTopic"))
                 .when(updateTopic("testTopic").submitKey("submitKey").hasKnownStatus(UNAUTHORIZED))
                 .then();
     }
 
-    private HapiApiSpec feeAsExpected() {
+    private HapiSpec feeAsExpected() {
         return defaultHapiSpec("feeAsExpected")
                 .given(
                         cryptoCreate("autoRenewAccount"),

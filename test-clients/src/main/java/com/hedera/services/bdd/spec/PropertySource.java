@@ -27,8 +27,8 @@ import java.util.stream.Stream;
 public interface PropertySource {
     String get(String property);
 
-    default HapiApiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiApiSpec.CostSnapshotMode.valueOf(get(property));
+    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
+        return HapiSpec.CostSnapshotMode.valueOf(get(property));
     }
 
     default FileID getFile(String property) {

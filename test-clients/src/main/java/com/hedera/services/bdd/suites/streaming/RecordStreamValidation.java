@@ -15,19 +15,19 @@
  */
 package com.hedera.services.bdd.suites.streaming;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.verifyRecordStreams;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RecordStreamValidation extends HapiApiSuite {
+public class RecordStreamValidation extends HapiSuite {
     private static final Logger log = LogManager.getLogger(RecordStreamValidation.class);
 
     private static final String PATH_TO_LOCAL_STREAMS = "../hedera-node/data/recordstreams";
@@ -37,14 +37,14 @@ public class RecordStreamValidation extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     recordStreamSanityChecks(),
                 });
     }
 
-    private HapiApiSpec recordStreamSanityChecks() {
+    private HapiSpec recordStreamSanityChecks() {
         AtomicReference<String> pathToStreams = new AtomicReference<>(PATH_TO_LOCAL_STREAMS);
 
         return defaultHapiSpec("RecordStreamSanityChecks")

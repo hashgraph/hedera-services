@@ -15,9 +15,9 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode;
-import static com.hedera.services.bdd.spec.HapiApiSpec.CostSnapshotMode.TAKE;
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
+import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.TAKE;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -32,17 +32,17 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateAndUpdateOps extends HapiApiSuite {
+public class CreateAndUpdateOps extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateAndUpdateOps.class);
 
     long feeToOffer = ONE_HUNDRED_HBARS;
@@ -56,15 +56,15 @@ public class CreateAndUpdateOps extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     //				variousCryptoMutations(),
                     variousFileMutations(),
                 });
     }
 
-    HapiApiSpec variousFileMutations() {
+    HapiSpec variousFileMutations() {
         KeyShape smallWacl = listOf(1);
         KeyShape largeWacl = listOf(3);
         byte[] smallContents = TxnUtils.randomUtf8Bytes(1_024);
@@ -134,7 +134,7 @@ public class CreateAndUpdateOps extends HapiApiSuite {
                         getFileInfo("sklc"));
     }
 
-    HapiApiSpec variousCryptoMutations() {
+    HapiSpec variousCryptoMutations() {
         KeyShape smallKey = SIMPLE;
         KeyShape largeKey = listOf(3);
         long shortExpiry = 100_000L;

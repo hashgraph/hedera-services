@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
@@ -36,10 +36,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_EX
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +47,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
+public class CryptoTransferPerfSuiteWOpProvider extends HapiSuite {
     private static final Logger log =
             LogManager.getLogger(CryptoTransferPerfSuiteWOpProvider.class);
 
@@ -57,11 +57,11 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runMixedTransferAndSubmits());
     }
 
-    private HapiApiSpec runMixedTransferAndSubmits() {
+    private HapiSpec runMixedTransferAndSubmits() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
         return defaultHapiSpec("CryptoTransferPerfSuiteWOpProvider")
                 .given(
@@ -75,7 +75,7 @@ public class CryptoTransferPerfSuiteWOpProvider extends HapiApiSuite {
                                 .maxOpsPerSec(settings::getTps));
     }
 
-    private Function<HapiApiSpec, OpProvider> XfersFactory() {
+    private Function<HapiSpec, OpProvider> XfersFactory() {
         return spec ->
                 new OpProvider() {
                     @Override

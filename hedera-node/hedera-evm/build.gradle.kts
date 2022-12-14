@@ -34,6 +34,9 @@ configurations.all {
 
 dependencies {
 
+    annotationProcessor(libs.dagger.compiler)
+
+    api(libs.dagger.compiler)
     api(libs.besu.evm)
     api(libs.besu.datatypes)
     api(libs.swirlds.common)
@@ -46,6 +49,7 @@ dependencies {
         exclude("com.google.guava", "guava") // this is an android version, not a jre version
     }
     implementation(libs.javax.inject)
+    implementation(libs.headlong)
     compileOnly(libs.spotbugs.annotations)
 
     testImplementation(testLibs.mockito.jupiter)
