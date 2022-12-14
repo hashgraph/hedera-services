@@ -436,11 +436,11 @@ public class EvmEncodingFacade {
                 final ArrayList<Tuple> fractionalFees,
                 final ArrayList<Tuple> royaltyFees,
                 @NonNull final CustomFee customFee) {
-            if (customFee.getFixedFee().getAmount() > 0) {
+            if (customFee.getFixedFee() != null) {
                 fixedFees.add(getFixedFeeTuple(customFee.getFixedFee()));
-            } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+            } else if (customFee.getFractionalFee() != null) {
                 fractionalFees.add(getFractionalFeeTuple(customFee.getFractionalFee()));
-            } else if (customFee.getRoyaltyFee().getNumerator() > 0) {
+            } else if (customFee.getRoyaltyFee() != null) {
                 royaltyFees.add(getRoyaltyFeeTuple(customFee.getRoyaltyFee()));
             }
         }
@@ -451,7 +451,7 @@ public class EvmEncodingFacade {
                     convertBesuAddressToHeadlongAddress(fixedFee.getDenominatingTokenId()),
                     fixedFee.isUseHbarsForPayment(),
                     fixedFee.isUseCurrentTokenForPayment(),
-                    fixedFee.getFeeCollector());
+                    convertBesuAddressToHeadlongAddress(fixedFee.getFeeCollector()));
         }
 
         private Tuple getFractionalFeeTuple(@NonNull final FractionalFee fractionalFee) {
@@ -461,7 +461,7 @@ public class EvmEncodingFacade {
                     fractionalFee.getMinimumAmount(),
                     fractionalFee.getMaximumAmount(),
                     fractionalFee.getNetOfTransfers(),
-                    fractionalFee.getFeeCollector());
+                    convertBesuAddressToHeadlongAddress(fractionalFee.getFeeCollector()));
         }
 
         private Tuple getRoyaltyFeeTuple(@NonNull final RoyaltyFee royaltyFee) {
@@ -471,7 +471,7 @@ public class EvmEncodingFacade {
                     royaltyFee.getAmount(),
                     convertBesuAddressToHeadlongAddress(royaltyFee.getDenominatingTokenId()),
                     royaltyFee.isUseHbarsForPayment(),
-                    royaltyFee.getFeeCollector());
+                    convertBesuAddressToHeadlongAddress(royaltyFee.getFeeCollector()));
         }
     }
 
