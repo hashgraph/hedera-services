@@ -763,7 +763,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .hasEmptyKey()
-                                                                    .evmAddressAlias(evmAddress)
                                                                     .expectedBalanceWithChargedUsd(
                                                                             ONE_HUNDRED_HBARS, 0, 0)
                                                                     .autoRenew(
