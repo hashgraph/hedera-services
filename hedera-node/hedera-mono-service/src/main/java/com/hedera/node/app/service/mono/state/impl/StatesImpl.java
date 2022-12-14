@@ -73,6 +73,10 @@ public class StatesImpl implements States {
                             children.schedules().byExpirationSecond(),
                             children.signedAt());
             return (StateBase) state;
+        } else if (stateKey.equals("TOKENS")) {
+            final var state =
+                    new InMemoryStateImpl<>(stateKey, children.tokens(), children.signedAt());
+            return (StateBase) state;
         } else {
             throw new NotImplementedException(
                     String.format("State key %s not supported", stateKey));

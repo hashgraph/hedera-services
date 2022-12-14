@@ -16,6 +16,7 @@
 package com.hedera.test.factories.txns;
 
 import static com.hedera.test.factories.txns.TinyBarsFromTo.tinyBarsFromTo;
+import static java.util.Comparator.comparingLong;
 import static java.util.stream.Collectors.toList;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -138,6 +139,7 @@ public class CryptoTransferFactory extends SignedTxnFactory<CryptoTransferFactor
                                                         .addAllTransfers(entry.getValue())
                                                         .build()));
                 ownershipChanges.entrySet().stream()
+                        .sorted(comparingLong(entry -> entry.getKey().getTokenID().getTokenNum()))
                         .forEach(
                                 entry ->
                                         xfers.addTokenTransfers(
