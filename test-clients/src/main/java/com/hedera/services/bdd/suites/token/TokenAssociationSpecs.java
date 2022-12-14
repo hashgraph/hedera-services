@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -48,13 +48,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.nio.charset.StandardCharsets;
@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenAssociationSpecs extends HapiApiSuite {
+public class TokenAssociationSpecs extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
 
     public static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
@@ -84,7 +84,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 treasuryAssociationIsAutomatic(),
                 dissociateHasExpectedSemantics(),
@@ -105,7 +105,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
         return true;
     }
 
-    private HapiApiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
+    private HapiSpec multiAssociationWithSameRepeatedTokenAsExpected() {
         final var nfToken = "nfToken";
         final var civilian = "civilian";
         final var multiAssociate = "multiAssociate";
@@ -154,14 +154,14 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                         getAccountInfo(civilian).hasNoTokenRelationship(nfToken));
     }
 
-    public HapiApiSpec handlesUseOfDefaultTokenId() {
+    public HapiSpec handlesUseOfDefaultTokenId() {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId")
                 .given()
                 .when()
                 .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
     }
 
-    public HapiApiSpec associatedContractsMustHaveAdminKeys() {
+    public HapiSpec associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
 
@@ -171,7 +171,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                 .then(tokenAssociate(contract, misc).hasKnownStatus(INVALID_SIGNATURE));
     }
 
-    public HapiApiSpec contractInfoQueriesAsExpected() {
+    public HapiSpec contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
                 .given(
@@ -199,7 +199,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                 .logged());
     }
 
-    public HapiApiSpec accountInfoQueriesAsExpected() {
+    public HapiSpec accountInfoQueriesAsExpected() {
         final var account = "account";
         return defaultHapiSpec("InfoQueriesAsExpected")
                 .given(
@@ -227,7 +227,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                 .logged());
     }
 
-    public HapiApiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
+    public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
         final String contract = "Fuse";
         final String treasury = "something";
         final String expiringToken = "expiringToken";
@@ -278,7 +278,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                                 .freeze(FreezeNotApplicable)));
     }
 
-    public HapiApiSpec dissociationFromExpiredTokensAsExpected() {
+    public HapiSpec dissociationFromExpiredTokensAsExpected() {
         final String treasury = "accountA";
         final String frozenAccount = "frozen";
         final String unfrozenAccount = "unfrozen";
@@ -327,7 +327,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                                             @Override
                                                             public ErroringAsserts<
                                                                             List<TokenTransferList>>
-                                                                    assertsFor(HapiApiSpec spec) {
+                                                                    assertsFor(HapiSpec spec) {
                                                                 return tokenXfers -> {
                                                                     try {
                                                                         assertEquals(
@@ -399,7 +399,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                 .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN));
     }
 
-    public HapiApiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
+    public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
         final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
         final String bNonTreasuryAcquaintance = "bNonTreasuryAcquaintance";
         final long initialSupply = 100L;
@@ -466,7 +466,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                                                         -nonZeroXfer / 2))));
     }
 
-    public HapiApiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
+    public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
         final String zeroBalanceUnfrozen = "0bUnfrozen";
@@ -553,7 +553,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                         getAccountInfo(TOKEN_TREASURY).hasOwnedNfts(0));
     }
 
-    public HapiApiSpec dissociateHasExpectedSemantics() {
+    public HapiSpec dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
                 .when(
@@ -582,7 +582,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                 .logged());
     }
 
-    public HapiApiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
+    public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
         final var multiKey = "multiKey";
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
@@ -612,7 +612,7 @@ public class TokenAssociationSpecs extends HapiApiSuite {
                                 .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
     }
 
-    public HapiApiSpec treasuryAssociationIsAutomatic() {
+    public HapiSpec treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
                 .when()

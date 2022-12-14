@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
@@ -310,17 +310,17 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts hasNoAlias() {
-        registerTypedProvider("alias", shouldBe(ByteString.EMPTY));
-        return this;
-    }
+  public TransactionRecordAsserts hasNoAlias() {
+    registerTypedProvider("alias", shouldBe(ByteString.EMPTY));
+    return this;
+  }
 
-    public TransactionRecordAsserts evmAddress(ByteString evmAddress) {
-        registerTypedProvider("evmAddress", shouldBe(evmAddress));
-        return this;
-    }
+  public TransactionRecordAsserts evmAddress(ByteString evmAddress) {
+    registerTypedProvider("evmAddress", shouldBe(evmAddress));
+    return this;
+  }
 
-    public TransactionRecordAsserts fee(Function<HapiApiSpec, Long> amountFn) {
+    public TransactionRecordAsserts fee(Function<HapiSpec, Long> amountFn) {
         registerTypedProvider("transactionFee", shouldBe(amountFn));
         return this;
     }

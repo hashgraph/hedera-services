@@ -62,6 +62,7 @@ class PureTransferSemanticChecksTest {
     private final int maxFeeNesting = 20;
     private final int maxBalanceChanges = 20;
     private final boolean autoCreationEnabled = true;
+    private final boolean lazyCreationEnabled = true;
     private final boolean areAllowancesAllowed = true;
     final ImpliedTransfersMeta.ValidationProps validationProps =
             new ImpliedTransfersMeta.ValidationProps(
@@ -72,6 +73,7 @@ class PureTransferSemanticChecksTest {
                     maxBalanceChanges,
                     areNftsEnabled,
                     autoCreationEnabled,
+                    lazyCreationEnabled,
                     areAllowancesAllowed);
     private final AccountID a = AccountID.newBuilder().setAccountNum(9_999L).build();
     private final AccountID b = AccountID.newBuilder().setAccountNum(8_999L).build();
@@ -95,6 +97,7 @@ class PureTransferSemanticChecksTest {
                         maxBalanceChanges,
                         areNftsEnabled,
                         autoCreationEnabled,
+                        lazyCreationEnabled,
                         false);
         var adjusts =
                 withAllowanceAdjustments(
@@ -343,6 +346,7 @@ class PureTransferSemanticChecksTest {
                         maxBalanceChanges,
                         areNftsEnabled,
                         autoCreationEnabled,
+                        lazyCreationEnabled,
                         areAllowancesAllowed);
         // and:
         given(subject.isNetZeroAdjustment(hbarAdjusts.getAccountAmountsList())).willReturn(true);
@@ -398,7 +402,15 @@ class PureTransferSemanticChecksTest {
         // and:
         final var strictValProps =
                 new ImpliedTransfersMeta.ValidationProps(
-                        1, 1, 1, 1, 1, areNftsEnabled, autoCreationEnabled, areAllowancesAllowed);
+                        1,
+                        1,
+                        1,
+                        1,
+                        1,
+                        areNftsEnabled,
+                        autoCreationEnabled,
+                        lazyCreationEnabled,
+                        areAllowancesAllowed);
 
         // expect:
         assertEquals(

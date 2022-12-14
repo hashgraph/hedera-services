@@ -15,11 +15,11 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static java.util.Arrays.copyOfRange;
 
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -61,8 +61,7 @@ public class ContractLogAsserts extends BaseErroringAssertsProvider<ContractLogi
                     byte[] data = dataFrom(o);
                     System.out.println("Length of event: " + data.length);
                     ByteString alias = spec.registry().aliasIdFor(aliasKey).getAlias();
-                    byte[] expected =
-                            EthTxSigs.recoverAddressFromPubKey(alias.substring(2).toByteArray());
+                    byte[] expected = recoverAddressFromPubKey(alias.substring(2).toByteArray());
                     byte[] actual = Arrays.copyOfRange(data, start, start + 20);
                     Assertions.assertArrayEquals(
                             expected, actual, "Bad alias in log data, starting at byte " + start);

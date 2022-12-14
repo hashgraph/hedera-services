@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountWith;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -48,10 +48,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
@@ -59,7 +58,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class ApproveAllowanceSuite extends HapiApiSuite {
+public class ApproveAllowanceSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ApproveAllowanceSuite.class);
     private static final long GAS_TO_OFFER = 4_000_000L;
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
@@ -71,8 +70,6 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     private static final String HTS_APPROVE_ALLOWANCE_CONTRACT = "HtsApproveAllowance";
     private static final String SPENDER = "spender";
     private static final String ALLOWANCE_TX = "allowanceTxn";
-    private static final String EXPORT_RECORD_RESULTS_FEATURE_FLAG =
-            "contracts.precompile.exportRecordResults";
     private static final String APPROVE_SIGNATURE = "Approval(address,address,uint256)";
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
 
@@ -86,7 +83,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 tokenAllowance(),
                 tokenApprove(),
@@ -96,7 +93,12 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                 nftSetApprovalForAll());
     }
 
-    private HapiApiSpec tokenAllowance() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    private HapiSpec tokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
 
@@ -169,7 +171,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                         .withAllowance(2)))));
     }
 
-    private HapiApiSpec tokenApprove() {
+    private HapiSpec tokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -258,7 +260,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec nftApprove() {
+    private HapiSpec nftApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -351,7 +353,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec nftIsApprovedForAll() {
+    private HapiSpec nftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
 
@@ -388,7 +390,7 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                         getAccountDetails(OWNER)
                                 .payingWith(GENESIS)
                                 .has(
-                                        accountWith()
+                                        accountDetailsWith()
                                                 .cryptoAllowancesCount(0)
                                                 .nftApprovedForAllAllowancesCount(1)
                                                 .tokenAllowancesCount(0)
@@ -476,14 +478,13 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                                 SUCCESS, false)))));
     }
 
-    private HapiApiSpec nftGetApproved() {
+    private HapiSpec nftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
 
         return defaultHapiSpec("HAPI_NFT_GET_APPROVED")
                 .given(
-                        UtilVerbs.overriding(EXPORT_RECORD_RESULTS_FEATURE_FLAG, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -552,18 +553,16 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                                                                         asAddress(
                                                                                                                 spec.registry()
                                                                                                                         .getAccountID(
-                                                                                                                                theSpender)))))))),
-                        UtilVerbs.resetToDefault(EXPORT_RECORD_RESULTS_FEATURE_FLAG));
+                                                                                                                                theSpender)))))))));
     }
 
-    private HapiApiSpec nftSetApprovalForAll() {
+    private HapiSpec nftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
 
         return defaultHapiSpec("HAPI_NFT_SET_APPROVAL_FOR_ALL")
                 .given(
-                        UtilVerbs.overriding(EXPORT_RECORD_RESULTS_FEATURE_FLAG, "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -651,7 +650,6 @@ public class ApproveAllowanceSuite extends HapiApiSuite {
                                                     .andAllChildRecords()
                                                     .logged();
                                     allRunFor(spec, txnRecord);
-                                }),
-                        UtilVerbs.resetToDefault(EXPORT_RECORD_RESULTS_FEATURE_FLAG));
+                                }));
     }
 }

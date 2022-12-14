@@ -22,6 +22,12 @@ plugins {
 
 description = "Hedera Services Test Clients for End to End Tests (EET)"
 
+tasks.jar {
+    manifest {
+        attributes("Automatic-Module-Name" to "com.hedera.node.app.testclient")
+    }
+}
+
 tasks.test {
     // Disable these EET tests from being executed as part of the gradle "test" task. We should maybe remove them
     // from src/test into src/eet, so it can be part of an eet test task instead. See issue #3412
@@ -56,6 +62,11 @@ dependencies {
     implementation(libs.hapi) {
         exclude("javax.annotation", "javax.annotation-api")
     }
+
+    implementation(libs.grpc.stub)
+    implementation(libs.grpc.protobuf)
+    implementation(libs.grpc.netty)
+
     implementation(libs.headlong)
     implementation(libs.log4j.core)
     implementation(testLibs.json)
@@ -126,6 +137,8 @@ tasks.eet {
 tasks.shadowJar {
     dependsOn(project(":hedera-node:hapi-fees").tasks.jar)
 
+    mergeServiceFiles()
+
     archiveFileName.set("SuiteRunner.jar")
     isReproducibleFileOrder = true
     isPreserveFileTimestamps = false
@@ -146,6 +159,7 @@ val yahCliJar = tasks.register<ShadowJar>("yahCliJar") {
     group = "shadow"
     from(sourceSets.main.get().output)
     configurations = listOf(project.configurations["runtimeClasspath"])
+    mergeServiceFiles()
 
     exclude(listOf("META-INF/*.DSA", "META-INF/*.RSA", "META-INF/*.SF", "META-INF/INDEX.LIST"))
 

@@ -44,6 +44,7 @@ import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTes
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarAndTokenChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.hbarOnlyChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChanges;
+import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferChangesWithCustomFeesThatAreAlsoApproved;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftTransferList;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferChanges;
 import static com.hedera.node.app.service.mono.store.contracts.precompile.HTSTestsUtil.nftsTransferList;
@@ -90,6 +91,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
@@ -165,6 +167,7 @@ class TransferPrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private TransferLogic transferLogic;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
@@ -264,6 +267,7 @@ class TransferPrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -394,7 +398,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -453,7 +457,7 @@ class TransferPrecompilesTest {
 
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code())
@@ -542,7 +546,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -624,7 +628,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokensTransferChangesSenderOnly);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -704,7 +708,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(nftsTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -732,7 +736,7 @@ class TransferPrecompilesTest {
     }
 
     @Test
-    void transferNftHappyPathWorks() throws InvalidProtocolBufferException {
+    void transferNftHappyPathWorkForCustomFeesWithApproval() throws InvalidProtocolBufferException {
         final Bytes pretendArguments = Bytes.of(Integers.toBytes(ABI_ID_TRANSFER_NFT));
 
         final var recipientAddr = Address.ALTBN128_ADD;
@@ -791,9 +795,10 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
-        given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
+        given(impliedTransfers.getAllBalanceChanges())
+                .willReturn(nftTransferChangesWithCustomFeesThatAreAlsoApproved);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
         given(impliedTransfersMeta.code()).willReturn(OK);
         given(aliases.resolveForEvm(any()))
@@ -811,7 +816,7 @@ class TransferPrecompilesTest {
         // then:
         assertEquals(successResult, result);
         // and:
-        verify(transferLogic).doZeroSum(nftTransferChanges);
+        verify(transferLogic).doZeroSum(nftTransferChangesWithCustomFeesThatAreAlsoApproved);
         verify(wrappedLedgers).commit();
         verify(worldUpdater)
                 .manageInProgressRecord(recordsHistorian, mockRecordBuilder, mockSynthBodyBuilder);
@@ -820,8 +825,6 @@ class TransferPrecompilesTest {
         verify(sigsVerifier)
                 .hasActiveKeyOrNoReceiverSigReq(
                         true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers);
-        verify(sigsVerifier)
-                .hasActiveKey(true, receiverId.asEvmAddress(), recipientAddr, wrappedLedgers);
         verify(sigsVerifier, never())
                 .hasActiveKeyOrNoReceiverSigReq(
                         true,
@@ -882,7 +885,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(nftTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -961,7 +964,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarOnlyChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1043,7 +1046,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndTokenChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1123,7 +1126,7 @@ class TransferPrecompilesTest {
                 .willReturn(mockRecordBuilder);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(hbarAndNftsTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);
@@ -1183,7 +1186,7 @@ class TransferPrecompilesTest {
                 .thenReturn(CRYPTO_TRANSFER_TOKEN_WRAPPER);
         given(
                         impliedTransfersMarshal.assessCustomFeesAndValidate(
-                                anyInt(), anyInt(), any(), any(), any()))
+                                anyInt(), anyInt(), anyInt(), any(), any(), any()))
                 .willReturn(impliedTransfers);
         given(impliedTransfers.getAllBalanceChanges()).willReturn(tokenTransferChanges);
         given(impliedTransfers.getMeta()).willReturn(impliedTransfersMeta);

@@ -28,8 +28,8 @@ import com.hedera.node.app.hapi.fees.usage.BaseTransactionMeta;
 import com.hedera.node.app.hapi.fees.usage.crypto.CryptoCreateMeta;
 import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -77,7 +77,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<String> entityMemo = Optional.empty();
     private Optional<KeyType> keyType = Optional.empty();
     private Optional<SigControl> keyShape = Optional.empty();
-    private Optional<Function<HapiApiSpec, Long>> balanceFn = Optional.empty();
+    private Optional<Function<HapiSpec, Long>> balanceFn = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
     private final Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
@@ -93,7 +93,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Key lookupKey(final HapiApiSpec spec, final String name) {
+    protected Key lookupKey(final HapiSpec spec, final String name) {
         return name.equals(account) ? key : spec.registry().getKey(name);
     }
 
@@ -151,7 +151,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return this;
     }
 
-    public HapiCryptoCreate balance(final Function<HapiApiSpec, Long> fn) {
+    public HapiCryptoCreate balance(final Function<HapiSpec, Long> fn) {
         balanceFn = Optional.of(fn);
         return this;
     }
@@ -222,7 +222,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected long feeFor(final HapiApiSpec spec, final Transaction txn, final int numPayerKeys)
+    protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys)
             throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(
@@ -238,7 +238,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
         key =
                 key != null
                         ? key
@@ -292,17 +292,17 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
         return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::createAccount;
     }
 
     @Override
-    protected void updateStateOf(final HapiApiSpec spec) {
+    protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS || forgettingEverything) {
             return;
         }

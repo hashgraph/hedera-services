@@ -25,12 +25,12 @@ import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE0_
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE1_ADDRESS;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.TRUFFLE1_PRIVATE_ECDSA_KEY;
 import static com.hedera.node.app.hapi.utils.ethereum.TestingConstants.ZERO_BYTES;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.swirlds.common.utility.CommonUtils;
@@ -359,9 +359,9 @@ class EthTxSigsTest {
     void extractsAddress() {
         // good recovery
         Assertions.assertArrayEquals(
-                TRUFFLE0_ADDRESS, EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
+                TRUFFLE0_ADDRESS, recoverAddressFromPubKey(TRUFFLE0_PUBLIC_ECDSA_KEY));
 
         // failed recovery
-        assertNull(EthTxSigs.recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
+        assertArrayEquals(new byte[0], recoverAddressFromPubKey(TRUFFLE0_PRIVATE_ECDSA_KEY));
     }
 }
