@@ -37,4 +37,20 @@ public class EvmKey {
         this.ECDSA_secp256k1 = ECDSA_secp256k1;
         this.delegatableContractId = delegatableContractId;
     }
+
+    public Address getContractId() {
+        return contractId;
+    }
+
+    public byte[] getEd25519() {
+        return ed25519;
+    }
+
+    public byte[] getECDSA_secp256k1() {
+        return ECDSA_secp256k1;
+    }
+
+    public Address getDelegatableContractId() {
+        return delegatableContractId;
+    }
 }

@@ -37,4 +37,24 @@ public class FixedFee {
         this.useCurrentTokenForPayment = useCurrentTokenForPayment;
         this.feeCollector = feeCollector;
     }
+
+    public long getAmount() {
+        return amount;
+    }
+
+    public Address getDenominatingTokenId() {
+        return denominatingTokenId;
+    }
+
+    public Address getFeeCollector() {
+        return feeCollector;
+    }
+
+    public boolean isUseHbarsForPayment() {
+        return useHbarsForPayment;
+    }
+
+    public boolean isUseCurrentTokenForPayment() {
+        return useCurrentTokenForPayment;
+    }
 }

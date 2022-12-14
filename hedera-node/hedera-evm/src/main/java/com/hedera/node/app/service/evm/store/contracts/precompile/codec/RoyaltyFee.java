@@ -40,4 +40,28 @@ public class RoyaltyFee {
         this.useHbarsForPayment = useHbarsForPayment;
         this.feeCollector = feeCollector;
     }
+
+    public long getNumerator() {
+        return numerator;
+    }
+
+    public long getDenominator() {
+        return denominator;
+    }
+
+    public long getAmount() {
+        return amount;
+    }
+
+    public Address getDenominatingTokenId() {
+        return denominatingTokenId;
+    }
+
+    public boolean isUseHbarsForPayment() {
+        return useHbarsForPayment;
+    }
+
+    public Address getFeeCollector() {
+        return feeCollector;
+    }
 }

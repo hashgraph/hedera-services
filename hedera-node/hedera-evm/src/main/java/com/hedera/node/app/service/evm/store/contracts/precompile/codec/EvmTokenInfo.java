@@ -125,4 +125,104 @@ public class EvmTokenInfo {
     public void setAutoRenewPeriod(long autoRenewPeriod) {
         this.autoRenewPeriod = autoRenewPeriod;
     }
+
+    public List<CustomFee> getCustomFees() {
+        return customFees;
+    }
+
+    public EvmKey getKycKey() {
+        return kycKey;
+    }
+
+    public long getAutoRenewPeriod() {
+        return autoRenewPeriod;
+    }
+
+    public Address getAutoRenewAccount() {
+        return autoRenewAccount;
+    }
+
+    public EvmKey getPauseKey() {
+        return pauseKey;
+    }
+
+    public EvmKey getFeeScheduleKey() {
+        return feeScheduleKey;
+    }
+
+    public EvmKey getWipeKey() {
+        return wipeKey;
+    }
+
+    public EvmKey getSupplyKey() {
+        return supplyKey;
+    }
+
+    public EvmKey getFreezeKey() {
+        return freezeKey;
+    }
+
+    public EvmKey getAdminKey() {
+        return adminKey;
+    }
+
+    public Address getTreasury() {
+        return treasury;
+    }
+
+    public long getExpiry() {
+        return expiry;
+    }
+
+    public int getDecimals() {
+        return decimals;
+    }
+
+    public long getMaxSupply() {
+        return maxSupply;
+    }
+
+    public long getTotalSupply() {
+        return totalSupply;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
+    }
+
+    public byte[] getLedgerId() {
+        return ledgerId;
+    }
+
+    public int getPauseStatus() {
+        return pauseStatus;
+    }
+
+    public int getSupplyType() {
+        return supplyType;
+    }
+
+    public int getTokenType() {
+        return tokenType;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    public int getDefaultKycStatus() {
+        return defaultKycStatus;
+    }
+
+    public int getDefaultFreezeStatus() {
+        return defaultFreezeStatus;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

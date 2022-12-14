@@ -32,4 +32,16 @@ public class CustomFee {
     public void setRoyaltyFee(RoyaltyFee royaltyFee) {
         this.royaltyFee = royaltyFee;
     }
+
+    public FixedFee getFixedFee() {
+        return fixedFee;
+    }
+
+    public FractionalFee getFractionalFee() {
+        return fractionalFee;
+    }
+
+    public RoyaltyFee getRoyaltyFee() {
+        return royaltyFee;
+    }
 }

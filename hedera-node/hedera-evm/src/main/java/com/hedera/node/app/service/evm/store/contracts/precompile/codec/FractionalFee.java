@@ -40,4 +40,28 @@ public class FractionalFee {
         this.netOfTransfers = netOfTransfers;
         this.feeCollector = feeCollector;
     }
+
+    public long getMinimumAmount() {
+        return getMinimumAmount;
+    }
+
+    public long getMaximumAmount() {
+        return getMaximumAmount;
+    }
+
+    public long getNumerator() {
+        return numerator;
+    }
+
+    public long getDenominator() {
+        return denominator;
+    }
+
+    public boolean getNetOfTransfers() {
+        return netOfTransfers;
+    }
+
+    public Address getFeeCollector() {
+        return feeCollector;
+    }
 }
