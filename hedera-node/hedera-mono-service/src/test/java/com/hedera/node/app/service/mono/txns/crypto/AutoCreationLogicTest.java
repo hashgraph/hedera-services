@@ -432,15 +432,12 @@ class AutoCreationLogicTest {
 
         final var result = subject.create(input, accountsLedger, changes);
         subject.submitRecords(
-                (txnBody, txnRecord) -> {
-                    recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord);
-                },
-                false);
+                (txnBody, txnRecord) ->
+                        recordsHistorian.trackPrecedingChildRecord(sourceId, txnBody, txnRecord));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
 
-        verify(sigImpactHistorian, never()).markAliasChanged(edKeyAlias);
-        verify(sigImpactHistorian, never()).markEntityChanged(createdNum.longValue());
+        verify(sigImpactHistorian).markEntityChanged(createdNum.longValue());
         verify(recordsHistorian)
                 .trackPrecedingChildRecord(sourceId, cryptoCreateAccount, mockBuilder);
 

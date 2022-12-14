@@ -87,7 +87,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
@@ -184,7 +183,6 @@ public class ContractCreateSuite extends HapiApiSuite {
                     autoCreationFailsWithMirrorAddress(),
                     revertedAutoCreationRollsBackEvenIfTopLevelSucceeds(),
                     hollowAccountSigningReqsStillEnforced(),
-                    resourceLimitExceededRevertsAllRecords(),
                     canCreateMultipleHollows(),
                     canCreateViaFungibleWithFractionalFee()
                     //						canCallPendingContractSafely(),
@@ -476,64 +474,6 @@ public class ContractCreateSuite extends HapiApiSuite {
                                                 .hasKnownStatus(SUCCESS)))
                 .then(
                         getTxnRecord(creationAttempt).andAllChildRecords().logged(),
-                        resetToDefault(LAZY_CREATION_ENABLED));
-    }
-
-    HapiApiSpec resourceLimitExceededRevertsAllRecords() {
-        final var n = 4;
-        final var nft = "nft";
-        final var nftKey = NFT_KEY;
-        final var creationAttempt = CREATION_ATTEMPT;
-        final AtomicLong civilianId = new AtomicLong();
-        final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
-
-        return defaultHapiSpec("ResourceLimitExceededRevertsAllRecords")
-                .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, "true"),
-                        newKeyNamed(nftKey),
-                        uploadInitCode(AUTO_CREATION_MODES),
-                        contractCreate(AUTO_CREATION_MODES),
-                        cryptoCreate(CIVILIAN)
-                                .keyShape(ED25519)
-                                .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
-                        tokenCreate(nft)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(nftKey)
-                                .initialSupply(0)
-                                .treasury(CIVILIAN)
-                                .exposingCreatedIdTo(
-                                        idLit ->
-                                                nftMirrorAddr.set(
-                                                        asHexedSolidityAddress(asToken(idLit)))),
-                        mintToken(
-                                nft,
-                                IntStream.range(0, n)
-                                        .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
-                                        .toList()))
-                .when(
-                        sourcing(
-                                () ->
-                                        contractCall(
-                                                        AUTO_CREATION_MODES,
-                                                        "createSeveralDirectly",
-                                                        headlongFromHexed(nftMirrorAddr.get()),
-                                                        nCopiesOfSender(
-                                                                n,
-                                                                mirrorAddrWith(civilianId.get())),
-                                                        nNonMirrorAddressFrom(
-                                                                n, civilianId.get() + 1),
-                                                        LongStream.iterate(1L, l -> l + 1)
-                                                                .limit(n)
-                                                                .toArray())
-                                                .via(creationAttempt)
-                                                .gas(10_000_000)
-                                                .alsoSigningWithFullPrefix(CIVILIAN)
-                                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
-                .then(
-                        childRecordsCheck(
-                                creationAttempt,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(MAX_CHILD_RECORDS_EXCEEDED)),
                         resetToDefault(LAZY_CREATION_ENABLED));
     }
 
