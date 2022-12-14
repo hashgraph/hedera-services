@@ -46,32 +46,32 @@ public class EvmParsingConstants {
     public static final String KEY_VALUE = "(bool,address,bytes,bytes,address)";
     public static final String TOKEN_KEY = "(uint256," + KEY_VALUE + ")";
     public static final String HEDERA_TOKEN =
-        "("
-            + "string,string,address,string,bool,int64,bool,"
-            + TOKEN_KEY
-            + ARRAY_BRACKETS
-            + ","
-            + EXPIRY
-            + ")";
+            "("
+                    + "string,string,address,string,bool,int64,bool,"
+                    + TOKEN_KEY
+                    + ARRAY_BRACKETS
+                    + ","
+                    + EXPIRY
+                    + ")";
 
     public static final String RESPONSE_STATUS_AT_BEGINNING = "(int32,";
     public static final String FIXED_FEE = "(uint32,address,bool,bool,address)";
     public static final String FRACTIONAL_FEE = "(uint32,uint32,uint32,uint32,bool,address)";
     public static final String ROYALTY_FEE = "(uint32,uint32,uint32,address,bool,address)";
     public static final String TOKEN_INFO =
-        "("
-            + HEDERA_TOKEN
-            + ",int64,bool,bool,bool,"
-            + FIXED_FEE
-            + ARRAY_BRACKETS
-            + ","
-            + FRACTIONAL_FEE
-            + ARRAY_BRACKETS
-            + ","
-            + ROYALTY_FEE
-            + ARRAY_BRACKETS
-            + ",string"
-            + ")";
+            "("
+                    + HEDERA_TOKEN
+                    + ",int64,bool,bool,bool,"
+                    + FIXED_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + FRACTIONAL_FEE
+                    + ARRAY_BRACKETS
+                    + ","
+                    + ROYALTY_FEE
+                    + ARRAY_BRACKETS
+                    + ",string"
+                    + ")";
 
     public static final TupleType bigIntegerTuple = TupleType.parse(UINT256);
     public static final TupleType decimalsType = TupleType.parse(UINT8);
@@ -81,7 +81,7 @@ public class EvmParsingConstants {
     public static final TupleType addressTuple = TupleType.parse(ADDRESS);
     public static final TupleType notSpecifiedType = TupleType.parse(INT32);
     public static final TupleType getTokenInfoType =
-        TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
+            TupleType.parse(RESPONSE_STATUS_AT_BEGINNING + TOKEN_INFO + ")");
 
     public enum FunctionType {
         ERC_DECIMALS,
