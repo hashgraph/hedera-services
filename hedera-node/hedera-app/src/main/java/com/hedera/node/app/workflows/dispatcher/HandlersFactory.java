@@ -1,4 +1,21 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.dispatcher;
+
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
@@ -50,16 +67,23 @@ import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
 import com.hedera.node.app.spi.numbers.HederaFileNumbers;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-import static java.util.Objects.requireNonNull;
-
+/** A factory that creates all handlers and bundles them in a {@link Handlers} */
 public final class HandlersFactory {
 
     private HandlersFactory() {}
 
+    /**
+     * This method creates all handlers with the provided arguments and bundles them in a {@link
+     * Handlers}.
+     *
+     * <p>Please note: the method signature is just a placeholder which is most likely going to
+     * change.
+     *
+     * @return the created handlers
+     */
     public static Handlers createHandlers(
             @NonNull final HederaAccountNumbers hederaAccountNumbers,
-            @NonNull final HederaFileNumbers hederaFileNumbers
-    ) {
+            @NonNull final HederaFileNumbers hederaFileNumbers) {
         requireNonNull(hederaAccountNumbers);
         requireNonNull(hederaFileNumbers);
 
@@ -69,7 +93,6 @@ public final class HandlersFactory {
                 new ConsensusUpdateTopicHandler(),
                 new ConsensusDeleteTopicHandler(),
                 new ConsensusSubmitMessageHandler(),
-
                 new ContractCreateHandler(),
                 new ContractUpdateHandler(),
                 new ContractCallHandler(),
@@ -77,7 +100,6 @@ public final class HandlersFactory {
                 new ContractSystemDeleteHandler(),
                 new ContractSystemUndeleteHandler(),
                 new EtherumTransactionHandler(),
-
                 new CryptoCreateHandler(),
                 new CryptoUpdateHandler(),
                 new CryptoTransferHandler(),
@@ -86,22 +108,17 @@ public final class HandlersFactory {
                 new CryptoDeleteAllowanceHandler(),
                 new CryptoAddLiveHashHandler(),
                 new CryptoDeleteLiveHashHandler(),
-
                 new FileCreateHandler(),
                 new FileUpdateHandler(),
                 new FileDeleteHandler(),
                 new FileAppendHandler(),
                 new FileSystemDeleteHandler(),
                 new FileSystemUndeleteHandler(),
-
                 new FreezeHandler(),
-
                 new UncheckedSubmitHandler(),
-
                 new ScheduleCreateHandler(),
                 new ScheduleSignHandler(),
                 new ScheduleDeleteHandler(),
-
                 new TokenCreateHandler(),
                 new TokenUpdateHandler(),
                 new TokenMintHandler(),
@@ -117,8 +134,6 @@ public final class HandlersFactory {
                 new TokenFeeScheduleUpdateHandler(),
                 new TokenPauseHandler(),
                 new TokenUnpauseHandler(),
-
-                new UtilPrngHandler()
-        );
+                new UtilPrngHandler());
     }
 }

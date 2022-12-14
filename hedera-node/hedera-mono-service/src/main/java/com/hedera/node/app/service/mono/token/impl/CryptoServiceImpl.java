@@ -15,13 +15,7 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import com.hedera.node.app.service.token.CryptoPreTransactionHandler;
 import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /** An implementation of the {@link CryptoService} interface. */
-public final class CryptoServiceImpl implements CryptoService {
-}
+public final class CryptoServiceImpl implements CryptoService {}

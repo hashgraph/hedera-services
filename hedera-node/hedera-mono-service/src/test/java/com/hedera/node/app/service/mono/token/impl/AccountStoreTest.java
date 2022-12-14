@@ -16,10 +16,12 @@
 package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 import static com.hedera.test.utils.IdUtils.asAccount;
 import static com.hedera.test.utils.IdUtils.asAliasAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,8 +35,10 @@ import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
 import com.hedera.node.app.service.mono.state.impl.RebuiltStateImpl;
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.mono.utils.KeyUtils;
+import com.hedera.node.app.service.token.entity.Account;
 import com.hedera.node.app.spi.key.HederaKey;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -255,5 +259,110 @@ class AccountStoreTest {
         assertTrue(result.failed());
         assertEquals(ALIAS_IS_IMMUTABLE, result.failureReason());
         assertNull(result.key());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void getsEmptyAccount() {
+        given(accounts.get(payerNum)).willReturn(Optional.of(account));
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(account.getMemo()).willReturn("");
+
+        final var result = subject.getAccount(payer);
+
+        assertThat(result).isNotEmpty();
+        assertThat(result.get().getKey()).hasValue(payerHederaKey);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void getsEmptyOptionalIfMissingAccount() {
+        given(accounts.get(payerNum)).willReturn(Optional.empty());
+
+        final Optional<Account> result = subject.getAccount(payer);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void mapsAccount() {
+        given(account.getMemo()).willReturn("");
+        given(account.getAccountKey()).willReturn((JKey) payerHederaKey);
+        given(account.getExpiry()).willReturn(5L);
+        given(account.getBalance()).willReturn(7L * HBARS_TO_TINYBARS);
+        given(account.getMemo()).willReturn("Hello World");
+        given(account.isDeleted()).willReturn(true);
+        given(account.isReceiverSigRequired()).willReturn(true);
+        given(account.getNftsOwned()).willReturn(11L);
+        given(account.getMaxAutomaticAssociations()).willReturn(13);
+        given(account.getUsedAutoAssociations()).willReturn(17);
+        given(account.getNumAssociations()).willReturn(19);
+        given(account.getNumPositiveBalances()).willReturn(23);
+        given(account.getEthereumNonce()).willReturn(29L);
+        given(account.getStakedToMe()).willReturn(31L);
+        given(account.getStakePeriodStart()).willReturn(37L);
+        given(account.totalStake()).willReturn(41L);
+        given(account.isDeclinedReward()).willReturn(true);
+        given(account.getAutoRenewAccount()).willReturn(new EntityId(43L, 47L, 53L));
+        given(account.getAutoRenewSecs()).willReturn(59L);
+        given(account.getAlias()).willReturn(ByteString.copyFrom(new byte[] {1, 2, 3}));
+        given(account.isSmartContract()).willReturn(true);
+
+        final var result = subject.mapAccount(payer, account);
+
+        assertThat(result.getKey()).hasValue(payerHederaKey);
+        assertThat(result.expiry()).isEqualTo(5L);
+        assertThat(result.balanceInHbar()).isEqualTo(7L);
+        assertThat(result.balanceInTinyBar()).isEqualTo(7L * HBARS_TO_TINYBARS);
+        assertThat(result.memo()).isEqualTo("Hello World");
+        assertThat(result.isDeleted()).isTrue();
+        assertThat(result.isReceiverSigRequired()).isTrue();
+        assertThat(result.numberOfOwnedNfts()).isEqualTo(11L);
+        assertThat(result.maxAutoAssociations()).isEqualTo(13);
+        assertThat(result.usedAutoAssociations()).isEqualTo(17);
+        assertThat(result.numAssociations()).isEqualTo(19);
+        assertThat(result.numPositiveBalances()).isEqualTo(23);
+        assertThat(result.ethereumNonce()).isEqualTo(29L);
+        assertThat(result.stakedToMe()).isEqualTo(31L);
+        assertThat(result.stakePeriodStart()).isEqualTo(37L);
+        assertThat(result.stakedNum()).isEqualTo(41L);
+        assertThat(result.declineReward()).isTrue();
+        assertThat(result.stakeAtStartOfLastRewardedPeriod()).isEqualTo(37L);
+        assertThat(result.autoRenewAccountNumber()).isEqualTo(53L);
+        assertThat(result.autoRenewSecs()).isEqualTo(59L);
+        assertThat(result.accountNumber()).isEqualTo(payer.getAccountNum());
+        assertThat(result.alias()).hasValue(new byte[] {1, 2, 3});
+        assertThat(result.isSmartContract()).isTrue();
+    }
+
+    @Test
+    void mapsEmptyAccount() {
+        given(account.getMemo()).willReturn("");
+
+        final var result = subject.mapAccount(payer, account);
+
+        assertThat(result.getKey()).isEmpty();
+        assertThat(result.expiry()).isZero();
+        assertThat(result.balanceInHbar()).isZero();
+        assertThat(result.balanceInTinyBar()).isZero();
+        assertThat(result.memo()).isEmpty();
+        assertThat(result.isDeleted()).isFalse();
+        assertThat(result.isReceiverSigRequired()).isFalse();
+        assertThat(result.numberOfOwnedNfts()).isZero();
+        assertThat(result.maxAutoAssociations()).isZero();
+        assertThat(result.usedAutoAssociations()).isZero();
+        assertThat(result.numAssociations()).isZero();
+        assertThat(result.numPositiveBalances()).isZero();
+        assertThat(result.ethereumNonce()).isZero();
+        assertThat(result.stakedToMe()).isZero();
+        assertThat(result.stakePeriodStart()).isZero();
+        assertThat(result.stakedNum()).isZero();
+        assertThat(result.declineReward()).isFalse();
+        assertThat(result.stakeAtStartOfLastRewardedPeriod()).isZero();
+        assertThat(result.autoRenewAccountNumber()).isZero();
+        assertThat(result.autoRenewSecs()).isZero();
+        assertThat(result.accountNumber()).isEqualTo(payer.getAccountNum());
+        assertThat(result.alias()).isEmpty();
+        assertThat(result.isSmartContract()).isFalse();
     }
 }

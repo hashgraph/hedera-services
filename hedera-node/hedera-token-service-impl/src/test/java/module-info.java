@@ -8,6 +8,4 @@ module com.hedera.node.app.service.token.impl.test {
 
     opens com.hedera.node.app.service.token.impl.test to
             org.junit.platform.commons;
-    opens com.hedera.node.app.service.token.impl.test.entity to
-            org.junit.platform.commons;
 }

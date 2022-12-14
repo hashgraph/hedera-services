@@ -15,14 +15,9 @@
  */
 package com.hedera.node.app.service.contract.impl;
 
-import com.hedera.node.app.service.contract.ContractPreTransactionHandler;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link ContractService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class StandardContractService implements ContractService {
-}
+public final class StandardContractService implements ContractService {}

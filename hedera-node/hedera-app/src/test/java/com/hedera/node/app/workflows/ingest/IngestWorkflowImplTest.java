@@ -43,14 +43,13 @@ import com.hedera.node.app.SessionContext;
 import com.hedera.node.app.service.mono.context.CurrentPlatformStatus;
 import com.hedera.node.app.service.mono.context.NodeInfo;
 import com.hedera.node.app.service.mono.stats.HapiOpCounters;
-import com.hedera.node.app.service.token.CryptoQueryHandler;
-import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.mono.token.impl.AccountStore;
 import com.hedera.node.app.service.token.entity.Account;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
-import com.hedera.node.app.workflows.common.InsufficientBalanceException;
-import com.hedera.node.app.workflows.common.PreCheckException;
-import com.hedera.node.app.workflows.common.SubmissionManager;
+import com.hedera.node.app.workflows.StoreCache;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.Query;
@@ -89,12 +88,15 @@ class IngestWorkflowImplTest {
     private Supplier<AutoCloseableWrapper<HederaState>> stateAccessor;
 
     @Mock(strictness = LENIENT)
+    private StoreCache storeCache;
+
+    @Mock(strictness = LENIENT)
+    private AccountStore accountStore;
+
+    @Mock(strictness = LENIENT)
     private WorkflowOnset onset;
 
     @Mock private IngestChecker checker;
-
-    @Mock(strictness = LENIENT)
-    private CryptoService cryptoService;
 
     @Mock private ThrottleAccumulator throttleAccumulator;
     @Mock private SubmissionManager submissionManager;
@@ -112,19 +114,13 @@ class IngestWorkflowImplTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
-    void setup(
-            @Mock HederaState state,
-            @Mock(strictness = LENIENT) CryptoQueryHandler cryptoQueryHandler,
-            @Mock Account account)
+    void setup(@Mock(strictness = LENIENT) HederaState state, @Mock Account account)
             throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
-
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));
-
+        when(storeCache.getAccountStore(state)).thenReturn(accountStore);
+        when(accountStore.getAccount(any())).thenReturn(Optional.of(account));
         when(onset.parseAndCheck(any(), any(ByteBuffer.class))).thenReturn(ONSET_RESULT);
-
-        when(cryptoQueryHandler.getAccountById(any())).thenReturn(Optional.of(account));
-        when(cryptoService.createQueryHandler(any())).thenReturn(cryptoQueryHandler);
 
         ctx = new SessionContext(queryParser, txParser, signedParser, txBodyParser);
         workflow =
@@ -132,9 +128,9 @@ class IngestWorkflowImplTest {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
+                        storeCache,
                         onset,
                         checker,
-                        cryptoService,
                         throttleAccumulator,
                         submissionManager,
                         opCounters);
@@ -149,9 +145,9 @@ class IngestWorkflowImplTest {
                                         null,
                                         currentPlatformStatus,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -162,9 +158,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         null,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -175,9 +171,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         null,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -189,8 +185,8 @@ class IngestWorkflowImplTest {
                                         currentPlatformStatus,
                                         stateAccessor,
                                         null,
+                                        onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -201,9 +197,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
-                                        onset,
+                                        storeCache,
                                         null,
-                                        cryptoService,
+                                        checker,
                                         throttleAccumulator,
                                         submissionManager,
                                         opCounters))
@@ -214,8 +210,8 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
-                                        checker,
                                         null,
                                         throttleAccumulator,
                                         submissionManager,
@@ -227,9 +223,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         null,
                                         submissionManager,
                                         opCounters))
@@ -240,9 +236,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         null,
                                         opCounters))
@@ -253,9 +249,9 @@ class IngestWorkflowImplTest {
                                         nodeInfo,
                                         currentPlatformStatus,
                                         stateAccessor,
+                                        storeCache,
                                         onset,
                                         checker,
-                                        cryptoService,
                                         throttleAccumulator,
                                         submissionManager,
                                         null))
@@ -312,9 +308,9 @@ class IngestWorkflowImplTest {
                             nodeInfo,
                             inactivePlatformStatus,
                             stateAccessor,
+                            storeCache,
                             onset,
                             checker,
-                            cryptoService,
                             throttleAccumulator,
                             submissionManager,
                             opCounters);
@@ -343,9 +339,9 @@ class IngestWorkflowImplTest {
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
+                        storeCache,
                         localOnset,
                         checker,
-                        cryptoService,
                         throttleAccumulator,
                         submissionManager,
                         opCounters);
@@ -404,19 +400,19 @@ class IngestWorkflowImplTest {
     @SuppressWarnings("JUnitMalformedDeclaration")
     @Test
     void testPayerAccountNotFoundFails(
-            @Mock CryptoQueryHandler cryptoQueryHandler, @Mock CryptoService localCryptoService)
+            @Mock StoreCache localStoreCache, @Mock AccountStore localAccountStore)
             throws PreCheckException, InvalidProtocolBufferException {
         // given
-        when(cryptoQueryHandler.getAccountById(any())).thenReturn(Optional.empty());
-        when(localCryptoService.createQueryHandler(any())).thenReturn(cryptoQueryHandler);
+        when(localStoreCache.getAccountStore(any())).thenReturn(localAccountStore);
+        when(localAccountStore.getAccount(any())).thenReturn(Optional.empty());
         workflow =
                 new IngestWorkflowImpl(
                         nodeInfo,
                         currentPlatformStatus,
                         stateAccessor,
+                        localStoreCache,
                         onset,
                         checker,
-                        localCryptoService,
                         throttleAccumulator,
                         submissionManager,
                         opCounters);

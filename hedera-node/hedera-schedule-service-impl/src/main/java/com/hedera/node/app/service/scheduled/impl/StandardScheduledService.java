@@ -15,14 +15,9 @@
  */
 package com.hedera.node.app.service.scheduled.impl;
 
-import com.hedera.node.app.service.scheduled.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link com.hedera.node.app.spi.Service}.
  */
-public final class StandardScheduledService implements ScheduleService {
-}
+public final class StandardScheduledService implements ScheduleService {}

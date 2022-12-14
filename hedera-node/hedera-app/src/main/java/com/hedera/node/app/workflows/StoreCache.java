@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl;
+package com.hedera.node.app.workflows;
 
-import com.hedera.node.app.service.token.CryptoService;
+import com.hedera.node.app.service.mono.token.impl.AccountStore;
+import com.hedera.node.app.state.HederaState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-/** Standard implementation of the {@link CryptoService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardCryptoService implements CryptoService {}
+public class StoreCache {
+
+    @NonNull
+    public AccountStore getAccountStore(@NonNull final HederaState state) {
+        throw new UnsupportedOperationException("not implemented");
+    }
+}

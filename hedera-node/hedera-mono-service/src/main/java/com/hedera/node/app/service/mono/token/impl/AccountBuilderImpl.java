@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.token.impl.entity;
+package com.hedera.node.app.service.mono.token.impl;
 
 import static com.hedera.node.app.service.token.entity.Account.HBARS_TO_TINYBARS;
 

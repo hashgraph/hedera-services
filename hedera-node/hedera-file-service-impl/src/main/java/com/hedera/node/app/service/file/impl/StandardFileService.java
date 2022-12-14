@@ -15,12 +15,7 @@
  */
 package com.hedera.node.app.service.file.impl;
 
-import com.hedera.node.app.service.file.FilePreTransactionHandler;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link FileService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardFileService implements FileService {
-}
+public final class StandardFileService implements FileService {}

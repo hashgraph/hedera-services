@@ -15,12 +15,7 @@
  */
 package com.hedera.node.app.service.admin.impl;
 
-import com.hedera.node.app.service.admin.FreezePreTransactionHandler;
 import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.state.States;
-import edu.umd.cs.findbugs.annotations.NonNull;
 
 /** Standard implementation of the {@link FreezeService} {@link com.hedera.node.app.spi.Service}. */
-public final class StandardFreezeService implements FreezeService {
-}
+public final class StandardFreezeService implements FreezeService {}

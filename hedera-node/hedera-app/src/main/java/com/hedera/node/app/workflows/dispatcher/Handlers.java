@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.workflows.dispatcher;
 
 import com.hedera.node.app.service.admin.impl.handlers.FreezeHandler;
@@ -48,12 +63,12 @@ import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/** A record that contains all records that are available in the app */
 public record Handlers(
         @NonNull ConsensusCreateTopicHandler consensusCreateTopicHandler,
         @NonNull ConsensusUpdateTopicHandler consensusUpdateTopicHandler,
         @NonNull ConsensusDeleteTopicHandler consensusDeleteTopicHandler,
         @NonNull ConsensusSubmitMessageHandler consensusSubmitMessageHandler,
-
         @NonNull ContractCreateHandler contractCreateHandler,
         @NonNull ContractUpdateHandler contractUpdateHandler,
         @NonNull ContractCallHandler contractCallHandler,
@@ -61,7 +76,6 @@ public record Handlers(
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
         @NonNull EtherumTransactionHandler etherumTransactionHandler,
-
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,
@@ -70,22 +84,17 @@ public record Handlers(
         @NonNull CryptoDeleteAllowanceHandler cryptoDeleteAllowanceHandler,
         @NonNull CryptoAddLiveHashHandler cryptoAddLiveHashHandler,
         @NonNull CryptoDeleteLiveHashHandler cryptoDeleteLiveHashHandler,
-
         @NonNull FileCreateHandler fileCreateHandler,
         @NonNull FileUpdateHandler fileUpdateHandler,
         @NonNull FileDeleteHandler fileDeleteHandler,
         @NonNull FileAppendHandler fileAppendHandler,
         @NonNull FileSystemDeleteHandler fileSystemDeleteHandler,
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
-
         @NonNull FreezeHandler freezeHandler,
-
         @NonNull UncheckedSubmitHandler uncheckedSubmitHandler,
-
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
-
         @NonNull TokenCreateHandler tokenCreateHandler,
         @NonNull TokenUpdateHandler tokenUpdateHandler,
         @NonNull TokenMintHandler tokenMintHandler,
@@ -101,5 +110,4 @@ public record Handlers(
         @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
-
         @NonNull UtilPrngHandler utilPrngHandler) {}

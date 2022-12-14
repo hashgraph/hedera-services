@@ -20,11 +20,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_A
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.key.HederaKey;
-import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.service.token.entity.Account;
-import com.hedera.node.app.workflows.common.InsufficientBalanceException;
-import com.hedera.node.app.workflows.common.PreCheckException;
+import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -40,15 +39,20 @@ public class IngestChecker {
     private static final Logger LOG = LoggerFactory.getLogger(IngestChecker.class);
 
     private final AccountID nodeAccountID;
+    private final Dispatcher dispatcher;
 
     /**
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
+     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@code
+     *     preCheck()}-methods
      * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public IngestChecker(@NonNull final AccountID nodeAccountID) {
+    public IngestChecker(
+            @NonNull final AccountID nodeAccountID, @NonNull final Dispatcher dispatcher) {
         this.nodeAccountID = requireNonNull(nodeAccountID);
+        this.dispatcher = requireNonNull(dispatcher);
     }
 
     /**
@@ -75,7 +79,8 @@ public class IngestChecker {
             throw new PreCheckException(TRANSACTION_ID_FIELD_NOT_ALLOWED);
         }
 
-        // TODO: Implement pre-check once the new handler design has been implemented
+        // call handler for transaction-specific pre-check
+        dispatcher.preCheck(txBody);
     }
 
     /**

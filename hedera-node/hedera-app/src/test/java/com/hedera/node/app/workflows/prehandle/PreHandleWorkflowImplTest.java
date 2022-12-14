@@ -19,30 +19,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSA
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.*;
 
-import com.hedera.node.app.ServicesAccessor;
-import com.hedera.node.app.service.admin.FreezeService;
-import com.hedera.node.app.service.consensus.ConsensusPreTransactionHandler;
-import com.hedera.node.app.service.consensus.ConsensusService;
-import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.mono.config.AccountNumbers;
-import com.hedera.node.app.service.network.NetworkService;
-import com.hedera.node.app.service.scheduled.ScheduleService;
-import com.hedera.node.app.service.token.CryptoService;
-import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.util.UtilService;
-import com.hedera.node.app.spi.PreHandleContext;
 import com.hedera.node.app.spi.meta.ErrorTransactionMetadata;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
-import com.hedera.node.app.spi.numbers.HederaFileNumbers;
-import com.hedera.node.app.spi.state.States;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.dispatcher.Handlers;
-import com.hedera.node.app.workflows.dispatcher.HandlersFactory;
+import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.workflows.dispatcher.Dispatcher;
 import com.hedera.node.app.workflows.onset.OnsetResult;
 import com.hedera.node.app.workflows.onset.WorkflowOnset;
 import com.hederahashgraph.api.proto.java.ConsensusCreateTopicTransactionBody;
@@ -56,55 +39,45 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.function.BiFunction;
-
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
-import org.mockito.verification.VerificationMode;
 
 @ExtendWith(MockitoExtension.class)
 class PreHandleWorkflowImplTest {
 
-    @Mock private ExecutorService executorService;
+    @Mock private Dispatcher dispatcher;
     @Mock private WorkflowOnset onset;
 
-    @Mock(strictness = LENIENT) private HederaState state;
+    @Mock private HederaState state;
     @Mock private Event event;
-
-    private Handlers handlers;
 
     private PreHandleWorkflowImpl workflow;
 
-    @SuppressWarnings("JUnitMalformedDeclaration")
+    private static final Function<Supplier<?>, CompletableFuture<?>> RUNNER =
+            supplier -> CompletableFuture.completedFuture(supplier.get());
+
     @BeforeEach
-    void setup(
-            @Mock States states,
-            @Mock AccountNumbers accountNumbers,
-            @Mock HederaFileNumbers hederaFileNumbers) {
-        when(state.createReadableStates(any())).thenReturn(states);
-
-        handlers = HandlersFactory.createHandlers(accountNumbers, hederaFileNumbers);
-
-        workflow = new PreHandleWorkflowImpl(executorService, handlers, onset);
+    void setup() {
+        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUNNER);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
-    void testConstructorWithIllegalParameters() {
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, handlers, onset))
+    void testConstructorWithIllegalParameters(@Mock ExecutorService executorService) {
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(null, dispatcher, onset))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, null, onset))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, handlers, null))
+        assertThatThrownBy(() -> new PreHandleWorkflowImpl(executorService, dispatcher, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -144,65 +117,12 @@ class PreHandleWorkflowImplTest {
         verify(transaction2).setMetadata(any());
     }
 
-    @Test
-    void testUnchangedStateDoesNotRegenerateHandlers(
-            @Mock SwirldTransaction transaction,
-            @Mock Dispatcher dispatcher,
-            @Mock BiFunction<Handlers, HederaState, Dispatcher> dispatcherProvider) {
-        // given
-        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
-        when(event.transactionIterator()).thenReturn(iterator);
-        when(dispatcherProvider.apply(any(), any())).thenReturn(dispatcher);
-        workflow = new PreHandleWorkflowImpl(executorService, handlers, onset, dispatcherProvider);
-
-        // when
-        workflow.start(state, event);
-        workflow.start(state, event);
-
-        // then
-        verify(dispatcherProvider).apply(any(), any());
-    }
-
-    @SuppressWarnings("JUnitMalformedDeclaration")
-    @Test
-    void testChangedStateDoesRegenerateHandlers(
-            @Mock HederaState state2,
-            @Mock SwirldTransaction transaction,
-            @Mock Dispatcher dispatcher,
-            @Mock BiFunction<Handlers, HederaState, Dispatcher> dispatcherProvider) {
-        // given
-        final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
-        when(event.transactionIterator()).thenReturn(iterator);
-        when(dispatcherProvider.apply(any(), any())).thenReturn(dispatcher);
-        workflow = new PreHandleWorkflowImpl(executorService, handlers, onset, dispatcherProvider);
-
-        // when
-        workflow.start(state, event);
-        workflow.start(state2, event);
-
-        // then
-        verify(dispatcherProvider, times(2)).apply(any(), any());
-    }
-
     @SuppressWarnings({"JUnitMalformedDeclaration", "unchecked"})
     @Test
     void testPreHandleSuccess(
-            @Mock TransactionMetadata metadata,
-            @Mock SwirldTransaction transaction,
-            @Mock Dispatcher dispatcher,
-            @Mock BiFunction<Handlers, HederaState, Dispatcher> dispatcherProvider)
+            @Mock TransactionMetadata metadata, @Mock SwirldTransaction transaction)
             throws PreCheckException {
         // given
-        when(executorService.submit(any(Callable.class)))
-                .thenAnswer(
-                        (Answer<Future<TransactionMetadata>>)
-                                invocation ->
-                                        CompletableFuture.completedFuture(
-                                                (TransactionMetadata)
-                                                        invocation
-                                                                .getArgument(0, Callable.class)
-                                                                .call()));
-
         final ConsensusCreateTopicTransactionBody content =
                 ConsensusCreateTopicTransactionBody.newBuilder().build();
         final TransactionBody txBody =
@@ -212,15 +132,12 @@ class PreHandleWorkflowImplTest {
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        when(dispatcherProvider.apply(any(), any())).thenReturn(dispatcher);
-        when(dispatcher.preHandle(any())).thenReturn(metadata);
+        when(dispatcher.preHandle(eq(state), any())).thenReturn(metadata);
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);
 
         when(transaction.getContents()).thenReturn(new byte[0]);
-
-        workflow = new PreHandleWorkflowImpl(executorService, handlers, onset, dispatcherProvider);
 
         // when
         workflow.start(state, event);
@@ -236,16 +153,6 @@ class PreHandleWorkflowImplTest {
     @Test
     void testPreHandleOnsetFails(@Mock SwirldTransaction transaction) throws PreCheckException {
         // given
-        when(executorService.submit(any(Callable.class)))
-                .thenAnswer(
-                        (Answer<Future<TransactionMetadata>>)
-                                invocation ->
-                                        CompletableFuture.completedFuture(
-                                                (TransactionMetadata)
-                                                        invocation
-                                                                .getArgument(0, Callable.class)
-                                                                .call()));
-
         when(onset.parseAndCheck(any(), any(byte[].class)))
                 .thenThrow(new PreCheckException(INVALID_TRANSACTION));
 

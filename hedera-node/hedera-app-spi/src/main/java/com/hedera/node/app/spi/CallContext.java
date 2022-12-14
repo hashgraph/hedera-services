@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.spi.workflows;
+package com.hedera.node.app.spi;
 
+import com.hedera.node.app.spi.meta.TransactionMetadata;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * A {@code TransactionHandler} contains all methods for the different stages of a single operation.
- */
-public interface TransactionHandler {
+public interface CallContext {
 
     /**
-     * This method is called during the ingest-workflow. It does pre-checks that are specific to the
-     * operation.
+     * Dispatch a pre-handle request. The transaction is forwarded to the correct handler, which
+     * takes care of the specific functionality
      *
-     * @param txBody the {@link TransactionBody} that needs to be validated
-     * @throws NullPointerException if {@code txBody} is {@code null}
-     * @throws PreCheckException if validation fails
+     * @param transactionBody the {@link TransactionBody} of the request
+     * @param payer the {@link AccountID} of the payer
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
-    void preCheck(@NonNull TransactionBody txBody) throws PreCheckException;
+    @NonNull
+    TransactionMetadata preHandle(
+            @NonNull final TransactionBody transactionBody, @NonNull AccountID payer);
 }

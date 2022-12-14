@@ -50,8 +50,6 @@ public class PreCheckException extends Exception {
 
     @Override
     public String toString() {
-        return "PreCheckException{" +
-                "responseCode=" + responseCode +
-                '}';
+        return "PreCheckException{" + "responseCode=" + responseCode + '}';
     }
 }
