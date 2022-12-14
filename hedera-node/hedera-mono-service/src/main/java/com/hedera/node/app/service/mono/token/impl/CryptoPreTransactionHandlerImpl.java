@@ -36,12 +36,12 @@ import org.apache.commons.lang3.NotImplementedException;
  * (but not the candidate signatures) for each crypto operation.
  */
 public final class CryptoPreTransactionHandlerImpl implements CryptoPreTransactionHandler {
-    private final AccountStore accountStore;
+    private final ReadOnlyAccountStore accountStore;
     private final PreHandleContext preHandleContext;
     private CryptoSignatureWaiversImpl waivers;
 
     public CryptoPreTransactionHandlerImpl(
-            @NonNull final AccountStore accountStore, @NonNull final PreHandleContext ctx) {
+            @NonNull final ReadOnlyAccountStore accountStore, @NonNull final PreHandleContext ctx) {
         this.accountStore = Objects.requireNonNull(accountStore);
         this.preHandleContext = Objects.requireNonNull(ctx);
         this.waivers = new CryptoSignatureWaiversImpl(preHandleContext.accountNumbers());

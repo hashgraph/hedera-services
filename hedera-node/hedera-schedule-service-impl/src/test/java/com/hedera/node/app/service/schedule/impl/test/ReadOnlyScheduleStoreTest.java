@@ -22,7 +22,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.submerkle.EntityId;
 import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualValue;
-import com.hedera.node.app.service.schedule.impl.ScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadOnlyScheduleStore;
 import com.hedera.node.app.spi.state.State;
 import com.hedera.node.app.spi.state.States;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -35,22 +35,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ScheduleStoreTest {
+class ReadOnlyScheduleStoreTest {
     @Mock States states;
     @Mock State state;
     @Mock ScheduleVirtualValue schedule;
     @Mock JKey adminKey;
-    private ScheduleStore subject;
+    private ReadOnlyScheduleStore subject;
 
     @BeforeEach
     void setUp() {
         given(states.get("SCHEDULES_BY_ID")).willReturn(state);
-        subject = new ScheduleStore(states);
+        subject = new ReadOnlyScheduleStore(states);
     }
 
     @Test
     void constructorThrowsIfStatesIsNull() {
-        assertThrows(NullPointerException.class, () -> new ScheduleStore(null));
+        assertThrows(NullPointerException.class, () -> new ReadOnlyScheduleStore(null));
     }
 
     @Test

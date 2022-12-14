@@ -26,7 +26,6 @@ import com.hedera.node.app.spi.PreHandleDispatcher;
 import com.hedera.node.app.spi.meta.*;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.commons.lang3.NotImplementedException;
@@ -36,10 +35,10 @@ import org.apache.commons.lang3.NotImplementedException;
  * keys (but not the candidate signatures) for each schedule operation.
  */
 public class SchedulePreTransactionHandlerImpl implements SchedulePreTransactionHandler {
-    private ScheduleStore scheduleStore;
+    private ReadOnlyScheduleStore scheduleStore;
     private final AccountKeyLookup keyLookup;
 
-    public SchedulePreTransactionHandlerImpl(@NonNull final ScheduleStore scheduleStore,
+    public SchedulePreTransactionHandlerImpl(@NonNull final ReadOnlyScheduleStore scheduleStore,
                                              @NonNull final AccountKeyLookup keyLookup) {
         this.scheduleStore = scheduleStore;
         this.keyLookup = keyLookup;

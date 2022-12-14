@@ -30,7 +30,7 @@ import com.hedera.node.app.service.mono.state.virtual.schedule.ScheduleVirtualVa
 import com.hedera.node.app.service.mono.utils.MiscUtils;
 import com.hedera.node.app.service.schedule.SchedulePreTransactionHandler;
 import com.hedera.node.app.service.schedule.impl.SchedulePreTransactionHandlerImpl;
-import com.hedera.node.app.service.schedule.impl.ScheduleStore;
+import com.hedera.node.app.service.schedule.impl.ReadOnlyScheduleStore;
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.PreHandleDispatcher;
@@ -62,7 +62,7 @@ class SchedulePreTransactionHandlerImplTest {
     @Mock private State schedulesById;
     private SchedulePreTransactionHandler subject;
     private SigTransactionMetadata scheduledMeta;
-    private ScheduleStore scheduleStore;
+    private ReadOnlyScheduleStore scheduleStore;
     private AccountID scheduler = AccountID.newBuilder().setAccountNum(1001L).build();
     private AccountID payer = AccountID.newBuilder().setAccountNum(2001L).build();
     private ScheduleID scheduleID = ScheduleID.newBuilder().setScheduleNum(100L).build();
@@ -78,7 +78,7 @@ class SchedulePreTransactionHandlerImplTest {
     @BeforeEach
     void setUp() {
         given(states.get("SCHEDULES_BY_ID")).willReturn(schedulesById);
-        scheduleStore = new ScheduleStore(states);
+        scheduleStore = new ReadOnlyScheduleStore(states);
         subject = new SchedulePreTransactionHandlerImpl(scheduleStore, keyLookup);
     }
 

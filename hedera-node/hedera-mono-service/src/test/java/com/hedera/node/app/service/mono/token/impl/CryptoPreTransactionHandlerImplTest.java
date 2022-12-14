@@ -107,7 +107,7 @@ class CryptoPreTransactionHandlerImplTest {
     @Mock private HederaFileNumbers fileNumbers;
     @Mock private CryptoSignatureWaiversImpl waivers;
     private PreHandleContext context;
-    private AccountStore store;
+    private ReadOnlyAccountStore store;
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
@@ -115,7 +115,7 @@ class CryptoPreTransactionHandlerImplTest {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
 
-        store = new AccountStore(states);
+        store = new ReadOnlyAccountStore(states);
 
         context = new PreHandleContext(accountNumbers, fileNumbers, store);
 

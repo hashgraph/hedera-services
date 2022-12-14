@@ -38,23 +38,23 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
- * Provides methods for interacting with the underlying data storage mechanisms for working with
- * Accounts.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms
+ * for working with Accounts.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public final class AccountStore implements AccountKeyLookup {
+public final class ReadOnlyAccountStore implements AccountKeyLookup {
     /** The underlying data storage class that holds the account data. */
     private final State<Long, MerkleAccount> accountState;
     /** The underlying data storage class that holds the aliases data built from the state. */
     private final State<ByteString, Long> aliases;
 
     /**
-     * Create a new {@link AccountStore} instance.
+     * Create a new {@link ReadOnlyAccountStore} instance.
      *
      * @param states The state to use.
      */
-    public AccountStore(@NonNull final States states) {
+    public ReadOnlyAccountStore(@NonNull final States states) {
         this.accountState = states.get("ACCOUNTS");
         this.aliases = states.get("ALIASES");
     }

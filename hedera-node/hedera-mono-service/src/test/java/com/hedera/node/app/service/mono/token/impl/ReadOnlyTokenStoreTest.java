@@ -45,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class TokenStoreTest {
+class ReadOnlyTokenStoreTest {
     @Mock private InMemoryStateImpl tokens;
     @Mock private States states;
     private static final String TOKENS = "TOKENS";
@@ -76,12 +76,12 @@ class TokenStoreTest {
                     accountsKycGrantedByDefault,
                     treasury);
 
-    private TokenStore subject;
+    private ReadOnlyTokenStore subject;
 
     @BeforeEach
     public void setUp() {
         initializeToken();
-        subject = new TokenStore(states);
+        subject = new ReadOnlyTokenStore(states);
     }
 
     private void initializeToken() {

@@ -49,7 +49,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 // FUTURE: Once we have protobuf generated object need to replace all JKeys.
 @ExtendWith(MockitoExtension.class)
-class AccountStoreTest {
+class ReadOnlyAccountStoreTest {
     @Mock private RebuiltStateImpl aliases;
     @Mock private InMemoryStateImpl accounts;
 
@@ -63,13 +63,13 @@ class AccountStoreTest {
     private static final String ACCOUNTS = "ACCOUNTS";
     private static final String ALIASES = "ALIASES";
 
-    private AccountStore subject;
+    private ReadOnlyAccountStore subject;
 
     @BeforeEach
     public void setUp() {
         given(states.get(ACCOUNTS)).willReturn(accounts);
         given(states.get(ALIASES)).willReturn(aliases);
-        subject = new AccountStore(states);
+        subject = new ReadOnlyAccountStore(states);
     }
 
     @Test

@@ -27,21 +27,21 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
- * Provides methods for interacting with the underlying data storage mechanisms for working with
- * Tokens.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms
+ * for working with Tokens.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class TokenStore {
+public class ReadOnlyTokenStore {
     /** The underlying data storage class that holds the token data. */
     private final State<Long, MerkleToken> tokenState;
 
     /**
-     * Create a new {@link TokenStore} instance.
+     * Create a new {@link ReadOnlyTokenStore} instance.
      *
      * @param states The state to use.
      */
-    public TokenStore(@NonNull final States states) {
+    public ReadOnlyTokenStore(@NonNull final States states) {
         this.tokenState = states.get("TOKENS");
     }
 

@@ -26,20 +26,24 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
+
 /**
- * A store for looking up schedules given {@link ScheduleID}. If the scheduleID is valid and a
- * schedule exists returns {@link ScheduleVirtualValue}.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms
+ * for working with Schedules.
+ * If the scheduleID is valid and a schedule exists returns {@link ScheduleVirtualValue}.
+ *
+ * <p>This class is not exported from the module. It is an internal implementation detail.
  */
-public class ScheduleStore {
+public class ReadOnlyScheduleStore {
     /** The underlying data storage class that holds the token data. */
     private final State<Long, ScheduleVirtualValue> schedulesById;
 
     /**
-     * Create a new {@link ScheduleStore} instance.
+     * Create a new {@link ReadOnlyScheduleStore} instance.
      *
      * @param states The state to use.
      */
-    public ScheduleStore(@NonNull final States states) {
+    public ReadOnlyScheduleStore(@NonNull final States states) {
         Objects.requireNonNull(states);
         this.schedulesById = states.get("SCHEDULES_BY_ID");
     }
