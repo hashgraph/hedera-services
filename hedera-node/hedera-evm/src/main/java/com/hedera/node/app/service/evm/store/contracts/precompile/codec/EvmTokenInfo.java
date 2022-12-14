@@ -18,7 +18,7 @@ package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 
-public class EvmTokenInfo<T> {
+public class EvmTokenInfo {
 
     private String name;
     private String symbol;
@@ -27,7 +27,7 @@ public class EvmTokenInfo<T> {
     private String memo;
     private int tokenType;
     private int supplyType;
-    private List<T> customFees;
+    private List<CustomFee> customFees;
     private int pauseStatus;
     private byte[] ledgerId;
     private boolean deleted;
@@ -46,6 +46,7 @@ public class EvmTokenInfo<T> {
     private EvmKey pauseKey;
     private Address autoRenewAccount;
     private long autoRenewPeriod;
+
 
     public EvmTokenInfo(
             byte[] ledgerId,
@@ -74,7 +75,7 @@ public class EvmTokenInfo<T> {
         this.expiry = expiry;
     }
 
-    public void setCustomFees(List<T> customFees) {
+    public void setCustomFees(List<CustomFee> customFees) {
         this.customFees = customFees;
     }
 

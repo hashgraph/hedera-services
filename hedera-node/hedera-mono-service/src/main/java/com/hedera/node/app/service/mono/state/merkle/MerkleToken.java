@@ -32,6 +32,9 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
 import com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKeySerializer;
@@ -65,8 +68,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.hyperledger.besu.datatypes.Address;
 
 public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, MerkleLeaf {
+
     static final int RELEASE_0160_VERSION = 3;
     static final int RELEASE_0180_VERSION = 4;
     static final int RELEASE_0190_VERSION = 5;
@@ -113,14 +118,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public MerkleToken(
-            final long expiry,
-            final long totalSupply,
-            final int decimals,
-            final String symbol,
-            final String name,
-            final boolean accountsFrozenByDefault,
-            final boolean accountKycGrantedByDefault,
-            final EntityId treasury) {
+        final long expiry,
+        final long totalSupply,
+        final int decimals,
+        final String symbol,
+        final String name,
+        final boolean accountsFrozenByDefault,
+        final boolean accountKycGrantedByDefault,
+        final EntityId treasury) {
         this.expiry = expiry;
         this.totalSupply = totalSupply;
         this.decimals = decimals;
@@ -132,15 +137,15 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     }
 
     public MerkleToken(
-            final long expiry,
-            final long totalSupply,
-            final int decimals,
-            final String symbol,
-            final String name,
-            final boolean accountsFrozenByDefault,
-            final boolean accountKycGrantedByDefault,
-            final EntityId treasury,
-            final int number) {
+        final long expiry,
+        final long totalSupply,
+        final int decimals,
+        final String symbol,
+        final String name,
+        final boolean accountsFrozenByDefault,
+        final boolean accountKycGrantedByDefault,
+        final EntityId treasury,
+        final int number) {
         this.expiry = expiry;
         this.totalSupply = totalSupply;
         this.decimals = decimals;
@@ -164,96 +169,96 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
         final var that = (MerkleToken) o;
         return this.tokenType == that.tokenType
-                && this.supplyType == that.supplyType
-                && this.expiry == that.expiry
-                && this.autoRenewPeriod == that.autoRenewPeriod
-                && this.deleted == that.deleted
-                && this.maxSupply == that.maxSupply
-                && this.totalSupply == that.totalSupply
-                && this.decimals == that.decimals
-                && this.lastUsedSerialNumber == that.lastUsedSerialNumber
-                && this.accountsFrozenByDefault == that.accountsFrozenByDefault
-                && this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault
-                && this.number == that.number
-                && this.paused == that.paused
-                && Objects.equals(this.symbol, that.symbol)
-                && Objects.equals(this.name, that.name)
-                && Objects.equals(this.memo, that.memo)
-                && Objects.equals(this.treasury, that.treasury)
-                && Objects.equals(this.autoRenewAccount, that.autoRenewAccount)
-                && equalUpToDecodability(this.wipeKey, that.wipeKey)
-                && equalUpToDecodability(this.supplyKey, that.supplyKey)
-                && equalUpToDecodability(this.adminKey, that.adminKey)
-                && equalUpToDecodability(this.freezeKey, that.freezeKey)
-                && equalUpToDecodability(this.kycKey, that.kycKey)
-                && equalUpToDecodability(this.feeScheduleKey, that.feeScheduleKey)
-                && equalUpToDecodability(this.pauseKey, that.pauseKey)
-                && Objects.equals(this.feeSchedule, that.feeSchedule);
+            && this.supplyType == that.supplyType
+            && this.expiry == that.expiry
+            && this.autoRenewPeriod == that.autoRenewPeriod
+            && this.deleted == that.deleted
+            && this.maxSupply == that.maxSupply
+            && this.totalSupply == that.totalSupply
+            && this.decimals == that.decimals
+            && this.lastUsedSerialNumber == that.lastUsedSerialNumber
+            && this.accountsFrozenByDefault == that.accountsFrozenByDefault
+            && this.accountsKycGrantedByDefault == that.accountsKycGrantedByDefault
+            && this.number == that.number
+            && this.paused == that.paused
+            && Objects.equals(this.symbol, that.symbol)
+            && Objects.equals(this.name, that.name)
+            && Objects.equals(this.memo, that.memo)
+            && Objects.equals(this.treasury, that.treasury)
+            && Objects.equals(this.autoRenewAccount, that.autoRenewAccount)
+            && equalUpToDecodability(this.wipeKey, that.wipeKey)
+            && equalUpToDecodability(this.supplyKey, that.supplyKey)
+            && equalUpToDecodability(this.adminKey, that.adminKey)
+            && equalUpToDecodability(this.freezeKey, that.freezeKey)
+            && equalUpToDecodability(this.kycKey, that.kycKey)
+            && equalUpToDecodability(this.feeScheduleKey, that.feeScheduleKey)
+            && equalUpToDecodability(this.pauseKey, that.pauseKey)
+            && Objects.equals(this.feeSchedule, that.feeSchedule);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                tokenType,
-                supplyType,
-                expiry,
-                deleted,
-                maxSupply,
-                totalSupply,
-                decimals,
-                lastUsedSerialNumber,
-                number,
-                adminKey,
-                freezeKey,
-                kycKey,
-                wipeKey,
-                supplyKey,
-                pauseKey,
-                symbol,
-                name,
-                memo,
-                accountsFrozenByDefault,
-                accountsKycGrantedByDefault,
-                paused,
-                treasury,
-                autoRenewAccount,
-                autoRenewPeriod,
-                feeSchedule,
-                feeScheduleKey);
+            tokenType,
+            supplyType,
+            expiry,
+            deleted,
+            maxSupply,
+            totalSupply,
+            decimals,
+            lastUsedSerialNumber,
+            number,
+            adminKey,
+            freezeKey,
+            kycKey,
+            wipeKey,
+            supplyKey,
+            pauseKey,
+            symbol,
+            name,
+            memo,
+            accountsFrozenByDefault,
+            accountsKycGrantedByDefault,
+            paused,
+            treasury,
+            autoRenewAccount,
+            autoRenewPeriod,
+            feeSchedule,
+            feeScheduleKey);
     }
 
     /* --- Bean --- */
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(MerkleToken.class)
-                .omitNullValues()
-                .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
-                .add("tokenType", tokenType)
-                .add("supplyType", supplyType)
-                .add("deleted", deleted)
-                .add("expiry", expiry)
-                .add("symbol", symbol)
-                .add("name", name)
-                .add("memo", memo)
-                .add("treasury", readableEntityId(treasury))
-                .add("maxSupply", maxSupply)
-                .add("totalSupply", totalSupply)
-                .add("decimals", decimals)
-                .add("lastUsedSerialNumber", lastUsedSerialNumber)
-                .add("autoRenewAccount", readableEntityId(autoRenewAccount))
-                .add("autoRenewPeriod", autoRenewPeriod)
-                .add("adminKey", describe(adminKey))
-                .add("kycKey", describe(kycKey))
-                .add("wipeKey", describe(wipeKey))
-                .add("supplyKey", describe(supplyKey))
-                .add("freezeKey", describe(freezeKey))
-                .add("pauseKey", describe(pauseKey))
-                .add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
-                .add("accountsFrozenByDefault", accountsFrozenByDefault)
-                .add("pauseStatus", paused)
-                .add("feeSchedules", feeSchedule)
-                .add("feeScheduleKey", feeScheduleKey)
-                .toString();
+            .omitNullValues()
+            .add("number", number + " <-> " + EntityIdUtils.asIdLiteral(number))
+            .add("tokenType", tokenType)
+            .add("supplyType", supplyType)
+            .add("deleted", deleted)
+            .add("expiry", expiry)
+            .add("symbol", symbol)
+            .add("name", name)
+            .add("memo", memo)
+            .add("treasury", readableEntityId(treasury))
+            .add("maxSupply", maxSupply)
+            .add("totalSupply", totalSupply)
+            .add("decimals", decimals)
+            .add("lastUsedSerialNumber", lastUsedSerialNumber)
+            .add("autoRenewAccount", readableEntityId(autoRenewAccount))
+            .add("autoRenewPeriod", autoRenewPeriod)
+            .add("adminKey", describe(adminKey))
+            .add("kycKey", describe(kycKey))
+            .add("wipeKey", describe(wipeKey))
+            .add("supplyKey", describe(supplyKey))
+            .add("freezeKey", describe(freezeKey))
+            .add("pauseKey", describe(pauseKey))
+            .add("accountsKycGrantedByDefault", accountsKycGrantedByDefault)
+            .add("accountsFrozenByDefault", accountsFrozenByDefault)
+            .add("pauseStatus", paused)
+            .add("feeSchedules", feeSchedule)
+            .add("feeScheduleKey", feeScheduleKey)
+            .toString();
     }
 
     private String readableEntityId(@Nullable final EntityId id) {
@@ -278,7 +283,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version)
-            throws IOException {
+        throws IOException {
         deleted = in.readBoolean();
         expiry = in.readLong();
         autoRenewAccount = readNullableSerializable(in);
@@ -303,8 +308,8 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         maxSupply = in.readLong();
         lastUsedSerialNumber = in.readLong();
         feeSchedule =
-                unmodifiableList(
-                        in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
+            unmodifiableList(
+                in.readSerializableList(Integer.MAX_VALUE, true, FcCustomFee::new));
         feeScheduleKey = readNullable(in, JKeySerializer::deserialize);
         // Added in 0.18
         number = in.readInt();
@@ -354,16 +359,16 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
     public MerkleToken copy() {
         setImmutable(true);
         final var fc =
-                new MerkleToken(
-                        expiry,
-                        totalSupply,
-                        decimals,
-                        symbol,
-                        name,
-                        accountsFrozenByDefault,
-                        accountsKycGrantedByDefault,
-                        treasury,
-                        number);
+            new MerkleToken(
+                expiry,
+                totalSupply,
+                decimals,
+                symbol,
+                name,
+                accountsFrozenByDefault,
+                accountsKycGrantedByDefault,
+                treasury,
+                number);
         fc.setMemo(memo);
         fc.setDeleted(deleted);
         fc.setFeeSchedule(feeSchedule);
@@ -591,14 +596,14 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         final var newTotalSupply = totalSupply + amount;
         if (newTotalSupply < 0) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'amount=%d' would negate totalSupply=%d!",
-                            amount, totalSupply));
+                String.format(
+                    "Argument 'amount=%d' would negate totalSupply=%d!",
+                    amount, totalSupply));
         }
         if (maxSupply != 0 && maxSupply < newTotalSupply) {
             throw new IllegalArgumentException(
-                    String.format(
-                            "Argument 'amount=%d' would exceed maxSupply=%d!", amount, maxSupply));
+                String.format(
+                    "Argument 'amount=%d' would exceed maxSupply=%d!", amount, maxSupply));
         }
         totalSupply += amount;
     }
@@ -724,147 +729,208 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
     public EvmTokenInfo asEvmTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
         final var info =
-                new EvmTokenInfo<>(
-                        ledgerId.toByteArray(),
-                        tokenType().ordinal(),
-                        supplyType().ordinal(),
-                        isDeleted(),
-                        symbol(),
-                        name(),
-                        memo(),
-                        EntityIdUtils.asTypedEvmAddress(treasury()),
-                        totalSupply(),
-                        maxSupply(),
-                        decimals(),
-                        expiry());
+            new EvmTokenInfo(
+                ledgerId.toByteArray(),
+                tokenType().ordinal(),
+                supplyType().ordinal(),
+                isDeleted(),
+                symbol(),
+                name(),
+                memo(),
+                EntityIdUtils.asTypedEvmAddress(treasury()),
+                totalSupply(),
+                maxSupply(),
+                decimals(),
+                expiry());
 
         final var adminCandidate = adminKey();
         adminCandidate.ifPresent(
-                k -> {
-                    final var key = asKeyUnchecked(k);
-                    info.setAdminKey(convertToEvmKey(key));
-                });
+            k -> {
+                final var key = asKeyUnchecked(k);
+                info.setAdminKey(convertToEvmKey(key));
+            });
 
         final var freezeCandidate = freezeKey();
         freezeCandidate.ifPresentOrElse(
-                k -> {
-                    info.setDefaultFreezeStatus(
-                            tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber());
-                    final var key = asKeyUnchecked(k);
-                    info.setFreezeKey(convertToEvmKey(key));
-                },
-                () ->
-                        info.setDefaultFreezeStatus(
-                                TokenFreezeStatus.FreezeNotApplicable.getNumber()));
+            k -> {
+                info.setDefaultFreezeStatus(
+                    tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber());
+                final var key = asKeyUnchecked(k);
+                info.setFreezeKey(convertToEvmKey(key));
+            },
+            () ->
+                info.setDefaultFreezeStatus(
+                    TokenFreezeStatus.FreezeNotApplicable.getNumber()));
 
         final var kycCandidate = kycKey();
         kycCandidate.ifPresentOrElse(
-                k -> {
-                    info.setDefaultKycStatus(
-                            tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber());
-                    final var key = asKeyUnchecked(k);
-                    info.setKycKey(convertToEvmKey(key));
-                },
-                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber()));
+            k -> {
+                info.setDefaultKycStatus(
+                    tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber());
+                final var key = asKeyUnchecked(k);
+                info.setKycKey(convertToEvmKey(key));
+            },
+            () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber()));
 
         final var supplyCandidate = supplyKey();
         supplyCandidate.ifPresent(
-                k -> {
-                    final var key = asKeyUnchecked(k);
-                    info.setSupplyKey(convertToEvmKey(key));
-                });
+            k -> {
+                final var key = asKeyUnchecked(k);
+                info.setSupplyKey(convertToEvmKey(key));
+            });
 
         final var wipeCandidate = wipeKey();
         wipeCandidate.ifPresent(
-                k -> {
-                    final var key = asKeyUnchecked(k);
-                    info.setWipeKey(convertToEvmKey(key));
-                });
+            k -> {
+                final var key = asKeyUnchecked(k);
+                info.setWipeKey(convertToEvmKey(key));
+            });
 
         final var feeScheduleCandidate = feeScheduleKey();
         feeScheduleCandidate.ifPresent(
-                k -> {
-                    final var key = asKeyUnchecked(k);
-                    info.setFeeScheduleKey(convertToEvmKey(key));
-                });
+            k -> {
+                final var key = asKeyUnchecked(k);
+                info.setFeeScheduleKey(convertToEvmKey(key));
+            });
 
         final var pauseCandidate = pauseKey();
         pauseCandidate.ifPresentOrElse(
-                k -> {
-                    final var key = asKeyUnchecked(k);
-                    info.setPauseKey(convertToEvmKey(key));
-                    info.setPauseStatus(tokenPauseStatusOf(isPaused()).getNumber());
-                },
-                () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable.getNumber()));
+            k -> {
+                final var key = asKeyUnchecked(k);
+                info.setPauseKey(convertToEvmKey(key));
+                info.setPauseStatus(tokenPauseStatusOf(isPaused()).getNumber());
+            },
+            () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable.getNumber()));
 
         if (hasAutoRenewAccount()) {
             info.setAutoRenewAccount(EntityIdUtils.asTypedEvmAddress(autoRenewAccount()));
             info.setAutoRenewPeriod(autoRenewPeriod());
         }
 
+        final var customFees = grpcFeeSchedule();
+
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees = new ArrayList<>();
+        for (final var customFee : customFees) {
+            extractFees(customFee, evmCustomFees);
+        }
+        info.setCustomFees(evmCustomFees);
+
         return info;
+    }
+
+    public void extractFees(CustomFee customFee,
+        List<com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee> evmCustomFees) {
+        final var feeCollector = EntityIdUtils.asTypedEvmAddress(
+            customFee.getFeeCollectorAccountId());
+        var evmCustomFee = new com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee();
+
+        if (customFee.getFixedFee().getAmount() > 0) {
+            var fixedFee = getFixedFee(customFee.getFixedFee(), feeCollector);
+
+            evmCustomFee.setFixedFee(fixedFee);
+            evmCustomFees.add(evmCustomFee);
+        } else if (customFee.getFractionalFee().getMinimumAmount() > 0) {
+            var fractionalFee = getFractionalFee(customFee.getFractionalFee(), feeCollector);
+
+            evmCustomFee.setFractionalFee(fractionalFee);
+            evmCustomFees.add(evmCustomFee);
+        } else if (customFee.getRoyaltyFee().getExchangeValueFraction().getNumerator() > 0) {
+            var royaltyFee = getRoyaltyFee(customFee.getRoyaltyFee(), feeCollector);
+
+            evmCustomFee.setRoyaltyFee(royaltyFee);
+            evmCustomFees.add(evmCustomFee);
+        }
+    }
+
+    private RoyaltyFee getRoyaltyFee(com.hederahashgraph.api.proto.java.RoyaltyFee royaltyFee,
+        Address feeCollector) {
+        return new RoyaltyFee(royaltyFee.getExchangeValueFraction().getNumerator(),
+            royaltyFee.getExchangeValueFraction().getDenominator(),
+            royaltyFee.getFallbackFee().getAmount(),
+            EntityIdUtils.asTypedEvmAddress(
+                royaltyFee.getFallbackFee().getDenominatingTokenId()),
+            royaltyFee.getFallbackFee().getDenominatingTokenId().getTokenNum() == 0,
+            feeCollector);
+    }
+
+    private FractionalFee getFractionalFee(com.hederahashgraph.api.proto.java.FractionalFee fractionalFee,
+        Address feeCollector) {
+        return new FractionalFee(fractionalFee.getFractionalAmount().getNumerator(),
+            fractionalFee.getFractionalAmount().getDenominator(),
+            fractionalFee.getMinimumAmount(),
+            fractionalFee.getMaximumAmount(),
+            fractionalFee.getNetOfTransfers(),
+            feeCollector);
+    }
+
+    public FixedFee getFixedFee(com.hederahashgraph.api.proto.java.FixedFee fixedFee,
+        Address feeCollector) {
+        return new FixedFee(fixedFee.getAmount(),
+            EntityIdUtils.asTypedEvmAddress(fixedFee.getDenominatingTokenId()),
+            fixedFee.getDenominatingTokenId().getTokenNum() == 0,
+            false, feeCollector);
     }
 
     public EvmKey convertToEvmKey(Key key) {
         final var contractId =
-                key.getContractID().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
-                        : EntityIdUtils.asTypedEvmAddress(
-                                ContractID.newBuilder()
-                                        .setShardNum(0L)
-                                        .setRealmNum(0L)
-                                        .setContractNum(0L)
-                                        .build());
+            key.getContractID().getContractNum() > 0
+                ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                : EntityIdUtils.asTypedEvmAddress(
+                    ContractID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setContractNum(0L)
+                        .build());
         final var ed25519 = key.getEd25519().toByteArray();
         final var ECDSA_secp256k1 = key.getECDSASecp256K1().toByteArray();
         final var delegatableContractId =
-                key.getDelegatableContractId().getContractNum() > 0
-                        ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
-                        : EntityIdUtils.asTypedEvmAddress(
-                                ContractID.newBuilder()
-                                        .setShardNum(0L)
-                                        .setRealmNum(0L)
-                                        .setContractNum(0L)
-                                        .build());
+            key.getDelegatableContractId().getContractNum() > 0
+                ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                : EntityIdUtils.asTypedEvmAddress(
+                    ContractID.newBuilder()
+                        .setShardNum(0L)
+                        .setRealmNum(0L)
+                        .setContractNum(0L)
+                        .build());
 
         return new EvmKey(contractId, ed25519, ECDSA_secp256k1, delegatableContractId);
     }
 
     public TokenInfo asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
         final var info =
-                TokenInfo.newBuilder()
-                        .setLedgerId(ledgerId)
-                        .setTokenTypeValue(tokenType().ordinal())
-                        .setSupplyTypeValue(supplyType().ordinal())
-                        .setTokenId(tokenId)
-                        .setDeleted(isDeleted())
-                        .setSymbol(symbol())
-                        .setName(name())
-                        .setMemo(memo())
-                        .setTreasury(treasury().toGrpcAccountId())
-                        .setTotalSupply(totalSupply())
-                        .setMaxSupply(maxSupply())
-                        .setDecimals(decimals())
-                        .setExpiry(Timestamp.newBuilder().setSeconds(expiry()));
+            TokenInfo.newBuilder()
+                .setLedgerId(ledgerId)
+                .setTokenTypeValue(tokenType().ordinal())
+                .setSupplyTypeValue(supplyType().ordinal())
+                .setTokenId(tokenId)
+                .setDeleted(isDeleted())
+                .setSymbol(symbol())
+                .setName(name())
+                .setMemo(memo())
+                .setTreasury(treasury().toGrpcAccountId())
+                .setTotalSupply(totalSupply())
+                .setMaxSupply(maxSupply())
+                .setDecimals(decimals())
+                .setExpiry(Timestamp.newBuilder().setSeconds(expiry()));
 
         final var adminCandidate = adminKey();
         adminCandidate.ifPresent(k -> info.setAdminKey(asKeyUnchecked(k)));
 
         final var freezeCandidate = freezeKey();
         freezeCandidate.ifPresentOrElse(
-                k -> {
-                    info.setDefaultFreezeStatus(tokenFreeStatusFor(accountsAreFrozenByDefault()));
-                    info.setFreezeKey(asKeyUnchecked(k));
-                },
-                () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
+            k -> {
+                info.setDefaultFreezeStatus(tokenFreeStatusFor(accountsAreFrozenByDefault()));
+                info.setFreezeKey(asKeyUnchecked(k));
+            },
+            () -> info.setDefaultFreezeStatus(TokenFreezeStatus.FreezeNotApplicable));
 
         final var kycCandidate = kycKey();
         kycCandidate.ifPresentOrElse(
-                k -> {
-                    info.setDefaultKycStatus(tokenKycStatusFor(accountsKycGrantedByDefault()));
-                    info.setKycKey(asKeyUnchecked(k));
-                },
-                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
+            k -> {
+                info.setDefaultKycStatus(tokenKycStatusFor(accountsKycGrantedByDefault()));
+                info.setKycKey(asKeyUnchecked(k));
+            },
+            () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable));
 
         final var supplyCandidate = supplyKey();
         supplyCandidate.ifPresent(k -> info.setSupplyKey(asKeyUnchecked(k)));
@@ -875,11 +941,11 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
 
         final var pauseCandidate = pauseKey();
         pauseCandidate.ifPresentOrElse(
-                k -> {
-                    info.setPauseKey(asKeyUnchecked(k));
-                    info.setPauseStatus(tokenPauseStatusOf(isPaused()));
-                },
-                () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
+            k -> {
+                info.setPauseKey(asKeyUnchecked(k));
+                info.setPauseStatus(tokenPauseStatusOf(isPaused()));
+            },
+            () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable));
 
         if (hasAutoRenewAccount()) {
             info.setAutoRenewAccount(autoRenewAccount().toGrpcAccountId());
