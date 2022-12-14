@@ -108,23 +108,10 @@ class StakeStartupHelperTest {
         registerConstructables();
         final var expectedQuantities = givenStakingAccountsWithExpectedQuantities();
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
-        given(stakePeriodManager.currentStakePeriod()).willReturn(currentStakingPeriod);
 
         subject.doUpgradeHousekeeping(networkContext, accounts, stakingInfos);
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
-        final var expectedTotalStart =
-                expectedQuantities.nodeStakeStarts.entrySet().stream()
-                        .filter(e -> e.getKey() != removedNodeId)
-                        .mapToLong(Map.Entry::getValue)
-                        .sum();
-        verify(networkContext).setTotalStakedStart(expectedTotalStart);
-        final var expectedTotalRewardStart =
-                expectedQuantities.nodeStakeRewardStarts.entrySet().stream()
-                        .filter(e -> e.getKey() != removedNodeId)
-                        .mapToLong(Map.Entry::getValue)
-                        .sum();
-        verify(networkContext).setTotalStakedRewardStart(expectedTotalRewardStart);
 
         for (final var postUpgradeInfo : stakingInfos.values()) {
             final var num = postUpgradeInfo.getKey();
@@ -147,25 +134,13 @@ class StakeStartupHelperTest {
                     expectedStakeToNotReward,
                     actualStakeToNotReward,
                     "Wrong stake to not reward for node " + num);
-
-            final var actualStakeRewardStart = stakingInfos.get(num).getStakeRewardStart();
-            final var expectedStakeRewardStart =
-                    Optional.ofNullable(
-                                    expectedQuantities.nodeStakeRewardStarts.get(num.longValue()))
-                            .orElse(0L);
-            assertEquals(
-                    expectedStakeRewardStart,
-                    actualStakeRewardStart,
-                    "Wrong stake reward start for node " + num);
         }
     }
 
     private record ExpectedQuantities(
             long pendingRewards,
             Map<Long, Long> nodeStakesToReward,
-            Map<Long, Long> nodeStakesToNotReward,
-            Map<Long, Long> nodeStakeRewardStarts,
-            Map<Long, Long> nodeStakeStarts) {}
+            Map<Long, Long> nodeStakesToNotReward) {}
 
     private ExpectedQuantities givenStakingAccountsWithExpectedQuantities() {
         givenPostUpgradeNodeInfos();
@@ -174,8 +149,6 @@ class StakeStartupHelperTest {
         long pendingRewards = 0L;
         final Map<Long, Long> nodeStakesToReward = new HashMap<>();
         final Map<Long, Long> nodeStakesToNotReward = new HashMap<>();
-        final Map<Long, Long> nodeStakeRewardStarts = new HashMap<>();
-        final Map<Long, Long> nodeStakeStarts = new HashMap<>();
         final EntityNum[] nums = new EntityNum[numStakingAccounts];
         for (int i = 0; i < numStakingAccounts; i++) {
             nums[i] = EntityNum.fromLong(r.nextLong(1_000_000L) + 1001L);
@@ -188,7 +161,7 @@ class StakeStartupHelperTest {
             account.setStakedToMe(r.nextInt(123) * 100_000_000L);
             // Stake to a node 80% of the time
             if (r.nextDouble() < 0.80) {
-                account.setStakePeriodStart(currentStakingPeriod - r.nextInt(5));
+                account.setStakePeriodStart(currentStakingPeriod - r.nextInt(2));
                 final var nodeId = preUpgradeNodeIds[r.nextInt(preUpgradeNodeIds.length)];
                 account.setStakedId(-nodeId - 1);
                 final var pretendReward = r.nextInt(123) * 100_000_000L;
@@ -199,42 +172,27 @@ class StakeStartupHelperTest {
                 final var stake = roundedToHbar(account.totalStake());
                 if (account.isDeclinedReward()) {
                     nodeStakesToNotReward.merge(nodeId, stake, Long::sum);
-                    if (account.getStakePeriodStart() < currentStakingPeriod) {
-                        nodeStakeStarts.merge(nodeId, stake, Long::sum);
-                    }
                 } else {
                     nodeStakesToReward.merge(nodeId, stake, Long::sum);
-                    if (account.getStakePeriodStart() < currentStakingPeriod) {
-                        nodeStakeStarts.merge(nodeId, stake, Long::sum);
-                        nodeStakeRewardStarts.merge(nodeId, stake, Long::sum);
-                    }
                 }
             }
         }
-        return new ExpectedQuantities(
-                pendingRewards,
-                nodeStakesToReward,
-                nodeStakesToNotReward,
-                nodeStakeRewardStarts,
-                nodeStakeStarts);
+
+        return new ExpectedQuantities(pendingRewards, nodeStakesToReward, nodeStakesToNotReward);
     }
 
     private void givenPostRestartSubject() {
         givenWellKnownAddressBookAndInfosMap();
         given(properties.getIntProperty(PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
                 .willReturn(365);
-        subject =
-                new StakeStartupHelper(
-                        stakeInfoManager, properties, stakePeriodManager, rewardCalculator);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
     private void givenPostUpgradeSubjectDoing(StakeStartupHelper.RecomputeType... types) {
         given(properties.getRecomputeTypesProperty(STAKING_STARTUP_HELPER_RECOMPUTE))
                 .willReturn(Set.of(types));
 
-        subject =
-                new StakeStartupHelper(
-                        stakeInfoManager, properties, stakePeriodManager, rewardCalculator);
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
     }
 
     void givenWellKnownAddressBookAndInfosMap() {

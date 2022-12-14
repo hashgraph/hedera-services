@@ -91,12 +91,9 @@ class MerkleStakingInfoTest {
 
     @Test
     void syncsFromRecomputedAsExpected() {
-        subject.syncRecomputedStakeValues(1L, 2L, 3L);
+        subject.syncRecomputedStakeValues(1L, 2L);
         assertEquals(1L, subject.getStakeToReward());
         assertEquals(2L, subject.getStakeToNotReward());
-        assertEquals(3L, subject.getStakeRewardStart());
-        assertEquals(0L, subject.getStake());
-        assertEquals(0L, subject.getUnclaimedStakeRewardStart());
     }
 
     @Test

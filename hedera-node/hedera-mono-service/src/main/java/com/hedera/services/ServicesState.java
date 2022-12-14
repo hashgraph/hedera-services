@@ -343,6 +343,8 @@ public class ServicesState extends PartialNaryMerkleInternal
                         networkCtx().markMigrationRecordsNotYetStreamed();
                     }
                     if (((SerializableSemVers) deserializedVersion).isAfter(LAST_027X_VERSION)) {
+                        // This is our opportunity to recompute any bad staking metadata safely;
+                        // all nodes will make exactly the same changes here, exactly once
                         app.stakeStartupHelper()
                                 .doUpgradeHousekeeping(networkCtx(), accounts(), stakingInfo());
                     }

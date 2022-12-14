@@ -65,18 +65,15 @@ public class StakeStartupHelper {
 
     private final PropertySource properties;
     private final StakeInfoManager stakeInfoManager;
-    private final StakePeriodManager stakePeriodManager;
     private final RewardCalculator rewardCalculator;
 
     @Inject
     public StakeStartupHelper(
             final StakeInfoManager stakeInfoManager,
             final @CompositeProps PropertySource properties,
-            final StakePeriodManager stakePeriodManager,
             final RewardCalculator rewardCalculator) {
         this.properties = properties;
         this.stakeInfoManager = stakeInfoManager;
-        this.stakePeriodManager = stakePeriodManager;
         this.rewardCalculator = rewardCalculator;
     }
 
@@ -92,15 +89,15 @@ public class StakeStartupHelper {
             final AddressBook addressBook,
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
         // List the node ids in the staking info map from BEFORE the restart
-        final List<Long> preUpgradeNodeIds =
+        final List<Long> preRestartNodeIds =
                 stakingInfos.keySet().stream().map(EntityNum::longValue).toList();
         // List the node ids in the address book from AFTER the restart
-        final List<Long> postUpgradeNodeIds = idsFromAddressBook(addressBook);
+        final List<Long> postRestartNodeIds = idsFromAddressBook(addressBook);
 
         // Always update the staking infos map with the new node ids
-        updateInfosForAddedOrRemovedNodes(preUpgradeNodeIds, postUpgradeNodeIds, stakingInfos);
+        updateInfosForAddedOrRemovedNodes(preRestartNodeIds, postRestartNodeIds, stakingInfos);
         // Always prepare the stake info manager for managing the new node ids
-        stakeInfoManager.prepForManaging(postUpgradeNodeIds);
+        stakeInfoManager.prepForManaging(postRestartNodeIds);
     }
 
     /**
@@ -138,7 +135,6 @@ public class StakeStartupHelper {
             final List<Long> preUpgradeNodeIds,
             final List<Long> postUpgradeNodeIds,
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
-
         // Add staking info for nodes that are new in the address book
         final List<Long> addedNodeIds = orderedSetMinus(postUpgradeNodeIds, preUpgradeNodeIds);
         if (!addedNodeIds.isEmpty()) {
@@ -168,10 +164,8 @@ public class StakeStartupHelper {
             final MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos) {
 
         final AtomicLong newPendingRewards = new AtomicLong();
-        final Map<EntityNum, Long> newStakeStarts = new HashMap<>();
         final Map<EntityNum, Long> newStakesToReward = new HashMap<>();
         final Map<EntityNum, Long> newStakesToNotReward = new HashMap<>();
-        final Map<EntityNum, Long> newStakeRewardStarts = new HashMap<>();
 
         accounts.forEach(
                 (num, account) -> {
@@ -182,12 +176,7 @@ public class StakeStartupHelper {
                             newPendingRewards.addAndGet(actualPending);
                         }
                         if (doNodeStakes) {
-                            updateForNodeStaked(
-                                    account,
-                                    newStakesToReward,
-                                    newStakesToNotReward,
-                                    newStakeRewardStarts,
-                                    newStakeStarts);
+                            updateForNodeStaked(account, newStakesToReward, newStakesToNotReward);
                         }
                     }
                 });
@@ -197,46 +186,27 @@ public class StakeStartupHelper {
         }
 
         if (doNodeStakes) {
-            final var networkStakeStart = new AtomicLong();
-            final var networkStakeRewardStart = new AtomicLong();
             forEach(
                     stakingInfos,
                     (num, info) -> {
                         final var mutableInfo = stakingInfos.getForModify(num);
-                        final var nodeStakeStart = newStakeStarts.getOrDefault(num, 0L);
-                        final var nodeStakeRewardStart = newStakeRewardStarts.getOrDefault(num, 0L);
                         mutableInfo.syncRecomputedStakeValues(
                                 newStakesToReward.getOrDefault(num, 0L),
-                                newStakesToNotReward.getOrDefault(num, 0L),
-                                nodeStakeRewardStart);
-                        networkStakeStart.addAndGet(nodeStakeStart);
-                        networkStakeRewardStart.addAndGet(nodeStakeRewardStart);
+                                newStakesToNotReward.getOrDefault(num, 0L));
                     });
-            networkContext.setTotalStakedStart(networkStakeStart.get());
-            networkContext.setTotalStakedRewardStart(networkStakeRewardStart.get());
         }
     }
 
     private void updateForNodeStaked(
             final MerkleAccount account,
             final Map<EntityNum, Long> newStakesToReward,
-            final Map<EntityNum, Long> newStakesToNotReward,
-            final Map<EntityNum, Long> newStakeRewardStarts,
-            final Map<EntityNum, Long> newStakeStarts) {
+            final Map<EntityNum, Long> newStakesToNotReward) {
         final var nodeNum = EntityNum.fromLong(account.getStakedNodeAddressBookId());
         final var stake = StakingUtils.roundedToHbar(account.totalStake());
-        final var wasStakedAtStartOfPeriod =
-                account.getStakePeriodStart() < stakePeriodManager.currentStakePeriod();
         if (account.isDeclinedReward()) {
             newStakesToNotReward.merge(nodeNum, stake, Long::sum);
         } else {
             newStakesToReward.merge(nodeNum, stake, Long::sum);
-            if (wasStakedAtStartOfPeriod) {
-                newStakeRewardStarts.merge(nodeNum, stake, Long::sum);
-            }
-        }
-        if (wasStakedAtStartOfPeriod) {
-            newStakeStarts.merge(nodeNum, stake, Long::sum);
         }
     }
 

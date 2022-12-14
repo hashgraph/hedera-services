@@ -128,21 +128,31 @@ public class MerkleStakingInfo extends PartialMerkleLeaf implements Keyed<Entity
      * Given up-to-date values for this node's stake to reward both at the start of this period, and
      * now; and its stake to not reward now, updates this staking info to reflect the new values.
      *
-     * <p>Resets {@code unclaimedStakeRewardStart = 0} so that we only track unclaimed stake for the
-     * rest of the current period. (Any previously unclaimed stake will have already been
-     * incorporated into the stake period start value.)
+     * <p>Ideally, we would be able to recompute and fix {@code stakeRewardStart} here. But we
+     * cannot since an account might have changed its staking metadata since the beginning of the
+     * period, meaning the state has "forgotten" everything about its metadata at the start of the
+     * period.
      *
      * @param stakeToReward the node's current stake to reward
      * @param stakeToNotReward the node's current stake to not reward
-     * @param stakeRewardStart the node's stake to reward at the start of this period
      */
-    public void syncRecomputedStakeValues(
-            final long stakeToReward, final long stakeToNotReward, final long stakeRewardStart) {
+    public void syncRecomputedStakeValues(final long stakeToReward, final long stakeToNotReward) {
+        if (stakeToReward != this.stakeToReward) {
+            log.warn(
+                    "Stake to reward for node {} was recomputed from {} to {}",
+                    number,
+                    this.stakeToReward,
+                    stakeToReward);
+        }
+        if (stakeToNotReward != this.stakeToNotReward) {
+            log.warn(
+                    "Stake to not reward for node {} was recomputed from {} to {}",
+                    number,
+                    this.stakeToNotReward,
+                    stakeToNotReward);
+        }
         this.stakeToReward = stakeToReward;
         this.stakeToNotReward = stakeToNotReward;
-        this.stakeRewardStart = stakeRewardStart;
-        clampConsensusStakeInMinMaxRange();
-        resetUnclaimedStakeRewardStart();
     }
 
     public long reviewElectionsAndRecomputeStakes() {
