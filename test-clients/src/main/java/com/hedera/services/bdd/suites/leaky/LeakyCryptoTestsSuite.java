@@ -589,8 +589,6 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(
-                                                                            evmAddressBytes)
                                                                     .autoRenew(
                                                                             THREE_MONTHS_IN_SECONDS)
                                                                     .receiverSigReq(false));
