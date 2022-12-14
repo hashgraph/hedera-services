@@ -23,6 +23,7 @@ import static com.hedera.services.utils.MiscUtils.forEach;
 import static com.hedera.services.utils.MiscUtils.withLoggedDuration;
 
 import com.hedera.services.context.annotations.CompositeProps;
+import com.hedera.services.context.properties.BootstrapProperties;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleAccount;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
@@ -75,6 +76,25 @@ public class StakeStartupHelper {
         this.properties = properties;
         this.stakeInfoManager = stakeInfoManager;
         this.rewardCalculator = rewardCalculator;
+    }
+
+    /**
+     * Given the genesis address book, prepares the network's staking infrastructure to work with
+     * this address book.
+     *
+     * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
+     * the {@code createGenesisChildren()} work currently still done by {@link
+     * com.hedera.services.state.migration.ReleaseTwentySevenMigration#buildStakingInfoMap(AddressBook,
+     * BootstrapProperties)}.
+     *
+     * @param addressBook the genesis address book
+     */
+    public void doGenesisHousekeeping(final AddressBook addressBook) {
+        // List the node ids in the address book at genesis
+        final List<Long> genesisNodeIds = idsFromAddressBook(addressBook);
+
+        // Prepare the stake info manager for managing the new node ids
+        stakeInfoManager.prepForManaging(genesisNodeIds);
     }
 
     /**
@@ -182,6 +202,13 @@ public class StakeStartupHelper {
                 });
 
         if (doPendingRewards) {
+            final var recomputedPending = newPendingRewards.get();
+            if (recomputedPending != networkContext.pendingRewards()) {
+                log.warn(
+                        "Pending rewards were recomputed from {} to {}",
+                        networkContext.pendingRewards(),
+                        recomputedPending);
+            }
             networkContext.setPendingRewards(newPendingRewards.get());
         }
 

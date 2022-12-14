@@ -62,6 +62,7 @@ class StakeStartupHelperTest {
     private static final EntityNum addedNum = EntityNum.fromLong(addedNodeId);
     private static final long[] preUpgradeNodeIds = {0L, 1L, 2L, 3L};
     private static final List<Long> postUpgradeNodeIds = List.of(0L, 1L, 3L, 4L);
+    private static final List<Long> genesisNodeIds = List.of(0L, 1L, 2L, 3L, 4L);
     private static final SplittableRandom r = new SplittableRandom(1_234_567L);
     private static final int numStakingAccounts = 50;
     private static final long currentStakingPeriod = 1_234_567L;
@@ -71,7 +72,6 @@ class StakeStartupHelperTest {
     @Mock private MerkleNetworkContext networkContext;
     @Mock private AddressBook addressBook;
     @Mock private RewardCalculator rewardCalculator;
-    @Mock private StakePeriodManager stakePeriodManager;
 
     private MerkleMap<EntityNum, MerkleAccount> accounts;
     private MerkleMap<EntityNum, MerkleStakingInfo> stakingInfos;
@@ -93,6 +93,15 @@ class StakeStartupHelperTest {
         final var addedInfo = stakingInfos.get(EntityNum.fromLong(addedNodeId));
         assertNotNull(addedInfo);
         assertEquals(366, addedInfo.numRewardablePeriods());
+    }
+
+    @Test
+    void prepsStakeInfoManagerForGenesisAddressBook() {
+        givenGenesisSubject();
+
+        subject.doGenesisHousekeeping(addressBook);
+
+        verify(stakeInfoManager).prepForManaging(genesisNodeIds);
     }
 
     @Test
@@ -181,6 +190,11 @@ class StakeStartupHelperTest {
         return new ExpectedQuantities(pendingRewards, nodeStakesToReward, nodeStakesToNotReward);
     }
 
+    private void givenGenesisSubject() {
+        givenGenesisAddressBook();
+        subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
+    }
+
     private void givenPostRestartSubject() {
         givenWellKnownAddressBookAndInfosMap();
         given(properties.getIntProperty(PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS))
@@ -193,6 +207,15 @@ class StakeStartupHelperTest {
                 .willReturn(Set.of(types));
 
         subject = new StakeStartupHelper(stakeInfoManager, properties, rewardCalculator);
+    }
+
+    void givenGenesisAddressBook() {
+        given(addressBook.getSize()).willReturn(preUpgradeNodeIds.length + 1);
+        int nextIndex = 0;
+        for (final long preUpgradeNodeId : preUpgradeNodeIds) {
+            given(addressBook.getId(nextIndex++)).willReturn(preUpgradeNodeId);
+        }
+        given(addressBook.getId(nextIndex)).willReturn(addedNodeId);
     }
 
     void givenWellKnownAddressBookAndInfosMap() {

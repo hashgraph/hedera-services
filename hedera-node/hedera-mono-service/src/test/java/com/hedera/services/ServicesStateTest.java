@@ -481,6 +481,7 @@ class ServicesStateTest {
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
 
         // when:
         subject.init(platform, addressBook, dualState, InitTrigger.GENESIS, null);
@@ -540,6 +541,7 @@ class ServicesStateTest {
         given(app.dualStateAccessor()).willReturn(dualStateAccessor);
         given(platform.getSelfId()).willReturn(selfId);
         given(app.sysAccountsCreator()).willReturn(accountsCreator);
+        given(app.stakeStartupHelper()).willReturn(stakeStartupHelper);
         given(app.workingState()).willReturn(workingState);
         given(app.sysFilesManager()).willReturn(systemFilesManager);
 

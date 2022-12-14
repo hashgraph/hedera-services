@@ -371,6 +371,7 @@ public class ServicesState extends PartialNaryMerkleInternal
                         .ensureSystemAccounts(
                                 app.backingAccounts(), app.workingState().addressBook());
                 app.sysFilesManager().createManagedFilesIfMissing();
+                app.stakeStartupHelper().doGenesisHousekeeping(addressBook());
             }
             if (trigger != RECONNECT) {
                 // Once we have a dynamic address book, this will run unconditionally
