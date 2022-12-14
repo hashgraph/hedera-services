@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.r
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -585,7 +586,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
 
                                     allRunFor(spec, op, op2, op3, op4, op5);
                                     var hapiGetAccountInfo =
-                                            getAccountInfo(ACCOUNT)
+                                            getAliasedAccountInfo(evmAddressBytes)
                                                     .has(
                                                             accountWith()
                                                                     .key(SECP_256K1_SOURCE_KEY)
