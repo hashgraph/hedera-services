@@ -46,7 +46,7 @@ class SigTransactionMetadataTest {
         given(lookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
         final var txn = createAccountTransaction();
         subject =
-                new SigTransactionMetadataBuilder<>(lookup)
+                new SigTransactionMetadataBuilder(lookup)
                         .payerKeyFor(payer)
                         .txnBody(txn)
                         .addToReqNonPayerKeys(otherKey)

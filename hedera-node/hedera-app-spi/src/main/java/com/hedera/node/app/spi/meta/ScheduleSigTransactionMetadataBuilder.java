@@ -24,8 +24,7 @@ import java.util.Objects;
  * signature verification. It builds {@link SigTransactionMetadata} for the transaction that is
  * being scheduled, in addition to all fields in {@link SigTransactionMetadata}.
  */
-public class ScheduleSigTransactionMetadataBuilder
-        extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
+public class ScheduleSigTransactionMetadataBuilder extends TransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
     private TransactionMetadata scheduledTxnMeta;
 
     public ScheduleSigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
@@ -50,11 +49,15 @@ public class ScheduleSigTransactionMetadataBuilder
         Objects.requireNonNull(
                 txn, "Transaction body is required to build ScheduleSigTransactionMetadata");
         Objects.requireNonNull(payer, "Payer is required to build ScheduleSigTransactionMetadata");
-        Objects.requireNonNull(
-                scheduledTxnMeta,
+        Objects.requireNonNull(scheduledTxnMeta,
                 "Scheduled transaction metadata is required"
                         + " to build ScheduleSigTransactionMetadata");
         return new ScheduleSigTransactionMetadata(
                 txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
+    }
+
+    @Override
+    public ScheduleSigTransactionMetadataBuilder self() {
+        return this;
     }
 }
