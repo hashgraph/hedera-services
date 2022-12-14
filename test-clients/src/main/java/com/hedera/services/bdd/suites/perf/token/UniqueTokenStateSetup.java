@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.perf.token;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -37,10 +37,10 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  * <ol>
  *   <li>If creating a large number of NFTs, e.g. 1M+, it is essential to comment out the body of
  *       the {@link
- *       com.hedera.services.bdd.spec.transactions.token.HapiTokenMint#updateStateOf(HapiApiSpec)}
+ *       com.hedera.services.bdd.spec.transactions.token.HapiTokenMint#updateStateOf(HapiSpec)}
  *       method, since it adds the minted token's creation time to the registry and the client will
  *       run OOM fairly quickly with a 1GB heap.
  *   <li>There is evidence of slower memory leaks hidden elsewhere in the EET infrastructure, so you
@@ -80,7 +80,7 @@ import org.apache.logging.log4j.Logger;
  *       well.
  * </ol>
  */
-public class UniqueTokenStateSetup extends HapiApiSuite {
+public class UniqueTokenStateSetup extends HapiSuite {
     private static final Logger log = LogManager.getLogger(UniqueTokenStateSetup.class);
 
     private final IntFunction<String> treasuryNameFn = i -> "treasury" + i;
@@ -103,14 +103,14 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     createNfts(),
                 });
     }
 
-    private HapiApiSpec createNfts() {
+    private HapiSpec createNfts() {
         return defaultHapiSpec("CreateNfts")
                 .given(
                         stdMgmtOf(duration, unit, maxOpsPerSec, "mint_"),
@@ -152,7 +152,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
                                 .maxOpsPerSec(maxOpsPerSec::get));
     }
 
-    private Function<HapiApiSpec, OpProvider> xferPrepAccountFactory() {
+    private Function<HapiSpec, OpProvider> xferPrepAccountFactory() {
         final AtomicInteger xferAccountsCreated = new AtomicInteger(0);
 
         return spec ->
@@ -176,7 +176,7 @@ public class UniqueTokenStateSetup extends HapiApiSuite {
                         };
     }
 
-    private Function<HapiApiSpec, OpProvider> nftFactory() {
+    private Function<HapiSpec, OpProvider> nftFactory() {
         final AtomicInteger uniqueTokensCreated = new AtomicInteger(0);
         final AtomicInteger nftsMintedForCurrentUniqueToken = new AtomicInteger(0);
         final AtomicBoolean done = new AtomicBoolean(false);

@@ -15,10 +15,10 @@
  */
 package com.hedera.services.bdd.suites.ethereum;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -43,7 +43,6 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fix
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
@@ -57,9 +56,8 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.services.bdd.spec.HapiApiSpec;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -68,7 +66,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class HelloWorldEthereumSuite extends HapiApiSuite {
+public class HelloWorldEthereumSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(HelloWorldEthereumSuite.class);
     private static final long depositAmount = 20_000L;
 
@@ -76,44 +74,36 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "TokenCreateContract";
     private static final String OC_TOKEN_CONTRACT = "OcToken";
     private static final String CALLDATA_SIZE_CONTRACT = "CalldataSize";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
     private static final String DEPOSIT = "deposit";
 
     public static void main(String... args) {
-        new HelloWorldEthereumSuite().runSuiteSync();
+        new HelloWorldEthereumSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
-        return allOf(setChainId(), ethereumCalls(), ethereumCreates());
+    public List<HapiSpec> getSpecsInSuite() {
+        return allOf(ethereumCalls(), ethereumCreates());
     }
 
-    List<HapiApiSpec> ethereumCalls() {
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    List<HapiSpec> ethereumCalls() {
         return List.of(
-                new HapiApiSpec[] {
-                    relayerFeeAsExpectedIfSenderCoversGas(),
-                    depositSuccess(),
-                    badRelayClient(),
-                    ethereumCallWithCalldataBiggerThanMaxSucceeds()
-                });
+                relayerFeeAsExpectedIfSenderCoversGas(),
+                depositSuccess(),
+                badRelayClient(),
+                ethereumCallWithCalldataBiggerThanMaxSucceeds());
     }
 
-    List<HapiApiSpec> ethereumCreates() {
+    List<HapiSpec> ethereumCreates() {
         return List.of(
-                new HapiApiSpec[] {
-                    smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate()
-                });
+                smallContractCreate(), contractCreateWithConstructorArgs(), bigContractCreate());
     }
 
-    List<HapiApiSpec> setChainId() {
-        return List.of(
-                defaultHapiSpec("SetChainId")
-                        .given()
-                        .when()
-                        .then(overriding(CHAIN_ID_PROP, "298")));
-    }
-
-    HapiApiSpec badRelayClient() {
+    HapiSpec badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
         final var exploitContract = "BadRelayClient";
@@ -214,7 +204,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)));
     }
 
-    HapiApiSpec relayerFeeAsExpectedIfSenderCoversGas() {
+    HapiSpec relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
 
         return defaultHapiSpec("RelayerFeeAsExpected")
@@ -254,10 +244,9 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                 .logged());
     }
 
-    HapiApiSpec depositSuccess() {
+    HapiSpec depositSuccess() {
         return defaultHapiSpec("DepositSuccess")
                 .given(
-                        UtilVerbs.overriding("contracts.throttle.throttleByGas", "false"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(
@@ -341,11 +330,10 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                                                                                         spec.registry()
                                                                                                 .getBytes(
                                                                                                         ETH_HASH_KEY)))))),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)),
-                        UtilVerbs.resetToDefault("contracts.throttle.throttleByGas"));
+                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(3L)));
     }
 
-    HapiApiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
+    HapiSpec ethereumCallWithCalldataBiggerThanMaxSucceeds() {
         final var largerThanMaxCalldata = new byte[MAX_CALL_DATA_SIZE + 1];
         return defaultHapiSpec("ethereumCallWithCalldataBiggerThanMaxSucceeds")
                 .given(
@@ -402,7 +390,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    HapiApiSpec smallContractCreate() {
+    HapiSpec smallContractCreate() {
         return defaultHapiSpec("SmallContractCreate")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -460,7 +448,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiApiSpec bigContractCreate() {
+    private HapiSpec bigContractCreate() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("BigContractCreate")
                 .given(
@@ -520,7 +508,7 @@ public class HelloWorldEthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiApiSpec contractCreateWithConstructorArgs() {
+    private HapiSpec contractCreateWithConstructorArgs() {
         final var contractAdminKey = "contractAdminKey";
         return defaultHapiSpec("ContractCreateWithConstructorArgs")
                 .given(

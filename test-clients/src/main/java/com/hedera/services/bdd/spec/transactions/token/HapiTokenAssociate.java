@@ -25,8 +25,8 @@ import static java.util.stream.Collectors.toList;
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
@@ -68,7 +68,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     }
 
     @Override
-    protected long feeFor(HapiApiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+    protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         try {
             final long expiry = lookupExpiry(spec);
             FeeCalculator.ActivityMetrics metricsCalc =
@@ -92,7 +92,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
         }
     }
 
-    private long lookupExpiry(HapiApiSpec spec) throws Throwable {
+    private long lookupExpiry(HapiSpec spec) throws Throwable {
         if (!spec.registry().hasContractId(account)) {
             HapiGetAccountInfo subOp = getAccountInfo(account).noLogging();
             Optional<Throwable> error = subOp.execFor(spec);
@@ -133,7 +133,7 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     }
 
     @Override
-    protected Consumer<TransactionBody.Builder> opBodyDef(HapiApiSpec spec) throws Throwable {
+    protected Consumer<TransactionBody.Builder> opBodyDef(HapiSpec spec) throws Throwable {
         var aId = TxnUtils.asId(account, spec);
         TokenAssociateTransactionBody opBody =
                 spec.txns()
@@ -150,19 +150,19 @@ public class HapiTokenAssociate extends HapiTxnOp<HapiTokenAssociate> {
     }
 
     @Override
-    protected List<Function<HapiApiSpec, Key>> defaultSigners() {
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
         return List.of(
                 spec -> spec.registry().getKey(effectivePayer(spec)),
                 spec -> spec.registry().getKey(account));
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiApiSpec spec) {
+    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
         return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::associateTokens;
     }
 
     @Override
-    protected void updateStateOf(HapiApiSpec spec) {
+    protected void updateStateOf(HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
         }

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.persistence;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -122,7 +122,7 @@ public class Entity implements Comparable<Entity> {
         return manifestAbsPath;
     }
 
-    void registerWhatIsKnown(HapiApiSpec spec) {
+    void registerWhatIsKnown(HapiSpec spec) {
         if (token != UNSPECIFIED_TOKEN) {
             token.registerWhatIsKnown(spec, name, Optional.ofNullable(id));
         } else if (topic != UNSPECIFIED_TOPIC) {

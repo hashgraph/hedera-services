@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.reconnect;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.LoadTest.defaultLoadTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
@@ -24,9 +24,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CreateAccountsBeforeReconnect extends HapiApiSuite {
+public class CreateAccountsBeforeReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateAccountsBeforeReconnect.class);
 
     private static final int ACCOUNT_CREATION_LIMIT = 20_000;
@@ -50,7 +50,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
     private static final AtomicInteger accountNumber = new AtomicInteger(0);
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(runCreateAccounts());
     }
 
@@ -67,7 +67,7 @@ public class CreateAccountsBeforeReconnect extends HapiApiSuite {
                 .deferStatusResolution();
     }
 
-    private HapiApiSpec runCreateAccounts() {
+    private HapiSpec runCreateAccounts() {
         PerfTestLoadSettings settings =
                 new PerfTestLoadSettings(
                         ACCOUNT_CREATION_RECONNECT_TPS,

@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.utils.validation;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.customHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -71,7 +71,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.keyFromPem;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiApiSuite.FinalOutcome.SUITE_PASSED;
+import static com.hedera.services.bdd.suites.HapiSuite.FinalOutcome.SUITE_PASSED;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.JutilPropsToSvcCfgBytes.LEGACY_THROTTLES_FIRST_ORDER;
@@ -109,8 +109,8 @@ import static java.util.stream.Collectors.toMap;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
-import com.hedera.services.bdd.spec.HapiApiSpec;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -119,7 +119,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hedera.services.bdd.suites.utils.validation.domain.ConsensusScenario;
 import com.hedera.services.bdd.suites.utils.validation.domain.ContractScenario;
@@ -183,7 +183,7 @@ import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.representer.Representer;
 
-public class ValidationScenarios extends HapiApiSuite {
+public class ValidationScenarios extends HapiSuite {
     private static final Logger log = LogManager.getLogger(ValidationScenarios.class);
     private static final String DEFAULT_CONFIG_LOC = "config.yml";
     private static final long TINYBARS_PER_HBAR = 100_000_000L;
@@ -233,7 +233,7 @@ public class ValidationScenarios extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         var specs =
                 Stream.of(
                                 Optional.of(recordPayerBalance(startingBalance::set)),
@@ -292,7 +292,7 @@ public class ValidationScenarios extends HapiApiSuite {
                                                 : recordPayerBalance(endingBalance::set)))
                         .flatMap(Optional::stream)
                         .collect(toList());
-        System.out.println(specs.stream().map(HapiApiSpec::getName).collect(toList()));
+        System.out.println(specs.stream().map(HapiSpec::getName).collect(toList()));
         return specs;
     }
 
@@ -303,7 +303,7 @@ public class ValidationScenarios extends HapiApiSuite {
         return needScenarioPayer.stream().noneMatch(params.getScenarios()::contains);
     }
 
-    private static HapiApiSpec ensureBytecode() {
+    private static HapiSpec ensureBytecode() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -342,7 +342,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec feeSnapshots() {
+    private static HapiSpec feeSnapshots() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -561,7 +561,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec updatePaymentCsv() {
+    private static HapiSpec updatePaymentCsv() {
         ensureScenarios();
         if (scenarios.getFeeSnapshots() == null) {
             scenarios.setFeeSnapshots(new FeeSnapshotsScenario());
@@ -584,7 +584,7 @@ public class ValidationScenarios extends HapiApiSuite {
                             withOpContext(
                                     (spec, opLog) -> {
                                         var payments =
-                                                HapiApiSpec.costSnapshotFrom(
+                                                HapiSpec.costSnapshotFrom(
                                                         "cost-snapshots/fees/ValidationScenarios-FeeSnapshots-costs.properties");
                                         var network = params.getTargetNetwork();
                                         var feesCsvLoc = String.format("fees/%s-fees.csv", network);
@@ -664,7 +664,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec doJustTransfers() {
+    private static HapiSpec doJustTransfers() {
         try {
             int numNodes = targetNetwork().getNodes().size();
             return customHapiSpec("DoJustTransfers")
@@ -712,7 +712,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec sysFilesUp() {
+    private static HapiSpec sysFilesUp() {
         ensureScenarios();
         if (scenarios.getSysFilesUp() == null) {
             scenarios.setSysFilesUp(new SysFilesUpScenario());
@@ -774,7 +774,7 @@ public class ValidationScenarios extends HapiApiSuite {
                 "%s_ACCOUNT%d_PASSPHRASE", params.getTargetNetwork().toUpperCase(), accountNum);
     }
 
-    private static HapiApiSpec sysFilesDown() {
+    private static HapiSpec sysFilesDown() {
         ensureScenarios();
         if (scenarios.getSysFilesDown() == null) {
             scenarios.setSysFilesDown(new SysFilesDownScenario());
@@ -879,7 +879,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec getSystemKeys() {
+    private static HapiSpec getSystemKeys() {
         final long[] accounts = {2, 50, 55, 56, 57, 58};
         final long[] files = {101, 102, 111, 112, 121, 122};
         try {
@@ -925,7 +925,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec recordPayerBalance(LongConsumer learner) {
+    private static HapiSpec recordPayerBalance(LongConsumer learner) {
         try {
             return customHapiSpec("RecordPayerBalance")
                     .withProperties(
@@ -960,7 +960,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec ensureScenarioPayer() {
+    private static HapiSpec ensureScenarioPayer() {
         try {
             ensureScenarios();
             long minStartingBalance =
@@ -990,7 +990,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec versionsScenario() {
+    private static HapiSpec versionsScenario() {
         try {
             ensureScenarios();
             if (scenarios.getVersions() == null) {
@@ -1034,7 +1034,7 @@ public class ValidationScenarios extends HapiApiSuite {
         }
     }
 
-    private static HapiApiSpec cryptoScenario() {
+    private static HapiSpec cryptoScenario() {
         try {
             ensureScenarios();
             if (scenarios.getCrypto() == null) {
@@ -1204,7 +1204,7 @@ public class ValidationScenarios extends HapiApiSuite {
                 });
     }
 
-    private static HapiApiSpec fileScenario() {
+    private static HapiSpec fileScenario() {
         try {
             ensureScenarios();
             if (scenarios.getFile() == null) {
@@ -1378,7 +1378,7 @@ public class ValidationScenarios extends HapiApiSuite {
                 });
     }
 
-    private static HapiApiSpec contractScenario() {
+    private static HapiSpec contractScenario() {
         try {
             ensureScenarios();
             if (scenarios.getContract() == null) {
@@ -1610,7 +1610,7 @@ public class ValidationScenarios extends HapiApiSuite {
                         .orElse(-1L);
     }
 
-    private static HapiApiSpec consensusScenario() {
+    private static HapiSpec consensusScenario() {
         try {
             ensureScenarios();
             if (scenarios.getConsensus() == null) {

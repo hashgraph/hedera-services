@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -45,10 +45,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -58,7 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TokenExpiryInfoSuite extends HapiApiSuite {
+public class TokenExpiryInfoSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(TokenExpiryInfoSuite.class);
     private static final String TOKEN_EXPIRY_CONTRACT = "TokenExpiryContract";
@@ -75,7 +75,12 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
             "updateExpiryInfoForTokenAndReadLatestInfo";
 
     public static void main(String... args) {
-        new TokenExpiryInfoSuite().runSuiteSync();
+        new TokenExpiryInfoSuite().runSuiteAsync();
+    }
+
+    @Override
+    public boolean canRunConcurrent() {
+        return true;
     }
 
     @Override
@@ -84,14 +89,14 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
                 getExpiryInfoForToken(),
                 updateExpiryInfoForToken(),
                 updateExpiryInfoForTokenAndReadLatestInfo());
     }
 
-    private HapiApiSpec getExpiryInfoForToken() {
+    private HapiSpec getExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
@@ -185,7 +190,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    private HapiApiSpec updateExpiryInfoForToken() {
+    private HapiSpec updateExpiryInfoForToken() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
@@ -369,7 +374,7 @@ public class TokenExpiryInfoSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
+    private HapiSpec updateExpiryInfoForTokenAndReadLatestInfo() {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
