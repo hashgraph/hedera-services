@@ -15,6 +15,13 @@
  */
 package com.hedera.node.app.spi.test.meta;
 
+import static com.hedera.node.app.spi.test.meta.SigTransactionMetadataBuilderTest.A_COMPLEX_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
 import com.hedera.node.app.spi.key.HederaKey;
@@ -26,86 +33,75 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-
-import static com.hedera.node.app.spi.test.meta.SigTransactionMetadataBuilderTest.A_COMPLEX_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 class SigTransactionMetadataTest {
-	private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(3L).build();
-	@Mock
-	private HederaKey payerKey;
-	@Mock
-	private HederaKey otherKey;
-	@Mock
-	AccountKeyLookup lookup;
-	private SigTransactionMetadata subject;
+    private static final AccountID PAYER = AccountID.newBuilder().setAccountNum(3L).build();
+    @Mock private HederaKey payerKey;
+    @Mock private HederaKey otherKey;
+    @Mock AccountKeyLookup lookup;
+    private SigTransactionMetadata subject;
 
-	@Test
-	void gettersWork() {
-		given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-		final var txn = createAccountTransaction();
-		subject =
-				new SigTransactionMetadataBuilder(lookup)
-						.payerKeyFor(PAYER)
-						.txnBody(txn)
-						.addToReqKeys(otherKey)
-						.build();
+    @Test
+    void gettersWork() {
+        given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        final var txn = createAccountTransaction();
+        subject =
+                new SigTransactionMetadataBuilder(lookup)
+                        .payerKeyFor(PAYER)
+                        .txnBody(txn)
+                        .addToReqKeys(otherKey)
+                        .build();
 
-		assertFalse(subject.failed());
-		assertEquals(txn, subject.txnBody());
-		assertEquals(ResponseCodeEnum.OK, subject.status());
-		assertEquals(payerKey, subject.payerKey());
-		assertEquals(List.of(otherKey), subject.requiredNonPayerKeys());
-	}
+        assertFalse(subject.failed());
+        assertEquals(txn, subject.txnBody());
+        assertEquals(ResponseCodeEnum.OK, subject.status());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(List.of(otherKey), subject.requiredNonPayerKeys());
+    }
 
-	@Test
-	void gettersWorkOnFailure() {
-		given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
-		final var txn = createAccountTransaction();
-		subject =
-				new SigTransactionMetadataBuilder(lookup)
-						.payerKeyFor(PAYER)
-						.status(INVALID_ACCOUNT_ID)
-						.txnBody(txn)
-						.addToReqKeys(otherKey)
-						.build();
+    @Test
+    void gettersWorkOnFailure() {
+        given(lookup.getKey(PAYER)).willReturn(KeyOrLookupFailureReason.withKey(payerKey));
+        final var txn = createAccountTransaction();
+        subject =
+                new SigTransactionMetadataBuilder(lookup)
+                        .payerKeyFor(PAYER)
+                        .status(INVALID_ACCOUNT_ID)
+                        .txnBody(txn)
+                        .addToReqKeys(otherKey)
+                        .build();
 
-		assertTrue(subject.failed());
-		assertEquals(txn, subject.txnBody());
-		assertEquals(INVALID_ACCOUNT_ID, subject.status());
-		assertEquals(payerKey, subject.payerKey());
-		assertEquals(
-				List.of(),
-				subject.requiredNonPayerKeys()); // otherKey is not added as there is failure
-		// status set
-	}
+        assertTrue(subject.failed());
+        assertEquals(txn, subject.txnBody());
+        assertEquals(INVALID_ACCOUNT_ID, subject.status());
+        assertEquals(payerKey, subject.payerKey());
+        assertEquals(
+                List.of(),
+                subject.requiredNonPayerKeys()); // otherKey is not added as there is failure
+        // status set
+    }
 
-	private TransactionBody createAccountTransaction() {
-		final var transactionID =
-				TransactionID.newBuilder()
-						.setAccountID(PAYER)
-						.setTransactionValidStart(
-								Timestamp.newBuilder().setSeconds(123_456L).build());
-		final var createTxnBody =
-				CryptoCreateTransactionBody.newBuilder()
-						.setKey(A_COMPLEX_KEY)
-						.setReceiverSigRequired(true)
-						.setMemo("Create Account")
-						.build();
-		return TransactionBody.newBuilder()
-				.setTransactionID(transactionID)
-				.setCryptoCreateAccount(createTxnBody)
-				.build();
-	}
+    private TransactionBody createAccountTransaction() {
+        final var transactionID =
+                TransactionID.newBuilder()
+                        .setAccountID(PAYER)
+                        .setTransactionValidStart(
+                                Timestamp.newBuilder().setSeconds(123_456L).build());
+        final var createTxnBody =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setKey(A_COMPLEX_KEY)
+                        .setReceiverSigRequired(true)
+                        .setMemo("Create Account")
+                        .build();
+        return TransactionBody.newBuilder()
+                .setTransactionID(transactionID)
+                .setCryptoCreateAccount(createTxnBody)
+                .build();
+    }
 }
