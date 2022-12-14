@@ -1,4 +1,22 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.spi.meta;
+
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import com.hedera.node.app.spi.KeyOrLookupFailureReason;
@@ -8,17 +26,14 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 /**
  * Base abstract class for constructing {@link TransactionMetadata} by collecting information that
- * is needed when transactions are handled as part of "pre-handle" needed for signature verification.
+ * is needed when transactions are handled as part of "pre-handle" needed for signature
+ * verification.
  *
  * <p>NOTE : This class is designed to be subclassed
  */
@@ -211,8 +226,8 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
     }
 
     /**
-     * Creates and returns a new {@link TransactionMetadata} based on the values configured in
-     * this builder.
+     * Creates and returns a new {@link TransactionMetadata} based on the values configured in this
+     * builder.
      *
      * @return a new {@link SigTransactionMetadata}
      */
@@ -220,6 +235,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
 
     /**
      * Returns the builder object.
+     *
      * @return builder object
      */
     abstract T self();

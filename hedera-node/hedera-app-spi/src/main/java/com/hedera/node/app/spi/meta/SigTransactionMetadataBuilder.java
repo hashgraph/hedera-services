@@ -17,7 +17,6 @@ package com.hedera.node.app.spi.meta;
 
 import com.hedera.node.app.spi.AccountKeyLookup;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Objects;
 
 /**
@@ -27,7 +26,8 @@ import java.util.Objects;
  * <p>NOTE : This class is designed to be subclassed For e.g., we need a {@link TransactionMetadata}
  * with an inner {@link TransactionMetadata} for schedule transactions.
  */
-public class SigTransactionMetadataBuilder extends TransactionMetadataBuilder<SigTransactionMetadataBuilder> {
+public class SigTransactionMetadataBuilder
+        extends TransactionMetadataBuilder<SigTransactionMetadataBuilder> {
     public SigTransactionMetadataBuilder(@NonNull AccountKeyLookup keyLookup) {
         super(keyLookup);
     }
