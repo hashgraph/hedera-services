@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -28,15 +28,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class TxnReceiptRegression extends HapiApiSuite {
+public class TxnReceiptRegression extends HapiSuite {
     static final Logger log = LogManager.getLogger(TxnReceiptRegression.class);
 
     public static void main(String... args) {
@@ -49,9 +49,9 @@ public class TxnReceiptRegression extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return List.of(
-                new HapiApiSpec[] {
+                new HapiSpec[] {
                     returnsInvalidForUnspecifiedTxnId(),
                     returnsNotSupportedForMissingOp(),
                     receiptAvailableWithinCacheTtl(),
@@ -62,7 +62,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
                 });
     }
 
-    private HapiApiSpec returnsInvalidForUnspecifiedTxnId() {
+    private HapiSpec returnsInvalidForUnspecifiedTxnId() {
         return defaultHapiSpec("ReturnsInvalidForUnspecifiedTxnId")
                 .given()
                 .when()
@@ -72,21 +72,21 @@ public class TxnReceiptRegression extends HapiApiSuite {
                                 .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID));
     }
 
-    private HapiApiSpec returnsNotSupportedForMissingOp() {
+    private HapiSpec returnsNotSupportedForMissingOp() {
         return defaultHapiSpec("ReturnsNotSupportedForMissingOp")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
                 .then(getReceipt("success").forgetOp().hasAnswerOnlyPrecheck(NOT_SUPPORTED));
     }
 
-    private HapiApiSpec receiptUnavailableAfterCacheTtl() {
+    private HapiSpec receiptUnavailableAfterCacheTtl() {
         return defaultHapiSpec("ReceiptUnavailableAfterCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when(sleepFor(200_000L))
                 .then(getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 
-    private HapiApiSpec receiptUnknownBeforeConsensus() {
+    private HapiSpec receiptUnknownBeforeConsensus() {
         return defaultHapiSpec("ReceiptUnknownBeforeConsensus")
                 .given()
                 .when()
@@ -95,14 +95,14 @@ public class TxnReceiptRegression extends HapiApiSuite {
                         getReceipt("success").hasPriorityStatus(UNKNOWN));
     }
 
-    private HapiApiSpec receiptAvailableWithinCacheTtl() {
+    private HapiSpec receiptAvailableWithinCacheTtl() {
         return defaultHapiSpec("ReceiptAvailableWithinCacheTtl")
                 .given(cryptoCreate("misc").via("success").balance(1_000L))
                 .when()
                 .then(getReceipt("success").hasPriorityStatus(SUCCESS));
     }
 
-    private HapiApiSpec receiptUnavailableIfRejectedInPrecheck() {
+    private HapiSpec receiptUnavailableIfRejectedInPrecheck() {
         return defaultHapiSpec("ReceiptUnavailableIfRejectedInPrecheck")
                 .given(usableTxnIdNamed("failingTxn"), cryptoCreate("misc").balance(1_000L))
                 .when(
@@ -113,7 +113,7 @@ public class TxnReceiptRegression extends HapiApiSuite {
                 .then(getReceipt("failingTxn").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 
-    private HapiApiSpec receiptNotFoundOnUnknownTransactionID() {
+    private HapiSpec receiptNotFoundOnUnknownTransactionID() {
         return defaultHapiSpec("receiptNotFoundOnUnknownTransactionID")
                 .given()
                 .when()

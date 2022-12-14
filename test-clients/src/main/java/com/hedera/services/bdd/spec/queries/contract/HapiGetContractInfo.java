@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.queries.contract;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.ensureDir;
+import static com.hedera.services.bdd.spec.HapiSpec.ensureDir;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.rethrowSummaryError;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
@@ -29,7 +29,7 @@ import com.google.common.io.ByteSink;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Files;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -124,7 +124,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
 
     @Override
     @SuppressWarnings("java:S5960")
-    protected void assertExpectationsGiven(HapiApiSpec spec) throws Throwable {
+    protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         ContractInfo actualInfo = response.getContractGetInfo().getContractInfo();
         if (expectations.isPresent()) {
             ErroringAsserts<ContractInfo> asserts = expectations.get().assertsFor(spec);
@@ -139,7 +139,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     }
 
     @Override
-    protected void submitWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractInfoQuery(spec, payment, false);
         response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         ContractInfo contractInfo = response.getContractGetInfo().getContractInfo();
@@ -160,18 +160,18 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
     }
 
     @Override
-    protected long lookupCostWith(HapiApiSpec spec, Transaction payment) throws Throwable {
+    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         Query query = getContractInfoQuery(spec, payment, true);
         Response response =
                 spec.clients().getScSvcStub(targetNodeFor(spec), useTls).getContractInfo(query);
         return costFrom(response);
     }
 
-    private String specScopedDir(HapiApiSpec spec, Optional<String> prefix) {
+    private String specScopedDir(HapiSpec spec, Optional<String> prefix) {
         return prefix.map(d -> d + "/" + spec.getName()).orElseThrow();
     }
 
-    private void saveContractInfo(HapiApiSpec spec, ContractInfo contractInfo) {
+    private void saveContractInfo(HapiSpec spec, ContractInfo contractInfo) {
         String specSnapshotDir = specScopedDir(spec, contractInfoPath);
         ensureDir(specSnapshotDir);
         String snapshotDir = specSnapshotDir + "/" + contract;
@@ -197,7 +197,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
     }
 
-    private void validateAgainst(HapiApiSpec spec, ContractInfo contractInfo) {
+    private void validateAgainst(HapiSpec spec, ContractInfo contractInfo) {
         String specExpectationsDir = specScopedDir(spec, validateDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;
@@ -219,7 +219,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
     }
 
-    private ContractID readContractID(HapiApiSpec spec) {
+    private ContractID readContractID(HapiSpec spec) {
         String specExpectationsDir = specScopedDir(spec, validateDirPath);
         try {
             String expectationsDir = specExpectationsDir + "/" + contract;
@@ -232,7 +232,7 @@ public class HapiGetContractInfo extends HapiQueryOp<HapiGetContractInfo> {
         }
     }
 
-    private Query getContractInfoQuery(HapiApiSpec spec, Transaction payment, boolean costOnly) {
+    private Query getContractInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {
         ContractGetInfoQuery contractGetInfo;
         if (getPredefinedId) {
             var contractID = readContractID(spec);

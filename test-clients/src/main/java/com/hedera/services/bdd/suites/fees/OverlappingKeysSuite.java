@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.suites.fees;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
@@ -26,17 +26,17 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyLabel;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class OverlappingKeysSuite extends HapiApiSuite {
+public class OverlappingKeysSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(OverlappingKeysSuite.class);
 
     public static void main(String... args) {
@@ -44,19 +44,19 @@ public class OverlappingKeysSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveTests(), negativeTests());
     }
 
-    private List<HapiApiSpec> positiveTests() {
+    private List<HapiSpec> positiveTests() {
         return Arrays.asList(feeCalcUsesNumPayerKeys());
     }
 
-    private List<HapiApiSpec> negativeTests() {
+    private List<HapiSpec> negativeTests() {
         return Arrays.asList();
     }
 
-    private HapiApiSpec feeCalcUsesNumPayerKeys() {
+    private HapiSpec feeCalcUsesNumPayerKeys() {
         SigControl SHAPE =
                 threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
         KeyLabel ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));

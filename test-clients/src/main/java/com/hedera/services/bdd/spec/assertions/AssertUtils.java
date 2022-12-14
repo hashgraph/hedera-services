@@ -15,7 +15,7 @@
  */
 package com.hedera.services.bdd.spec.assertions;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,6 +73,6 @@ public class AssertUtils {
 
     @FunctionalInterface
     interface ThrowingAssert {
-        void assertThrowable(HapiApiSpec spec, Object o) throws Throwable;
+        void assertThrowable(HapiSpec spec, Object o) throws Throwable;
     }
 }

@@ -20,6 +20,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -95,6 +96,7 @@ class InfrastructureFactoryTest {
     @Mock private UsageLimits usageLimits;
     @Mock private EntityIdSource ids;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private OptionValidator validator;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private SigImpactHistorian sigImpactHistorian;
@@ -134,6 +136,7 @@ class InfrastructureFactoryTest {
                         usageLimits,
                         ids,
                         encoder,
+                        evmEncoder,
                         validator,
                         recordsHistorian,
                         sigImpactHistorian,

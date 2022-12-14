@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.ethereum;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -48,7 +48,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -59,7 +58,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFor;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -71,13 +70,12 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -95,7 +93,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Assertions;
 
-public class EthereumSuite extends HapiApiSuite {
+public class EthereumSuite extends HapiSuite {
 
     private static final Logger log = LogManager.getLogger(EthereumSuite.class);
     private static final long depositAmount = 20_000L;
@@ -103,7 +101,7 @@ public class EthereumSuite extends HapiApiSuite {
     private static final String TOKEN_CREATE_CONTRACT = "NewTokenCreateContract";
     private static final String ERC721_CONTRACT_WITH_HTS_CALLS = "ERC721ContractWithHTSCalls";
     private static final String HELLO_WORLD_MINT_CONTRACT = "HelloWorldMint";
-    private static final long GAS_LIMIT = 1_000_000;
+    public static final long GAS_LIMIT = 1_000_000;
 
     public static final String ERC20_CONTRACT = "ERC20Contract";
     public static final String EMIT_SENDER_ORIGIN_CONTRACT = "EmitSenderOrigin";
@@ -111,35 +109,90 @@ public class EthereumSuite extends HapiApiSuite {
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
     public static void main(String... args) {
-        new EthereumSuite().runSuiteSync();
+        new EthereumSuite().runSuiteAsync();
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public boolean canRunConcurrent() {
+        return true;
+    }
+
+    @Override
+    public List<HapiSpec> getSpecsInSuite() {
         return Stream.concat(
-                        Stream.of(setChainId()),
-                        Stream.concat(
-                                feePaymentMatrix().stream(),
-                                Stream.of(
-                                        invalidTxData(),
-                                        ETX_007_fungibleTokenCreateWithFeesHappyPath(),
-                                        ETX_008_contractCreateExecutesWithExpectedRecord(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        ETX_010_transferToCryptoAccountSucceeds(),
-                                        ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn(),
-                                        ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn(),
-                                        ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
-                                        ETX_014_contractCreateInheritsSignerProperties(),
-                                        accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation(),
-                                        ETX_009_callsToTokenAddresses(),
-                                        originAndSenderAreEthereumSigner(),
-                                        ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer(),
-                                        ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode(),
-                                        setApproveForAllUsingLocalNodeSetupPasses())))
+                        feePaymentMatrix().stream(),
+                        Stream.of(
+                                invalidTxData(),
+                                etx007FungibleTokenCreateWithFeesHappyPath(),
+                                etx008ContractCreateExecutesWithExpectedRecord(),
+                                etx009CallsToTokenAddresses(),
+                                etx010TransferToCryptoAccountSucceeds(),
+                                etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn(),
+                                etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn(),
+                                etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn(),
+                                etx014ContractCreateInheritsSignerProperties(),
+                                etx009CallsToTokenAddresses(),
+                                originAndSenderAreEthereumSigner(),
+                                etx031InvalidNonceEthereumTxFailsAndChargesRelayer(),
+                                etxSvc003ContractGetBytecodeQueryReturnsDeployedCode(),
+                                sendingLargerBalanceThanAvailableFailsGracefully(),
+                                setApproveForAllUsingLocalNodeSetupPasses()))
                 .toList();
     }
 
-    HapiApiSpec setApproveForAllUsingLocalNodeSetupPasses() {
+    HapiSpec sendingLargerBalanceThanAvailableFailsGracefully() {
+        final AtomicReference<Address> tokenCreateContractAddress = new AtomicReference<>();
+
+        return defaultHapiSpec("Sending Larger Balance Than Available Fails Gracefully")
+                .given(
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                tinyBarsFromAccountToAlias(
+                                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS - 1)),
+                        createLargeFile(
+                                GENESIS,
+                                TOKEN_CREATE_CONTRACT,
+                                TxnUtils.literalInitcodeFor(TOKEN_CREATE_CONTRACT)))
+                .when(
+                        ethereumContractCreate(TOKEN_CREATE_CONTRACT)
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .nonce(0)
+                                .bytecode(TOKEN_CREATE_CONTRACT)
+                                .gasPrice(10L)
+                                .maxGasAllowance(ONE_HUNDRED_HBARS)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatusFrom(SUCCESS)
+                                .via("deployTokenCreateContract"),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .exposingEvmAddress(
+                                        cb ->
+                                                tokenCreateContractAddress.set(
+                                                        asHeadlongAddress(cb))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    var call =
+                                            ethereumCall(
+                                                            TOKEN_CREATE_CONTRACT,
+                                                            "createNonFungibleTokenPublic",
+                                                            tokenCreateContractAddress.get())
+                                                    .type(EthTxData.EthTransactionType.EIP1559)
+                                                    .signingWith(SECP_256K1_SOURCE_KEY)
+                                                    .payingWith(RELAYER)
+                                                    .nonce(1)
+                                                    .gasPrice(10L)
+                                                    .sending(ONE_HUNDRED_HBARS)
+                                                    .gasLimit(1_000_000L)
+                                                    .via("createTokenTxn")
+                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE);
+                                    allRunFor(spec, call);
+                                }));
+    }
+
+    HapiSpec setApproveForAllUsingLocalNodeSetupPasses() {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
@@ -392,7 +445,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .then(withOpContext((spec, opLog) -> {}));
     }
 
-    HapiApiSpec ETX_010_transferToCryptoAccountSucceeds() {
+    HapiSpec etx010TransferToCryptoAccountSucceeds() {
         String RECEIVER = "RECEIVER";
         final String aliasBalanceSnapshot = "aliasBalance";
         return defaultHapiSpec("ETX_010_transferToCryptoAccountSucceeds")
@@ -453,7 +506,7 @@ public class EthereumSuite extends HapiApiSuite {
                                         changeFromSnapshot(aliasBalanceSnapshot, -FIVE_HBARS)));
     }
 
-    List<HapiApiSpec> feePaymentMatrix() {
+    List<HapiSpec> feePaymentMatrix() {
         final long gasPrice = 71;
         final long chargedGasLimit = GAS_LIMIT * 4 / 5;
 
@@ -494,7 +547,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .toList();
     }
 
-    HapiApiSpec matrixedPayerRelayerTest(
+    HapiSpec matrixedPayerRelayerTest(
             final boolean success,
             final long senderGasPrice,
             final long relayerOffered,
@@ -575,11 +628,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 }));
     }
 
-    HapiApiSpec setChainId() {
-        return defaultHapiSpec("SetChainId").given().when().then(overriding(CHAIN_ID_PROP, "298"));
-    }
-
-    HapiApiSpec invalidTxData() {
+    HapiSpec invalidTxData() {
         return defaultHapiSpec("InvalidTxData")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -606,7 +655,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .then();
     }
 
-    HapiApiSpec ETX_014_contractCreateInheritsSignerProperties() {
+    HapiSpec etx014ContractCreateInheritsSignerProperties() {
         final AtomicReference<String> contractID = new AtomicReference<>();
         final String MEMO = "memo";
         final String PROXY = "proxy";
@@ -663,7 +712,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                                 .memo(MEMO))));
     }
 
-    HapiApiSpec ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer() {
+    HapiSpec etx031InvalidNonceEthereumTxFailsAndChargesRelayer() {
         final var relayerSnapshot = "relayer";
         final var senderSnapshot = "sender";
         return defaultHapiSpec("ETX_031_invalidNonceEthereumTxFailsAndChargesRelayer")
@@ -719,28 +768,7 @@ public class EthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(0L)));
     }
 
-    HapiApiSpec accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation() {
-        final String ACCOUNT = "account";
-        return defaultHapiSpec(
-                        "ETX_026_accountWithoutAliasCanMakeEthTxnsDueToAutomaticAliasCreation")
-                .given(
-                        UtilVerbs.overriding(CRYPTO_CREATE_WITH_ALIAS_ENABLED, "false"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        overriding("cryptoCreateWithAlias.enabled", "false"),
-                        cryptoCreate(ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(ONE_HUNDRED_HBARS))
-                .when(
-                        ethereumContractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(ACCOUNT)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .nonce(0)
-                                .gasLimit(GAS_LIMIT)
-                                .hasKnownStatus(INVALID_ACCOUNT_ID))
-                .then(UtilVerbs.resetToDefault(CRYPTO_CREATE_WITH_ALIAS_ENABLED));
-    }
-
-    HapiApiSpec ETX_012_precompileCallSucceedsWhenNeededSignatureInEthTxn() {
+    HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -806,7 +834,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                                         ETH_HASH_KEY)))))));
     }
 
-    HapiApiSpec ETX_013_precompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+    HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -875,7 +903,7 @@ public class EthereumSuite extends HapiApiSuite {
                                                                                                         ETH_HASH_KEY)))))));
     }
 
-    HapiApiSpec ETX_013_precompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
+    HapiSpec etx013PrecompileCallFailsWhenSignatureMissingFromBothEthereumAndHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = "token";
         final String mintTxn = "mintTxn";
@@ -942,7 +970,7 @@ public class EthereumSuite extends HapiApiSuite {
                                 recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)));
     }
 
-    HapiApiSpec ETX_009_callsToTokenAddresses() {
+    HapiSpec etx009CallsToTokenAddresses() {
         final AtomicReference<String> tokenNum = new AtomicReference<>();
         final var totalSupply = 50;
 
@@ -1003,7 +1031,7 @@ public class EthereumSuite extends HapiApiSuite {
     }
 
     // ETX-011 and ETX-030
-    HapiApiSpec originAndSenderAreEthereumSigner() {
+    HapiSpec originAndSenderAreEthereumSigner() {
         return defaultHapiSpec("originAndSenderAreEthereumSigner")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
@@ -1067,7 +1095,7 @@ public class EthereumSuite extends HapiApiSuite {
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().nonce(1L)));
     }
 
-    private HapiApiSpec ETX_008_contractCreateExecutesWithExpectedRecord() {
+    private HapiSpec etx008ContractCreateExecutesWithExpectedRecord() {
         final var txn = "creation";
         final var contract = "Fuse";
 
@@ -1101,7 +1129,7 @@ public class EthereumSuite extends HapiApiSuite {
                 .then();
     }
 
-    private HapiApiSpec ETX_007_fungibleTokenCreateWithFeesHappyPath() {
+    private HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollector = "feeCollector";
         final var contract = "TokenCreateContract";
@@ -1191,10 +1219,10 @@ public class EthereumSuite extends HapiApiSuite {
                                 }));
     }
 
-    private HapiApiSpec ETX_SVC_003_contractGetBytecodeQueryReturnsDeployedCode() {
+    private HapiSpec etxSvc003ContractGetBytecodeQueryReturnsDeployedCode() {
         final var txn = "creation";
         final var contract = "EmptyConstructor";
-        return HapiApiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
+        return HapiSpec.defaultHapiSpec("contractGetBytecodeQueryReturnsDeployedCode")
                 .given(
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),

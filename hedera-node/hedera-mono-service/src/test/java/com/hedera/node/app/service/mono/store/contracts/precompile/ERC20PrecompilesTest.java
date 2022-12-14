@@ -81,6 +81,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.fee.FeeObject;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.BalanceOfWrapper;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.mono.context.SideEffectsTracker;
 import com.hedera.node.app.service.mono.context.primitives.StateView;
@@ -181,6 +182,7 @@ class ERC20PrecompilesTest {
     @Mock private TxnAwareEvmSigsVerifier sigsVerifier;
     @Mock private RecordsHistorian recordsHistorian;
     @Mock private EncodingFacade encoder;
+    @Mock private EvmEncodingFacade evmEncoder;
     @Mock private SideEffectsTracker sideEffects;
     @Mock private TransactionBody.Builder mockSynthBodyBuilder;
     @Mock private ExpirableTxnRecord.Builder mockRecordBuilder;
@@ -254,6 +256,7 @@ class ERC20PrecompilesTest {
                         recordsHistorian,
                         sigsVerifier,
                         encoder,
+                        evmEncoder,
                         syntheticTxnFactory,
                         creator,
                         () -> feeCalculator,
@@ -473,7 +476,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeName(any())).willReturn(successResult);
+        given(evmEncoder.encodeName(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(frame.getBlockValues()).willReturn(blockValues);
         given(blockValues.getTimestamp()).willReturn(TEST_CONSENSUS_TIME);
@@ -592,7 +595,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeName(any())).willReturn(successResult);
+        given(evmEncoder.encodeName(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
         given(dynamicProperties.shouldExportPrecompileResults()).willReturn(true);
 
@@ -636,7 +639,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getNodeFee()).willReturn(1L);
         given(mockFeeObject.getNetworkFee()).willReturn(1L);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
-        given(encoder.encodeSymbol(any())).willReturn(successResult);
+        given(evmEncoder.encodeSymbol(any())).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -676,7 +679,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(wrappedLedgers.decimalsOf(token)).willReturn(10);
-        given(encoder.encodeDecimals(10)).willReturn(successResult);
+        given(evmEncoder.encodeDecimals(10)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -716,7 +719,7 @@ class ERC20PrecompilesTest {
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
         given(wrappedLedgers.totalSupplyOf(token)).willReturn(10L);
-        given(encoder.encodeTotalSupply(10L)).willReturn(successResult);
+        given(evmEncoder.encodeTotalSupply(10L)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -768,7 +771,7 @@ class ERC20PrecompilesTest {
                 .when(() -> AllowancePrecompile.decodeTokenAllowance(any(), any(), any()))
                 .thenReturn(ALLOWANCE_WRAPPER);
         given(accounts.get(any(), any())).willReturn(allowances);
-        given(encoder.encodeAllowance(10L)).willReturn(successResult);
+        given(evmEncoder.encodeAllowance(10L)).willReturn(successResult);
         given(wrappedLedgers.typeOf(token)).willReturn(TokenType.FUNGIBLE_COMMON);
 
         // when:
@@ -866,7 +869,7 @@ class ERC20PrecompilesTest {
                 .when(() -> BalanceOfPrecompile.decodeBalanceOf(eq(nestedPretendArguments), any()))
                 .thenReturn(BALANCE_OF_WRAPPER);
         given(wrappedLedgers.balanceOf(any(), any())).willReturn(10L);
-        given(encoder.encodeBalance(10L)).willReturn(successResult);
+        given(evmEncoder.encodeBalance(10L)).willReturn(successResult);
 
         entityIdUtils
                 .when(() -> EntityIdUtils.tokenIdFromEvmAddress(fungibleTokenAddr.toArray()))

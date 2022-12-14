@@ -15,16 +15,16 @@
  */
 package com.hedera.services.bdd.spec.utilops;
 
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LogMessage extends UtilOp {
     static final Logger log = LogManager.getLogger(CustomSpecAssert.class);
-    private final Function<HapiApiSpec, String> messageFn;
+    private final Function<HapiSpec, String> messageFn;
 
-    public LogMessage(Function<HapiApiSpec, String> messageFn) {
+    public LogMessage(Function<HapiSpec, String> messageFn) {
         this.messageFn = messageFn;
     }
 
@@ -33,7 +33,7 @@ public class LogMessage extends UtilOp {
     }
 
     @Override
-    protected boolean submitOp(HapiApiSpec spec) {
+    protected boolean submitOp(HapiSpec spec) {
         log.info(messageFn.apply(spec));
         return false;
     }

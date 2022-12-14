@@ -18,6 +18,7 @@ package com.hedera.node.app.service.mono.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrueOrRevert;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.OwnerOfAndTokenURIWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
 import com.hedera.node.app.service.mono.state.submerkle.ExpirableTxnRecord;
@@ -41,8 +42,9 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile implements Evm
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     @Override
@@ -67,7 +69,7 @@ public class OwnerOfPrecompile extends AbstractReadOnlyPrecompile implements Evm
         validateTrueOrRevert(nftsLedger.contains(nftId), INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var owner = ledgers.ownerOf(nftId);
         final var priorityAddress = ledgers.canonicalAddress(owner);
-        return encoder.encodeOwner(priorityAddress);
+        return evmEncoder.encodeOwner(priorityAddress);
     }
 
     public static OwnerOfAndTokenURIWrapper decodeOwnerOf(final Bytes input) {

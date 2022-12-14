@@ -15,8 +15,8 @@
  */
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiApiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractLogAsserts.logWith;
@@ -61,12 +61,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiApiSpec;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.suites.HapiApiSuite;
+import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.FunctionParameters;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -85,7 +85,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-public class ContractMintHTSSuite extends HapiApiSuite {
+public class ContractMintHTSSuite extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(ContractMintHTSSuite.class);
 
@@ -114,7 +114,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     private static final String MINT_FUNGIBLE_TOKEN = "mintFungibleToken";
 
     public static void main(final String... args) {
-        new ContractMintHTSSuite().runSuiteSync();
+        new ContractMintHTSSuite().runSuiteAsync();
     }
 
     @Override
@@ -123,18 +123,18 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     }
 
     @Override
-    public List<HapiApiSpec> getSpecsInSuite() {
+    public List<HapiSpec> getSpecsInSuite() {
         return allOf(positiveSpecs(), negativeSpecs());
     }
 
-    List<HapiApiSpec> negativeSpecs() {
+    List<HapiSpec> negativeSpecs() {
         return List.of(
                 rollbackOnFailedMintAfterFungibleTransfer(),
                 rollbackOnFailedAssociateAfterNonFungibleMint(),
                 gasCostNotMetSetsInsufficientGasStatusInChildRecord());
     }
 
-    List<HapiApiSpec> positiveSpecs() {
+    List<HapiSpec> positiveSpecs() {
         return List.of(
                 helloWorldFungibleMint(),
                 helloWorldNftMint(),
@@ -144,7 +144,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                 happyPathZeroUnitFungibleTokenMint());
     }
 
-    private HapiApiSpec happyPathZeroUnitFungibleTokenMint() {
+    private HapiSpec happyPathZeroUnitFungibleTokenMint() {
         final var amount = 0L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -197,7 +197,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                         .newTotalSupply(0)));
     }
 
-    private HapiApiSpec helloWorldFungibleMint() {
+    private HapiSpec helloWorldFungibleMint() {
         final var amount = 1_234_567L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
 
@@ -257,7 +257,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                 amount))));
     }
 
-    private HapiApiSpec helloWorldNftMint() {
+    private HapiSpec helloWorldNftMint() {
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
         return defaultHapiSpec("HelloWorldNftMint")
@@ -331,7 +331,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                         .serialNos(List.of(2L))));
     }
 
-    private HapiApiSpec happyPathFungibleTokenMint() {
+    private HapiSpec happyPathFungibleTokenMint() {
         final var amount = 10L;
         final var gasUsed = 14085L;
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
@@ -402,7 +402,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                         .newTotalSupply(10)));
     }
 
-    private HapiApiSpec happyPathNonFungibleTokenMint() {
+    private HapiSpec happyPathNonFungibleTokenMint() {
         final var totalSupply = 2;
         final AtomicReference<TokenID> nonFungible = new AtomicReference<>();
 
@@ -480,7 +480,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                         .serialNos(Arrays.asList(1L, 2L))));
     }
 
-    private HapiApiSpec transferNftAfterNestedMint() {
+    private HapiSpec transferNftAfterNestedMint() {
         final var nestedTransferTxn = "nestedTransferTxn";
 
         return defaultHapiSpec("TransferNftAfterNestedMint")
@@ -630,7 +630,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    private HapiApiSpec rollbackOnFailedMintAfterFungibleTransfer() {
+    private HapiSpec rollbackOnFailedMintAfterFungibleTransfer() {
         final var failedMintTxn = "failedMintTxn";
 
         return defaultHapiSpec("RollbackOnFailedMintAfterFungibleTransfer")
@@ -711,7 +711,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                         .withSerialNumbers()))));
     }
 
-    private HapiApiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
+    private HapiSpec rollbackOnFailedAssociateAfterNonFungibleMint() {
         final var nestedMintTxn = "nestedMintTxn";
 
         return defaultHapiSpec("RollbackOnFailedAssociateAfterNonFungibleMint")
@@ -791,7 +791,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
                                                                                 INVALID_TOKEN_ID)))));
     }
 
-    private HapiApiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
+    private HapiSpec gasCostNotMetSetsInsufficientGasStatusInChildRecord() {
         final var amount = 10L;
         final var baselineMintWithEnoughGas = "baselineMintWithEnoughGas";
 
@@ -877,7 +877,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     }
 
     private long expectedPrecompileGasFor(
-            final HapiApiSpec spec, final HederaFunctionality function, final SubType type) {
+            final HapiSpec spec, final HederaFunctionality function, final SubType type) {
         final var gasThousandthsOfTinycentPrice =
                 spec.fees()
                         .getCurrentOpFeeData()
@@ -901,7 +901,7 @@ public class ContractMintHTSSuite extends HapiApiSuite {
     }
 
     @NotNull
-    private String getNestedContractAddress(final String contract, final HapiApiSpec spec) {
+    private String getNestedContractAddress(final String contract, final HapiSpec spec) {
         return AssociatePrecompileSuite.getNestedContractAddress(contract, spec);
     }
 

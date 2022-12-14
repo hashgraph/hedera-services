@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
 import com.hedera.node.app.service.mono.ledger.TransactionalLedger;
@@ -65,8 +66,9 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
             final SyntheticTxnFactory syntheticTxnFactory,
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
+            final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
-        super(tokenId, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        super(tokenId, syntheticTxnFactory, ledgers, encoder, evmEncoder, pricingUtils);
     }
 
     public AllowancePrecompile(
@@ -74,7 +76,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
             final WorldLedgers ledgers,
             final EncodingFacade encoder,
             final PrecompilePricingUtils pricingUtils) {
-        this(null, syntheticTxnFactory, ledgers, encoder, pricingUtils);
+        this(null, syntheticTxnFactory, ledgers, encoder, null, pricingUtils);
     }
 
     @Override
@@ -102,7 +104,7 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile
         final var value = allowances.getOrDefault(fcTokenAllowanceId, 0L);
         return tokenId == null
                 ? encoder.encodeAllowance(SUCCESS.getNumber(), value)
-                : encoder.encodeAllowance(value);
+                : evmEncoder.encodeAllowance(value);
     }
 
     public static TokenAllowanceWrapper<TokenID, AccountID, AccountID> decodeTokenAllowance(
