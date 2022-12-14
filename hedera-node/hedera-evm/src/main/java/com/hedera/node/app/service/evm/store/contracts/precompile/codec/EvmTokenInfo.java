@@ -47,7 +47,6 @@ public class EvmTokenInfo {
     private Address autoRenewAccount;
     private long autoRenewPeriod;
 
-
     public EvmTokenInfo(
             byte[] ledgerId,
             int tokenType,
