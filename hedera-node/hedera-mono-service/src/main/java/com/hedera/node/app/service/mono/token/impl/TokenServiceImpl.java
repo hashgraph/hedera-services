@@ -15,7 +15,6 @@
  */
 package com.hedera.node.app.service.mono.token.impl;
 
-import com.hedera.node.app.service.token.CryptoService;
 import com.hedera.node.app.service.token.TokenPreTransactionHandler;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.PreHandleContext;
@@ -23,7 +22,7 @@ import com.hedera.node.app.spi.state.States;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
-/** An implementation of the {@link CryptoService} interface. */
+/** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
     @NonNull
     @Override

@@ -86,7 +86,7 @@ public class TokenPreTransactionHandlerImplTest {
 
     @Test
     void tokenWipeVanilla() {
-        final var keyUsed = (JKey) randomKey;
+        final var wipeKey = (JKey) randomKey;
         final var txn = tokenWipeTransaction(true);
         final var expectedMeta =
                 new SigTransactionMetadataBuilder(accountStore)
@@ -100,7 +100,7 @@ public class TokenPreTransactionHandlerImplTest {
                                 new TokenStore.TokenMetadata(
                                         null,
                                         null,
-                                        Optional.of(keyUsed),
+                                        Optional.of(wipeKey),
                                         null,
                                         null,
                                         null,
@@ -115,7 +115,7 @@ public class TokenPreTransactionHandlerImplTest {
         assertFalse(meta.requiredNonPayerKeys().contains(payerKey));
         basicMetaAssertions(meta, 1, false, OK);
         assertEquals(payerKey, meta.payerKey());
-        assertIterableEquals(List.of(keyUsed), meta.requiredNonPayerKeys());
+        assertIterableEquals(List.of(wipeKey), meta.requiredNonPayerKeys());
     }
 
     @Test
