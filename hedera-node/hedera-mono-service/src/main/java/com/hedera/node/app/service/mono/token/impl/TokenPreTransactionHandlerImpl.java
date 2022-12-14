@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -123,18 +122,16 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
     }
 
     /**
-     * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed
-     * for signing the transaction
+     * Returns metadata for {@code TokenCreate} transaction needed to validate signatures needed for
+     * signing the transaction
      *
-     * @param txn            given transaction body
-     * @param payer          payer for the transaction
+     * @param txn given transaction body
+     * @param payer payer for the transaction
      * @param receiverSigReq flag for receiverSigReq on the given transaction body
      * @return transaction's metadata needed to validate signatures
      */
     private TransactionMetadata buildSigTransactionMetadata(
-            final TransactionBody txn,
-            final AccountID payer,
-            final boolean receiverSigReq) {
+            final TransactionBody txn, final AccountID payer, final boolean receiverSigReq) {
         final var tokenCreateTxnBody = txn.getTokenCreation();
         final var customFees = tokenCreateTxnBody.getCustomFeesList();
         final var treasuryId = tokenCreateTxnBody.getTreasury();
@@ -151,8 +148,10 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
         return meta.build();
     }
 
-    private void addCustomFeeKey(final SigTransactionMetadataBuilder meta, final List<CustomFee> customFeesList,
-                                 final boolean sigRequirement) {
+    private void addCustomFeeKey(
+            final SigTransactionMetadataBuilder meta,
+            final List<CustomFee> customFeesList,
+            final boolean sigRequirement) {
         final var failureStatus = INVALID_FEE_COLLECTOR_ACCOUNT_ID;
         for (final var customFee : customFeesList) {
             final var collector = customFee.getFeeCollectorAccountId();
@@ -162,8 +161,9 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             final boolean alwaysAdd;
             if (customFee.hasFixedFee()) {
                 final var fixedFee = customFee.getFixedFee();
-                alwaysAdd = fixedFee.hasDenominatingTokenId()
-                        && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
+                alwaysAdd =
+                        fixedFee.hasDenominatingTokenId()
+                                && fixedFee.getDenominatingTokenId().getTokenNum() == 0L;
                 if (alwaysAdd || sigRequirement) {
                     meta.addNonPayerKey(collector, failureStatus);
                 }
@@ -173,7 +173,9 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
                 final var royaltyFee = customFee.getRoyaltyFee();
                 if (royaltyFee.hasFallbackFee()) {
                     final var fFee = royaltyFee.getFallbackFee();
-                    alwaysAdd = fFee.hasDenominatingTokenId() && fFee.getDenominatingTokenId().getTokenNum() == 0;
+                    alwaysAdd =
+                            fFee.hasDenominatingTokenId()
+                                    && fFee.getDenominatingTokenId().getTokenNum() == 0;
                     if (alwaysAdd || sigRequirement) {
                         meta.addNonPayerKey(collector, failureStatus);
                     }
@@ -183,5 +185,4 @@ public final class TokenPreTransactionHandlerImpl implements TokenPreTransaction
             }
         }
     }
-
 }
