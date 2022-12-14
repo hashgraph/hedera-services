@@ -266,18 +266,42 @@ class SchedulePreTransactionHandlerImplTest {
     }
 
     @Test
-    void scheduleSignVanilla() {
+    void scheduleSignVanillaNoExplicitPayer() {
         final var txn = scheduleSignTransaction();
-        final var ordinaryScheduledTxn = TransactionBody.newBuilder()
-                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler).build())
-                .build();
-        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
-        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
-        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(ordinaryScheduledTxn);
-        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
-        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(scheduler));
+        givenSetupForScheduleSign(txn);
+        final var meta = subject.preHandleSignSchedule(txn, scheduler, dispatcher);
+        assertEquals(scheduler, meta.payer());
+        assertEquals(schedulerKey, meta.payerKey());
+        assertEquals(List.of(), meta.requiredNonPayerKeys());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
+        assertEquals(OK, meta.status());
+    }
+
+    @Test
+    void scheduleSignFailsIfScheduleMissing() {
+        final var txn = scheduleSignTransaction();
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.empty());
+        final var meta = subject.preHandleSignSchedule(txn, scheduler, dispatcher);
+        assertEquals(scheduler, meta.payer());
+        assertEquals(null, meta.payerKey());
+        assertEquals(null, meta.scheduledMeta());
+        assertEquals(INVALID_SCHEDULE_ID, meta.status());
+        assertTrue(meta instanceof InvalidTransactionMetadata);
+    }
+
+    @Test
+    void scheduleSignVanillaWithOptionalPayerSet() {
+        final var txn = scheduleSignTransaction();
+        given(schedule.hasExplicitPayer()).willReturn(true);
+        given(schedule.payer()).willReturn(EntityId.fromGrpcAccountId(payer));
+        given(keyLookup.getKey(payer)).willReturn(KeyOrLookupFailureReason.withKey(adminKey));
 
         final var meta = subject.preHandleSignSchedule(txn, scheduler, dispatcher);
+        assertEquals(scheduler, meta.payer());
+        assertEquals(payer, meta.payerKey());
+        assertEquals(scheduledMeta, meta.scheduledMeta());
+        assertEquals(INVALID_SCHEDULE_ID, meta.status());
+        assertEquals(INVALID_SCHEDULE_ID, meta.status());
     }
 
     @Test
@@ -308,6 +332,28 @@ class SchedulePreTransactionHandlerImplTest {
         assertEquals(nonPayerKeysSize, meta.requiredNonPayerKeys().size());
         assertTrue(failed ? meta.failed() : !meta.failed());
         assertEquals(failureStatus, meta.status());
+    }
+
+    private TransactionBody givenSetupForScheduleSign(TransactionBody txn) {
+        final var ordinaryScheduledTxn = TransactionBody.newBuilder()
+                .setTransactionID(TransactionID.newBuilder().setAccountID(scheduler).build())
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.getDefaultInstance())
+                .build();
+        scheduledMeta =
+                new SigTransactionMetadata(
+                        asOrdinary(
+                                txn.getScheduleCreate().getScheduledTransactionBody(),
+                                txn.getTransactionID()),
+                        scheduler,
+                        OK,
+                        schedulerKey,
+                        List.of());
+        given(schedulesById.get(scheduleID.getScheduleNum())).willReturn(Optional.of(schedule));
+        given(keyLookup.getKey(scheduler)).willReturn(KeyOrLookupFailureReason.withKey(schedulerKey));
+        given(schedule.ordinaryViewOfScheduledTxn()).willReturn(ordinaryScheduledTxn);
+        given(schedule.adminKey()).willReturn(Optional.of(adminJKey));
+        given(dispatcher.dispatch(ordinaryScheduledTxn, scheduler)).willReturn(scheduledMeta);
+        return ordinaryScheduledTxn;
     }
 
     private TransactionBody scheduleCreateTransaction(final AccountID payer) {

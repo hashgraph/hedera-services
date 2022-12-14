@@ -88,14 +88,14 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         final var op = txn.getScheduleSign();
         final var id = op.getScheduleID();
 
+        final var scheduleLookupResult = scheduleStore.get(id);
+        if (scheduleLookupResult.isEmpty()) {
+            return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
+        }
+
         final var meta = new ScheduleSigTransactionMetadataBuilder(keyLookup)
                 .txnBody(txn)
                 .payerKeyFor(payer);
-
-        final var scheduleLookupResult = scheduleStore.get(id);
-        if(scheduleLookupResult.isEmpty()) {
-            return meta.status(INVALID_SCHEDULE_ID).build();
-        }
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
