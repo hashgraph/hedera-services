@@ -119,7 +119,7 @@ public class TokenUpdateKeysPrecompile extends AbstractTokenUpdatePrecompile {
                                                 ledgers,
                                                 aliases),
                                         INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE,
-                                        "New admin account signature missing in token update"
+                                        NEW_ADMIN_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE
                                                 + " keys!"));
 
         super.run(frame);

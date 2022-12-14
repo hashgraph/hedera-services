@@ -76,8 +76,6 @@ public class TokenUpdatePrecompile extends AbstractTokenUpdatePrecompile {
             Bytes.wrap(TOKEN_UPDATE_INFO_FUNCTION_V3.selector());
     private static final String TREASURY_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE =
             "Treasury account signature missing in token update!";
-    private static final String NEW_ADMIN_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE =
-            "New admin account signature missing in token update!";
     private TokenUpdateWrapper updateOp;
     private final int functionId;
     private final Address senderAddress;

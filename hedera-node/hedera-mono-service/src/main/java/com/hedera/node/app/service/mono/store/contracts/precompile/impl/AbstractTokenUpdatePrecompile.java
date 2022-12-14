@@ -35,6 +35,8 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecompile {
+    protected static final String NEW_ADMIN_ACCOUNT_SIGNATURE_MISSING_IN_TOKEN_UPDATE =
+            "New admin account signature missing in token update!";
     protected final ContractAliases aliases;
     protected final EvmSigsVerifier sigsVerifier;
     protected UpdateType type;
