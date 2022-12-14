@@ -38,7 +38,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDeleteAli
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdateAliased;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.sortedCryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -66,7 +65,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -136,7 +134,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
-    public static final String CONTRACTS_CHAIN_ID = "contracts.chainId";
     public static final String ANOTHER_SECP_256K1_SOURCE_KEY = "anotherSecp256k1Alias";
 
     public static void main(String... args) {
@@ -172,7 +169,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 noStakePeriodStartIfNotStakingToNode(),
                 hollowAccountCreationWithCryptoTransfer(),
                 hollowAccountCompletionWithCryptoTransfer(),
-                hollowAccountCompletionWithEthereumTransaction(),
+                //                hollowAccountCompletionWithEthereumTransaction(),
                 hollowAccountCompletionWithContractCreate(),
                 hollowAccountCompletionWithContractCall(),
                 hollowAccountCompletionWithTokenAssociation(),
@@ -1004,77 +1001,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                 }));
     }
 
-    private HapiSpec hollowAccountCompletionWithEthereumTransaction() {
-        final String CONTRACT = "Fuse";
-        return defaultHapiSpec("HollowAccountCompletionWithEthereumTransaction")
-                .given(
-                        overriding(CONTRACTS_CHAIN_ID, "298"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
-                        uploadInitCode(CONTRACT))
-                .when()
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry()
-                                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                                    .getECDSASecp256K1()
-                                                    .toByteArray();
-                                    final var evmAddress =
-                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                    final var op =
-                                            cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    2 * ONE_HUNDRED_HBARS))
-                                                    .hasKnownStatus(SUCCESS)
-                                                    .via(TRANSFER_TXN);
-
-                                    final HapiGetTxnRecord hapiGetTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN)
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    allRunFor(spec, op, hapiGetTxnRecord);
-
-                                    final AccountID newAccountID =
-                                            hapiGetTxnRecord
-                                                    .getChildRecord(0)
-                                                    .getReceipt()
-                                                    .getAccountID();
-                                    spec.registry()
-                                            .saveAccountId(SECP_256K1_SOURCE_KEY, newAccountID);
-
-                                    final var op2 =
-                                            ethereumContractCreate(CONTRACT)
-                                                    .type(
-                                                            EthTxData.EthTransactionType
-                                                                    .LEGACY_ETHEREUM)
-                                                    .gasLimit(1_000_000)
-                                                    .signingWith(SECP_256K1_SOURCE_KEY)
-                                                    .payingWith(RELAYER)
-                                                    .hasKnownStatus(SUCCESS)
-                                                    .via(TRANSFER_TXN_2);
-
-                                    final var op3 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .has(
-                                                            accountWith()
-                                                                    .key(SECP_256K1_SOURCE_KEY)
-                                                                    .evmAddressAlias(evmAddress));
-
-                                    final HapiGetTxnRecord hapiGetSecondTxnRecord =
-                                            getTxnRecord(TRANSFER_TXN_2)
-                                                    .andAllChildRecords()
-                                                    .logged();
-
-                                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                                }),
-                        resetToDefault(CONTRACTS_CHAIN_ID));
-    }
-
     private HapiSpec hollowAccountCompletionWithContractCreate() {
         final String CONTRACT = "CreateTrivial";
         return defaultHapiSpec("HollowAccountCompletionWithContractCreate")
@@ -1220,7 +1146,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
         final String VANILLA_TOKEN = "TokenD";
         return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
                 .given(
-                        overriding(CONTRACTS_CHAIN_ID, "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
@@ -1283,8 +1208,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                     .logged();
 
                                     allRunFor(spec, op2, op3, hapiGetSecondTxnRecord);
-                                }),
-                        resetToDefault(CONTRACTS_CHAIN_ID));
+                                }));
     }
 
     private HapiSpec completedHollowAccountsTransfer() {
