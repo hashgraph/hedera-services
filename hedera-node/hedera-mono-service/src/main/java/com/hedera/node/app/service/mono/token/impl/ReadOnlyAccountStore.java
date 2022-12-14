@@ -38,8 +38,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms
- * for working with Accounts.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Accounts.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
