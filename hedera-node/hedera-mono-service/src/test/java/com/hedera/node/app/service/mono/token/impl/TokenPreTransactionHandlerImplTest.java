@@ -1,4 +1,31 @@
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.node.app.service.mono.token.impl;
+
+import static com.hedera.node.app.service.mono.Utils.asHederaKey;
+import static com.hedera.node.app.service.mono.utils.KeyUtils.A_COMPLEX_KEY;
+import static com.hedera.test.utils.IdUtils.asAccount;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
 import com.hedera.node.app.service.mono.state.impl.InMemoryStateImpl;
@@ -16,30 +43,18 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.node.app.service.mono.Utils.asHederaKey;
-import static com.hedera.node.app.service.mono.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.IdUtils.asAccount;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-
 @ExtendWith(MockitoExtension.class)
 public class TokenPreTransactionHandlerImplTest {
-    private final Timestamp consensusTimestamp = Timestamp.newBuilder().setSeconds(1_234_567L).build();
+    private final Timestamp consensusTimestamp =
+            Timestamp.newBuilder().setSeconds(1_234_567L).build();
     private final AccountID payer = asAccount("0.0.3");
     private final HederaKey payerKey = asHederaKey(A_COMPLEX_KEY).get();
     private final HederaKey randomKey = asHederaKey(A_COMPLEX_KEY).get();
@@ -74,13 +89,24 @@ public class TokenPreTransactionHandlerImplTest {
         final var keyUsed = (JKey) randomKey;
         final var txn = tokenWipeTransaction(true);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
                         new TokenStore.TokenMetaOrLookupFailureReason(
                                 new TokenStore.TokenMetadata(
-                                        null, null, Optional.of(keyUsed), null, null, null, null, false, null),
+                                        null,
+                                        null,
+                                        Optional.of(keyUsed),
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        false,
+                                        null),
                                 null));
 
         final var meta = subject.preHandleWipeTokenAccount(txn);
@@ -96,7 +122,10 @@ public class TokenPreTransactionHandlerImplTest {
     void tokenWipeNoTokenFails() {
         final var txn = tokenWipeTransaction(false);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
         final var meta = subject.preHandleWipeTokenAccount(txn);
 
@@ -110,7 +139,10 @@ public class TokenPreTransactionHandlerImplTest {
     void tokenWipeNoKeyAddedIfTokenMetaFailed() {
         final var txn = tokenWipeTransaction(true);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
@@ -131,13 +163,24 @@ public class TokenPreTransactionHandlerImplTest {
     void tokenWipeNoWipeKeyFails() {
         final var txn = tokenWipeTransaction(true);
         final var expectedMeta =
-                new SigTransactionMetadataBuilder(accountStore).payerKeyFor(payer).txnBody(txn).build();
+                new SigTransactionMetadataBuilder(accountStore)
+                        .payerKeyFor(payer)
+                        .txnBody(txn)
+                        .build();
 
         given(tokenStore.getTokenMeta(any()))
                 .willReturn(
                         new TokenStore.TokenMetaOrLookupFailureReason(
                                 new TokenStore.TokenMetadata(
-                                        null, null, Optional.empty(), null, null, null, null, false, null),
+                                        null,
+                                        null,
+                                        Optional.empty(),
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        false,
+                                        null),
                                 null));
 
         final var meta = subject.preHandleWipeTokenAccount(txn);
@@ -154,15 +197,20 @@ public class TokenPreTransactionHandlerImplTest {
                         .setAccountID(payer)
                         .setTransactionValidStart(consensusTimestamp);
         final var wipeTxBody =
-                TokenWipeAccountTransactionBody.newBuilder().setToken(
-                        TokenID.newBuilder()
-                        .setTokenNum(666)
-                        .setRealmNum(0)
-                        .setShardNum(0).build());
+                TokenWipeAccountTransactionBody.newBuilder()
+                        .setToken(
+                                TokenID.newBuilder()
+                                        .setTokenNum(666)
+                                        .setRealmNum(0)
+                                        .setShardNum(0)
+                                        .build());
 
         return TransactionBody.newBuilder()
                 .setTransactionID(transactionID)
-                .setTokenWipe(withToken ? wipeTxBody : TokenWipeAccountTransactionBody.getDefaultInstance().toBuilder())
+                .setTokenWipe(
+                        withToken
+                                ? wipeTxBody
+                                : TokenWipeAccountTransactionBody.getDefaultInstance().toBuilder())
                 .build();
     }
 
