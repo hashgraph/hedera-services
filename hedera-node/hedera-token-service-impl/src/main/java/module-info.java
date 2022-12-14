@@ -21,4 +21,7 @@ module com.hedera.node.app.service.token.impl {
 			com.hedera.node.app.service.token.impl.test;
 	exports com.hedera.node.app.service.token.impl.util to
 			com.hedera.node.app.service.token.impl.test;
+
+	opens com.hedera.node.app.service.token.impl.util to
+			com.hedera.node.app.service.token.impl.test;
 }
