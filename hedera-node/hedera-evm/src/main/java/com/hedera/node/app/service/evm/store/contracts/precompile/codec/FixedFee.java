@@ -19,11 +19,11 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class FixedFee {
 
-    private long amount;
-    private Address denominatingTokenId;
-    private boolean useHbarsForPayment;
-    private boolean useCurrentTokenForPayment;
-    private Address feeCollector;
+    private final long amount;
+    private final Address denominatingTokenId;
+    private final boolean useHbarsForPayment;
+    private final boolean useCurrentTokenForPayment;
+    private final Address feeCollector;
 
     public FixedFee(
             long amount,

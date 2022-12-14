@@ -19,12 +19,12 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class RoyaltyFee {
 
-    private long numerator;
-    private long denominator;
-    private long amount;
-    private Address denominatingTokenId;
-    private boolean useHbarsForPayment;
-    private Address feeCollector;
+    private final long numerator;
+    private final long denominator;
+    private final long amount;
+    private final Address denominatingTokenId;
+    private final boolean useHbarsForPayment;
+    private final Address feeCollector;
 
     public RoyaltyFee(
             long numerator,

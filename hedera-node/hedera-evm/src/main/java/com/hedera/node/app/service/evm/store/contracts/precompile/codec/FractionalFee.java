@@ -19,12 +19,12 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class FractionalFee {
 
-    private long numerator;
-    private long denominator;
-    private long getMinimumAmount;
-    private long getMaximumAmount;
-    private boolean netOfTransfers;
-    private Address feeCollector;
+    private final long numerator;
+    private final long denominator;
+    private final long getMinimumAmount;
+    private final long getMaximumAmount;
+    private final boolean netOfTransfers;
+    private final Address feeCollector;
 
     public FractionalFee(
             long numerator,
