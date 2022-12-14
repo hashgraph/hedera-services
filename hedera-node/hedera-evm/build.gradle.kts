@@ -57,6 +57,5 @@ dependencies {
     implementation(libs.dagger.compiler)
     implementation(libs.javax.inject)
 
-
     testImplementation(testLibs.mockito.jupiter)
 }
