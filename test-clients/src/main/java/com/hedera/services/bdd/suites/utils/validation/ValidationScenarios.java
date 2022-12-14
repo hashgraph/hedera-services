@@ -1737,7 +1737,7 @@ public class ValidationScenarios extends HapiSuite {
                                         allRunFor(spec, allUpdates);
                                     }));
         } catch (Exception e) {
-            log.warn("Unable to initialize consensus scenario, skipping it!", e);
+            log.warn("Unable to initialize staking scenario, skipping it!", e);
             errorsOccurred.set(true);
             return null;
         }
