@@ -45,7 +45,7 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
     protected final AccountKeyLookup keyLookup;
     protected AccountID payer;
 
-    public TransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
+    protected TransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
         this.keyLookup = Objects.requireNonNull(keyLookup);
     }
 
