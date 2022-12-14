@@ -138,8 +138,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
                 getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
-                hollowAccountCreationViaCryptoCreateChargesExpectedFees(),
-                hollowAccountCreationViaCryptoTransferChargesExpectedFees());
+                hollowAccountCreationChargesExpectedFees());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -698,14 +697,14 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
     }
 
-    private HapiSpec hollowAccountCreationViaCryptoCreateChargesExpectedFees() {
+    private HapiSpec hollowAccountCreationChargesExpectedFees() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;
         final long REDUCED_SERVICE_FEE = 3L;
         final long REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
         final var payer = "payer";
         final var secondKey = "secondKey";
-        return propertyPreservingHapiSpec("hollowAccountCreationViaCryptoCreateChargesExpectedFees")
+        return propertyPreservingHapiSpec("hollowAccountCreationChargesExpectedFees")
                 .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
                 .given(
                         overridingTwo(
@@ -822,112 +821,6 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                                             uploadDefaultFeeSchedules(GENESIS));
                                 }))
                 .then(uploadDefaultFeeSchedules(GENESIS));
-    }
-
-    private HapiSpec hollowAccountCreationViaCryptoTransferChargesExpectedFees() {
-        final var LAZY_CREATE_SPONSOR = "lazyCreateSponsor";
-        final var REDUCED_NODE_FEE = 2L;
-        final var REDUCED_NETWORK_FEE = 3L;
-        final var REDUCED_SERVICE_FEE = 3L;
-        final var REDUCED_TOTAL_FEE = REDUCED_NODE_FEE + REDUCED_NETWORK_FEE + REDUCED_SERVICE_FEE;
-        return propertyPreservingHapiSpec(
-                        "FeesAreCorrectForHollowAccountCreationWithCryptoTransfer")
-                .preserving(LAZY_CREATION_ENABLED, CRYPTO_CREATE_WITH_ALIAS_ENABLED)
-                .given(
-                        overridingTwo(
-                                LAZY_CREATION_ENABLED,
-                                "true",
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-                                "true"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(LAZY_CREATE_SPONSOR)
-                                .balance(ONE_HUNDRED_HBARS + 2 * REDUCED_TOTAL_FEE))
-                .when(
-                        reduceFeeFor(
-                                CryptoTransfer,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE),
-                        reduceFeeFor(
-                                CryptoUpdate,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE),
-                        reduceFeeFor(
-                                CryptoCreate,
-                                REDUCED_NODE_FEE,
-                                REDUCED_NETWORK_FEE,
-                                REDUCED_SERVICE_FEE))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey =
-                                            spec.registry()
-                                                    .getKey(SECP_256K1_SOURCE_KEY)
-                                                    .getECDSASecp256K1()
-                                                    .toByteArray();
-                                    final var evmAddress =
-                                            ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                                    // try to create the hollow account without having enough
-                                    // balance to pay for the finalization (CryptoUpdate) fee
-                                    final var op =
-                                            cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    ONE_HUNDRED_HBARS))
-                                                    .payingWith(LAZY_CREATE_SPONSOR)
-                                                    .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
-                                                    .via(TRANSFER_TXN);
-                                    final var notExistingAccountInfo =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID);
-                                    // transfer the needed balance for the finalization fee to the
-                                    // sponsor; we need + 2 * TOTAL_FEE, not 1, since we paid for
-                                    // the
-                                    // failed crypto transfer
-                                    final var op2 =
-                                            cryptoTransfer(
-                                                    tinyBarsFromTo(
-                                                            GENESIS,
-                                                            LAZY_CREATE_SPONSOR,
-                                                            2 * REDUCED_TOTAL_FEE));
-                                    // now the sponsor can successfully create the hollow account
-                                    final var op3 =
-                                            cryptoTransfer(
-                                                            tinyBarsFromTo(
-                                                                    LAZY_CREATE_SPONSOR,
-                                                                    evmAddress,
-                                                                    ONE_HUNDRED_HBARS))
-                                                    .payingWith(LAZY_CREATE_SPONSOR)
-                                                    .hasKnownStatus(SUCCESS)
-                                                    .via(TRANSFER_TXN);
-                                    final var op4 =
-                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                                    .has(
-                                                            accountWith()
-                                                                    .hasEmptyKey()
-                                                                    .alias(evmAddress)
-                                                                    .expectedBalanceWithChargedUsd(
-                                                                            ONE_HUNDRED_HBARS, 0, 0)
-                                                                    .autoRenew(
-                                                                            THREE_MONTHS_IN_SECONDS)
-                                                                    .receiverSigReq(false)
-                                                                    .memo(LAZY_MEMO));
-                                    final var op5 =
-                                            getAccountBalance(LAZY_CREATE_SPONSOR)
-                                                    .hasTinyBars(0)
-                                                    .logged();
-                                    allRunFor(
-                                            spec,
-                                            op,
-                                            notExistingAccountInfo,
-                                            op2,
-                                            op3,
-                                            op4,
-                                            op5,
-                                            uploadDefaultFeeSchedules(GENESIS));
-                                }));
     }
 
     private long tinybarCostOfGas(
