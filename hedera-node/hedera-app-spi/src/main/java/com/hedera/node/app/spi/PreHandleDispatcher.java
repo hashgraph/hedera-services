@@ -13,27 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.node.app.service.admin;
+package com.hedera.node.app.spi;
 
-import com.hedera.node.app.spi.PreTransactionHandler;
 import com.hedera.node.app.spi.meta.TransactionMetadata;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The pre-handler for the HAPI <a
- * href="https://github.com/hashgraph/hedera-protobufs/blob/main/services/freeze_service.proto">Freeze
- * Service</a>.
+ * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct
+ * handler
  */
-public interface FreezePreTransactionHandler extends PreTransactionHandler {
+public interface PreHandleDispatcher {
     /**
-     * Pre-handles a {@link com.hederahashgraph.api.proto.java.HederaFunctionality#Freeze}
-     * transaction, returning the metadata required to, at minimum, validate the signatures of all
-     * required signing keys.
+     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific
+     * functionality
      *
-     * @param txn a transaction with a {@link
-     *     com.hederahashgraph.api.proto.java.FreezeTransactionBody}
-     * @return the metadata for the freeze
+     * @param transactionBody the {@link TransactionBody} of the request
+     * @param payer payer of the transaction
+     * @throws NullPointerException if {@code transactionBody} is {@code null}
      */
-    TransactionMetadata preHandleFreeze(TransactionBody txn, AccountID payer);
+    TransactionMetadata dispatch(
+            @NonNull TransactionBody transactionBody, @NonNull AccountID payer);
 }
