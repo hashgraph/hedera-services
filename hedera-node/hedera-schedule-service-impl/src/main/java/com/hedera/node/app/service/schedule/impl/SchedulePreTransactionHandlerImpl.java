@@ -38,8 +38,9 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     private ReadOnlyScheduleStore scheduleStore;
     private final AccountKeyLookup keyLookup;
 
-    public SchedulePreTransactionHandlerImpl(@NonNull final ReadOnlyScheduleStore scheduleStore,
-                                             @NonNull final AccountKeyLookup keyLookup) {
+    public SchedulePreTransactionHandlerImpl(
+            @NonNull final ReadOnlyScheduleStore scheduleStore,
+            @NonNull final AccountKeyLookup keyLookup) {
         this.scheduleStore = scheduleStore;
         this.keyLookup = keyLookup;
     }
@@ -81,9 +82,12 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         meta.scheduledMeta(innerMeta);
         return meta.build();
     }
+
     @Override
     public ScheduleTransactionMetadata preHandleSignSchedule(
-            final TransactionBody txn, final AccountID payer, final PreHandleDispatcher dispatcher) {
+            final TransactionBody txn,
+            final AccountID payer,
+            final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleSign();
         final var id = op.getScheduleID();
 
@@ -92,13 +96,15 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
             return new InvalidTransactionMetadata(txn, payer, INVALID_SCHEDULE_ID);
         }
 
-        final var meta = new ScheduleSigTransactionMetadataBuilder(keyLookup)
-                .txnBody(txn)
-                .payerKeyFor(payer);
+        final var meta =
+                new ScheduleSigTransactionMetadataBuilder(keyLookup)
+                        .txnBody(txn)
+                        .payerKeyFor(payer);
 
         final var scheduledTxn = scheduleLookupResult.get().scheduledTxn();
         final var optionalPayer = scheduleLookupResult.get().designatedPayer();
-        final var payerForNested = optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
+        final var payerForNested =
+                optionalPayer.orElse(scheduledTxn.getTransactionID().getAccountID());
 
         final var innerMeta = preHandleScheduledTxn(scheduledTxn, payerForNested, dispatcher);
         meta.scheduledMeta(innerMeta);

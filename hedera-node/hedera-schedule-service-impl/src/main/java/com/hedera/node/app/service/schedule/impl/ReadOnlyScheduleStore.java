@@ -26,11 +26,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
-
 /**
- * Provides read-only methods for interacting with the underlying data storage mechanisms
- * for working with Schedules.
- * If the scheduleID is valid and a schedule exists returns {@link ScheduleVirtualValue}.
+ * Provides read-only methods for interacting with the underlying data storage mechanisms for
+ * working with Schedules. If the scheduleID is valid and a schedule exists returns {@link
+ * ScheduleVirtualValue}.
  *
  * <p>This class is not exported from the module. It is an internal implementation detail.
  */
