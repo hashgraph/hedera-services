@@ -1432,7 +1432,7 @@ workflows:
   GCP-Daily-Services-Personal:
     triggers:
       - schedule:
-          cron: "14 18 * * *"
+          cron: "21 18 * * *"
           filters:
             branches:
               only:
@@ -1563,7 +1563,6 @@ jobs:
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
             git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression;
-            git checkout neeha-personal-testing;
             
             # Build Platform
             cd /swirlds-platform
@@ -1571,7 +1570,7 @@ jobs:
             
             # Build JRS
             cd /swirlds-platform/regression
-            ./gradlew assemble --scan --parallel
+            ./gradlew assemble --scan --parallel; git checkout neeha-personal-testing;
 
       - run:
           name: Save PEM file to keys folder
