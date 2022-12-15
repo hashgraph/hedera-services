@@ -890,7 +890,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                                         .setContractNum(0L)
                                         .build());
         final var ed25519 = key.getEd25519().toByteArray();
-        final var ECDSASecp256k1 = key.getECDSASecp256K1().toByteArray();
+        final var ecdsaSecp256K1 = key.getECDSASecp256K1().toByteArray();
         final var delegatableContractId =
                 key.getDelegatableContractId().getContractNum() > 0
                         ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
@@ -901,7 +901,7 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                                         .setContractNum(0L)
                                         .build());
 
-        return new EvmKey(contractId, ed25519, ECDSASecp256k1, delegatableContractId);
+        return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
     public TokenInfo asTokenInfo(final TokenID tokenId, final ByteString ledgerId) {
