@@ -25,7 +25,6 @@ public class EvmTokenInfo {
     private boolean defaultFreezeStatus;
     private boolean defaultKycStatus;
     private String memo;
-    private int tokenType;
     private int supplyType;
     private List<CustomFee> customFees;
     private boolean isPaused;
@@ -49,7 +48,6 @@ public class EvmTokenInfo {
 
     public EvmTokenInfo(
             byte[] ledgerId,
-            int tokenType,
             int supplyType,
             boolean deleted,
             String symbol,
@@ -65,7 +63,6 @@ public class EvmTokenInfo {
         this.symbol = symbol;
         this.memo = memo;
         this.treasury = treasury;
-        this.tokenType = tokenType;
         this.supplyType = supplyType;
         this.deleted = deleted;
         this.totalSupply = totalSupply;
@@ -200,10 +197,6 @@ public class EvmTokenInfo {
 
     public int getSupplyType() {
         return supplyType;
-    }
-
-    public int getTokenType() {
-        return tokenType;
     }
 
     public String getMemo() {

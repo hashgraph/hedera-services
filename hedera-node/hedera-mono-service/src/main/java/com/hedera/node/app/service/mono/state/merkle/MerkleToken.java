@@ -731,7 +731,6 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         final var info =
                 new EvmTokenInfo(
                         ledgerId.toByteArray(),
-                        tokenType().ordinal(),
                         supplyType().ordinal(),
                         isDeleted(),
                         symbol(),
