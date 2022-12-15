@@ -1432,7 +1432,7 @@ workflows:
   GCP-Daily-Services-Personal:
     triggers:
       - schedule:
-          cron: "33 16 * * *"
+          cron: "10 18 * * *"
           filters:
             branches:
               only:
@@ -1562,7 +1562,8 @@ jobs:
             
             # Git Clone JRS Separately
             mkdir -p /swirlds-platform/regression >/dev/null 2>&1 || true
-            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression
+            git clone ssh://git@services-jrs-regression/swirlds/swirlds-platform-regression.git /swirlds-platform/regression;
+            git checkout neeha-personal-testing;
             
             # Build Platform
             cd /swirlds-platform
@@ -1647,10 +1648,10 @@ jobs:
         default: true
       slack_results_channel:
         type: string
-        default: "hedera-regression"
+        default: "hedera-regression-test"
       slack_summary_channel:
         type: string
-        default: "hedera-regression-summary"
+        default: "hedera-regression-test"
       workflow-name:
         type: string
         default: ""
