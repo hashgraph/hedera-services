@@ -153,9 +153,9 @@ class PreHandleDispatcherImplTest {
         assertThatThrownBy(() -> dispatcher.dispatch(null, null))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dispatcher.dispatch(invalidSystemDelete, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dispatcher.dispatch(invalidSystemUndelete, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(NullPointerException.class);
     }
 
     @ParameterizedTest

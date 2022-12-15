@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -41,15 +42,18 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
     public SchedulePreTransactionHandlerImpl(
             @NonNull final ReadOnlyScheduleStore scheduleStore,
             @NonNull final AccountKeyLookup keyLookup) {
+        Objects.requireNonNull(scheduleStore);
+        Objects.requireNonNull(keyLookup);
+
         this.scheduleStore = scheduleStore;
         this.keyLookup = keyLookup;
     }
 
     @Override
     public ScheduleTransactionMetadata preHandleCreateSchedule(
-            final TransactionBody txn,
-            final AccountID payer,
-            final PreHandleDispatcher dispatcher) {
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleCreate();
         final var meta =
                 new ScheduleSigTransactionMetadataBuilder(keyLookup)
@@ -85,9 +89,9 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
 
     @Override
     public ScheduleTransactionMetadata preHandleSignSchedule(
-            final TransactionBody txn,
-            final AccountID payer,
-            final PreHandleDispatcher dispatcher) {
+            @NonNull final TransactionBody txn,
+            @NonNull final AccountID payer,
+            @NonNull final PreHandleDispatcher dispatcher) {
         final var op = txn.getScheduleSign();
         final var id = op.getScheduleID();
 

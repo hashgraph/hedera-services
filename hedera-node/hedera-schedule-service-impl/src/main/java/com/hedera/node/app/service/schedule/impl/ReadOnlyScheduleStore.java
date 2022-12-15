@@ -56,17 +56,14 @@ public class ReadOnlyScheduleStore {
      */
     public Optional<ScheduleMetadata> get(final ScheduleID id) {
         final var schedule = schedulesById.get(id.getScheduleNum());
-        if (schedule.isEmpty()) {
-            return Optional.empty();
-        }
-        final var value = schedule.get();
-        return Optional.of(
-                new ScheduleMetadata(
-                        value.adminKey(),
-                        value.ordinaryViewOfScheduledTxn(),
-                        value.hasExplicitPayer()
-                                ? Optional.of(value.payer().toGrpcAccountId())
-                                : Optional.empty()));
+        return schedule.map(
+                value ->
+                        new ScheduleMetadata(
+                                value.adminKey(),
+                                value.ordinaryViewOfScheduledTxn(),
+                                value.hasExplicitPayer()
+                                        ? Optional.of(value.payer().toGrpcAccountId())
+                                        : Optional.empty()));
     }
 
     /**

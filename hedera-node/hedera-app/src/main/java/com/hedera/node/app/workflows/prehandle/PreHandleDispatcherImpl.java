@@ -106,8 +106,9 @@ public final class PreHandleDispatcherImpl implements PreHandleDispatcher {
      */
     @NonNull
     public TransactionMetadata dispatch(
-            @NonNull final TransactionBody transactionBody, final AccountID payer) {
+            @NonNull final TransactionBody transactionBody, @NonNull final AccountID payer) {
         requireNonNull(transactionBody);
+        requireNonNull(payer);
         // FUTURE : Replace the arguments with SigTransactionMetadataBuilder once the createStore()
         // is implemented.
         return switch (transactionBody.getDataCase()) {
