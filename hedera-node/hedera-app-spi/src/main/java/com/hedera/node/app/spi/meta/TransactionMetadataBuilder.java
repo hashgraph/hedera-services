@@ -231,12 +231,12 @@ public abstract class TransactionMetadataBuilder<T extends TransactionMetadataBu
      *
      * @return a new {@link SigTransactionMetadata}
      */
-    abstract TransactionMetadata build();
+    protected abstract TransactionMetadata build();
 
     /**
      * Returns the builder object.
      *
      * @return builder object
      */
-    abstract T self();
+    protected abstract T self();
 }
