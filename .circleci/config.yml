@@ -1429,6 +1429,29 @@ workflows:
             - attach_workspace:
                 at: /
 
+  GCP-Daily-Services-Personal:
+    triggers:
+      - schedule:
+          cron: "33 16 * * *"
+          filters:
+            branches:
+              only:
+                - 4468-update-clients
+    jobs:
+      - build-platform-and-services
+      - jrs-regression:
+          context: Slack
+          regression_path: /swirlds-platform/regression/assets
+          result_path: assets/results/Personal
+          config_type: "personal"
+          workflow-name: "GCP-Personal-Neeha-4N"
+          requires:
+            - build-platform-and-services
+          pre-steps:
+            - install-tools
+            - attach_workspace:
+                at: /
+
 jobs:
 #  build-artifact:
 #    parameters:
