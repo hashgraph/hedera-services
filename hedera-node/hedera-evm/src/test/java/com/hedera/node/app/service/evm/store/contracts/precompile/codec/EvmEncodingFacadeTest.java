@@ -302,17 +302,15 @@ class EvmEncodingFacadeTest {
                                 Bytes.fromHexString("0x00000000000000000000000000000000000005cc")));
 
         final var royaltyFee =
-            new RoyaltyFee(
-                1,
-                2,
-                500L,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cd")),
-                false,
-                Address.wrap(
-                    Bytes.fromHexString("0x00000000000000000000000000000000000005cf"))
-
-            );
+                new RoyaltyFee(
+                        1,
+                        2,
+                        500L,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cd")),
+                        false,
+                        Address.wrap(
+                                Bytes.fromHexString("0x00000000000000000000000000000000000005cf")));
 
         var customFees1 = new CustomFee();
         customFees1.setFixedFee(fixedFee);
