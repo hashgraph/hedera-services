@@ -81,7 +81,7 @@ public class RewardCalculator {
     }
 
     public long estimatePendingRewards(
-            final HederaAccount account, final MerkleStakingInfo nodeStakingInfo) {
+            final HederaAccount account, @Nullable final MerkleStakingInfo nodeStakingInfo) {
         final var rewardOffered =
                 computeRewardFromDetails(
                         account,
@@ -98,10 +98,10 @@ public class RewardCalculator {
     @VisibleForTesting
     public long computeRewardFromDetails(
             final HederaAccount account,
-            final MerkleStakingInfo nodeStakingInfo,
+            @Nullable final MerkleStakingInfo nodeStakingInfo,
             final long currentStakePeriod,
             final long effectiveStart) {
-        if (!stakePeriodManager.isRewardable(effectiveStart)) {
+        if (nodeStakingInfo == null || !stakePeriodManager.isRewardable(effectiveStart)) {
             return 0L;
         }
         final var rewardSumHistory = nodeStakingInfo.getRewardSumHistory();

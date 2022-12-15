@@ -129,6 +129,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     private Optional<Integer> pseudorandomNumberRange = Optional.empty();
 
+    @Nullable private Consumer<List<TokenID>> createdTokenIdsObserver = null;
+
     private boolean pseudorandomBytesExpected = false;
 
     private boolean noPseudoRandomData = false;
@@ -183,6 +185,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         this.eventName = eventName;
         this.eventDataObserver = dataObserver;
 
+        return this;
+    }
+
+    public HapiGetTxnRecord exposingTokenCreationsTo(
+            final Consumer<List<TokenID>> createdTokenIdsObserver) {
+        this.createdTokenIdsObserver = createdTokenIdsObserver;
         return this;
     }
 
@@ -875,7 +883,12 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         assertEquals(count, observedCount, "Wrong # of non-staking records");
                     }
                 });
+        final List<TokenID> tokenCreations =
+                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (var rec : childRecords) {
+            if (rec.getReceipt().hasTokenID() && tokenCreations != null) {
+                tokenCreations.add(rec.getReceipt().getTokenID());
+            }
             if (!rec.getAlias().isEmpty()) {
                 spec.registry()
                         .saveAccountId(
@@ -888,6 +901,9 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                         rec.getAlias()::toStringUtf8,
                         rec.getReceipt()::getAccountID);
             }
+        }
+        if (createdTokenIdsObserver != null) {
+            createdTokenIdsObserver.accept(tokenCreations);
         }
 
         if (verboseLoggingOn) {

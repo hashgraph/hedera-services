@@ -21,6 +21,8 @@ import static java.util.stream.Collectors.toSet;
 import com.hedera.services.exceptions.UnparseablePropertyException;
 import com.hedera.services.fees.calculation.CongestionMultipliers;
 import com.hedera.services.fees.calculation.EntityScaleFactors;
+import com.hedera.services.keys.LegacyContractIdActivations;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.sysfiles.domain.KnownBlockValues;
 import com.hedera.services.sysfiles.domain.throttling.ScaleFactor;
@@ -73,6 +75,8 @@ public interface PropertySource {
     Function<String, Object> AS_FUNCTIONS =
             s -> Arrays.stream(s.split(",")).map(HederaFunctionality::valueOf).collect(toSet());
     Function<String, Object> AS_CONGESTION_MULTIPLIERS = CongestionMultipliers::from;
+
+    Function<String, Object> AS_LEGACY_ACTIVATIONS = LegacyContractIdActivations::from;
     Function<String, Object> AS_ENTITY_SCALE_FACTORS = EntityScaleFactors::from;
     Function<String, Object> AS_KNOWN_BLOCK_VALUES = KnownBlockValues::from;
     Function<String, Object> AS_THROTTLE_SCALE_FACTOR = ScaleFactor::from;
@@ -80,14 +84,22 @@ public interface PropertySource {
     Function<String, Object> AS_ENTITY_TYPES = EntityType::csvTypeSet;
     Function<String, Object> AS_ACCESS_LIST = MapAccessType::csvAccessList;
     Function<String, Object> AS_SIDECARS =
+            s -> asEnumSet(SidecarType.class, SidecarType::valueOf, s);
+    Function<String, Object> AS_RECOMPUTE_TYPES =
             s ->
-                    s.isEmpty()
-                            ? Collections.emptySet()
-                            : Arrays.stream(s.split(","))
-                                    .map(SidecarType::valueOf)
-                                    .collect(
-                                            Collectors.toCollection(
-                                                    () -> EnumSet.noneOf(SidecarType.class)));
+                    asEnumSet(
+                            StakeStartupHelper.RecomputeType.class,
+                            StakeStartupHelper.RecomputeType::valueOf,
+                            s);
+
+    static <E extends Enum<E>> Set<E> asEnumSet(
+            final Class<E> type, final Function<String, E> valueOf, final String csv) {
+        return csv.isEmpty()
+                ? Collections.emptySet()
+                : Arrays.stream(csv.split(","))
+                .map(valueOf)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(type)));
+    }
 
     boolean containsProperty(String name);
 
@@ -105,6 +117,10 @@ public interface PropertySource {
 
     default List<MapAccessType> getAccessListProperty(String name) {
         return getTypedProperty(List.class, name);
+    }
+
+    default Set<StakeStartupHelper.RecomputeType> getRecomputeTypesProperty(String name) {
+        return getTypedProperty(Set.class, name);
     }
 
     default boolean getBooleanProperty(String name) {
@@ -136,6 +152,10 @@ public interface PropertySource {
 
     default Map<Long, Long> getNodeStakeRatiosProperty(String name) {
         return getTypedProperty(Map.class, name);
+    }
+
+    default LegacyContractIdActivations getLegacyActivationsProperty(String name) {
+        return getTypedProperty(LegacyContractIdActivations.class, name);
     }
 
     default ScaleFactor getThrottleScaleFactor(String name) {

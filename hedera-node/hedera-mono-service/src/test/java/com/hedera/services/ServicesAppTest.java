@@ -37,6 +37,7 @@ import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.context.properties.ScreenedNodeFileProps;
 import com.hedera.services.grpc.GrpcStarter;
 import com.hedera.services.grpc.NettyGrpcServerManager;
+import com.hedera.services.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.services.ledger.backing.BackingAccounts;
 import com.hedera.services.sigs.EventExpansion;
 import com.hedera.services.state.DualStateAccessor;
@@ -144,5 +145,6 @@ class ServicesAppTest {
         assertSame(subject.nodeId(), selfNodeId);
         assertSame(SLEEPING_PAUSE, subject.pause());
         assertTrue(subject.consoleOut().isEmpty());
+        assertThat(subject.stakeStartupHelper(), instanceOf(StakeStartupHelper.class));
     }
 }

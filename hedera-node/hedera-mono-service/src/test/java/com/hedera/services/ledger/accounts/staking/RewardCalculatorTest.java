@@ -61,6 +61,12 @@ class RewardCalculatorTest {
     }
 
     @Test
+    void zeroRewardsForMissingNodeStakeInfo() {
+        final var reward = subject.computeRewardFromDetails(new MerkleAccount(), null, 321, 123);
+        assertEquals(0, reward);
+    }
+
+    @Test
     void delegatesEpochSecondAtStartOfPeriod() {
         given(stakePeriodManager.epochSecondAtStartOfPeriod(123)).willReturn(456L);
         assertEquals(456L, subject.epochSecondAtStartOfPeriod(123));
@@ -120,6 +126,7 @@ class RewardCalculatorTest {
         given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
         given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(todayNumber - 1);
         given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
+        given(stakeInfoManager.mutableStakeInfoFor(anyLong())).willReturn(new MerkleStakingInfo());
         willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
         final var reward = subject.computePendingReward(account);

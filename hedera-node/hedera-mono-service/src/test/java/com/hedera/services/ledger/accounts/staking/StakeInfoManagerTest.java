@@ -18,7 +18,11 @@ package com.hedera.services.ledger.accounts.staking;
 import static com.hedera.services.context.properties.PropertyNames.LEDGER_TOTAL_TINY_BAR_FLOAT;
 import static com.hedera.services.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
 import static com.hedera.services.state.migration.StakingInfoMapBuilder.buildStakingInfoMap;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.services.context.properties.BootstrapProperties;
@@ -32,6 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.stream.LongStream;
 
 @ExtendWith(MockitoExtension.class)
 class StakeInfoManagerTest {
@@ -50,6 +57,30 @@ class StakeInfoManagerTest {
     void setUp() {
         stakingInfo = buildsStakingInfoMap();
         subject = new StakeInfoManager(() -> stakingInfo);
+    }
+
+    @Test
+    void preparesCacheForSequentialNodeIds() {
+        final var nodeIds = LongStream.range(0, 10).boxed().toList();
+        subject.prepForManaging(nodeIds);
+        assertNotNull(subject.getCache());
+        assertEquals(10, subject.getCache().length);
+    }
+
+    @Test
+    void returnsNullForOutOfRangeCacheIndexes() {
+        final var nodeIds = LongStream.range(0, 10).boxed().toList();
+        subject.prepForManaging(nodeIds);
+        assertNull(subject.mutableStakeInfoFor(-1L));
+        assertNull(subject.mutableStakeInfoFor(10L));
+    }
+
+    @Test
+    void usesG4mIfNodeIdsArentSequential() {
+        final List<Long> nodeIds = List.of(666L, 0L, 668L);
+        subject.prepForManaging(nodeIds);
+        assertNull(subject.getCache());
+        assertInstanceOf(MerkleStakingInfo.class, subject.mutableStakeInfoFor(0L));
     }
 
     @Test
@@ -75,6 +106,11 @@ class StakeInfoManagerTest {
         final var expectedInfo = stakingInfo.get(node0Id);
         final var actual = subject.mutableStakeInfoFor(0L);
         assertEquals(expectedInfo, actual);
+    }
+
+    @Test
+    void canUnclaimRewardsForMissingNodeId() {
+        assertDoesNotThrow(() -> subject.unclaimRewardsForStakeStart(123, 333));
     }
 
     @Test

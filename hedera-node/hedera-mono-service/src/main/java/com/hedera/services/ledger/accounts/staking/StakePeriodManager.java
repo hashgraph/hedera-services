@@ -27,6 +27,9 @@ import com.hedera.services.context.TransactionContext;
 import com.hedera.services.context.annotations.CompositeProps;
 import com.hedera.services.context.properties.PropertySource;
 import com.hedera.services.state.merkle.MerkleNetworkContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,6 +40,7 @@ import javax.inject.Singleton;
 
 @Singleton
 public class StakePeriodManager {
+    private static final Logger log = LogManager.getLogger(StakeInfoManager.class);
     public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
     public static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
 

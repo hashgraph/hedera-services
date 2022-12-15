@@ -1000,6 +1000,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .refusingEthConversion()
                                                         .exposingResultTo(
                                                                 result -> {
                                                                     log.info(
@@ -1776,6 +1777,7 @@ public class CreatePrecompileSuite extends HapiApiSuite {
                                                         .gas(GAS_TO_OFFER)
                                                         .sending(DEFAULT_AMOUNT_TO_SEND)
                                                         .payingWith(ACCOUNT)
+                                                        .refusingEthConversion()
                                                         .alsoSigningWithFullPrefix(
                                                                 ACCOUNT_TO_ASSOCIATE_KEY)
                                                         .exposingResultTo(
