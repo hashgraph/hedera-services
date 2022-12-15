@@ -34,6 +34,7 @@ import com.hedera.node.app.service.mono.grpc.GrpcServerManager;
 import com.hedera.node.app.service.mono.grpc.GrpcStarter;
 import com.hedera.node.app.service.mono.keys.KeysModule;
 import com.hedera.node.app.service.mono.ledger.LedgerModule;
+import com.hedera.node.app.service.mono.ledger.accounts.staking.StakeStartupHelper;
 import com.hedera.node.app.service.mono.ledger.backing.BackingStore;
 import com.hedera.node.app.service.mono.queries.QueriesModule;
 import com.hedera.node.app.service.mono.records.RecordsModule;
@@ -166,6 +167,7 @@ public interface ServicesApp {
     GrpcServerManager grpc();
 
     NamedDigestFactory digestFactory();
+    StakeStartupHelper stakeStartupHelper();
 
     SystemFilesManager sysFilesManager();
 

@@ -19,7 +19,7 @@ import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import org.hyperledger.besu.datatypes.Address;
 
 @FunctionalInterface
-public interface KeyActivationTest {
+public interface LegacyKeyActivationTest {
     /**
      * Returns whether a key implicit in the target address is active, given an idealized message
      * frame in which:
@@ -40,11 +40,13 @@ public interface KeyActivationTest {
      * @param activeContract the contract address that can activate a contract or delegatable
      *     contract key
      * @param worldLedgers the worldLedgers representing current state
+     * @param legacyActivationTest a check for legacy {@code contractID} key activations
      * @return whether the implicit key has an active signature in this context
      */
     boolean apply(
             boolean isDelegateCall,
             Address target,
             Address activeContract,
-            WorldLedgers worldLedgers);
+            WorldLedgers worldLedgers,
+            LegacyActivationTest legacyActivationTest);
 }
