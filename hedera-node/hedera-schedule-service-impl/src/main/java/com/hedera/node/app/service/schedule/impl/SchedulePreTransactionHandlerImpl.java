@@ -105,12 +105,6 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
         return meta.build();
     }
 
-    @Override
-    public ScheduleTransactionMetadata preHandleDeleteSchedule(
-            TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
-        throw new NotImplementedException();
-    }
-
     private TransactionMetadata preHandleScheduledTxn(
             final TransactionBody scheduledTxn,
             final AccountID payerForNested,
@@ -134,5 +128,11 @@ public class SchedulePreTransactionHandlerImpl implements SchedulePreTransaction
                     scheduledTxn, payerForNested, UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return meta;
+    }
+
+    @Override
+    public ScheduleTransactionMetadata preHandleDeleteSchedule(
+            TransactionBody txn, AccountID payer, PreHandleDispatcher dispatcher) {
+        throw new NotImplementedException();
     }
 }

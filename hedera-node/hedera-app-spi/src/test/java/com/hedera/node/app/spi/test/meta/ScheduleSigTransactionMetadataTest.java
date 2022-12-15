@@ -46,7 +46,7 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
         final var innerMeta =
-                new SigTransactionMetadataBuilder<>(keyLookup)
+                new SigTransactionMetadataBuilder(keyLookup)
                         .payerKeyFor(schedulePayer)
                         .txnBody(TransactionBody.getDefaultInstance())
                         .build();
@@ -66,7 +66,7 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
         final var innerMeta =
-                new SigTransactionMetadataBuilder<>(keyLookup)
+                new SigTransactionMetadataBuilder(keyLookup)
                         .txnBody(TransactionBody.getDefaultInstance())
                         .payerKeyFor(schedulePayer)
                         .build();
@@ -89,7 +89,7 @@ class ScheduleSigTransactionMetadataTest {
         given(keyLookup.getKey(schedulePayer)).willReturn(withKey(payerKey));
 
         final var innerMeta =
-                new SigTransactionMetadataBuilder<>(keyLookup)
+                new SigTransactionMetadataBuilder(keyLookup)
                         .status(INVALID_PAYER_ACCOUNT_ID)
                         .txnBody(TransactionBody.getDefaultInstance())
                         .payerKeyFor(schedulePayer)
