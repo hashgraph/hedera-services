@@ -50,8 +50,8 @@ public final class KeyActivationUtils {
      *       part of a non-delegate call.
      * </ol>
      *
-     * <p>Note that because the {@link DecodingFacade} converts every address to its "mirror"
-     * address form (as needed for e.g. the {@link TransferLogic} implementation), we can assume the
+     * <p>Note that because the {@code DecodingFacade} converts every address to its "mirror"
+     * address form (as needed for e.g. the {@code TransferLogic} implementation), we can assume the
      * target address is a mirror address. All other addresses we resolve to their mirror form
      * before proceeding.
      *
