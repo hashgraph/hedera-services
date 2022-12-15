@@ -133,6 +133,10 @@ public class FeesAndRatesProvider {
                         + rateSetAsString(rateSet));
     }
 
+    public boolean hasRateSet() {
+        return rateSet != null;
+    }
+
     private void downloadRateSet() throws Throwable {
         long queryFee = lookupDownloadFee(setup.exchangeRatesId());
         FileGetContentsResponse response = downloadWith(queryFee, false, setup.exchangeRatesId());
