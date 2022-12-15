@@ -7080,9 +7080,7 @@ public class TraceabilitySuite extends HapiSuite {
         final AtomicReference<String> somebodyMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> somebodyElseMirrorAddr = new AtomicReference<>();
         final String contractCreateTxn = "contractCreate";
-        final var serialNumberId =
-                new BigInteger(
-                        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
+        final var serialNumberId = MAX_UINT256_VALUE;
         return propertyPreservingHapiSpec("ActionsShowPropagatedRevert")
                 .preserving(SIDECARS_PROP)
                 .given(
