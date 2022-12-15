@@ -1,22 +1,28 @@
 defaultNetwork: localhost
 networks:
   localhost:
+    allowList:
     nodes:
-      - { id: 0, account: 3, ipv4Addr: host.docker.internal }
+      - { id: 0, account: 3, ipv4Addr: 127.0.0.1 }
   previewnet:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.231.208.148 }
       - { id: 1, account: 4, ipv4Addr: 35.199.15.177 }
   staging-sm:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 104.196.48.231 }
   stabletestnet:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 34.94.106.61 }
   mainnet:
+    allowList:
     defaultPayer: 950
     nodes:
       - { id: 0, account: 3, ipv4Addr: 35.237.200.180 }
   perfnet:
+    allowList:
     nodes:
       - { id: 0, account: 3, ipv4Addr: 146.148.65.62 }
