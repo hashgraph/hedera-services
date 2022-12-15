@@ -15,14 +15,13 @@
  */
 package com.hedera.services.yahcli.config.domain;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.base.MoreObjects;
 import com.hedera.services.yahcli.output.CommonMessages;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.joining;
 
 public class NetConfig {
     public static final Integer TRADITIONAL_DEFAULT_NODE_ACCOUNT = 3;
