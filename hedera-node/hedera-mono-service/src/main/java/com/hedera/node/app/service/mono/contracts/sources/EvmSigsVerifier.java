@@ -68,7 +68,6 @@ public interface EvmSigsVerifier {
             Address activeContract,
             WorldLedgers worldLedgers);
 
-
     /**
      * Determines if the target account has an active key given the cryptographic signatures from
      * the {@link com.hederahashgraph.api.proto.java.SignatureMap} that could be verified

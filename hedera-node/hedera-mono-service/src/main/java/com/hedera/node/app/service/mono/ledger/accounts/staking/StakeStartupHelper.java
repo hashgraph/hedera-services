@@ -15,15 +15,20 @@
  */
 package com.hedera.node.app.service.mono.ledger.accounts.staking;
 
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
+import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
+import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
+
 import com.hedera.node.app.service.mono.context.annotations.CompositeProps;
 import com.hedera.node.app.service.mono.context.properties.PropertySource;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
 import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.state.migration.AccountStorageAdapter;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.AddressBook;
+import com.swirlds.merkle.map.MerkleMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,15 +38,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.swirlds.merkle.map.MerkleMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_REWARD_HISTORY_NUM_STORED_PERIODS;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.STAKING_STARTUP_HELPER_RECOMPUTE;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.forEach;
-import static com.hedera.node.app.service.mono.utils.MiscUtils.withLoggedDuration;
 
 /**
  * A helper class to recompute staking metadata at startup. Its main work is to update the staking
@@ -83,8 +81,8 @@ public class StakeStartupHelper {
      * this address book.
      *
      * <p><b>FUTURE WORK:</b> Update this method to also accept the genesis staking infos map and do
-     * the {@code createGenesisChildren()} work currently still done by
-     * {@link com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
+     * the {@code createGenesisChildren()} work currently still done by {@link
+     * com.hedera.node.app.service.mono.state.migration.StakingInfoMapBuilder}.
      *
      * @param addressBook the genesis address book
      */

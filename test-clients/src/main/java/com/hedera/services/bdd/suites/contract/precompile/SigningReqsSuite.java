@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.onlyDefaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.keys.KeyShape.*;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
@@ -39,15 +36,11 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.*;
 import com.hedera.services.bdd.spec.assertions.*;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.suites.*;
-
+import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.*;
 import java.util.concurrent.atomic.*;
-
-import com.hedera.services.yahcli.config.ConfigUtils;
-import com.hederahashgraph.api.proto.java.TokenID;
 import org.apache.logging.log4j.*;
 
 // Some of the test cases cannot be converted to use eth calls,
@@ -104,14 +97,14 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(arKey).shape(SECP256K1),
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .key(arKey),
-                        cryptoCreate(feeCollector)
-                                .key(fcKey),
+                        cryptoCreate(autoRenew).key(arKey),
+                        cryptoCreate(feeCollector).key(fcKey),
                         getAccountInfo(autoRenew)
-                                .exposingAliasTo(alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
                         getAccountInfo(feeCollector)
-                                .exposingAliasTo(alias -> feeCollectorAlias.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias -> feeCollectorAlias.set(asHeadlongAddress(alias))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -120,11 +113,11 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenWithSelfDenominatedFixedFee",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS,
-                                                feeCollectorAlias.get())
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenWithSelfDenominatedFixedFee",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS,
+                                                        feeCollectorAlias.get())
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -135,11 +128,11 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenWithSelfDenominatedFixedFee",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS,
-                                                feeCollectorAlias.get())
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenWithSelfDenominatedFixedFee",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS,
+                                                        feeCollectorAlias.get())
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -149,7 +142,8 @@ public class SigningReqsSuite extends HapiSuite {
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN)
                                 .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
+                                .exposingTokenCreationsTo(
+                                        creations -> createdToken.set(creations.get(0))),
                         sourcing(
                                 () ->
                                         getTokenInfo(asTokenString(createdToken.get()))
@@ -188,14 +182,14 @@ public class SigningReqsSuite extends HapiSuite {
                         newKeyNamed(arKey).shape(SECP256K1),
                         newKeyNamed(fcKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .key(arKey),
-                        cryptoCreate(feeCollector)
-                                .key(fcKey),
+                        cryptoCreate(autoRenew).key(arKey),
+                        cryptoCreate(feeCollector).key(fcKey),
                         getAccountInfo(autoRenew)
-                                .exposingAliasTo(alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
                         getAccountInfo(feeCollector)
-                                .exposingAliasTo(alias -> feeCollectorAlias.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias -> feeCollectorAlias.set(asHeadlongAddress(alias))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .gas(GAS_TO_OFFER)
@@ -204,11 +198,11 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenWithFractionalFee",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS,
-                                                feeCollectorAlias.get())
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenWithFractionalFee",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS,
+                                                        feeCollectorAlias.get())
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -219,11 +213,11 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenWithFractionalFee",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS,
-                                                feeCollectorAlias.get())
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenWithFractionalFee",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS,
+                                                        feeCollectorAlias.get())
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -233,7 +227,8 @@ public class SigningReqsSuite extends HapiSuite {
                 .then(
                         getTxnRecord(FIRST_CREATE_TXN)
                                 .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
+                                .exposingTokenCreationsTo(
+                                        creations -> createdToken.set(creations.get(0))),
                         sourcing(
                                 () ->
                                         getTokenInfo(asTokenString(createdToken.get()))
@@ -262,8 +257,7 @@ public class SigningReqsSuite extends HapiSuite {
         return propertyPreservingHapiSpec("AutoRenewAccountCanUseLegacySigActivationIfConfigured")
                 .preserving(LEGACY_ACTIVATIONS_PROP)
                 .given(
-                        cryptoCreate(CIVILIAN)
-                                .balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
@@ -277,10 +271,10 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenIndirectly",
-                                                autoRenewMirrorAddr.get(),
-                                                THREE_MONTHS_IN_SECONDS)
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenIndirectly",
+                                                        autoRenewMirrorAddr.get(),
+                                                        THREE_MONTHS_IN_SECONDS)
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -306,10 +300,10 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableTokenIndirectly",
-                                                autoRenewMirrorAddr.get(),
-                                                THREE_MONTHS_IN_SECONDS)
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableTokenIndirectly",
+                                                        autoRenewMirrorAddr.get(),
+                                                        THREE_MONTHS_IN_SECONDS)
                                                 .via(SECOND_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -317,7 +311,8 @@ public class SigningReqsSuite extends HapiSuite {
                                                 .refusingEthConversion()),
                         getTxnRecord(SECOND_CREATE_TXN)
                                 .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))))
+                                .exposingTokenCreationsTo(
+                                        creations -> createdToken.set(creations.get(0))))
                 .then(
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
@@ -341,10 +336,10 @@ public class SigningReqsSuite extends HapiSuite {
                 .given(
                         newKeyNamed(arKey).shape(SECP256K1),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(autoRenew)
-                                .key(arKey),
+                        cryptoCreate(autoRenew).key(arKey),
                         getAccountInfo(autoRenew)
-                                .exposingAliasTo(alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias -> autoRenewAlias.set(asHeadlongAddress(alias))),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT)
                                 .exposingNumTo(contractId::set)
@@ -354,10 +349,10 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableToken",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS)
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableToken",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS)
                                                 .via(FIRST_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -368,10 +363,10 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "makeRenewableToken",
-                                                autoRenewAlias.get(),
-                                                THREE_MONTHS_IN_SECONDS)
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "makeRenewableToken",
+                                                        autoRenewAlias.get(),
+                                                        THREE_MONTHS_IN_SECONDS)
                                                 .via(SECOND_CREATE_TXN)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -381,7 +376,8 @@ public class SigningReqsSuite extends HapiSuite {
                 .then(
                         getTxnRecord(SECOND_CREATE_TXN)
                                 .andAllChildRecords()
-                                .exposingTokenCreationsTo(creations -> createdToken.set(creations.get(0))),
+                                .exposingTokenCreationsTo(
+                                        creations -> createdToken.set(creations.get(0))),
                         childRecordsCheck(
                                 FIRST_CREATE_TXN,
                                 CONTRACT_REVERT_EXECUTED,
@@ -413,7 +409,9 @@ public class SigningReqsSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(1)
                                 .key(ntKey),
                         getAccountInfo(newTreasury)
-                                .exposingAliasTo(alias -> newTreasuryAliasAddr.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias ->
+                                                newTreasuryAliasAddr.set(asHeadlongAddress(alias))),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
@@ -428,10 +426,10 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "updateTokenWithNewTreasury",
-                                                tokenMirrorAddr.get(),
-                                                newTreasuryAliasAddr.get())
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "updateTokenWithNewTreasury",
+                                                        tokenMirrorAddr.get(),
+                                                        newTreasuryAliasAddr.get())
                                                 .via(updateTxn)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)
@@ -466,7 +464,10 @@ public class SigningReqsSuite extends HapiSuite {
                                 .maxAutomaticTokenAssociations(2)
                                 .key(narKey),
                         getAccountInfo(newAutoRenewAccount)
-                                .exposingAliasTo(alias -> newAutoRenewAliasAddr.set(asHeadlongAddress(alias))),
+                                .exposingAliasTo(
+                                        alias ->
+                                                newAutoRenewAliasAddr.set(
+                                                        asHeadlongAddress(alias))),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HUNDRED_HBARS),
                         uploadInitCode(MINIMAL_CREATIONS_CONTRACT),
                         contractCreate(MINIMAL_CREATIONS_CONTRACT).gas(GAS_TO_OFFER),
@@ -483,11 +484,11 @@ public class SigningReqsSuite extends HapiSuite {
                         sourcing(
                                 () ->
                                         contractCall(
-                                                MINIMAL_CREATIONS_CONTRACT,
-                                                "updateTokenWithNewAutoRenewInfo",
-                                                tokenMirrorAddr.get(),
-                                                newAutoRenewAliasAddr.get(),
-                                                THREE_MONTHS_IN_SECONDS + 3600)
+                                                        MINIMAL_CREATIONS_CONTRACT,
+                                                        "updateTokenWithNewAutoRenewInfo",
+                                                        tokenMirrorAddr.get(),
+                                                        newAutoRenewAliasAddr.get(),
+                                                        THREE_MONTHS_IN_SECONDS + 3600)
                                                 .via(updateTxn)
                                                 .gas(10 * GAS_TO_OFFER)
                                                 .sending(DEFAULT_AMOUNT_TO_SEND)

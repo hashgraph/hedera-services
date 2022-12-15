@@ -20,15 +20,14 @@ import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
 import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.merkle.map.MerkleMap;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class StakeInfoManager {
@@ -46,7 +45,9 @@ public class StakeInfoManager {
 
     public void unclaimRewardsForStakeStart(final long nodeId, final long amount) {
         final var info = mutableStakeInfoFor(nodeId);
-        info.increaseUnclaimedStakeRewardStart(amount);
+        if (info != null) {
+            info.increaseUnclaimedStakeRewardStart(amount);
+        }
     }
 
     public void prepForManaging(final List<Long> nodeIds) {

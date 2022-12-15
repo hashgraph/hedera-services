@@ -33,7 +33,6 @@ import com.hedera.node.app.service.mono.store.contracts.precompile.SyntheticTxnF
 import com.hedera.node.app.service.mono.store.contracts.precompile.TokenUpdateLogic;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.KeyValidator;
 import com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs.LegacyKeyValidator;
-import com.hedera.node.app.service.mono.store.contracts.precompile.utils.KeyActivationUtils;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.mono.store.tokens.HederaTokenStore;

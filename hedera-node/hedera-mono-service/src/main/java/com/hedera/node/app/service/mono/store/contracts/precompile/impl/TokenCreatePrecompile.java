@@ -390,8 +390,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var creationTime = recordsHistorian.nextFollowingChildConsensusTime();
         final var tokenCreateChecks = infrastructureFactory.newCreateChecks();
         final var txn = transactionBody.build();
-        final var result =
-                tokenCreateChecks.validatorForConsTime(creationTime).apply(txn);
+        final var result = tokenCreateChecks.validatorForConsTime(creationTime).apply(txn);
         validateTrue(result == OK, result);
 
         /* --- Check required signatures --- */

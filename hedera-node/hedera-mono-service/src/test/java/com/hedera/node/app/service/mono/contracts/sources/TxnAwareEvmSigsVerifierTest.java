@@ -88,7 +88,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -135,7 +134,9 @@ class TxnAwareEvmSigsVerifierTest {
     void setup() throws Exception {
         expectedKey = TxnHandlingScenario.MISC_ACCOUNT_KT.asJKey();
 
-        subject = new TxnAwareEvmSigsVerifier(activationTest, txnCtx, cryptoValidity, dynamicProperties);
+        subject =
+                new TxnAwareEvmSigsVerifier(
+                        activationTest, txnCtx, cryptoValidity, dynamicProperties);
     }
 
     @Test

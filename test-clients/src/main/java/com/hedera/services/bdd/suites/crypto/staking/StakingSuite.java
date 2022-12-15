@@ -163,17 +163,17 @@ public class StakingSuite extends HapiSuite {
                                                         .via(setupTxn);
                                         final var second =
                                                 cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                GENESIS,
-                                                                target,
-                                                                ONE_MILLION_HBARS))
+                                                                tinyBarsFromTo(
+                                                                        GENESIS,
+                                                                        target,
+                                                                        ONE_MILLION_HBARS))
                                                         .via(fundingTxn);
                                         final var third =
                                                 cryptoTransfer(
-                                                        tinyBarsFromTo(
-                                                                target,
-                                                                GENESIS,
-                                                                ONE_MILLION_HBARS))
+                                                                tinyBarsFromTo(
+                                                                        target,
+                                                                        GENESIS,
+                                                                        ONE_MILLION_HBARS))
                                                         .via(withdrawingTxn);
                                         allRunFor(
                                                 spec,
@@ -243,11 +243,11 @@ public class StakingSuite extends HapiSuite {
                                                         sourcing(
                                                                 () ->
                                                                         cryptoTransfer(
-                                                                                tinyBarsFromTo(
-                                                                                        alice,
-                                                                                        baldwin,
-                                                                                        currentAliceBalance
-                                                                                                .get()))
+                                                                                        tinyBarsFromTo(
+                                                                                                alice,
+                                                                                                baldwin,
+                                                                                                currentAliceBalance
+                                                                                                        .get()))
                                                                                 .via(
                                                                                         sendToBobTxns
                                                                                                 .apply(
@@ -265,11 +265,11 @@ public class StakingSuite extends HapiSuite {
                                                         sourcing(
                                                                 () ->
                                                                         cryptoTransfer(
-                                                                                tinyBarsFromTo(
-                                                                                        baldwin,
-                                                                                        alice,
-                                                                                        currentBaldwinBalance
-                                                                                                .get()))
+                                                                                        tinyBarsFromTo(
+                                                                                                baldwin,
+                                                                                                alice,
+                                                                                                currentBaldwinBalance
+                                                                                                        .get()))
                                                                                 .via(
                                                                                         returnToAliceTxns
                                                                                                 .apply(

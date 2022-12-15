@@ -15,6 +15,12 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.impl.sigs;
 
+import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+
 import com.hedera.node.app.service.mono.contracts.sources.EvmSigsVerifier;
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
@@ -22,12 +28,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
 
 /**
  * Encapsulates the logic to validate some signing requirements of a {@code TokenCreate} system
@@ -39,8 +39,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
  *   <li>The new token's self-denominated fixed fee collectors (if any).
  * </ol>
  *
- * Note the treasury and admin key signing requirements were already enforced in the {@code TokenCreatePrecompile}
- * before this component was introduced.
+ * Note the treasury and admin key signing requirements were already enforced in the {@code
+ * TokenCreatePrecompile} before this component was introduced.
  */
 public class TokenCreateReqs {
     private final MessageFrame frame;

@@ -15,16 +15,15 @@
  */
 package com.hedera.node.app.service.mono.store.contracts.precompile.utils;
 
-import java.util.Objects;
-import java.util.Optional;
+import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Objects;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-
-import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 public final class KeyActivationUtils {
 

@@ -799,5 +799,4 @@ public class GlobalDynamicProperties implements EvmProperties {
     public LegacyContractIdActivations legacyContractIdActivations() {
         return legacyContractIdActivations;
     }
-
 }

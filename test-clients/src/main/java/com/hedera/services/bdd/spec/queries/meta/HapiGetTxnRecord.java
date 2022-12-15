@@ -186,7 +186,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         return this;
     }
 
-    public HapiGetTxnRecord exposingTokenCreationsTo(final Consumer<List<TokenID>> createdTokenIdsObserver) {
+    public HapiGetTxnRecord exposingTokenCreationsTo(
+            final Consumer<List<TokenID>> createdTokenIdsObserver) {
         this.createdTokenIdsObserver = createdTokenIdsObserver;
         return this;
     }
@@ -887,7 +888,8 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                     }
                 });
         final List<String> creations = (createdIdsObserver != null) ? new ArrayList<>() : null;
-        final List<TokenID> tokenCreations = (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
+        final List<TokenID> tokenCreations =
+                (createdTokenIdsObserver != null) ? new ArrayList<>() : null;
         for (final var rec : childRecords) {
             if (rec.getReceipt().hasAccountID() && creations != null) {
                 creations.add(HapiPropertySource.asAccountString(rec.getReceipt().getAccountID()));

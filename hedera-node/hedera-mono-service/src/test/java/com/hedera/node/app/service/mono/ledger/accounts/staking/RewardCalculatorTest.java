@@ -108,7 +108,6 @@ class RewardCalculatorTest {
         given(stakeInfoManager.mutableStakeInfoFor(0L)).willReturn(merkleStakingInfo);
         given(merkleStakingInfo.getRewardSumHistory()).willReturn(rewardHistory);
         given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
-        given(stakeInfoManager.mutableStakeInfoFor(anyLong())).willReturn(new MerkleStakingInfo());
 
         subject.setRewardsPaidInThisTxn(100L);
         final var reward = subject.computePendingReward(account);
@@ -127,6 +126,7 @@ class RewardCalculatorTest {
         given(stakePeriodManager.currentStakePeriod()).willReturn(todayNumber);
         given(stakePeriodManager.effectivePeriod(anyLong())).willReturn(todayNumber - 1);
         given(account.getStakePeriodStart()).willReturn(todayNumber - 1);
+        given(stakeInfoManager.mutableStakeInfoFor(anyLong())).willReturn(new MerkleStakingInfo());
         willCallRealMethod().given(stakePeriodManager).isRewardable(anyLong());
 
         final var reward = subject.computePendingReward(account);

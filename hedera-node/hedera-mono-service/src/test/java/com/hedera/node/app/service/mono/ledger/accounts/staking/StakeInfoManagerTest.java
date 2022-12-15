@@ -31,14 +31,13 @@ import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.swirlds.common.system.address.Address;
 import com.swirlds.common.system.address.AddressBook;
 import com.swirlds.merkle.map.MerkleMap;
+import java.util.List;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.stream.LongStream;
 
 @ExtendWith(MockitoExtension.class)
 class StakeInfoManagerTest {
@@ -58,8 +57,8 @@ class StakeInfoManagerTest {
         stakingInfo = buildsStakingInfoMap();
         subject = new StakeInfoManager(() -> stakingInfo);
     }
-    @Test
 
+    @Test
     void preparesCacheForSequentialNodeIds() {
         final var nodeIds = LongStream.range(0, 10).boxed().toList();
         subject.prepForManaging(nodeIds);
@@ -94,6 +93,7 @@ class StakeInfoManagerTest {
     void canUnclaimRewardsForMissingNodeId() {
         assertDoesNotThrow(() -> subject.unclaimRewardsForStakeStart(123, 333));
     }
+
     @Test
     void resetsRewardSUmHistory() {
         stakingInfo.forEach((a, b) -> b.setRewardSumHistory(new long[] {5, 5}));

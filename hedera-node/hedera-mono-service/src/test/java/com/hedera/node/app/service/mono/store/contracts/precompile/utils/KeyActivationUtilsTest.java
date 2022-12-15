@@ -23,15 +23,14 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.evm.store.contracts.WorldStateAccount;
 import com.hedera.node.app.service.mono.store.contracts.HederaStackedWorldStateUpdater;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 @ExtendWith(MockitoExtension.class)
 class KeyActivationUtilsTest {

@@ -35,21 +35,20 @@ import com.hedera.node.app.service.mono.ledger.accounts.ContractAliases;
 import com.hedera.node.app.service.mono.ledger.properties.AccountProperty;
 import com.hedera.node.app.service.mono.ledger.properties.TokenProperty;
 import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
+import com.hedera.node.app.service.mono.legacy.core.jproto.JKeyList;
 import com.hedera.node.app.service.mono.state.migration.HederaAccount;
 import com.hedera.node.app.service.mono.store.contracts.WorldLedgers;
 import com.hedera.node.app.service.mono.store.contracts.precompile.utils.LegacyActivationTest;
 import com.hedera.node.app.service.mono.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.crypto.TransactionSignature;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
 @Singleton
@@ -237,12 +236,12 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
         final var accountKey = (JKey) worldLedgers.accounts().get(accountId, KEY);
         return accountKey != null
                 && isActiveInFrame(
-                accountKey,
-                isDelegateCall,
-                activeContract,
-                worldLedgers.aliases(),
-                legacyActivationTest,
-                legacyActiveContracts);
+                        accountKey,
+                        isDelegateCall,
+                        activeContract,
+                        worldLedgers.aliases(),
+                        legacyActivationTest,
+                        legacyActiveContracts);
     }
 
     private boolean isActiveInFrame(
@@ -260,6 +259,10 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             final ContractAliases aliases,
             @Nullable final LegacyActivationTest legacyActivationTest,
             @Nullable final Set<Address> legacyActiveContracts) {
+        if (key instanceof JKeyList keyList && keyList.isEmpty()) {
+            // An empty key list is a sentinel for immutability
+            return false;
+        }
         final var pkToCryptoSigsFn = txnCtx.swirldsTxnAccessor().getRationalizedPkToCryptoSigFn();
         return activationTest.test(
                 key,
@@ -304,7 +307,7 @@ public class TxnAwareEvmSigsVerifier implements EvmSigsVerifier {
                 final var controllingContract = aliases.currentAddress(controllingId);
                 return (!isDelegateCall && controllingContract.equals(activeContract))
                         || hasLegacyActivation(
-                        controllingContract, legacyActivationTest, legacyActiveContracts);
+                                controllingContract, legacyActivationTest, legacyActiveContracts);
             } else {
                 // Otherwise, apply the standard cryptographic validity test
                 return cryptoValidity.test(key, sig);

@@ -110,10 +110,11 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing();
 
         assertDoesNotThrow(
-                () -> subject.doUpgradeHousekeeping(
-                        networkContext,
-                        AccountStorageAdapter.fromInMemory(accounts),
-                        stakingInfos));
+                () ->
+                        subject.doUpgradeHousekeeping(
+                                networkContext,
+                                AccountStorageAdapter.fromInMemory(accounts),
+                                stakingInfos));
     }
 
     @Test
@@ -123,9 +124,7 @@ class StakeStartupHelperTest {
         givenPostUpgradeSubjectDoing(NODE_STAKES, PENDING_REWARDS);
 
         subject.doUpgradeHousekeeping(
-                networkContext,
-                AccountStorageAdapter.fromInMemory(accounts),
-                stakingInfos);
+                networkContext, AccountStorageAdapter.fromInMemory(accounts), stakingInfos);
 
         verify(networkContext).setPendingRewards(expectedQuantities.pendingRewards);
 
@@ -261,21 +260,29 @@ class StakeStartupHelperTest {
 
     private static void registerConstructables() {
         try {
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(MerkleBinaryTree.class, MerkleBinaryTree::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(
-                            MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(MerkleAccountState.class, MerkleAccountState::new));
-            ConstructableRegistry.getInstance().registerConstructable(
-                    new ClassConstructorPair(FCQueue.class, FCQueue::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleMap.class, MerkleMap::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleBinaryTree.class, MerkleBinaryTree::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleLong.class, MerkleLong::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleTreeInternalNode.class, MerkleTreeInternalNode::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(MerkleAccount.class, MerkleAccount::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(
+                            new ClassConstructorPair(
+                                    MerkleAccountState.class, MerkleAccountState::new));
+            ConstructableRegistry.getInstance()
+                    .registerConstructable(new ClassConstructorPair(FCQueue.class, FCQueue::new));
         } catch (ConstructableRegistryException e) {
             throw new IllegalStateException(e);
         }
