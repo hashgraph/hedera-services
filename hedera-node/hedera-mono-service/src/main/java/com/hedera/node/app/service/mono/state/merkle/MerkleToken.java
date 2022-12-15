@@ -754,23 +754,23 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
         freezeCandidate.ifPresentOrElse(
                 k -> {
                     info.setDefaultFreezeStatus(
-                            tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber());
+                            tokenFreeStatusFor(accountsAreFrozenByDefault()).getNumber() == 1);
                     final var key = asKeyUnchecked(k);
                     info.setFreezeKey(convertToEvmKey(key));
                 },
                 () ->
                         info.setDefaultFreezeStatus(
-                                TokenFreezeStatus.FreezeNotApplicable.getNumber()));
+                                TokenFreezeStatus.FreezeNotApplicable.getNumber() == 1));
 
         final var kycCandidate = kycKey();
         kycCandidate.ifPresentOrElse(
                 k -> {
                     info.setDefaultKycStatus(
-                            tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber());
+                            tokenKycStatusFor(accountsKycGrantedByDefault()).getNumber() == 1);
                     final var key = asKeyUnchecked(k);
                     info.setKycKey(convertToEvmKey(key));
                 },
-                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber()));
+                () -> info.setDefaultKycStatus(TokenKycStatus.KycNotApplicable.getNumber() == 1));
 
         final var supplyCandidate = supplyKey();
         supplyCandidate.ifPresent(
@@ -798,9 +798,9 @@ public class MerkleToken extends PartialMerkleLeaf implements Keyed<EntityNum>, 
                 k -> {
                     final var key = asKeyUnchecked(k);
                     info.setPauseKey(convertToEvmKey(key));
-                    info.setPauseStatus(tokenPauseStatusOf(isPaused()).getNumber());
+                    info.setIsPaused(tokenPauseStatusOf(isPaused()).getNumber() == 1);
                 },
-                () -> info.setPauseStatus(TokenPauseStatus.PauseNotApplicable.getNumber()));
+                () -> info.setIsPaused(TokenPauseStatus.PauseNotApplicable.getNumber() == 1));
 
         if (hasAutoRenewAccount()) {
             info.setAutoRenewAccount(EntityIdUtils.asTypedEvmAddress(autoRenewAccount()));

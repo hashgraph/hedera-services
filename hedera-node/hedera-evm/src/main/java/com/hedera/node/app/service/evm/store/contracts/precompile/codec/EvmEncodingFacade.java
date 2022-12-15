@@ -361,8 +361,8 @@ public class EvmEncodingFacade {
                     getHederaTokenTuple(),
                     tokenInfo.getTotalSupply(),
                     tokenInfo.isDeleted(),
-                    tokenInfo.getDefaultKycStatus() == 1,
-                    tokenInfo.getPauseStatus() == 1,
+                    tokenInfo.getDefaultKycStatus(),
+                    tokenInfo.isPaused(),
                     fixedFees.toArray(new Tuple[fixedFees.size()]),
                     fractionalFees.toArray(new Tuple[fractionalFees.size()]),
                     royaltyFees.toArray(new Tuple[royaltyFees.size()]),
@@ -385,7 +385,7 @@ public class EvmEncodingFacade {
                     tokenInfo.getMemo(),
                     tokenInfo.getSupplyType() == 1,
                     tokenInfo.getMaxSupply(),
-                    tokenInfo.getDefaultFreezeStatus() == 1,
+                    tokenInfo.getDefaultFreezeStatus(),
                     getTokenKeysTuples(),
                     expiryTuple);
         }

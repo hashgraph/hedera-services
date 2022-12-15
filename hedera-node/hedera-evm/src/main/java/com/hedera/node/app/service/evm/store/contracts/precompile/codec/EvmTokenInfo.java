@@ -22,13 +22,13 @@ public class EvmTokenInfo {
 
     private String name;
     private String symbol;
-    private int defaultFreezeStatus;
-    private int defaultKycStatus;
+    private boolean defaultFreezeStatus;
+    private boolean defaultKycStatus;
     private String memo;
     private int tokenType;
     private int supplyType;
     private List<CustomFee> customFees;
-    private int pauseStatus;
+    private boolean isPaused;
     private byte[] ledgerId;
     private boolean deleted;
     private long totalSupply;
@@ -82,7 +82,7 @@ public class EvmTokenInfo {
         this.adminKey = adminKey;
     }
 
-    public void setDefaultFreezeStatus(int defaultFreezeStatus) {
+    public void setDefaultFreezeStatus(boolean defaultFreezeStatus) {
         this.defaultFreezeStatus = defaultFreezeStatus;
     }
 
@@ -90,7 +90,7 @@ public class EvmTokenInfo {
         this.freezeKey = freezeKey;
     }
 
-    public void setDefaultKycStatus(int defaultKycStatus) {
+    public void setDefaultKycStatus(boolean defaultKycStatus) {
         this.defaultKycStatus = defaultKycStatus;
     }
 
@@ -114,8 +114,8 @@ public class EvmTokenInfo {
         this.pauseKey = pauseKey;
     }
 
-    public void setPauseStatus(int pauseStatus) {
-        this.pauseStatus = pauseStatus;
+    public void setIsPaused(boolean pauseStatus) {
+        this.isPaused = pauseStatus;
     }
 
     public void setAutoRenewAccount(Address autoRenewAccount) {
@@ -194,8 +194,8 @@ public class EvmTokenInfo {
         return ledgerId;
     }
 
-    public int getPauseStatus() {
-        return pauseStatus;
+    public boolean isPaused() {
+        return isPaused;
     }
 
     public int getSupplyType() {
@@ -210,11 +210,11 @@ public class EvmTokenInfo {
         return memo;
     }
 
-    public int getDefaultKycStatus() {
+    public boolean getDefaultKycStatus() {
         return defaultKycStatus;
     }
 
-    public int getDefaultFreezeStatus() {
+    public boolean getDefaultFreezeStatus() {
         return defaultFreezeStatus;
     }
 
