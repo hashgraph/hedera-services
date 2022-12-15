@@ -192,7 +192,7 @@ public abstract class HapiSuite {
     @SuppressWarnings("java:S2629")
     private FinalOutcome runSuite(final Consumer<List<HapiSpec>> runner) {
         suiteRunnerCounter++;
-        if (!deferResultsSummary || onlyLogHeader) {
+        if (!getDeferResultsSummary() || onlyLogHeader) {
             getResultsLogger().info(STARTING_SUITE, name());
         }
 
