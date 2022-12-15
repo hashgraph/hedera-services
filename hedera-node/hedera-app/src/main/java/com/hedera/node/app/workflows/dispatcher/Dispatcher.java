@@ -27,8 +27,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A {@code PreHandleDispatcher} takes a validated transaction and dispatches it to the correct
- * handler
+ * A {@code Dispatcher} provides functionality to forward pre-check, pre-handle, and handle-requests
+ * to the appropriate handler
  */
 public class Dispatcher {
 
@@ -83,8 +83,8 @@ public class Dispatcher {
     }
 
     /**
-     * Dispatch a request. It is forwarded to the correct handler, which takes care of the specific
-     * functionality
+     * Dispatch a pre-handle request. It is forwarded to the correct handler, which takes care of
+     * the specific functionality
      *
      * @param state the {@link HederaState} of this request
      * @param transactionBody the {@link TransactionBody} of the request

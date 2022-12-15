@@ -62,12 +62,12 @@ class PreHandleWorkflowImplTest {
 
     private PreHandleWorkflowImpl workflow;
 
-    private static final Function<Supplier<?>, CompletableFuture<?>> RUNNER =
+    private static final Function<Supplier<?>, CompletableFuture<?>> RUN_INSTANTLY =
             supplier -> CompletableFuture.completedFuture(supplier.get());
 
     @BeforeEach
     void setup() {
-        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUNNER);
+        workflow = new PreHandleWorkflowImpl(dispatcher, onset, RUN_INSTANTLY);
     }
 
     @SuppressWarnings("ConstantConditions")

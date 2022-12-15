@@ -74,7 +74,7 @@ public final class HandlersFactory {
 
     /**
      * This method creates all handlers with the provided arguments and bundles them in a {@link
-     * Handlers}.
+     * Handlers} record.
      *
      * <p>Please note: the method signature is just a placeholder which is most likely going to
      * change.

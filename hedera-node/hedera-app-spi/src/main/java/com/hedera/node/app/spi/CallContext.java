@@ -20,6 +20,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/** The {@code CallContext} provides access to all services without leaking the underlying state. */
 public interface CallContext {
 
     /**

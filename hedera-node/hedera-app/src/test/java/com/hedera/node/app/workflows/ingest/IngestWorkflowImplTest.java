@@ -91,9 +91,6 @@ class IngestWorkflowImplTest {
     private StoreCache storeCache;
 
     @Mock(strictness = LENIENT)
-    private AccountStore accountStore;
-
-    @Mock(strictness = LENIENT)
     private WorkflowOnset onset;
 
     @Mock private IngestChecker checker;
@@ -114,7 +111,10 @@ class IngestWorkflowImplTest {
 
     @SuppressWarnings("JUnitMalformedDeclaration")
     @BeforeEach
-    void setup(@Mock(strictness = LENIENT) HederaState state, @Mock Account account)
+    void setup(
+            @Mock(strictness = LENIENT) HederaState state,
+            @Mock(strictness = LENIENT) AccountStore accountStore,
+            @Mock Account account)
             throws PreCheckException {
         when(currentPlatformStatus.get()).thenReturn(PlatformStatus.ACTIVE);
         when(stateAccessor.get()).thenReturn(new AutoCloseableWrapper<>(state, () -> {}));

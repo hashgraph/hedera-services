@@ -45,8 +45,8 @@ public class IngestChecker {
      * Constructor of the {@code IngestChecker}
      *
      * @param nodeAccountID the {@link AccountID} of the <em>node</em>
-     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@code
-     *     preCheck()}-methods
+     * @param dispatcher the {@link Dispatcher} that will call transaction-specific {@link
+     *     com.hedera.node.app.spi.workflows.TransactionHandler#preCheck(TransactionBody)}
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     public IngestChecker(

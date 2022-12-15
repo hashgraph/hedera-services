@@ -15,14 +15,25 @@
  */
 package com.hedera.node.app.workflows;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.mono.token.impl.AccountStore;
 import com.hedera.node.app.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/** A {@code StoreCache} caches stores for all active states. */
 public class StoreCache {
 
+    /**
+     * Returns the {@link AccountStore} for the provided {@link HederaState}.
+     *
+     * @param state the {@code HederaState} that is the base for the {@code AccountStore}
+     * @return the {@code AccountStore} for the provided state, either new or cached
+     */
     @NonNull
     public AccountStore getAccountStore(@NonNull final HederaState state) {
+        requireNonNull(state);
+
         throw new UnsupportedOperationException("not implemented");
     }
 }

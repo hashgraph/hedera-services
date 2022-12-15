@@ -78,6 +78,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         this.runner = supplier -> CompletableFuture.supplyAsync(supplier, exe);
     }
 
+    // Used only for testing
     PreHandleWorkflowImpl(
             @NonNull final Dispatcher dispatcher,
             @NonNull final WorkflowOnset onset,
@@ -105,7 +106,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
             futures.add(future);
         }
 
-        // wait until all transactions were pre-handled before returning
+        // wait until all transactions were processed before returning
         final CompletableFuture<?>[] array = futures.toArray(new CompletableFuture<?>[0]);
         CompletableFuture.allOf(array).join();
     }

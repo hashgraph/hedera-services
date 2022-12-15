@@ -65,7 +65,7 @@ public class AccountBuilderImpl implements AccountBuilder {
      */
     public AccountBuilderImpl(@NonNull Account copyOf) {
         Objects.requireNonNull(copyOf);
-        this.key = copyOf.getKey().isEmpty() ? null : copyOf.getKey().get();
+        this.key = copyOf.getKey().orElse(null);
         this.expiry = copyOf.expiry();
         this.balance = copyOf.balanceInTinyBar();
         this.memo = copyOf.memo();
