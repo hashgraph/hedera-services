@@ -23,18 +23,18 @@ public class EvmKey {
 
     private final byte[] ed25519;
 
-    private final byte[] ECDSA_secp256k1;
+    private final byte[] ECDSAsecp256k1;
 
     private final Address delegatableContractId;
 
     public EvmKey(
             Address contractId,
             byte[] ed25519,
-            byte[] ECDSA_secp256k1,
+            byte[] ECDSAsecp256k1,
             Address delegatableContractId) {
         this.contractId = contractId;
         this.ed25519 = ed25519;
-        this.ECDSA_secp256k1 = ECDSA_secp256k1;
+        this.ECDSAsecp256k1 = ECDSAsecp256k1;
         this.delegatableContractId = delegatableContractId;
     }
 
@@ -46,8 +46,8 @@ public class EvmKey {
         return ed25519;
     }
 
-    public byte[] getECDSA_secp256k1() {
-        return ECDSA_secp256k1;
+    public byte[] getECDSASecp256K1() {
+        return ECDSAsecp256k1;
     }
 
     public Address getDelegatableContractId() {

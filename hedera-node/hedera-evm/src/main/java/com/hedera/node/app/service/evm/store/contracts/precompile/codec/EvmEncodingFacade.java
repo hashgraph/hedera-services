@@ -427,7 +427,7 @@ public class EvmEncodingFacade {
                             false,
                             convertBesuAddressToHeadlongAddress(key.getContractId()),
                             key.getEd25519(),
-                            key.getECDSA_secp256k1(),
+                            key.getECDSASecp256K1(),
                             convertBesuAddressToHeadlongAddress(key.getDelegatableContractId())));
         }
 
