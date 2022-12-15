@@ -107,7 +107,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                 .withRecharging()
                                 .key(GENESIS)
                                 .rechargeWindow(3)
-                                .stakedNodeId(0)
+                                .stakedNodeId(4)
                                 .logging()
                                 .hasRetryPrecheckFrom(
                                         BUSY,
@@ -115,7 +115,7 @@ public class CryptoTransferLoadTest extends LoadTest {
                                         PLATFORM_TRANSACTION_NOT_CREATED),
                         cryptoCreate("receiver")
                                 .payingWith(GENESIS)
-                                .stakedNodeId(0)
+                                .stakedNodeId(4)
                                 .hasRetryPrecheckFrom(
                                         BUSY,
                                         DUPLICATE_TRANSACTION,

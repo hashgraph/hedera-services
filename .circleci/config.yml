@@ -1432,7 +1432,7 @@ workflows:
   GCP-Daily-Services-Personal:
     triggers:
       - schedule:
-          cron: "10 18 * * *"
+          cron: "14 18 * * *"
           filters:
             branches:
               only:
