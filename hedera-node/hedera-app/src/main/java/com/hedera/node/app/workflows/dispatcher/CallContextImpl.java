@@ -35,10 +35,11 @@ public class CallContextImpl implements CallContext {
      *
      * @param dispatcher the {@link Dispatcher} that will be used to forward requests
      * @param state the {@link HederaState} of this {@code CallContext}
+     * @throws NullPointerException if one of the arguments is {@code null}
      */
-    public CallContextImpl(final Dispatcher dispatcher, final HederaState state) {
-        this.dispatcher = dispatcher;
-        this.state = state;
+    public CallContextImpl(@NonNull final Dispatcher dispatcher, @NonNull final HederaState state) {
+        this.dispatcher = requireNonNull(dispatcher);
+        this.state = requireNonNull(state);
     }
 
     @NonNull

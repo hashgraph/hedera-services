@@ -74,7 +74,7 @@ public class Dispatcher {
      */
     @NonNull
     public TransactionMetadata preHandle(
-            @NonNull HederaState state, @NonNull final TransactionBody transactionBody) {
+            @NonNull final HederaState state, @NonNull final TransactionBody transactionBody) {
         requireNonNull(state);
         requireNonNull(transactionBody);
 
@@ -93,9 +93,9 @@ public class Dispatcher {
      */
     @NonNull
     public TransactionMetadata preHandle(
-            @NonNull HederaState state,
+            @NonNull final HederaState state,
             @NonNull final TransactionBody transactionBody,
-            @NonNull AccountID payer) {
+            @NonNull final AccountID payer) {
         requireNonNull(state);
         requireNonNull(transactionBody);
         requireNonNull(payer);

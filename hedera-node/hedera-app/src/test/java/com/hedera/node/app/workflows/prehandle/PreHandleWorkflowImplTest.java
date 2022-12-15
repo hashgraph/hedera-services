@@ -132,7 +132,7 @@ class PreHandleWorkflowImplTest {
         final OnsetResult onsetResult = new OnsetResult(txBody, signatureMap, functionality);
         when(onset.parseAndCheck(any(), any(byte[].class))).thenReturn(onsetResult);
 
-        when(dispatcher.preHandle(eq(state), any())).thenReturn(metadata);
+        when(dispatcher.preHandle(eq(state), eq(txBody))).thenReturn(metadata);
 
         final Iterator<Transaction> iterator = List.of((Transaction) transaction).iterator();
         when(event.transactionIterator()).thenReturn(iterator);

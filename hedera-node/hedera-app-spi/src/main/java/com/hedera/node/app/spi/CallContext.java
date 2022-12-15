@@ -33,5 +33,5 @@ public interface CallContext {
      */
     @NonNull
     TransactionMetadata preHandle(
-            @NonNull final TransactionBody transactionBody, @NonNull AccountID payer);
+            @NonNull TransactionBody transactionBody, @NonNull AccountID payer);
 }
