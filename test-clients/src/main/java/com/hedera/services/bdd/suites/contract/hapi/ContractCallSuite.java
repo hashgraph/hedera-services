@@ -15,7 +15,6 @@
  */
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
@@ -61,13 +60,9 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
@@ -237,8 +232,7 @@ public class ContractCallSuite extends HapiSuite {
                 workingHoursDemo(),
                 lpFarmSimulation(),
                 nestedContractCannotOverSendValue(),
-                depositMoreThanBalanceFailsGracefully(),
-                nestedLazyCreate());
+                depositMoreThanBalanceFailsGracefully());
     }
 
     private HapiSpec depositMoreThanBalanceFailsGracefully() {
@@ -1449,73 +1443,6 @@ public class ContractCallSuite extends HapiSuite {
                                                                                         .longAtBytes(
                                                                                                 DEPOSIT_AMOUNT,
                                                                                                 24))))));
-    }
-
-    private HapiSpec nestedLazyCreate() {
-        final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
-        final var ECDSA_KEY = "ECDSAKey";
-        final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
-        final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
-        final var lazyCreationProperty = "lazyCreation.enabled";
-        final var contractsEvmVersionProperty = "contracts.evm.version";
-        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
-        final var REVERTING_TXN = "revertingTxn";
-        return defaultHapiSpec("nestedLazyCreate")
-                .given(
-                        overriding(lazyCreationProperty, "true"),
-                        overridingTwo(
-                                contractsEvmVersionProperty,
-                                "v0.32",
-                                contractsEvmVersionDynamicProperty,
-                                "true"),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(LAZY_CREATE_CONTRACT),
-                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
-                .when(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                                    allRunFor(
-                                            spec,
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            revertingCallLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .sending(DEPOSIT_AMOUNT)
-                                                    .via(REVERTING_TXN)
-                                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
-                                                    .gas(6_000_000),
-                                            emptyChildRecordsCheck(
-                                                    REVERTING_TXN, CONTRACT_REVERT_EXECUTED),
-                                            contractCall(
-                                                            LAZY_CREATE_CONTRACT,
-                                                            callLazyCreateFunction,
-                                                            asHeadlongAddress(addressBytes))
-                                                    .via(PAY_TXN)
-                                                    .sending(DEPOSIT_AMOUNT)
-                                                    .gas(6_000_000));
-                                }))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var getTxnRecord =
-                                            getTxnRecord(PAY_TXN).andAllChildRecords().logged();
-                                    allRunFor(spec, getTxnRecord);
-                                    final var lazyAccountId =
-                                            getTxnRecord
-                                                    .getChildRecord(0)
-                                                    .getReceipt()
-                                                    .getAccountID();
-                                    final var name = "lazy";
-                                    spec.registry().saveAccountId(name, lazyAccountId);
-                                    allRunFor(
-                                            spec,
-                                            getAccountBalance(name).hasTinyBars(DEPOSIT_AMOUNT));
-                                }),
-                        resetToDefault(lazyCreationProperty, contractsEvmVersionProperty));
     }
 
     HapiSpec callingDestructedContractReturnsStatusDeleted() {
