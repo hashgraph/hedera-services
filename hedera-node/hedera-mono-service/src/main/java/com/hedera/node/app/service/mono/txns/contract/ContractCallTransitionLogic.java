@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.mono.exceptions.ValidationUtils.valida
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
@@ -27,6 +28,7 @@ import com.hedera.node.app.service.mono.context.TransactionContext;
 import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import com.hedera.node.app.service.mono.contracts.execution.CallEvmTxProcessor;
 import com.hedera.node.app.service.mono.contracts.execution.TransactionProcessingResult;
+import com.hedera.node.app.service.mono.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.mono.ledger.SigImpactHistorian;
 import com.hedera.node.app.service.mono.ledger.accounts.AliasManager;
 import com.hedera.node.app.service.mono.records.TransactionRecordService;
@@ -122,7 +124,12 @@ public class ContractCallTransitionLogic implements PreFetchableTransition {
             // allow Ethereum transactions to lazy create a hollow account
             // if `to` is non-existent and `value` is non-zero
             validateTrue(op.getAmount() > 0, INVALID_ACCOUNT_ID);
-            receiver = new Account(op.getContractID().getEvmAddress());
+            try {
+                receiver = new Account(op.getContractID().getEvmAddress());
+            } catch (Throwable e) {
+                // any invalid form of evm address can be passed
+                throw new InvalidTransactionException(INVALID_SOLIDITY_ADDRESS);
+            }
         } else {
             receiver =
                     entityAccess.isTokenAccount(targetId.asEvmAddress())

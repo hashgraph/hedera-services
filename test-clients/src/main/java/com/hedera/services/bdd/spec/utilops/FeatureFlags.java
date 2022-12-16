@@ -59,5 +59,7 @@ public enum FeatureFlags {
         "contracts.enforceCreationThrottle",
         "contracts.precompile.atomicCryptoTransfer.enabled",
         "scheduling.longTermEnabled",
+        // Not being tested
+        "contracts.evm.version.dynamic"
     };
 }

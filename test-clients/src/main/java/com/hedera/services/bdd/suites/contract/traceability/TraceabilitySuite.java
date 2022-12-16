@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesT
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -193,7 +193,7 @@ public class TraceabilitySuite extends HapiSuite {
                         vanillaBytecodeSidecar(),
                         vanillaBytecodeSidecar2(),
                         actionsShowPropagatedRevert(),
-                ethereumLazyCreateExportsExpectedSidecars(),
+                        ethereumLazyCreateExportsExpectedSidecars(),
                         assertSidecars())
                 .toList();
     }
@@ -7316,135 +7316,137 @@ public class TraceabilitySuite extends HapiSuite {
                                 }));
     }
 
-    HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
+    private HapiSpec ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
         final var lazyCreateTxn = "lazyCreateTxn";
         final var failedlazyCreateTxn = "payTxn2";
         final var valueToSend = FIVE_HBARS;
-        return defaultHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
-            .given(
-                overridingTwo(CHAIN_ID_PROPERTY, "298", LAZY_CREATE_PROPERTY, "true"),
-                overridingTwo(
-                    "contracts.evm.version",
-                    "v0.32",
-                    "contracts.evm.version.dynamic",
-                    "true"),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
-                newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
-                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                cryptoTransfer(
-                    tinyBarsFromAccountToAlias(
-                        GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                    .via(AUTO_ACCOUNT_TXN),
-                getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords())
-            .when(
-                withOpContext(
-                    (spec, opLog) ->
-                        allRunFor(
-                            spec,
-                            TxnVerbs.ethereumCryptoTransferToAlias(
-                                    spec.registry()
-                                        .getKey(RECIPIENT_KEY)
-                                        .getECDSASecp256K1(),
-                                    valueToSend)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(0)
-                                .maxFeePerGas(0L)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .gasLimit(200_000L)
-                                .via(failedlazyCreateTxn)
-                                .hasKnownStatus(INSUFFICIENT_GAS),
-                            TxnVerbs.ethereumCryptoTransferToAlias(
-                                    spec.registry()
-                                        .getKey(RECIPIENT_KEY)
-                                        .getECDSASecp256K1(),
-                                    valueToSend)
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .nonce(1)
-                                .maxFeePerGas(0L)
-                                .maxGasAllowance(FIVE_HBARS)
-                                .gasLimit(2_000_000L)
-                                .via(lazyCreateTxn)
-                                .hasKnownStatus(SUCCESS))))
-            .then(
-                withOpContext(
-                    (spec, opLog) -> {
-                        final var ecdsaSecp256K1 =
-                            spec.registry()
-                                .getKey(RECIPIENT_KEY)
-                                .getECDSASecp256K1();
-                        final var firstAliasAsByteString =
-                            ByteStringUtils.wrapUnsafely(
-                                recoverAddressFromPubKey(
-                                    ecdsaSecp256K1.toByteArray()));
-                        AtomicReference<AccountID> lazyAccountIdReference =
-                            new AtomicReference<>();
-                        final var lazyAccountInfoCheck =
-                            getAliasedAccountInfo(firstAliasAsByteString)
-                                .logged()
-                                .has(
-                                    accountWith()
-                                        .balance(FIVE_HBARS)
-                                        .alias(firstAliasAsByteString)
-                                        .key(EMPTY_KEY))
-                                .exposingIdTo(lazyAccountIdReference::set);
-                        AtomicReference<AccountID> ethSenderAccountReference =
-                            new AtomicReference<>();
-                        final var hapiGetAccountInfo =
-                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .exposingIdTo(ethSenderAccountReference::set);
-                        allRunFor(spec, hapiGetAccountInfo, lazyAccountInfoCheck);
-                        allRunFor(
-                            spec,
-                            expectContractActionSidecarFor(
-                                failedlazyCreateTxn,
-                                List.of(
-                                    ContractAction.newBuilder()
-                                        .setCallType(CALL)
-                                        .setCallOperationType(
-                                            CallOperationType
-                                                .OP_CALL)
-                                        .setCallingAccount(
-                                            ethSenderAccountReference
-                                                .get())
-                                        .setGas(179000)
-                                        .setGasUsed(179000)
-                                        .setValue(valueToSend)
-                                        .setTargetedAddress(
-                                            firstAliasAsByteString)
-                                        .setError(
-                                            ByteString.copyFromUtf8(
-                                                INSUFFICIENT_GAS
-                                                    .name()))
-                                        .build())),
-                            expectContractActionSidecarFor(
-                                lazyCreateTxn,
-                                List.of(
-                                    ContractAction.newBuilder()
-                                        .setCallType(CALL)
-                                        .setCallOperationType(
-                                            CallOperationType
-                                                .OP_CALL)
-                                        .setCallingAccount(
-                                            ethSenderAccountReference
-                                                .get())
-                                        .setGas(1_979_000)
-                                        .setGasUsed(554_243)
-                                        .setValue(valueToSend)
-                                        .setRecipientAccount(
-                                            lazyAccountIdReference
-                                                .get())
-                                        .setOutput(EMPTY)
-                                        .build())));
-                    }),
-                resetToDefault(
-                    CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version"));
+        return propertyPreservingHapiSpec("ethereumLazyCreateExportsExpectedSidecars")
+                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROPERTY,
+                                "298",
+                                LAZY_CREATE_PROPERTY,
+                                "true",
+                                "contracts.evm.version",
+                                "v0.32"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via(AUTO_ACCOUNT_TXN),
+                        getTxnRecord(AUTO_ACCOUNT_TXN).andAllChildRecords())
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                valueToSend)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(0)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(200_000L)
+                                                        .via(failedlazyCreateTxn)
+                                                        .hasKnownStatus(INSUFFICIENT_GAS),
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                valueToSend)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(1)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(2_000_000L)
+                                                        .via(lazyCreateTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var ecdsaSecp256K1 =
+                                            spec.registry()
+                                                    .getKey(RECIPIENT_KEY)
+                                                    .getECDSASecp256K1();
+                                    final var firstAliasAsByteString =
+                                            ByteStringUtils.wrapUnsafely(
+                                                    recoverAddressFromPubKey(
+                                                            ecdsaSecp256K1.toByteArray()));
+                                    AtomicReference<AccountID> lazyAccountIdReference =
+                                            new AtomicReference<>();
+                                    final var lazyAccountInfoCheck =
+                                            getAliasedAccountInfo(firstAliasAsByteString)
+                                                    .logged()
+                                                    .has(
+                                                            accountWith()
+                                                                    .balance(FIVE_HBARS)
+                                                                    .alias(firstAliasAsByteString)
+                                                                    .key(EMPTY_KEY))
+                                                    .exposingIdTo(lazyAccountIdReference::set);
+                                    AtomicReference<AccountID> ethSenderAccountReference =
+                                            new AtomicReference<>();
+                                    final var hapiGetAccountInfo =
+                                            getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
+                                                    .exposingIdTo(ethSenderAccountReference::set);
+                                    allRunFor(spec, hapiGetAccountInfo, lazyAccountInfoCheck);
+                                    allRunFor(
+                                            spec,
+                                            expectContractActionSidecarFor(
+                                                    failedlazyCreateTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CALL)
+                                                                    .setCallingAccount(
+                                                                            ethSenderAccountReference
+                                                                                    .get())
+                                                                    .setGas(179000)
+                                                                    .setGasUsed(179000)
+                                                                    .setValue(valueToSend)
+                                                                    .setTargetedAddress(
+                                                                            firstAliasAsByteString)
+                                                                    .setError(
+                                                                            ByteString.copyFromUtf8(
+                                                                                    INSUFFICIENT_GAS
+                                                                                            .name()))
+                                                                    .build())),
+                                            expectContractActionSidecarFor(
+                                                    lazyCreateTxn,
+                                                    List.of(
+                                                            ContractAction.newBuilder()
+                                                                    .setCallType(CALL)
+                                                                    .setCallOperationType(
+                                                                            CallOperationType
+                                                                                    .OP_CALL)
+                                                                    .setCallingAccount(
+                                                                            ethSenderAccountReference
+                                                                                    .get())
+                                                                    .setGas(1_979_000)
+                                                                    .setGasUsed(554_243)
+                                                                    .setValue(valueToSend)
+                                                                    .setRecipientAccount(
+                                                                            lazyAccountIdReference
+                                                                                    .get())
+                                                                    .setOutput(EMPTY)
+                                                                    .build())));
+                                }),
+                        resetToDefault(
+                                CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version"));
     }
 
     @SuppressWarnings("java:S5960")

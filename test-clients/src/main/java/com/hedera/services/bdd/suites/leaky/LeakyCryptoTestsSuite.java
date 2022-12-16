@@ -17,12 +17,14 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -38,20 +40,25 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOfDeferred;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.remembering;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.ANOTHER_SPENDER;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.FUNGIBLE_TOKEN_MINT_TXN;
@@ -76,23 +83,30 @@ import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.TokenIdOrderi
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.yahcli.commands.validation.ValidationCommand.RECEIVER;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ALLOWANCES_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
+import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.suites.HapiSuite;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.Arrays;
@@ -100,6 +114,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
@@ -110,6 +125,7 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
     private static final String ASSOCIATIONS_LIMIT_PROPERTY = "entities.limitTokenAssociations";
     private static final String DEFAULT_ASSOCIATIONS_LIMIT =
             HapiSpecSetup.getDefaultNodeProps().get(ASSOCIATIONS_LIMIT_PROPERTY);
+    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
 
     public static void main(String... args) {
         new LeakyCryptoTestsSuite().runSuiteSync();
@@ -125,7 +141,8 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                 createAnAccountWithEVMAddressAliasAndECKey(),
                 scheduledCryptoApproveAllowanceWaitForExpiryTrue(),
                 txnsUsingHip583FunctionalitiesAreNotAcceptedWhenFlagsAreDisabled(),
-                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee());
+                getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee(),
+                lazyCreateViaEthereumCryptoTransfer());
     }
 
     private HapiSpec getsInsufficientPayerBalanceIfSendingAccountCanPayEverythingButServiceFee() {
@@ -682,6 +699,133 @@ public class LeakyCryptoTestsSuite extends HapiSuite {
                         overridingTwo(
                                 HEDERA_ALLOWANCES_MAX_TRANSACTION_LIMIT, "20",
                                 HEDERA_ALLOWANCES_MAX_ACCOUNT_LIMIT, "100"));
+    }
+
+    private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
+        final var RECIPIENT_KEY = "lazyAccountRecipient";
+        final var lazyCreateTxn = "payTxn";
+        final var failedLazyCreateTxn = "failedLazyCreateTxn";
+        return propertyPreservingHapiSpec("lazyCreateViaEthereumCryptoTransfer")
+                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, "contracts.evm.version")
+                .given(
+                        overridingThree(
+                                CHAIN_ID_PROP,
+                                "298",
+                                LAZY_CREATE_PROPERTY_NAME,
+                                "true",
+                                "contracts.evm.version",
+                                "v0.32"),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoTransfer(
+                                        tinyBarsFromAccountToAlias(
+                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                                .via("autoAccount"),
+                        getTxnRecord("autoAccount").andAllChildRecords())
+                .when(
+                        withOpContext(
+                                (spec, opLog) ->
+                                        allRunFor(
+                                                spec,
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(0)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(200_000L)
+                                                        .via(failedLazyCreateTxn)
+                                                        .hasKnownStatus(INSUFFICIENT_GAS),
+                                                TxnVerbs.ethereumCryptoTransferToAlias(
+                                                                spec.registry()
+                                                                        .getKey(RECIPIENT_KEY)
+                                                                        .getECDSASecp256K1(),
+                                                                FIVE_HBARS)
+                                                        .type(EthTxData.EthTransactionType.EIP1559)
+                                                        .signingWith(SECP_256K1_SOURCE_KEY)
+                                                        .payingWith(RELAYER)
+                                                        .nonce(1)
+                                                        .maxFeePerGas(0L)
+                                                        .maxGasAllowance(FIVE_HBARS)
+                                                        .gasLimit(2_000_000L)
+                                                        .via(lazyCreateTxn)
+                                                        .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    final var failedLazyTxnRecord =
+                                            getTxnRecord(failedLazyCreateTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .targetedContractId(
+                                                                            ContractID.newBuilder()
+                                                                                    .getDefaultInstanceForType()))
+                                                    .logged();
+                                    final var failedLazyTxnChildRecordsCheck =
+                                            emptyChildRecordsCheck(
+                                                    failedLazyCreateTxn, INSUFFICIENT_GAS);
+                                    allRunFor(
+                                            spec,
+                                            failedLazyTxnRecord,
+                                            failedLazyTxnChildRecordsCheck);
+
+                                    final var ecdsaSecp256K1 =
+                                            spec.registry()
+                                                    .getKey(RECIPIENT_KEY)
+                                                    .getECDSASecp256K1();
+                                    final var aliasAsByteString =
+                                            ByteStringUtils.wrapUnsafely(
+                                                    recoverAddressFromPubKey(
+                                                            ecdsaSecp256K1.toByteArray()));
+                                    AtomicReference<AccountID> lazyAccountIdReference =
+                                            new AtomicReference<>();
+                                    final var lazyAccountInfoCheck =
+                                            getAliasedAccountInfo(aliasAsByteString)
+                                                    .logged()
+                                                    .has(
+                                                            accountWith()
+                                                                    .balance(FIVE_HBARS)
+                                                                    .alias(aliasAsByteString)
+                                                                    .key(EMPTY_KEY))
+                                                    .exposingIdTo(lazyAccountIdReference::set);
+                                    allRunFor(spec, lazyAccountInfoCheck);
+                                    final var payTxn =
+                                            getTxnRecord(lazyCreateTxn)
+                                                    .hasPriority(
+                                                            recordWith()
+                                                                    .targetedContractId(
+                                                                            ContractID.newBuilder()
+                                                                                    .setContractNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getAccountNum())
+                                                                                    .setShardNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getShardNum())
+                                                                                    .setRealmNum(
+                                                                                            lazyAccountIdReference
+                                                                                                    .get()
+                                                                                                    .getRealmNum())
+                                                                                    .build()))
+                                                    .andAllChildRecords()
+                                                    .logged();
+                                    final var childRecordsCheck =
+                                            childRecordsCheck(
+                                                    lazyCreateTxn,
+                                                    SUCCESS,
+                                                    recordWith()
+                                                            .status(SUCCESS)
+                                                            .memo(LAZY_MEMO)
+                                                            .alias(ByteString.EMPTY));
+                                    allRunFor(spec, payTxn, childRecordsCheck);
+                                }));
     }
 
     private long tinybarCostOfGas(

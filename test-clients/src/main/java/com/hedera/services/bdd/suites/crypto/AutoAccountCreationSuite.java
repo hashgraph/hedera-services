@@ -56,12 +56,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
@@ -72,7 +68,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.updateSpecFo
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
@@ -83,11 +78,8 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -151,8 +143,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
     private static final String HBAR_XFER = "hbarXfer";
     private static final String NFT_XFER = "nftXfer";
     private static final String FT_XFER = "ftXfer";
-    private static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
-    private static final String CONTRACTS_CHAIN_ID_PROPERTY_NAME = "contracts.chainId";
 
     public static void main(String... args) {
         new AutoAccountCreationSuite().runSuiteAsync();
@@ -196,8 +186,7 @@ public class AutoAccountCreationSuite extends HapiSuite {
                 transferHbarsToEVMAddressAlias(),
                 transferFungibleToEVMAddressAlias(),
                 transferNonFungibleToEVMAddressAlias(),
-                payerBalanceIsReflectsAllChangesBeforeFeeCharging(),
-            lazyCreateViaEthereumCryptoTransfer());
+                payerBalanceIsReflectsAllChangesBeforeFeeCharging());
     }
 
     private HapiSpec canAutoCreateWithHbarAndTokenTransfers() {
@@ -1289,137 +1278,6 @@ public class AutoAccountCreationSuite extends HapiSuite {
                                                                         0)
                                                                 .memo(AUTO_MEMO))
                                                 .logged()));
-    }
-
-    private HapiSpec lazyCreateViaEthereumCryptoTransfer() {
-        final var RECIPIENT_KEY = "lazyAccountRecipient";
-        final var lazyCreateTxn = "payTxn";
-        final var failedLazyCreateTxn = "failedLazyCreateTxn";
-        return defaultHapiSpec("lazyCreateViaEthereumCryptoTransfer")
-                .given(
-                        overriding(CONTRACTS_CHAIN_ID_PROPERTY_NAME, "298"),
-                        overriding(LAZY_CREATE_PROPERTY_NAME, "true"),
-                        overridingTwo(
-                                "contracts.evm.version",
-                                "v0.32",
-                                "contracts.evm.version.dynamic",
-                                "true"),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(
-                                        tinyBarsFromAccountToAlias(
-                                                GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords())
-                .when(
-                        withOpContext(
-                                (spec, opLog) ->
-                                        allRunFor(
-                                                spec,
-                                                TxnVerbs.ethereumCryptoTransferToAlias(
-                                                                spec.registry()
-                                                                        .getKey(RECIPIENT_KEY)
-                                                                        .getECDSASecp256K1(),
-                                                                FIVE_HBARS)
-                                                        .type(EthTxData.EthTransactionType.EIP1559)
-                                                        .signingWith(SECP_256K1_SOURCE_KEY)
-                                                        .payingWith(RELAYER)
-                                                        .nonce(0)
-                                                        .maxFeePerGas(0L)
-                                                        .maxGasAllowance(FIVE_HBARS)
-                                                        .gasLimit(200_000L)
-                                                        .via(failedLazyCreateTxn)
-                                                        .hasKnownStatus(INSUFFICIENT_GAS),
-                                                TxnVerbs.ethereumCryptoTransferToAlias(
-                                                                spec.registry()
-                                                                        .getKey(RECIPIENT_KEY)
-                                                                        .getECDSASecp256K1(),
-                                                                FIVE_HBARS)
-                                                        .type(EthTxData.EthTransactionType.EIP1559)
-                                                        .signingWith(SECP_256K1_SOURCE_KEY)
-                                                        .payingWith(RELAYER)
-                                                        .nonce(1)
-                                                        .maxFeePerGas(0L)
-                                                        .maxGasAllowance(FIVE_HBARS)
-                                                        .gasLimit(2_000_000L)
-                                                        .via(lazyCreateTxn)
-                                                        .hasKnownStatus(SUCCESS))))
-                .then(
-                        withOpContext(
-                                (spec, opLog) -> {
-                                    final var failedLazyTxnRecord =
-                                            getTxnRecord(failedLazyCreateTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .getDefaultInstanceForType()))
-                                                    .logged();
-                                    final var failedLazyTxnChildRecordsCheck =
-                                            emptyChildRecordsCheck(
-                                                    failedLazyCreateTxn, INSUFFICIENT_GAS);
-                                    allRunFor(
-                                            spec,
-                                            failedLazyTxnRecord,
-                                            failedLazyTxnChildRecordsCheck);
-
-                                    final var ecdsaSecp256K1 =
-                                            spec.registry()
-                                                    .getKey(RECIPIENT_KEY)
-                                                    .getECDSASecp256K1();
-                                    final var aliasAsByteString =
-                                            ByteStringUtils.wrapUnsafely(
-                                                    recoverAddressFromPubKey(
-                                                            ecdsaSecp256K1.toByteArray()));
-                                    AtomicReference<AccountID> lazyAccountIdReference =
-                                            new AtomicReference<>();
-                                    final var lazyAccountInfoCheck =
-                                            getAliasedAccountInfo(aliasAsByteString)
-                                                    .logged()
-                                                    .has(
-                                                            accountWith()
-                                                                    .balance(FIVE_HBARS)
-                                                                    .alias(aliasAsByteString)
-                                                                    .key(EMPTY_KEY))
-                                                    .exposingIdTo(lazyAccountIdReference::set);
-                                    allRunFor(spec, lazyAccountInfoCheck);
-                                    final var payTxn =
-                                            getTxnRecord(lazyCreateTxn)
-                                                    .hasPriority(
-                                                            recordWith()
-                                                                    .targetedContractId(
-                                                                            ContractID.newBuilder()
-                                                                                    .setContractNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getAccountNum())
-                                                                                    .setShardNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getShardNum())
-                                                                                    .setRealmNum(
-                                                                                            lazyAccountIdReference
-                                                                                                    .get()
-                                                                                                    .getRealmNum())
-                                                                                    .build()))
-                                                    .andAllChildRecords()
-                                                    .logged();
-                                    final var childRecordsCheck =
-                                            childRecordsCheck(
-                                                    lazyCreateTxn,
-                                                    SUCCESS,
-                                                    recordWith()
-                                                            .status(SUCCESS)
-                                                            .memo(LAZY_MEMO)
-                                                            .alias(ByteString.EMPTY));
-
-                                    allRunFor(spec, payTxn, childRecordsCheck);
-                                }),
-                        resetToDefault(
-                                CONTRACTS_CHAIN_ID_PROPERTY_NAME,
-                                LAZY_CREATE_PROPERTY_NAME,
-                                "contracts.evm.version"));
     }
 
     @SuppressWarnings("java:S5960")

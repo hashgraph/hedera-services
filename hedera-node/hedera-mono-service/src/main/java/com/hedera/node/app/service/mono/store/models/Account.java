@@ -48,6 +48,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -87,7 +88,7 @@ public class Account extends HederaEvmAccount {
     }
 
     public Account(final ByteString alias) {
-        super(Address.fromHexString(alias.toStringUtf8()));
+        super(Address.fromHexString(Hex.toHexString(alias.toByteArray())));
         this.alias = alias;
     }
 
