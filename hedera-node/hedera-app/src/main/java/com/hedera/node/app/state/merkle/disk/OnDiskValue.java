@@ -23,11 +23,22 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualValue;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+/**
+ * A {@link VirtualValue} used for storing the actual value. In our system, a state might have
+ * business objects as values, such as {@code Account} or {@code Token}. However, the {@link
+ * com.swirlds.virtualmap.VirtualMap} requires each value in the map to be of the type {@link
+ * VirtualValue}. Rather than exposing each service to the merkle APIs, we allow them to work in
+ * terms of business objects, and this one implementation of {@link VirtualValue} is used for all
+ * types of values.
+ *
+ * @param <V> The type of the value (business object) held in this merkel data structure
+ */
 public class OnDiskValue<V> implements VirtualValue {
     private static final long CLASS_ID = 0xc1bf8fb7edb292c7L;
 
@@ -61,6 +72,7 @@ public class OnDiskValue<V> implements VirtualValue {
         this.valueWriter = Objects.requireNonNull(valueWriter);
     }
 
+    /** {@inheritDoc} */
     @Override
     public VirtualValue copy() {
         throwIfImmutable();
@@ -69,11 +81,13 @@ public class OnDiskValue<V> implements VirtualValue {
         return copy;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isImmutable() {
         return immutable;
     }
 
+    /** {@inheritDoc} */
     @Override
     public VirtualValue asReadOnly() {
         if (isImmutable()) {
@@ -85,24 +99,28 @@ public class OnDiskValue<V> implements VirtualValue {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final ByteBuffer byteBuffer) throws IOException {
         final var output = new ByteBufferDataOutput(byteBuffer);
         valueWriter.write(value, output);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream serializableDataOutputStream)
             throws IOException {
         valueWriter.write(value, serializableDataOutputStream);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final ByteBuffer byteBuffer, int ignored) throws IOException {
         final var input = new ByteBufferDataInput(byteBuffer);
         value = valueParser.parse(input);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deserialize(
             @NonNull final SerializableDataInputStream serializableDataInputStream, int ignored)
@@ -110,22 +128,34 @@ public class OnDiskValue<V> implements VirtualValue {
         value = valueParser.parse(new DataInputStream(serializableDataInputStream));
     }
 
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
         return CLASS_ID;
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getVersion() {
         return 1;
     }
 
-    @NonNull
+    /**
+     * Gets the value.
+     *
+     * @return The value (business object)
+     */
+    @Nullable
     public V getValue() {
         return value;
     }
 
-    public void setValue(@NonNull final V value) {
+    /**
+     * Sets the value
+     *
+     * @param value the business object value
+     */
+    public void setValue(@Nullable final V value) {
         throwIfImmutable();
         this.value = Objects.requireNonNull(value);
     }

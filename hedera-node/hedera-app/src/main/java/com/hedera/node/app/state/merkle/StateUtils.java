@@ -90,44 +90,17 @@ public final class StateUtils {
      *
      * @param serviceName The service name
      * @param stateKey The state key
+     * @param extra An extra string to bake into the class id
      * @return the class id
      */
     public static long computeClassId(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
+            @NonNull final String serviceName,
+            @NonNull final String stateKey,
+            @NonNull final String extra) {
         // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
         // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
         // this formula, we will need to hardcode known classId that had been previously generated.
-        return hashString(serviceName + ":" + stateKey);
-    }
-
-    /**
-     * Given the inputs, compute the corresponding class ID.
-     *
-     * @param serviceName The service name
-     * @param stateKey The state key
-     * @return the class id
-     */
-    public static long computeKeyClassId(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
-        // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
-        // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
-        // this formula, we will need to hardcode known classId that had been previously generated.
-        return hashString(serviceName + ":key:" + stateKey);
-    }
-
-    /**
-     * Given the inputs, compute the corresponding class ID.
-     *
-     * @param serviceName The service name
-     * @param stateKey The state key
-     * @return the class id
-     */
-    public static long computeValueClassId(
-            @NonNull final String serviceName, @NonNull final String stateKey) {
-        // NOTE: Once this is live on any network, the formula used to generate this key can NEVER
-        // BE CHANGED or you won't ever be able to deserialize an exising state! If we get away from
-        // this formula, we will need to hardcode known classId that had been previously generated.
-        return hashString(serviceName + ":value:" + stateKey);
+        return hashString(serviceName + ":" + extra + ":" + stateKey);
     }
 
     // Will be moved to `NonCryptographicHashing` with

@@ -67,6 +67,12 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
     }
 
     @Override
+    public int getTypicalSerializedSize() {
+        // TODO This is made up, needs to be supplied via registration?
+        return 100;
+    }
+
+    @Override
     public long getCurrentDataVersion() {
         return 1;
     }
@@ -116,7 +122,7 @@ public final class OnDiskKeySerializer<K extends Comparable<K>>
 
     @Override
     public long getClassId() {
-        return StateUtils.computeKeyClassId(md.serviceName(), md.stateKey());
+        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "on-disk-key");
     }
 
     @Override

@@ -33,7 +33,7 @@ import java.util.Objects;
 public final class InMemoryWritableState<K, V> extends WritableStateBase<K, V> {
     /** The underlying merkle tree data structure with the data */
     private final MerkleMap<InMemoryKey<K>, InMemoryValue<K, V>> merkle;
-
+    /** The metadata for this store */
     private final StateMetadata<K, V> md;
 
     /**

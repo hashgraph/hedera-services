@@ -42,7 +42,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
     @Override
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         super.setUp();
         hederaMerkle =
                 new MerkleHederaState(

@@ -174,7 +174,7 @@ public final class MerkleStateRegistry implements StateRegistry {
         // Then, during migration, we go back to the ConstructableRegistry and tell it about
         // the new parsers and writers for FOO_KEY. It is OK to update the state node associated
         // with FOO_KEY whenever we want during, since the need for the old parsers and
-        // writers has passed. TODO I DO NOT TEST FOR THIS OR DO THIS YET!!!
+        // writers has passed.
         //
         // It is important that we migrate first, and remove second. Because it may be that
         // BAR_KEY is used during migration and removed. We need to migrate first, or we
@@ -288,12 +288,22 @@ public final class MerkleStateRegistry implements StateRegistry {
         // various delegate writers and parsers, and so can parse/write different types of data
         // based on the id.
         try {
-            final Supplier<RuntimeConstructable> constructor = () -> new InMemoryValue(md);
-            final var pair = new ClassConstructorPair(InMemoryValue.class, constructor);
-            constructableRegistry.registerConstructable(pair);
+            final Supplier<RuntimeConstructable> inMemoryValueCreator = () -> new InMemoryValue(md);
+            final var inMemoryValuePair =
+                    new ClassConstructorPair(InMemoryValue.class, inMemoryValueCreator);
+            constructableRegistry.registerConstructable(inMemoryValuePair);
 
-            // TODO Also register the OnDiskKeySerializer using the key class ID method
-            // TODO And the disk serializer, and maybe other things too!!
+            final Supplier<RuntimeConstructable> onDiskKeyCreator =
+                    () -> new OnDiskKeySerializer<>(md);
+            final var onDiskKeyPair =
+                    new ClassConstructorPair(OnDiskKeySerializer.class, onDiskKeyCreator);
+            constructableRegistry.registerConstructable(onDiskKeyPair);
+
+            final Supplier<RuntimeConstructable> onDiskValueCreator =
+                    () -> new OnDiskValueSerializer<>(md);
+            final var onDiskValuePair =
+                    new ClassConstructorPair(OnDiskValueSerializer.class, onDiskValueCreator);
+            constructableRegistry.registerConstructable(onDiskValuePair);
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new RuntimeException(

@@ -24,34 +24,52 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * An implementation of {@link SelfSerializableSupplier}, required by the {@link
+ * com.swirlds.virtualmap.VirtualMap} for creating new {@link OnDiskValue}s.
+ *
+ * @param <V> The type of the value in the virtual map
+ */
 public final class OnDiskValueSerializer<V> implements SelfSerializableSupplier<OnDiskValue<V>> {
+    /** The metadata */
     private final StateMetadata<?, V> md;
 
+    /**
+     * Create a new instance. This is created at registration time, it doesn't need to serialize
+     * anything to disk.
+     *
+     * @param md The metadata to use
+     */
     public OnDiskValueSerializer(@NonNull final StateMetadata<?, V> md) {
         this.md = Objects.requireNonNull(md);
     }
 
+    /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return StateUtils.computeValueClassId(md.serviceName(), md.stateKey());
+        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "on-disk-value");
     }
 
+    /** {@inheritDoc} */
     @Override
     public int getVersion() {
         return 1;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         // This class has nothing to serialize
     }
 
+    /** {@inheritDoc} */
     @Override
     public void deserialize(@NonNull final SerializableDataInputStream in, final int ignored)
             throws IOException {
         // This class has nothing to deserialize
     }
 
+    /** {@inheritDoc} */
     @Override
     public OnDiskValue<V> get() {
         return new OnDiskValue<>(md.valueParser(), md.valueWriter());

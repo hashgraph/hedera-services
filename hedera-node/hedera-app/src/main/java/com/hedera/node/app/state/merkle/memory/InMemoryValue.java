@@ -89,7 +89,7 @@ public final class InMemoryValue<K, V> extends PartialMerkleLeaf
     /** {@inheritDoc} */
     @Override
     public long getClassId() {
-        return StateUtils.computeValueClassId(md.serviceName(), md.stateKey());
+        return StateUtils.computeClassId(md.serviceName(), md.stateKey(), "in-memory-value");
     }
 
     /** {@inheritDoc} */

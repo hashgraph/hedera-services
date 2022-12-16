@@ -22,12 +22,16 @@ import com.hedera.node.app.state.merkle.memory.InMemoryKey;
 import com.hedera.node.app.state.merkle.memory.InMemoryValue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 
@@ -72,14 +76,15 @@ public class MerkleTestBase extends TestBase {
     protected MerkleMap<InMemoryKey<String>, InMemoryValue<String, String>> countryMerkleMap;
 
     @BeforeEach
-    void setUp() {
+    protected void setUp() {
         // Unfortunately, we need to configure the ConstructableRegistry for serialization tests and
         // even for basic usage of the MerkleMap (it uses it internally to make copies of internal
         // nodes).
         try {
             registry.reset();
             registry.registerConstructables("com.swirlds.merklemap");
-            registry.registerConstructables("com.swirlds.jaspermap");
+            registry.registerConstructables("com.swirlds.jasperdb");
+            registry.registerConstructables("com.swirlds.virtualmap");
             registry.registerConstructables("com.swirlds.common.merkle");
             registry.registerConstructables("com.swirlds.merkle");
             registry.registerConstructables("com.swirlds.merkle.tree");
@@ -189,6 +194,23 @@ public class MerkleTestBase extends TestBase {
         }
 
         return null;
+    }
+
+    protected byte[] writeTree(@NonNull final MerkleNode tree, @NonNull final Path tempDir)
+            throws IOException {
+        final var byteOutputStream = new ByteArrayOutputStream();
+        try (final var out = new MerkleDataOutputStream(byteOutputStream)) {
+            out.writeMerkleTree(tempDir, tree);
+        }
+        return byteOutputStream.toByteArray();
+    }
+
+    protected <T extends MerkleNode> T parseTree(
+            @NonNull final byte[] state, @NonNull final Path tempDir) throws IOException {
+        final var byteInputStream = new ByteArrayInputStream(state);
+        try (final var in = new MerkleDataInputStream(byteInputStream)) {
+            return in.readMerkleTree(tempDir, 100);
+        }
     }
 
     public static void writeString(String value, DataOutput output) throws IOException {

@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * An implementation of {@link SwirldState2} and {@link HederaState}. The Hashgraph Platform
@@ -275,7 +274,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     @Override
     public AddressBook getAddressBookCopy() {
         // To be implemented by Issue #4200
-        throw new NotImplementedException("Not yet implemented");
+        throw new RuntimeException("Not yet implemented");
     }
 
     /**

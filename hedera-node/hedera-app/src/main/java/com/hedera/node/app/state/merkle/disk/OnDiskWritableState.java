@@ -31,10 +31,17 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 public final class OnDiskWritableState<K extends Comparable<K>, V> extends WritableStateBase<K, V> {
+    /** The backing merkle data structure */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
-
+    /** The metadata for this store */
     private final StateMetadata<K, V> md;
 
+    /**
+     * Create a new instance
+     *
+     * @param md The metadata to use
+     * @param virtualMap the backing merkle data structure to use
+     */
     public OnDiskWritableState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
@@ -43,6 +50,7 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
         this.md = Objects.requireNonNull(md);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
@@ -50,12 +58,14 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
         return v == null ? null : v.getValue();
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
         throw new UnsupportedOperationException("You cannot iterate over a virtual map's keys!");
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V getForModifyFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
@@ -63,6 +73,7 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
         return v == null ? null : v.getValue();
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void putIntoDataSource(@NonNull K key, @NonNull V value) {
         final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
@@ -74,6 +85,7 @@ public final class OnDiskWritableState<K extends Comparable<K>, V> extends Writa
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     protected void removeFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());

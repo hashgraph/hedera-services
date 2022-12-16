@@ -31,10 +31,17 @@ import java.util.Objects;
  * @param <V> The type of value for the state
  */
 public final class OnDiskReadableState<K extends Comparable<K>, V> extends ReadableStateBase<K, V> {
+    /** The backing merkle data structure to use */
     private final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap;
-
+    /** The metadata for this state */
     private final StateMetadata<K, V> md;
 
+    /**
+     * Create a new instance
+     *
+     * @param md The metadata
+     * @param virtualMap the backing merkle structure to use
+     */
     public OnDiskReadableState(
             @NonNull final StateMetadata<K, V> md,
             @NonNull final VirtualMap<OnDiskKey<K>, OnDiskValue<V>> virtualMap) {
@@ -43,6 +50,7 @@ public final class OnDiskReadableState<K extends Comparable<K>, V> extends Reada
         this.md = Objects.requireNonNull(md);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected V readFromDataSource(@NonNull K key) {
         final var k = new OnDiskKey<>(key, md.keyParser(), md.keyWriter());
@@ -50,6 +58,7 @@ public final class OnDiskReadableState<K extends Comparable<K>, V> extends Reada
         return v == null ? null : v.getValue();
     }
 
+    /** {@inheritDoc} */
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
