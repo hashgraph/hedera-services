@@ -32,7 +32,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -75,6 +77,7 @@ public class StakingSuite extends HapiSuite {
     public static final String STAKING_REWARD_RATE = "staking.rewardRate";
     public static final String FIRST_TRANSFER = "firstTransfer";
     public static final String FIRST_TXN = "firstTxn";
+    public static final String STANDARD_STAKING_RATE = "273972602739726";
 
     public static void main(String... args) {
         new StakingSuite().runSuiteSync();
@@ -106,7 +109,82 @@ public class StakingSuite extends HapiSuite {
                 canBeRewardedWithoutMinStakeIfSoConfigured(),
                 zeroRewardEarnedWithZeroWholeHbarsStillSetsSASOLARP(),
                 autoRenewalsCanTriggerStakingRewards(),
-                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries());
+                stakeIsManagedCorrectlyInTxnsAroundPeriodBoundaries(),
+                zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds());
+    }
+
+    /**
+     * Tests a scenario in which many zero stake accounts are created, and then after a few staking
+     * periods, a series of credits and debits are made to them, and they are confirmed to have
+     * received the expected rewards (all zero).
+     */
+    private HapiSpec zeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds() {
+        final var zeroStakeAccount = "zeroStakeAccount";
+        final var numZeroStakeAccounts = 10;
+        final var stakePeriodMins = 1L;
+
+        return defaultHapiSpec("ZeroStakeAccountsHaveMetadataResetOnFirstDayTheyReceiveFunds")
+                .given(
+                        overridingAllOf(
+                                Map.of(
+                                        STAKING_START_THRESHOLD,
+                                        "" + ONE_HBAR,
+                                        STAKING_REWARD_RATE,
+                                        STANDARD_STAKING_RATE)),
+                        cryptoTransfer(
+                                tinyBarsFromTo(GENESIS, STAKING_REWARD, 250 * ONE_MILLION_HBARS)),
+                        inParallel(
+                                IntStream.range(0, numZeroStakeAccounts)
+                                        .mapToObj(
+                                                i ->
+                                                        cryptoCreate(zeroStakeAccount + i)
+                                                                .stakedNodeId(0)
+                                                                .balance(0L))
+                                        .toArray(HapiSpecOperation[]::new)),
+                        cryptoCreate("somebody").stakedNodeId(0).balance(10 * ONE_MILLION_HBARS),
+                        // Wait a few periods
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins),
+                        waitUntilStartOfNextStakingPeriod(stakePeriodMins))
+                .when()
+                .then(
+                        sleepFor(5_000),
+                        withOpContext(
+                                (spec, opLog) -> {
+                                    for (int i = 0; i < numZeroStakeAccounts; i++) {
+                                        final var target = zeroStakeAccount + i;
+                                        final var setupTxn = "setup" + i;
+                                        final var fundingTxn = "funding" + i;
+                                        final var withdrawingTxn = "withdrawing" + i;
+                                        final var first =
+                                                cryptoTransfer(tinyBarsFromTo(GENESIS, target, 1))
+                                                        .via(setupTxn);
+                                        final var second =
+                                                cryptoTransfer(
+                                                                tinyBarsFromTo(
+                                                                        GENESIS,
+                                                                        target,
+                                                                        ONE_MILLION_HBARS))
+                                                        .via(fundingTxn);
+                                        final var third =
+                                                cryptoTransfer(
+                                                                tinyBarsFromTo(
+                                                                        target,
+                                                                        GENESIS,
+                                                                        ONE_MILLION_HBARS))
+                                                        .via(withdrawingTxn);
+                                        allRunFor(
+                                                spec,
+                                                first,
+                                                second,
+                                                third,
+                                                getTxnRecord(setupTxn).logged(),
+                                                getTxnRecord(fundingTxn).logged(),
+                                                getTxnRecord(withdrawingTxn).logged());
+                                    }
+                                }));
     }
 
     /**
@@ -143,7 +221,7 @@ public class StakingSuite extends HapiSuite {
                                         STAKING_START_THRESHOLD,
                                         "" + ONE_HBAR,
                                         STAKING_REWARD_RATE,
-                                        "273972602739726")),
+                                        STANDARD_STAKING_RATE)),
                         cryptoTransfer(
                                 tinyBarsFromTo(GENESIS, STAKING_REWARD, 250 * ONE_MILLION_HBARS)),
                         cryptoCreate(alice).stakedNodeId(0).balance(ONE_MILLION_HBARS),
@@ -288,7 +366,7 @@ public class StakingSuite extends HapiSuite {
                                         STAKING_START_THRESHOLD,
                                         "100_000_000",
                                         STAKING_REWARD_RATE,
-                                        "273972602739726")),
+                                        STANDARD_STAKING_RATE)),
                         // Create the patiently waiting staker
                         cryptoCreate(patientlyWaiting).stakedNodeId(0).balance(ONE_HUNDRED_HBARS),
                         // Activate staking (but without achieving the 25B hbar minstake)

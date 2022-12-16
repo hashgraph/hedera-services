@@ -17,6 +17,7 @@ package com.hedera.node.app.service.mono.state.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
@@ -50,6 +51,7 @@ import com.swirlds.fchashmap.FCHashMap;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.virtualmap.VirtualMap;
 import java.time.Instant;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,6 +127,8 @@ class StatesImplTest {
 
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof InMemoryStateImpl);
+
+        assertThrows(NotImplementedException.class, () -> subject.get(TOKENS));
     }
 
     @Test
@@ -140,21 +144,6 @@ class StatesImplTest {
 
         assertEquals(lastHandledTime, state.getLastModifiedTime());
         assertTrue(state instanceof RebuiltStateImpl);
-    }
-
-    @Test
-    void returnsTokensFromChildren() {
-        final var lastHandledTime = Instant.ofEpochSecond(1_234_567L);
-        givenStateWithMockChildren();
-        given(state.getTimeOfLastHandledTxn()).willReturn(lastHandledTime);
-        given(state.isInitialized()).willReturn(true);
-
-        subject.updateChildren(state);
-
-        final var state = subject.get(TOKENS);
-
-        assertEquals(lastHandledTime, state.getLastModifiedTime());
-        assertTrue(state instanceof InMemoryStateImpl);
     }
 
     @Test

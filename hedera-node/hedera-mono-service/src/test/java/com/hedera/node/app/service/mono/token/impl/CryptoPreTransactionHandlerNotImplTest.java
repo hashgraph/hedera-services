@@ -18,7 +18,6 @@ package com.hedera.node.app.service.mono.token.impl;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,24 +27,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoPreTransactionHandlerNotImplTest {
-    @Mock private AccountStore accountStore;
-    @Mock private TokenStore tokenStore;
+    @Mock private AccountStore store;
     @Mock private PreHandleContext context;
 
     private CryptoPreTransactionHandlerImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new CryptoPreTransactionHandlerImpl(accountStore, tokenStore, context);
+        subject = new CryptoPreTransactionHandlerImpl(store, context);
     }
 
     @Test
     void notImplementedStuffIsntImplemented() {
         assertThrows(
-                NotImplementedException.class,
-                () -> subject.preHandleAddLiveHash(TransactionBody.getDefaultInstance(), null));
+                NotImplementedException.class, () -> subject.preHandleCryptoTransfer(null, null));
+        assertThrows(NotImplementedException.class, () -> subject.preHandleAddLiveHash(null, null));
         assertThrows(
-                NotImplementedException.class,
-                () -> subject.preHandleDeleteLiveHash(TransactionBody.getDefaultInstance(), null));
+                NotImplementedException.class, () -> subject.preHandleDeleteLiveHash(null, null));
     }
 }

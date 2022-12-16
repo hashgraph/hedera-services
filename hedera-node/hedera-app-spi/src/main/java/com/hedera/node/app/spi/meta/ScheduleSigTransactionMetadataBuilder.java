@@ -25,7 +25,7 @@ import java.util.Objects;
  * being scheduled, in addition to all fields in {@link SigTransactionMetadata}.
  */
 public class ScheduleSigTransactionMetadataBuilder
-        extends SigTransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
+        extends TransactionMetadataBuilder<ScheduleSigTransactionMetadataBuilder> {
     private TransactionMetadata scheduledTxnMeta;
 
     public ScheduleSigTransactionMetadataBuilder(@NonNull final AccountKeyLookup keyLookup) {
@@ -56,5 +56,10 @@ public class ScheduleSigTransactionMetadataBuilder
                         + " to build ScheduleSigTransactionMetadata");
         return new ScheduleSigTransactionMetadata(
                 txn, payer, status, payerKey, requiredNonPayerKeys, scheduledTxnMeta);
+    }
+
+    @Override
+    public ScheduleSigTransactionMetadataBuilder self() {
+        return this;
     }
 }

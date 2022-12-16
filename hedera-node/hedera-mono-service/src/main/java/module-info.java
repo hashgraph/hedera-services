@@ -67,9 +67,6 @@ module com.hedera.node.app.service.mono {
             com.swirlds.common;
 
     exports com.hedera.node.app.service.mono.state.impl;
-    exports com.hedera.node.app.service.mono.token.impl;
-    exports com.hedera.node.app.service.mono.state.migration;
-    exports com.hedera.node.app.service.mono.config;
 
     requires com.hedera.hashgraph.protobuf.java.api;
     requires com.swirlds.common;
