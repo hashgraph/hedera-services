@@ -20,8 +20,6 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.mono.state.merkle.MerkleAccount;
 import com.hedera.node.app.spi.PreHandleContext;
-import com.hedera.node.app.spi.fixtures.state.MapReadableState;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
 import com.hedera.node.app.spi.state.ReadableState;
 import com.hedera.node.app.spi.state.ReadableStates;
 import org.junit.jupiter.api.Test;
@@ -31,19 +29,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoServiceImplTest {
-    private static final String ACCOUNTS = "ACCOUNTS";
-    private static final String ALIASES = "ALIASES";
-
-    private ReadableState<Long, MerkleAccount> aliases = new MapReadableState<>(ACCOUNTS);
-    private ReadableState<Long, MerkleAccount> accounts = new MapReadableState<>(ALIASES);
-    private ReadableStates states = new MapReadableStates(aliases, accounts);
+    @Mock private ReadableState<Long, MerkleAccount> aliases;
+    @Mock private ReadableState<Long, MerkleAccount> accounts;
+    @Mock ReadableStates states;
     @Mock PreHandleContext ctx;
 
+    private static final String ACCOUNTS = "ACCOUNTS";
+    private static final String ALIASES = "ALIASES";
     private CryptoServiceImpl subject;
 
     @Test
     void createsNewInstance() {
         subject = new CryptoServiceImpl();
+
+        given(states.<Long, MerkleAccount>get(ACCOUNTS)).willReturn(accounts);
+        given(states.<Long, MerkleAccount>get(ALIASES)).willReturn(aliases);
 
         final var serviceImpl = subject.createPreTransactionHandler(states, ctx);
         final var serviceImpl1 = subject.createPreTransactionHandler(states, ctx);

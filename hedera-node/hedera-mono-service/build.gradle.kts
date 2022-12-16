@@ -76,7 +76,6 @@ dependencies {
 
     testImplementation(testLibs.bundles.testing)
     testImplementation(testLibs.classgraph)
-    testImplementation(testFixtures(project(":hedera-node:hedera-app-spi")))
     testCompileOnly(libs.spotbugs.annotations)
 
     testFixturesApi(project(":hedera-node:hapi-utils"))
